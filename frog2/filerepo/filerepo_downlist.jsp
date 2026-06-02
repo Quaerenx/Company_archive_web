@@ -78,7 +78,7 @@
 %>
 
 <!-- Header Include -->
-<%@ include file="/includes/header.jsp" %>
+<%@ include file="/WEB-INF/includes/header_nav.jspf" %>
 
 <c:set var="currentPathText" value="/" />
 <c:if test="${not empty param.path}">
@@ -324,7 +324,7 @@
         </div>
 
 <!-- Footer Include -->
-<%@ include file="/includes/footer.jsp" %>
+<%@ include file="/WEB-INF/includes/footer_content.jspf" %>
 
 </body>
 </html>

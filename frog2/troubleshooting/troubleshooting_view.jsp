@@ -13,29 +13,6 @@
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    .page-header {
-        background: #ffffff;
-        color: #2c3e50;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e8ecef;
-    }
-    
-    .page-header h1 {	
-        margin: 0 0 0.5rem 0;
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #2c3e50;
-    }
-    
-    .page-header .lead {
-        margin: 0;
-        color: #6c757d;
-        font-size: 1rem;
-    }
-    
     /* 액션 바: 제목과 구분되는 별도 행 */
     .action-bar {
         display: flex;
@@ -104,56 +81,6 @@
             gap: 0.5rem;
         }
         .action-bar .btn { width: 100%; }
-    }
-    
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        border: none;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-    }
-    
-    .btn-primary {
-        background: var(--primary);
-        color: white;
-        border: 1px solid var(--primary);
-    }
-    
-    .btn-primary:hover {
-        background: #2f4968;
-        color: white;
-        text-decoration: none;
-    }
-    
-    .btn-secondary {
-        background: transparent;
-        color: #374151;
-        border: 1px solid #d1d5db;
-    }
-    
-    .btn-secondary:hover {
-        background: #f3f4f6;
-        color: #1f2937;
-        text-decoration: none;
-    }
-    
-    .btn-danger {
-        background: transparent;
-        color: #b91c1c;
-        border: 1px solid #ef4444;
-    }
-    
-    .btn-danger:hover {
-        background: #fef2f2;
-        color: #991b1b;
-        text-decoration: none;
     }
     
     .alert {
@@ -279,14 +206,6 @@
         .troubleshooting-detail {
             max-width: 100%;
             padding: 15px;
-        }
-        
-        .page-header {
-            padding: 15px;
-        }
-        
-        .page-header h1 {
-            font-size: 1.5rem;
         }
         
         .header-actions {

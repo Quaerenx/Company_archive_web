@@ -282,44 +282,7 @@
             margin-bottom: 16px;
             opacity: 0.5;
         }
-        
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-        
-        .btn-primary {
-            background-color: #3D5A80;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background-color: #2d4460;
-        }
-        
-        .btn-secondary {
-            background-color: #666666;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #555555;
-        }
-        
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.813rem;
-        }
-        
+
         @media (max-width: 768px) {
             .profile-info {
                 grid-template-columns: 1fr;
@@ -343,7 +306,7 @@
     </style>
 </head>
 <body class="page-customers">
-<%@ include file="/includes/header.jsp" %>
+<%@ include file="/WEB-INF/includes/header_nav.jspf" %>
 
 <div class="mypage-container">
     <t:pageHeader>
@@ -535,6 +498,6 @@
     </div>
 </div>
 
-<%@ include file="/includes/footer.jsp" %>
+<%@ include file="/WEB-INF/includes/footer_content.jspf" %>
 </body>
 </html>

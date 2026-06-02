@@ -16,21 +16,6 @@
 	    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	}
     
-    /* page-header 스타일은 customers.css 공용 규칙 사용 */
-    
-    .page-header h1 {
-        margin: 0 0 0.5rem 0;
-        font-size: 2rem;
-        font-weight: 700;
-        color: #2c3e50;
-    }
-    
-    .page-header .lead {
-        margin: 0;
-        color: #6c757d;
-        font-size: 1.1rem;
-    }
-    
     .alert {
         padding: 1rem 1.25rem;
         margin-bottom: 1.5rem;
@@ -110,14 +95,6 @@
 	        max-width: 100%;
 	        padding: var(--space-24) var(--space-16);
 	    }
-        
-        .page-header {
-            padding: 1.5rem;
-        }
-        
-        .page-header h1 {
-            font-size: 1.5rem;
-        }
         
         .customer-grid {
             grid-template-columns: 1fr;

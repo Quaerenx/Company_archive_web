@@ -17,15 +17,6 @@
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                         }
 
-                        .page-header {
-                            background: white;
-                            padding: 2rem;
-                            border-radius: 12px;
-                            margin-bottom: 1.5rem;
-                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-                            border: 1px solid #e8ecef;
-                        }
-
                         .header-content {
                             display: flex;
                             justify-content: space-between;
@@ -76,65 +67,6 @@
                             display: flex;
                             gap: 8px;
                             flex-wrap: wrap;
-                        }
-
-                        .btn-min {
-                            padding: 6px 12px;
-                            border-radius: 6px;
-                            font-size: 14px;
-                            line-height: 1.2;
-                            border: 1px solid #e5e7eb;
-                            background: #ffffff;
-                            color: #374151;
-                            text-decoration: none;
-                            transition: all 0.15s ease;
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 6px;
-                        }
-
-                        .btn-min:hover {
-                            background: #f3f4f6;
-                            color: #111827;
-                        }
-
-                        .btn {
-                            padding: 0.75rem 1.5rem;
-                            border-radius: 8px;
-                            text-decoration: none;
-                            font-weight: 500;
-                            transition: all 0.2s ease;
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 0.5rem;
-                            border: none;
-                            cursor: pointer;
-                            font-size: 0.875rem;
-                        }
-
-                        .btn-primary {
-                            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-                            color: white;
-                        }
-
-                        .btn-primary:hover {
-                            background: linear-gradient(135deg, #4338ca, #6d28d9);
-                            transform: translateY(-1px);
-                            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-                            color: white;
-                            text-decoration: none;
-                        }
-
-                        .btn-secondary {
-                            background: #f1f5f9;
-                            color: #475569;
-                            border: 1px solid #e2e8f0;
-                        }
-
-                        .btn-secondary:hover {
-                            background: #e2e8f0;
-                            color: #334155;
-                            text-decoration: none;
                         }
 
                         .alert {
@@ -456,10 +388,6 @@
                                 padding: var(--space-24) var(--space-16);
                             }
 
-                            .page-header {
-                                padding: 1.5rem;
-                            }
-
                             .header-content {
                                 flex-direction: column;
                                 align-items: flex-start;
@@ -479,7 +407,7 @@
                                 justify-content: stretch;
                             }
 
-                            .btn {
+                            .empty-history .btn {
                                 flex: 1;
                                 justify-content: center;
                             }

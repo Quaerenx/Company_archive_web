@@ -15,52 +15,6 @@
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    .page-header {
-        background: #ffffff;
-        color: #2c3e50;
-        padding: 2rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e8ecef;
-    }
-    
-    .page-header h1 {
-        margin: 0 0 0.5rem 0;
-        font-size: 2rem;
-        font-weight: 700;
-        color: #2c3e50;
-    }
-    
-    .page-header .lead {
-        margin: 0;
-        color: #6c757d;
-        font-size: 1.1rem;
-    }
-    
-    .add-button {
-        background: var(--primary);
-        color: white;
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        border: none;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .add-button:hover {
-        background: #2f4968;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(61, 90, 128, 0.25);
-        color: white;
-        text-decoration: none;
-    }
-    
     .alert {
         padding: 1rem 1.25rem;
         margin-bottom: 1.5rem;
@@ -156,17 +110,11 @@
         justify-content: center;
     }
     
-    .btn {
+    .action-buttons .btn {
         padding: 0.25rem 0.5rem;
         border-radius: 4px;
-        text-decoration: none;
         font-size: 0.75rem;
         font-weight: 400;
-        transition: all 0.2s ease;
-        border: none;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
         gap: 0.25rem;
     }
     
@@ -221,14 +169,6 @@
         .troubleshooting-management {
             max-width: 100%;
             padding: var(--space-24) var(--space-16);
-        }
-        
-        .page-header {
-            padding: 1.5rem;
-        }
-        
-        .page-header h1 {
-            font-size: 1.5rem;
         }
         
         .troubleshooting-table {

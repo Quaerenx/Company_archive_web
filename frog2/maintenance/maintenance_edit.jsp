@@ -8,12 +8,6 @@
 <%@ include file="/includes/header.jsp" %>
 
   <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/pages/customers.css">
-  <style>
-    .btn-min { padding: 6px 12px; border-radius: 6px; font-size: 14px; line-height: 1.2; border: 1px solid #e5e7eb; background: #ffffff; color: #374151; text-decoration: none; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-min:hover { background: #f3f4f6; color: #111827; }
-    .btn-min.danger { border-color: transparent; background: #ef4444; color: #ffffff; }
-    .btn-min.danger:hover { background: #dc2626; }
-  </style>
 
 <div class="container">
     <t:pageHeader>

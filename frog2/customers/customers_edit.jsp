@@ -20,7 +20,7 @@
             <a href="${pageContext.request.contextPath}/customers?view=list" class="add-button">
                 <i class="fas fa-list"></i> 목록으로
             </a>
-            <a href="${pageContext.request.contextPath}/customers?view=detail&customerName=${customer.customerName}" class="add-button" style="background:#6b7280">
+            <a href="${pageContext.request.contextPath}/customers?view=detail&customerName=${customer.customerName}" class="add-button secondary">
                 <i class="fas fa-info-circle"></i> 상세보기
             </a>
         </jsp:attribute>

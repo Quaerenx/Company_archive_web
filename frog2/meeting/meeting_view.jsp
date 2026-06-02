@@ -22,7 +22,7 @@
             <c:if test="${meeting.authorId == user.userId}">
                 <a href="${pageContext.request.contextPath}/meeting?view=edit&id=${meeting.meetingId}" class="add-button"><i class="fas fa-edit"></i> 수정하기</a>
             </c:if>
-            <a href="${pageContext.request.contextPath}/meeting?view=list" class="add-button" style="background:#6b7280"><i class="fas fa-list"></i> 목록</a>
+            <a href="${pageContext.request.contextPath}/meeting?view=list" class="add-button secondary"><i class="fas fa-list"></i> 목록</a>
         </jsp:attribute>
     </t:pageHeader>
     <!-- 뒤로 가기 -->

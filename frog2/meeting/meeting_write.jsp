@@ -14,7 +14,7 @@
         <jsp:attribute name="title"><i class="fas fa-pen"></i> 새 회의록 작성</jsp:attribute>
         <jsp:attribute name="subtitle">회의 내용을 정리하여 등록해주세요.</jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/meeting?view=list" class="add-button" style="background:#6b7280"><i class="fas fa-list"></i> 목록으로</a>
+            <a href="${pageContext.request.contextPath}/meeting?view=list" class="add-button secondary"><i class="fas fa-list"></i> 목록으로</a>
         </jsp:attribute>
     </t:pageHeader>
     
@@ -85,7 +85,7 @@
 </div>
 
 <!-- 미리보기 모달 -->
-<div id="previewModal" class="modal">
+<div id="previewModal" class="modal modal-wide">
     <div class="modal-content">
         <div class="modal-header">
             <h3><i class="fas fa-eye"></i> 미리보기</h3>
@@ -109,8 +109,6 @@
         </div>
     </div>
 </div>
-
-<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/pages/meeting.css">
 
 <script>
 // 페이지 로드 시 실행

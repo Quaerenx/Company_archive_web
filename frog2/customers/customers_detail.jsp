@@ -10,19 +10,7 @@
 
 <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/pages/customers.css">
 <style>
-	/* --- 기존 버튼 스타일은 그대로 유지 --- */
 	.customer-detail .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-	.customer-detail .btn-min { padding: 6px 12px; border-radius: 6px; font-size: 14px; line-height: 1.2;
-	border: 1px solid #e5e7eb; background: #ffffff; color: #374151; text-decoration: none; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px;
-	}
-	.customer-detail .btn-min:hover { background: #f3f4f6; color: #111827; }
-	.customer-detail .btn-min.primary { border-color: transparent; background: var(--primary); color: #ffffff;
-	}
-	.customer-detail .btn-min.primary:hover { background: #2f4968; }
-	.customer-detail .btn-min.danger { border-color: transparent; background: #ef4444; color: #ffffff; }
-	.customer-detail .btn-min.danger:hover { background: #dc2626;
-	}
-	.customer-detail .btn-min i { font-size: 14px; }
 
 	/* --- [변경/추가된 CSS] 가독성 개선 스타일 --- */
 	

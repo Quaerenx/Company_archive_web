@@ -22,7 +22,7 @@
         </jsp:attribute>
         <jsp:attribute name="subtitle">고객사 상세정보를 수정하세요</jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/customers?view=detail&customerName=<c:choose><c:when test='${not empty customerDetail.customerName}'>${customerDetail.customerName}</c:when><c:otherwise>${customer.customerName}</c:otherwise></c:choose>" class="add-button" style="background:#6b7280">
+            <a href="${pageContext.request.contextPath}/customers?view=detail&customerName=<c:choose><c:when test='${not empty customerDetail.customerName}'>${customerDetail.customerName}</c:when><c:otherwise>${customer.customerName}</c:otherwise></c:choose>" class="add-button secondary">
                 <i class="fas fa-info-circle"></i> 상세보기
             </a>
             <a href="${pageContext.request.contextPath}/customers?view=list" class="add-button">

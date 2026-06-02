@@ -107,68 +107,6 @@
             min-width: 150px;
         }
 
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .btn-primary {
-            background-color: #3D5A80;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #2d4460;
-        }
-
-        .monthly-response-container .add-button {
-            font-family: inherit;
-            font-size: 14px;
-            line-height: 1.2;
-        }
-
-        .btn-min {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            line-height: 1.2;
-            border: 1px solid #e5e7eb;
-            background: #ffffff;
-            color: #374151;
-            text-decoration: none;
-            transition: all 0.15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-
-        .btn-min:hover {
-            background: #f3f4f6;
-            color: #111827;
-        }
-
-        .btn-min.primary {
-            border-color: transparent;
-            background: var(--primary);
-            color: #ffffff;
-        }
-
-        .btn-min.primary:hover {
-            background: #2f4968;
-            color: #ffffff;
-        }
-
         .results-card {
             background: white;
             padding: 24px;
@@ -362,128 +300,8 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* 모달 스타일 */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
-            animation: fadeIn 0.2s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 0;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            animation: slideDown 0.3s;
-        }
-
-        @keyframes slideDown {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .modal-header {
-            padding: 20px 24px;
-            background-color: #3D5A80;
-            color: white;
-            border-radius: 8px 8px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-        }
-
-        .close {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-        }
-
-        .close:hover {
-            background-color: rgba(255,255,255,0.1);
-        }
-
-        .modal-body {
-            padding: 24px;
-        }
-
-        .modal-form-group {
-            margin-bottom: 16px;
-        }
-
-        .modal-form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: #374151;
-            font-size: 0.875rem;
-        }
-
-        .modal-form-group input,
-        .modal-form-group textarea,
-        .modal-form-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            box-sizing: border-box;
-        }
-
-        .modal-form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
         .required {
             color: #ef4444;
-        }
-
-        .modal-footer {
-            padding: 16px 24px;
-            background-color: #f9fafb;
-            border-radius: 0 0 8px 8px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-        }
-
-        .btn-cancel {
-            background-color: #6b7280;
-            color: white;
-        }
-
-        .btn-cancel:hover {
-            background-color: #4b5563;
         }
 
         /* 알림 메시지 */
@@ -522,7 +340,7 @@
                 width: 100%;
             }
 
-            .btn {
+            .modal-footer .btn {
                 width: 100%;
                 justify-content: center;
             }
@@ -534,7 +352,7 @@
                 min-width: auto !important;
             }
 
-            .modal-content {
+            #responseModal .modal-content {
                 width: 95%;
                 margin: 10% auto;
             }
@@ -552,7 +370,7 @@
     </style>
 </head>
 <body class="page-customers">
-<%@ include file="/includes/header.jsp" %>
+<%@ include file="/WEB-INF/includes/header_nav.jspf" %>
 
 <div class="monthly-response-container">
     <a href="${pageContext.request.contextPath}/mypage" class="back-link">
@@ -830,7 +648,7 @@ window.onclick = function(event) {
 }
 </script>
 
-<%@ include file="/includes/footer.jsp" %>
+<%@ include file="/WEB-INF/includes/footer_content.jspf" %>
 
 </body>
 </html>

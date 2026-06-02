@@ -19,10 +19,10 @@
             <jsp:attribute name="actions">
                 <c:choose>
                     <c:when test="${not empty customerName}">
-                        <a href="${pageContext.request.contextPath}/maintenance?view=history&customerName=${customerName}" class="add-button" style="background:#6b7280"><i class="fas fa-history"></i> 이력으로</a>
+                        <a href="${pageContext.request.contextPath}/maintenance?view=history&customerName=${customerName}" class="add-button secondary"><i class="fas fa-history"></i> 이력으로</a>
                     </c:when>
                     <c:otherwise>
-                        <a href="${pageContext.request.contextPath}/maintenance?view=cards" class="add-button" style="background:#6b7280"><i class="fas fa-list"></i> 카드로</a>
+                        <a href="${pageContext.request.contextPath}/maintenance?view=cards" class="add-button secondary"><i class="fas fa-list"></i> 카드로</a>
                     </c:otherwise>
                 </c:choose>
             </jsp:attribute>

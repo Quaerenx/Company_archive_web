@@ -188,7 +188,7 @@
   </style>
 </head>
 <body class="page-1200 page-customers">
-  <%@ include file="/includes/header.jsp" %>
+  <%@ include file="/WEB-INF/includes/header_nav.jspf" %>
 
   <div class="customer-management">
     <t:pageHeader>
@@ -334,6 +334,6 @@
     </div>
   </div>
 
-  <%@ include file="/includes/footer.jsp" %>
+  <%@ include file="/WEB-INF/includes/footer_content.jspf" %>
 </body>
 </html>

@@ -15,7 +15,7 @@
         <jsp:attribute name="title"><i class="fas fa-edit"></i> 회의록 수정</jsp:attribute>
         <jsp:attribute name="subtitle">회의 내용을 수정해주세요.</jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/meeting?view=view&id=${meeting.meetingId}" class="add-button" style="background:#6b7280"><i class="fas fa-file-alt"></i> 상세보기</a>
+            <a href="${pageContext.request.contextPath}/meeting?view=view&id=${meeting.meetingId}" class="add-button secondary"><i class="fas fa-file-alt"></i> 상세보기</a>
         </jsp:attribute>
     </t:pageHeader>
     
@@ -123,7 +123,7 @@
 </div>
 
 <!-- 미리보기 모달 -->
-<div id="previewModal" class="modal">
+<div id="previewModal" class="modal modal-wide">
     <div class="modal-content">
         <div class="modal-header">
             <h3><i class="fas fa-eye"></i> 미리보기</h3>

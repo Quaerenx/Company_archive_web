@@ -50,7 +50,7 @@
 </head>
 <body>
     <!-- Header Include -->
-    <%@ include file="/includes/header.jsp" %>
+    <%@ include file="/WEB-INF/includes/header_nav.jspf" %>
 
     <div class="container">
         <div class="upload-main">
@@ -139,7 +139,7 @@
     </div>
 
     <!-- Footer Include -->
-    <%@ include file="/includes/footer.jsp" %>
+    <%@ include file="/WEB-INF/includes/footer_content.jspf" %>
 
     <script>
         // 전역 변수
