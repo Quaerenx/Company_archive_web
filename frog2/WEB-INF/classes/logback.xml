@@ -1,18 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- 콘솔 출력 -->
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-    
     <!-- 파일 출력 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${catalina.base}/logs/frog2.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${catalina.base}/logs/frog2.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${catalina.base}/logs/frog2.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
             <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
@@ -21,13 +16,15 @@
     
     <!-- HikariCP 로그 레벨 -->
     <logger name="com.zaxxer.hikari" level="INFO" />
-    
+
+    <!-- 커넥션 획득 DEBUG 로그가 catalina.out을 키우지 않도록 운영 기본값을 INFO로 둔다. -->
+    <logger name="com.company.util.DBConnection" level="INFO" />
+
     <!-- 애플리케이션 로그 레벨 -->
-    <logger name="com.company" level="DEBUG" />
-    
+    <logger name="com.company" level="INFO" />
+
     <!-- 루트 로거 -->
     <root level="INFO">
-        <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </root>
 </configuration>

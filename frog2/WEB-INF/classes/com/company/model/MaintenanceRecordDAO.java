@@ -7,6 +7,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -330,6 +331,39 @@ public class MaintenanceRecordDAO {
                 records.add(record);
             }
         } catch (SQLException  e) {
+            e.printStackTrace();
+        } finally {
+            DBConnection.close(rs, pstmt, conn);
+        }
+
+        return records;
+    }
+
+    public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
+        List<MaintenanceRecordDTO> records = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBConnection.getConnection();
+            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
+            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
+            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
+
+            String sql = "SELECT * FROM maintenance_records " +
+                    "WHERE inspection_date >= ? AND inspection_date < ? " +
+                    "ORDER BY inspection_date ASC, customer_name ASC";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setDate(1, startDate);
+            pstmt.setDate(2, endDate);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                MaintenanceRecordDTO record = mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize);
+                records.add(record);
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             DBConnection.close(rs, pstmt, conn);

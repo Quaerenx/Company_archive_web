@@ -37,6 +37,238 @@
     .vm-board {
       margin-bottom: 24px;
     }
+    .maintenance-month-board {
+      margin-bottom: 24px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      overflow: hidden;
+    }
+    .maintenance-month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .maintenance-month-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .maintenance-month-title h2 {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    .maintenance-month-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+    }
+    .maintenance-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .maintenance-toggle-btn:hover {
+      background: #f8fafc;
+    }
+    .maintenance-month-body.is-collapsed {
+      display: none;
+    }
+    .maintenance-month-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      background: #eef2f7;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+    .maintenance-month-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #64748b;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .maintenance-month-tab:hover {
+      background: rgba(255, 255, 255, 0.65);
+      color: #334155;
+    }
+    .maintenance-month-tab.active {
+      background: #fff;
+      color: #1f4e79;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    }
+    .maintenance-record-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 16px 20px 20px;
+    }
+    .maintenance-record-card {
+      min-height: 168px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 18px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+      color: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .maintenance-record-card:hover {
+      background: #f8fbff;
+      border-color: #94a3b8;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+    .maintenance-record-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      min-width: 0;
+    }
+    .maintenance-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .maintenance-customer-name {
+      min-width: 0;
+    }
+    .maintenance-customer-name strong {
+      display: block;
+      overflow-wrap: anywhere;
+      color: #111827;
+      font-size: 1.08rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .maintenance-record-side {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex: 0 0 auto;
+      color: #64748b;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    .maintenance-card-date {
+      color: #64748b;
+      font-weight: 400;
+    }
+    .maintenance-card-arrow {
+      color: #94a3b8;
+      font-size: 0.72rem;
+    }
+    .maintenance-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      min-height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .maintenance-status-badge.due {
+      background: #fff7ed;
+      color: #b45309;
+    }
+    .maintenance-card-lines {
+      display: grid;
+      gap: 7px;
+      padding-top: 2px;
+    }
+    .maintenance-card-line {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+      color: #1f2937;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .maintenance-line-label {
+      flex: 0 0 auto;
+      color: #64748b;
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .maintenance-line-value {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-weight: 400;
+    }
+    .maintenance-note {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      color: #334155;
+      font-size: 0.84rem;
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    .maintenance-manager {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      color: #64748b;
+      font-size: 0.82rem;
+      font-weight: 400;
+    }
+    .maintenance-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 150px;
+      margin: 16px 20px 20px;
+      padding: 20px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      color: #64748b;
+      font-weight: 800;
+      text-align: center;
+    }
     .vm-board-header {
       justify-content: space-between;
       flex-wrap: wrap;
@@ -262,6 +494,33 @@
       .vm-modal-backdrop {
         padding: 12px;
       }
+      .maintenance-month-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .maintenance-month-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .maintenance-month-tabs {
+        flex: 1 1 auto;
+      }
+      .maintenance-month-tab {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 0 8px;
+      }
+      .maintenance-record-grid {
+        grid-template-columns: 1fr;
+      }
+      .maintenance-record-top {
+        gap: 10px;
+      }
+      .maintenance-record-side {
+        align-items: flex-end;
+        flex-direction: column;
+        gap: 6px;
+      }
     }
   </style>
 </head>
@@ -276,6 +535,78 @@
         <span style="display:block; margin-top:6px; font-weight:600;">안녕하세요, <c:out value="${sessionScope.user != null ? sessionScope.user.userName : ''}"/> 님</span>
       </jsp:attribute>
     </t:pageHeader>
+
+    <section class="maintenance-month-board" aria-label="이번 달 고객사 점검 현황">
+      <div class="maintenance-month-header">
+        <div class="maintenance-month-title">
+          <i class="fas fa-clipboard-check"></i>
+          <h2><c:out value="${maintenanceMonthLabel}" /> 고객사 점검 현황</h2>
+        </div>
+        <div class="maintenance-month-actions">
+          <div class="maintenance-month-tabs" aria-label="점검 월 선택">
+            <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
+              <c:url value="/dashboard" var="monthTabUrl">
+                <c:param name="maintenanceMonth" value="${monthTab.value}" />
+              </c:url>
+              <a class="maintenance-month-tab ${monthTab.active ? 'active' : ''}" href="${monthTabUrl}">
+                <c:out value="${monthTab.label}" />
+              </a>
+            </c:forEach>
+          </div>
+          <button type="button" class="maintenance-toggle-btn" id="toggleMaintenanceBoardBtn">접기</button>
+        </div>
+      </div>
+
+      <div class="maintenance-month-body" id="maintenanceMonthBoardBody">
+        <c:choose>
+          <c:when test="${empty monthlyMaintenanceCards}">
+            <div class="maintenance-empty">
+              <c:out value="${maintenanceMonthLabel}" />에 등록된 정기점검 이력이 없습니다.
+            </div>
+          </c:when>
+          <c:otherwise>
+            <div class="maintenance-record-grid">
+              <c:forEach var="record" items="${monthlyMaintenanceCards}">
+                <c:url value="/maintenance" var="recordDetailUrl">
+                  <c:param name="view" value="history" />
+                  <c:param name="customerName" value="${record.customerName}" />
+                </c:url>
+                <a class="maintenance-record-card" href="${recordDetailUrl}">
+                  <div class="maintenance-record-top">
+                    <div class="maintenance-title-group">
+                      <div class="maintenance-customer-name">
+                        <strong><c:out value="${record.customerName}" /></strong>
+                      </div>
+                      <span class="maintenance-manager"><i class="fas fa-user-check"></i><c:out value="${record.inspectorName}" /></span>
+                    </div>
+                    <div class="maintenance-record-side">
+                      <span class="maintenance-card-date"><c:out value="${record.inspectionDate}" /></span>
+                      <c:if test="${record.statusCode == 'due'}">
+                        <span class="maintenance-status-badge ${record.statusCode}">
+                          <c:out value="${record.statusLabel}" />
+                        </span>
+                      </c:if>
+                      <i class="fas fa-chevron-right maintenance-card-arrow"></i>
+                    </div>
+                  </div>
+                  <div class="maintenance-card-lines">
+                    <div class="maintenance-card-line">
+                      <span class="maintenance-line-label">Vertica</span>
+                      <span class="maintenance-line-value"><c:out value="${record.verticaVersion}" /></span>
+                    </div>
+                    <div class="maintenance-card-line">
+                      <span class="maintenance-line-label">라이선스</span>
+                      <span class="maintenance-line-value"><c:out value="${record.licenseSummary}" /></span>
+                    </div>
+                  </div>
+                  <p class="maintenance-note"><c:out value="${record.note}" /></p>
+                </a>
+              </c:forEach>
+            </div>
+          </c:otherwise>
+        </c:choose>
+      </div>
+    </section>
 
     <div class="card dashboard-card vm-board">
       <div class="card-header vm-board-header">
@@ -503,12 +834,23 @@
       const noteInput = document.getElementById('vmHostNote');
       const deleteIpInput = document.getElementById('vmHostDeleteIp');
       const collapseStorageKey = 'frog2.dashboard.personal-hosts.collapsed';
+      const maintenanceBody = document.getElementById('maintenanceMonthBoardBody');
+      const toggleMaintenanceBtn = document.getElementById('toggleMaintenanceBoardBtn');
+      const maintenanceCollapseStorageKey = 'frog2.dashboard.monthly-maintenance.collapsed';
 
       function setBoardCollapsed(collapsed) {
         boardBody.classList.toggle('is-collapsed', collapsed);
         toggleBoardBtn.textContent = collapsed ? '펼치기' : '접기';
         try {
           localStorage.setItem(collapseStorageKey, collapsed ? 'true' : 'false');
+        } catch (ignore) {}
+      }
+
+      function setMaintenanceCollapsed(collapsed) {
+        maintenanceBody.classList.toggle('is-collapsed', collapsed);
+        toggleMaintenanceBtn.textContent = collapsed ? '펼치기' : '접기';
+        try {
+          localStorage.setItem(maintenanceCollapseStorageKey, collapsed ? 'true' : 'false');
         } catch (ignore) {}
       }
 
@@ -542,6 +884,10 @@
 
       toggleBoardBtn.addEventListener('click', function() {
         setBoardCollapsed(!boardBody.classList.contains('is-collapsed'));
+      });
+
+      toggleMaintenanceBtn.addEventListener('click', function() {
+        setMaintenanceCollapsed(!maintenanceBody.classList.contains('is-collapsed'));
       });
 
       document.querySelectorAll('.vm-row-clickable').forEach(function(row) {
@@ -590,6 +936,12 @@
         setBoardCollapsed(localStorage.getItem(collapseStorageKey) === 'true');
       } catch (ignore) {
         setBoardCollapsed(false);
+      }
+
+      try {
+        setMaintenanceCollapsed(localStorage.getItem(maintenanceCollapseStorageKey) === 'true');
+      } catch (ignore) {
+        setMaintenanceCollapsed(false);
       }
     })();
   </script>
