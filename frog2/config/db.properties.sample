@@ -1,0 +1,12 @@
+# Copy this file to db.properties and replace the example values locally.
+# Never commit the real db.properties file.
+db.url=jdbc:vertica://localhost:5433/example_db
+db.user=example_user
+db.password=change_me
+db.driver=com.vertica.jdbc.Driver
+
+hikari.maximumPoolSize=10
+hikari.minimumIdle=2
+hikari.connectionTimeout=30000
+hikari.idleTimeout=600000
+hikari.maxLifetime=1800000

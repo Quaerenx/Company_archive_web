@@ -1,0 +1,137 @@
+/* Troubleshooting detail page */
+.troubleshooting-detail {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 액션 바: 제목과 구분되는 별도 행 */
+.troubleshooting-detail .action-bar {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+/* 액션 버튼 고정 크기/톤 통일 */
+.troubleshooting-detail .action-bar .btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    min-width: 120px;
+    justify-content: center;
+}
+.troubleshooting-detail .action-bar .btn i {
+    font-size: 0.875rem;
+}
+/* 상세 섹션 하단 액션 영역 */
+.troubleshooting-detail .section-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+.troubleshooting-detail .section-actions .btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    min-width: 120px;
+    justify-content: center;
+}
+/* 더 미니멀한 텍스트형 버튼 */
+.troubleshooting-detail .section-actions .btn-ghost {
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    padding: 0.25rem 0.5rem;
+    min-width: auto;
+    border-radius: 0;
+}
+.troubleshooting-detail .section-actions .btn-ghost:hover {
+    color: var(--primary);
+    text-decoration: underline;
+    background: transparent;
+}
+.troubleshooting-detail .section-actions .btn-ghost-danger {
+    color: #b91c1c;
+}
+.troubleshooting-detail .section-actions .btn-ghost-danger:hover {
+    color: var(--color-danger-text);
+    text-decoration: underline;
+}
+@media (max-width: 768px) {
+    .troubleshooting-detail .section-actions { flex-direction: column; align-items: stretch; }
+    .troubleshooting-detail .section-actions .btn { width: 100%; }
+}
+@media (max-width: 768px) {
+    .troubleshooting-detail .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    .troubleshooting-detail .action-bar .btn { width: 100%; }
+}
+
+.troubleshooting-detail .detail-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.troubleshooting-detail .detail-grid {
+    grid-template-columns: 1fr 1fr;
+}
+
+.troubleshooting-detail .detail-item {
+    align-items: flex-start;
+}
+
+	.troubleshooting-detail .detail-item:nth-last-child(1),
+	.troubleshooting-detail .detail-item:nth-last-child(2) {
+	    border-bottom: none;
+	}
+
+.troubleshooting-detail .detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+	.troubleshooting-detail .detail-item.full-width .detail-value {
+	    background: var(--color-surface-subtle);
+	    padding: 12px;
+	    border-radius: 6px;
+	    border: 1px solid var(--color-border);
+	    min-height: 60px;
+	    white-space: pre-line;  /* pre-wrap을 pre-line으로 변경 */
+	    font-family: 'Courier New', monospace;
+	    font-size: 13px;
+	    line-height: 1.4;
+	}
+
+.troubleshooting-detail .empty-value {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .troubleshooting-detail {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    .troubleshooting-detail .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+}
+
+.troubleshooting-detail .troubleshooting-updated-at {
+    font-size: 13px;
+}

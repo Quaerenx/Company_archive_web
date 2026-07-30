@@ -1,0 +1,1 @@
+ALTER TABLE hosts ADD COLUMN row_color VARCHAR(16);

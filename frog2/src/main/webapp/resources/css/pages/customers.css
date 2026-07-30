@@ -1,0 +1,717 @@
+/* 고객 관리 페이지 전용 스타일 */
+
+/* CSS 변수 정의 */
+/* 고객 목록 페이지 */
+.customer-management {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--space-32) var(--space-16);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 테이블 강제 스타일 적용 */
+.customer-table {
+    width: 100% !important;
+    max-width: 1000px !important;
+    border-collapse: collapse !important;
+    font-size: 14px !important;
+    table-layout: fixed !important;
+    display: table !important;
+}
+
+.customer-table thead {
+    display: table-header-group !important;
+}
+
+.customer-table tbody {
+    display: table-row-group !important;
+}
+
+.customer-table tr {
+    display: table-row !important;
+}
+
+.customer-table th,
+.customer-table td {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    padding: 0.75rem 0.5rem !important;
+    border-right: 1px solid var(--color-surface-subtle) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* 고객 상세 페이지 */
+.detail-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e8ecef;
+}
+
+.detail-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 120px;
+    margin-right: 1rem;
+}
+
+.detail-value {
+    color: var(--color-text-muted);
+    flex: 1;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 0.5rem;
+}
+
+/* 필터 토글 버튼 스타일 */
+.filter-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-toggle {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 0.25rem;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 2px 4px rgba(61, 90, 128, 0.2);
+}
+
+.filter-btn:hover:not(.active) {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.filter-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.filter-count {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    border: 1px solid var(--color-border);
+}
+
+/* 검색 섹션 스타일 */
+.search-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.search-input-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: white;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(61, 90, 128, 0.10);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.clear-search {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+    display: none;
+}
+
+.clear-search:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-muted);
+}
+
+.search-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.search-count {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* 테이블 컨테이너 */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+/* 가독성 향상 - 테이블 공통 개선 */
+.table-container .customer-table { font-size: 15px !important; }
+.customer-table th,
+.customer-table td { padding: 14px 12px !important; line-height: 1.45 !important; }
+.customer-table thead th { background: var(--color-surface-subtle) !important; color: var(--color-text) !important; font-weight: 700 !important; border-bottom: 1px solid var(--color-border) !important; text-align: center !important; }
+.customer-table thead th a { color: var(--color-text) !important; text-decoration: none !important; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+.customer-table thead th a:hover { color: #222 !important; text-decoration: none !important; }
+.customer-table thead th .sort-icon { color: #9aa3b2 !important; }
+.customer-table thead th .sort-icon.active { color: var(--color-text-muted) !important; }
+.customer-table tbody tr:nth-child(even) td { background: var(--color-surface-subtle) !important; }
+.customer-table tbody tr:hover td { background: var(--color-surface-subtle) !important; }
+.customer-table tbody tr { transition: background-color 0.12s ease; }
+/* 숫자 중심 컬럼 정렬: 노드(5), 라이선스(6) */
+.customer-table tbody td:nth-child(5),
+.customer-table tbody td:nth-child(6) { text-align: right !important; font-variant-numeric: tabular-nums; }
+
+/* 컬럼 폭/정렬 세부 조정 */
+/* 버전(2), 모드(3), 노드(5) 컬럼: 폭 축소 + 텍스트 보존 */
+.customer-table th:nth-child(2),
+.customer-table td:nth-child(2) {
+    width: 92px !important;
+    min-width: 92px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+}
+
+.customer-table th:nth-child(3),
+.customer-table td:nth-child(3) {
+    width: 64px !important;
+    min-width: 64px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+}
+
+.customer-table th:nth-child(5),
+.customer-table td:nth-child(5) {
+    width: 64px !important;
+    min-width: 64px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+}
+
+/* SAID(7) 컬럼: 줄바꿈 금지, 말줄임 처리 유지 */
+.customer-table td:nth-child(7) {
+    white-space: nowrap !important;
+}
+
+/* 담당자 이름(8), 부담당자 이름(9) 컬럼: 중앙정렬 */
+.customer-table td:nth-child(8),
+.customer-table td:nth-child(9) {
+    text-align: center !important;
+}
+
+.table-header {
+    background: var(--color-surface-subtle);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-title {
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 16px;
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.table-action-btn {
+    padding: 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.table-action-btn:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+}
+
+/* 상태 배지 */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-active {
+    background: #d1fae5;
+    color: var(--color-success-text);
+}
+
+.status-inactive {
+    background: #fee2e2;
+    color: var(--color-danger-text);
+}
+
+.status-maintenance {
+    background: var(--color-warning-bg);
+    color: var(--color-warning-text);
+}
+
+/* 액션 버튼 */
+.action-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+.action-btn {
+    padding: 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.action-btn:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+}
+
+/* 아이콘 크기 고정 */
+.action-btn i { font-size: 16px; line-height: 1; }
+
+/* (작업 컬럼 제거됨) 마지막 컬럼 고정 스타일 삭제 */
+
+.action-btn.primary {
+    color: var(--primary);
+}
+
+.action-btn.primary:hover {
+    background: #eef2f7;
+    color: var(--color-primary-hover);
+}
+
+.action-btn.success {
+    color: var(--color-success);
+}
+
+.action-btn.success:hover {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.action-btn.warning {
+    color: var(--color-warning);
+}
+
+.action-btn.warning:hover {
+    background: var(--color-warning-bg);
+    color: #d97706;
+}
+
+.action-btn.danger {
+    color: var(--color-danger);
+}
+
+.action-btn.danger:hover {
+    background: var(--color-danger-bg);
+    color: var(--color-danger-hover);
+}
+
+/* 빈 상태 */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-text-muted);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+}
+
+/* 검색 관련 스타일 */
+.search-highlight {
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
+    padding: 0.1rem 0.2rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+}
+
+.customer-row.hidden {
+    display: none !important;
+}
+
+/* 검색 결과 없음 메시지 강제 숨김 */
+#no-results.d-none {
+    display: none !important;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-text-muted);
+}
+
+.no-results i {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+}
+
+.no-results h3 {
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.no-results p {
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+    .customer-management {
+        padding: var(--space-16) var(--space-8);
+    }
+    .search-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-input-wrapper {
+        max-width: none;
+    }
+
+    .search-stats {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .customer-management {
+        padding: var(--space-8);
+    }
+    .filter-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-toggle {
+        justify-content: center;
+    }
+
+    .search-section {
+        padding: 1rem;
+    }
+
+    .table-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .customer-table {
+        font-size: 12px;
+    }
+
+    .customer-table th,
+    .customer-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .action-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 9px;
+    }
+}
+
+/* 고객사 상세 페이지 스타일 */
+.customer-detail {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 고객 상세 편집 페이지가 customer-management와 함께 쓰일 때 패딩/여백을 목록 페이지와 일치 */
+.customer-detail.customer-management {
+    padding: var(--space-32) var(--space-16);
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.detail-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.detail-container .detail-section {
+    background: transparent;
+    box-shadow: none;
+}
+
+.detail-container .detail-section .detail-section-title {
+    border-bottom-width: 1px;
+    margin-bottom: 12px;
+}
+
+.detail-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.detail-item {
+    align-items: center;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.note-content {
+    background: var(--color-surface-subtle);
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    min-height: 60px;
+    width: 100%;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.empty-value {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .customer-detail {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+}
+
+/* 입력 필드 스타일 */
+.form-control {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    background-clip: padding-box;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    border-color: #4f46e5;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.form-control.readonly {
+    background-color: var(--color-surface-subtle);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+select.form-control {
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23374151' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 8px 10px;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.note-textarea {
+    min-height: 100px;
+}
+
+/* 버튼 그룹 */
+.form-actions {
+    background: var(--color-surface-subtle);
+    padding: 20px;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .form-actions {
+        flex-direction: column;
+    }
+}
+
+/*
+ * Customer add/edit layout compatibility.
+ * Control, button, and message visuals now come from ui-system.css.
+ */
+.customer-form-page > .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--space-20);
+}
+
+@media (max-width: 768px) {
+    .customer-form-page > .container {
+        padding: var(--space-16);
+    }
+}
+
+.customer-row[data-detail-url] {
+    cursor: pointer;
+}

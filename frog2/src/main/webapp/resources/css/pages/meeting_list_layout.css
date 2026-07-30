@@ -1,0 +1,241 @@
+/* meeting_list.jsp 전용 스타일 */
+.meeting-management {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--space-32) var(--space-16);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.meeting-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.write-button {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+}
+
+.write-button:hover {
+    background: linear-gradient(135deg, #4338ca, #6d28d9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+/* 회의록 목록 테이블 */
+/* 고객/정기점검 테이블과 톤 맞춤: 공용 table-container 사용 */
+.meeting-container { all: unset; }
+
+/* 공용 .customer-table 사용으로 삭제 */
+.meeting-table { all: unset; }
+
+/* 공용 thead 스타일 사용 */
+.meeting-table thead { all: unset; }
+
+/* 공용 th 사용 */
+.meeting-table th { all: unset; }
+
+/* 공용 tbody hover/스트라이프 사용 */
+.meeting-table tbody tr,
+.meeting-table tbody tr:nth-child(even),
+.meeting-table tbody tr:hover { all: unset; }
+
+/* 공용 td 사용 */
+.meeting-table td,
+.meeting-table td:last-child { all: unset; }
+
+/* 컬럼별 스타일 */
+/* 개별 폭 제한 제거: 공용 테이블 자동폭 사용 */
+.col-title,
+.col-type,
+.col-datetime,
+.col-author,
+.col-stats,
+.col-date,
+.col-actions { all: unset; }
+
+/* 제목 링크 */
+.title-link {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    display: block;
+    padding: 0.25rem 0;
+}
+
+.title-link:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.stats-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.view-count {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.comment-count {
+    display: inline-block;
+}
+
+/* 액션 버튼 */
+.action-button {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.action-button:hover {
+    background: #e2e8f0;
+    color: #334155;
+    text-decoration: none;
+}
+
+/* 페이징 */
+.pagination-container {
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    background: var(--color-surface-subtle);
+    border-top: 1px solid var(--color-border);
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: var(--color-text);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.page-link:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.page-link.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.page-link.disabled {
+    background: var(--color-surface-subtle);
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.page-info {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0 1rem;
+}
+
+/* 빈 상태 */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #9ca3af;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+    color: #d1d5db;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .meeting-management {
+        max-width: 100%;
+        padding: var(--space-24) var(--space-16);
+    }
+
+    .meeting-header-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .meeting-table {
+        font-size: 12px;
+    }
+
+    .meeting-table th,
+    .meeting-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .col-datetime,
+    .col-stats {
+        display: none;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+    }
+
+    .page-info {
+        order: -1;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+}

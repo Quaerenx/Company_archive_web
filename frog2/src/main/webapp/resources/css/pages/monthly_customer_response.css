@@ -1,0 +1,309 @@
+/* Monthly customer response page */
+.monthly-response-page .monthly-response-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 16px;
+}
+
+.monthly-response-page .filter-card {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.monthly-response-page .filter-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.monthly-response-page .filter-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    color: #333333;
+}
+
+.monthly-response-page .filter-form {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
+.monthly-response-page .filter-inputs {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.monthly-response-page .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.monthly-response-page .form-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #666666;
+}
+
+.monthly-response-page .form-group select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    min-width: 150px;
+}
+
+.monthly-response-page .results-card {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.monthly-response-page .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.monthly-response-page .results-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    color: #333333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.monthly-response-page .table-responsive {
+    overflow-x: auto;
+}
+
+.monthly-response-page .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.monthly-response-page .data-table thead {
+    background-color: #f9fafb;
+}
+
+.monthly-response-page .data-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.monthly-response-page .data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #4b5563;
+    vertical-align: top;
+}
+
+.monthly-response-page .data-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.monthly-response-page .data-table a {
+    color: #3D5A80;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.monthly-response-page .data-table a:hover {
+    text-decoration: underline;
+}
+
+.monthly-response-page .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.monthly-response-page .badge-maintenance {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.monthly-response-page .badge-troubleshooting {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.monthly-response-page .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+}
+
+.monthly-response-page .empty-state i {
+    font-size: 3.5rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.monthly-response-page .empty-state p {
+    font-size: 1rem;
+    margin: 0 0 16px 0;
+}
+
+.monthly-response-page .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #3D5A80;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.monthly-response-page .back-link:hover {
+    text-decoration: underline;
+}
+
+/* 날짜 컬럼 너비 */
+.monthly-response-page .data-table th:nth-child(1),
+.monthly-response-page .data-table td:nth-child(1) {
+    width: 110px;
+}
+
+/* 고객명 컬럼 너비 */
+.monthly-response-page .data-table th:nth-child(2),
+.monthly-response-page .data-table td:nth-child(2) {
+    width: 150px;
+}
+
+/* 사유 컬럼 너비 */
+.monthly-response-page .data-table th:nth-child(3),
+.monthly-response-page .data-table td:nth-child(3) {
+    width: 180px;
+}
+
+/* 조치 내용 - 가장 넓게 (자동 너비) */
+.monthly-response-page .data-table th:nth-child(4),
+.monthly-response-page .data-table td:nth-child(4) {
+    width: auto;
+}
+
+/* 비고 컬럼 너비 */
+.monthly-response-page .data-table th:nth-child(5),
+.monthly-response-page .data-table td:nth-child(5) {
+    width: 180px;
+}
+
+/* 액션 버튼 스타일 */
+.monthly-response-page .action-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.monthly-response-page .btn-icon {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.monthly-response-page .btn-edit {
+    background-color: #5B8FB9;
+    color: white;
+}
+
+.monthly-response-page .btn-edit:hover {
+    background-color: #4A7BA0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.monthly-response-page .btn-delete {
+    background-color: #B66B6B;
+    color: white;
+}
+
+.monthly-response-page .btn-delete:hover {
+    background-color: #A05555;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.monthly-response-page .required {
+    color: #ef4444;
+}
+
+.monthly-response-page .monthly-response-actions-column {
+    width: 120px;
+}
+
+@media (max-width: 768px) {
+    .monthly-response-page .filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .monthly-response-page .filter-inputs {
+        flex-direction: column;
+    }
+
+    .monthly-response-page .form-group select {
+        width: 100%;
+    }
+
+    .monthly-response-page .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* 모바일에서는 컬럼 너비 제한 제거 */
+    .monthly-response-page .data-table th,
+    .monthly-response-page .data-table td {
+        width: auto !important;
+        min-width: auto !important;
+    }
+
+    .monthly-response-page #responseModal .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .monthly-response-page .action-buttons {
+        flex-direction: column;
+    }
+
+    .monthly-response-page .results-header .btn-min,
+    .monthly-response-page .empty-state .add-button {
+        width: 100%;
+        justify-content: center;
+    }
+}

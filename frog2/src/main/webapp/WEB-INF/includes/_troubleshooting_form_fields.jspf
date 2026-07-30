@@ -1,0 +1,140 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%-- Shared by the troubleshooting add and edit forms. --%>
+
+<!-- 기본작성 항목 -->
+<div class="section-title">기본작성 항목</div>
+
+<div class="form-row">
+    <div class="form-group full-width">
+        <label for="title">제목 <span class="required">*</span></label>
+        <input type="text" id="title" name="title"
+               value="<c:out value='${troubleshooting.title}' />"
+               required placeholder="문제 상황을 간략히 입력하세요">
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group">
+        <label for="customer_name">고객사 <span class="required">*</span></label>
+        <select id="customer_name" name="customer_name" required>
+            <option value="">고객사를 선택하세요</option>
+            <c:forEach var="customer" items="${customerList}">
+                <option value="<c:out value='${customer.customerName}' />"
+                        ${troubleshooting.customerName == customer.customerName ? 'selected' : ''}><c:out value="${customer.customerName}" /></option>
+            </c:forEach>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="occurrence_date">발생일자</label>
+        <input type="date" id="occurrence_date" name="occurrence_date"
+               value="<fmt:formatDate value='${troubleshooting.occurrenceDate}' pattern='yyyy-MM-dd' />">
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group">
+        <label for="customer_manager">고객사 담당자</label>
+        <input type="text" id="customer_manager" name="customer_manager"
+               value="<c:out value='${troubleshooting.customerManager}' />"
+               placeholder="고객사 담당자명">
+    </div>
+    <div class="form-group">
+        <label for="work_period">작업기간</label>
+        <input type="text" id="work_period" name="work_period"
+               value="<c:out value='${troubleshooting.workPeriod}' />"
+               placeholder="예: 2시간, 1일">
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group">
+        <label for="work_personnel">작업인원</label>
+        <input type="text" id="work_personnel" name="work_personnel"
+               value="<c:out value='${troubleshooting.workPersonnel}' />"
+               placeholder="작업에 참여한 인원">
+    </div>
+    <div class="form-group">
+        <label for="support_type">지원형태</label>
+        <select id="support_type" name="support_type">
+            <option value="">선택하세요</option>
+            <option value="방문" ${troubleshooting.supportType == '방문' ? 'selected' : ''}>방문</option>
+            <option value="원격" ${troubleshooting.supportType == '원격' ? 'selected' : ''}>원격</option>
+        </select>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group">
+        <label for="case_open_yn">케이스오픈 여부</label>
+        <select id="case_open_yn" name="case_open_yn">
+            <option value="">선택하세요</option>
+            <option value="Y" ${troubleshooting.caseOpenYn == 'Y' ? 'selected' : ''}>예</option>
+            <option value="N" ${troubleshooting.caseOpenYn == 'N' ? 'selected' : ''}>아니오</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <c:choose>
+            <c:when test="${troubleshootingFormMode == 'edit'}">
+                <label>작성자</label>
+                <input type="text" value="<c:out value='${troubleshooting.creator}' />" readonly
+                       class="bg-light text-muted">
+            </c:when>
+            <c:otherwise>
+                <!-- 빈 칸으로 두어 균형 맞춤 -->
+            </c:otherwise>
+        </c:choose>
+    </div>
+</div>
+
+<!-- 세부작성 항목 -->
+<div class="section-title">세부작성 항목</div>
+
+<div class="form-row">
+    <div class="form-group full-width">
+        <label for="overview">개요</label>
+        <textarea id="overview" name="overview" rows="3"
+                  placeholder="문제 상황의 전반적인 개요를 작성하세요"><c:out value="${troubleshooting.overview}" /></textarea>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group full-width">
+        <label for="cause_analysis">원인</label>
+        <textarea id="cause_analysis" name="cause_analysis" rows="3"
+                  placeholder="문제 발생 원인 분석"><c:out value="${troubleshooting.causeAnalysis}" /></textarea>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group full-width">
+        <label for="error_content">에러내용</label>
+        <textarea id="error_content" name="error_content" rows="4"
+                  placeholder="발생한 에러 메시지나 증상을 상세히 기록하세요"><c:out value="${troubleshooting.errorContent}" /></textarea>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group full-width">
+        <label for="action_taken">조치내용</label>
+        <textarea id="action_taken" name="action_taken" rows="4"
+                  placeholder="문제 해결을 위해 수행한 조치사항을 기록하세요"><c:out value="${troubleshooting.actionTaken}" /></textarea>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group full-width">
+        <label for="script_content">스크립트</label>
+        <textarea id="script_content" name="script_content" rows="6"
+                  placeholder="사용한 SQL문, 스크립트, 명령어 등을 기록하세요"><c:out value="${troubleshooting.scriptContent}" /></textarea>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group full-width">
+        <label for="note">비고</label>
+        <textarea id="note" name="note" rows="3"
+                  placeholder="추가 참고사항이나 특이사항을 기록하세요"><c:out value="${troubleshooting.note}" /></textarea>
+    </div>
+</div>

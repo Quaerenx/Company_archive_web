@@ -1,0 +1,35 @@
+/* 모든 스타일을 .troubleshooting-form-page 클래스 하위로 제한 */
+.troubleshooting-form-page .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.troubleshooting-form-page .page-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.troubleshooting-form-page .page-header h2 {
+    color: var(--color-text);
+    margin-bottom: 10px;
+}
+
+.troubleshooting-form-page .page-header p {
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* 명령·오류 내용을 다루는 기존 고정폭 본문 입력 특성은 유지합니다. */
+.troubleshooting-form-page .ui-form textarea {
+    font-family: var(--font-mono);
+    min-height: 96px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .troubleshooting-form-page .container {
+        padding: 15px;
+    }
+
+}

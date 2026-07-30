@@ -1,0 +1,633 @@
+/* 파일 업로드 관련 페이지 전용 스타일 */
+
+/* 업로드 페이지 */
+.upload-page {
+    padding: 20px;
+    text-align: center;
+}
+
+.upload-container {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 40px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.upload-icon {
+    font-size: 48px;
+    color: var(--color-primary);
+    margin-bottom: 20px;
+}
+
+.upload-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 10px;
+}
+
+.upload-description {
+    color: var(--color-text-muted);
+    margin-bottom: 30px;
+    font-size: 16px;
+}
+
+.upload-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 40px;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: var(--color-primary);
+}
+
+.upload-area.dragover {
+    border-color: var(--color-primary);
+    background-color: #f0f9ff;
+}
+
+.upload-area-icon {
+    font-size: 48px;
+    color: #9ca3af;
+    margin-bottom: 15px;
+}
+
+.upload-area-text {
+    color: var(--color-text-muted);
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.upload-area-hint {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-button {
+    background: var(--color-primary);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 20px;
+}
+
+.upload-button:hover {
+    background: var(--color-primary-hover);
+}
+
+.upload-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* 진행률 표시 */
+.progress-container {
+    margin-top: 20px;
+    display: none;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--color-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+/* 파일 목록 */
+.file-list {
+    margin-top: 30px;
+    text-align: left;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: white;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.file-icon {
+    color: var(--color-text-muted);
+    font-size: 16px;
+}
+
+.file-name {
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.file-size {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.file-action-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.file-action-btn.download {
+    background: var(--color-primary);
+    color: white;
+}
+
+.file-action-btn.download:hover {
+    background: var(--color-primary-hover);
+}
+
+.file-action-btn.delete {
+    background: var(--color-danger);
+    color: white;
+}
+
+.file-action-btn.delete:hover {
+    background: var(--color-danger-hover);
+}
+
+/* 다운로드 목록 페이지 */
+.download-list-page {
+    padding: 20px;
+}
+
+.download-container {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.download-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.download-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 10px;
+}
+
+.download-description {
+    color: var(--color-text-muted);
+    font-size: 16px;
+}
+
+.download-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.download-table th,
+.download-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.download-table th {
+    background: var(--color-surface-subtle);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.download-table tr:hover {
+    background: var(--color-surface-subtle);
+}
+
+.download-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.download-link:hover {
+    text-decoration: underline;
+}
+
+/* 업로드 처리 페이지 */
+.upload-process-page {
+    padding: 20px;
+    text-align: center;
+    background: var(--color-surface-subtle);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-process-container {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 40px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+}
+
+.upload-process-icon {
+    font-size: 48px;
+    color: var(--color-primary);
+    margin-bottom: 20px;
+}
+
+.upload-process-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 10px;
+}
+
+.upload-process-message {
+    color: var(--color-text-muted);
+    margin-bottom: 20px;
+}
+
+.upload-process-progress {
+    margin: 20px 0;
+}
+
+.upload-process-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.upload-process-fill {
+    height: 100%;
+    background-color: var(--color-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.upload-process-text {
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+.upload-process-button {
+    background: var(--color-primary);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.upload-process-button:hover {
+    background: var(--color-primary-hover);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .upload-container,
+    .download-container,
+    .upload-process-container {
+        margin: 10px;
+        padding: 20px;
+    }
+    
+    .upload-area {
+        padding: 20px;
+    }
+    
+    .upload-icon,
+    .upload-area-icon {
+        font-size: 36px;
+    }
+    
+    .upload-title {
+        font-size: 20px;
+    }
+    
+    .download-table {
+        font-size: 14px;
+    }
+    
+    .download-table th,
+    .download-table td {
+        padding: 8px;
+    }
+}
+
+/* upload.jsp 전용 스타일 */
+.page-file-upload * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body.page-file-upload {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    background-color: var(--color-surface-subtle);
+    min-height: 100vh;
+}
+
+.page-file-upload .container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+.upload-main {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 30px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.back-link:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+    background-color: var(--color-surface-subtle);
+}
+
+.breadcrumb {
+    background: var(--color-surface-subtle);
+    padding: 15px 20px;
+    border-radius: 6px;
+    margin-bottom: 30px;
+    font-size: 14px;
+    border: 1px solid #dee2e6;
+}
+
+.breadcrumb a {
+    color: #495057;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.page-file-upload h2 {
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.page-file-upload .text-muted {
+    color: var(--color-text-muted);
+    margin-bottom: 20px;
+}
+
+.upload-info {
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 30px;
+}
+
+.upload-info h6 {
+    color: var(--color-primary-hover);
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.upload-info ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.upload-info li {
+    color: #495057;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.upload-form {
+    background: var(--color-surface-subtle);
+    padding: 30px;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+    text-align: center;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+}
+
+.upload-form:hover {
+    border-color: var(--color-primary);
+    background: #e3f2fd;
+}
+
+.upload-form.dragover {
+    border-color: var(--color-primary);
+    background: #e3f2fd;
+    transform: scale(1.02);
+}
+
+.file-input {
+    margin: 20px 0;
+}
+
+.file-input input[type="file"] {
+    display: none;
+}
+
+.file-input label {
+    display: inline-block;
+    padding: 12px 24px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.3s ease;
+}
+
+.file-input label:hover {
+    background: var(--color-primary-hover);
+}
+
+.selected-files {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.selected-files h5 {
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+}
+
+.file-icon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.file-details {
+    flex: 1;
+}
+
+.file-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.file-size {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.remove-file {
+    color: var(--color-danger);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.remove-file:hover {
+    background: #f8d7da;
+}
+
+.upload-controls {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.upload-controls .btn {
+    margin: 0 5px;
+}
+
+.progress-container {
+    display: none;
+    margin-top: 20px;
+}
+
+.progress {
+    height: 25px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--color-primary);
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.upload-status {
+    display: none;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.upload-status.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.upload-status.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: var(--color-danger-text);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}

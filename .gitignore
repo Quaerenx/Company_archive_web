@@ -1,3 +1,12 @@
 *.rpm
 *.deb
 *.xlsx
+
+.gradle/
+**/build/
+*.war
+frog2/.classpath
+frog2/.project
+frog2/.settings/
+frog2/config/db.properties
+frog2/catalina.base_IS_UNDEFINED/

@@ -1,0 +1,273 @@
+        .mypage-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 32px 16px;
+        }
+
+        .mypage-container .profile-card {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .mypage-container .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .mypage-container .profile-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #333333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mypage-container .profile-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mypage-container .profile-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .mypage-container .info-item {
+            padding: 12px;
+            background: #F7F7F7;
+            border-radius: 6px;
+            border: 1px solid #E9E9E9;
+        }
+
+        .mypage-container .info-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #666666;
+            margin-bottom: 4px;
+        }
+
+        .mypage-container .info-value {
+            font-size: 1rem;
+            color: #333333;
+            font-weight: 500;
+        }
+
+        .mypage-container .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .mypage-container .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+            border-top: 3px solid #3D5A80;
+        }
+
+        .mypage-container .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #3D5A80;
+            margin: 8px 0;
+        }
+
+        .mypage-container .stat-label {
+            font-size: 0.875rem;
+            color: #666666;
+            font-weight: 500;
+        }
+
+        .mypage-container .quick-links-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .mypage-container .quick-links-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #E9E9E9;
+        }
+
+        .mypage-container .quick-links-header h2 {
+            margin: 0;
+            font-size: 1.125rem;
+            color: #333333;
+        }
+
+        .mypage-container .quick-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .mypage-container .quick-link-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            background: white;
+            border: 2px solid #E9E9E9;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333333;
+            transition: all 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .mypage-container .quick-link-item:hover {
+            border-color: #3D5A80;
+            background-color: #F7F9FB;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+        }
+
+        .mypage-container .quick-link-icon {
+            font-size: 1.25rem;
+            margin-right: 10px;
+            color: #3D5A80;
+        }
+
+        .mypage-container .quick-link-content {
+            flex: 1;
+        }
+
+        .mypage-container .quick-link-title {
+            font-size: 0.938rem;
+            font-weight: 600;
+            color: #333333;
+        }
+
+        .mypage-container .quick-link-desc {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .mypage-container .activity-card {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .mypage-container .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #E9E9E9;
+        }
+
+        .mypage-container .activity-header h2 {
+            margin: 0;
+            font-size: 1.125rem;
+            color: #333333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mypage-container .activity-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .mypage-container .activity-item {
+            padding: 12px;
+            border-bottom: 1px solid #E9E9E9;
+            transition: background-color 0.2s;
+        }
+
+        .mypage-container .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .mypage-container .activity-item:hover {
+            background-color: #F7F7F7;
+        }
+
+        .mypage-container .activity-title {
+            font-weight: 600;
+            color: #333333;
+            margin-bottom: 8px;
+            padding: 0 4px;
+        }
+
+        .mypage-container .activity-title a {
+            color: #3D5A80;
+            text-decoration: none;
+        }
+
+        .mypage-container .activity-title a:hover {
+            text-decoration: underline;
+        }
+
+        .mypage-container .activity-meta {
+            font-size: 0.875rem;
+            color: #666666;
+            margin-top: 8px;
+            padding: 0 4px;
+        }
+
+        .mypage-container .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999999;
+        }
+
+        .mypage-container .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .mypage-container .profile-info {
+                grid-template-columns: 1fr;
+            }
+
+            .mypage-container .stats-section {
+                grid-template-columns: 1fr;
+            }
+
+            .mypage-container .profile-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .mypage-container .profile-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+.mypage-container .mypage-stat-icon {
+    margin-bottom: 8px;
+    color: #3D5A80;
+    font-size: 2rem;
+}
+
+.mypage-container .activity-separator {
+    margin: 0 8px;
+}

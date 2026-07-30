@@ -1,0 +1,4 @@
+<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/tokens.css?v=${frog2AssetVersion}">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/base.css?v=${frog2AssetVersion}">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/components.css?v=${frog2AssetVersion}">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/utilities.css?v=${frog2AssetVersion}">

@@ -1,0 +1,97 @@
+.customer-detail .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+	/* --- [변경/추가된 CSS] 가독성 개선 스타일 --- */
+
+	/* 1. 카드 UI 적용 */
+	.detail-section {
+	    background-color: var(--color-surface);
+	    border: 1px solid var(--color-border);
+	    border-radius: 12px;
+	    padding: 24px;
+	    margin-bottom: 24px;
+	    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+	}
+
+	/* 2. 타이포그래피 계층 구조 강화 */
+	.detail-section-title {
+	    font-size: 18px;
+	    font-weight: 600;
+	    color: #111827;
+	    margin-bottom: 20px;
+	    padding-bottom: 12px;
+	    border-bottom: 1px solid var(--color-surface-subtle);
+	}
+
+	.detail-section-title i {
+	    color: var(--primary);
+	    margin-right: 8px;
+	}
+
+	.detail-label {
+	    display: block;
+	    font-size: 13px;
+	    font-weight: 500;
+	    color: var(--color-text-muted);
+	    margin-bottom: 4px;
+	}
+
+	.detail-value {
+	    font-size: 15px;
+	    font-weight: 500;
+	    color: var(--color-text);
+	}
+
+	.note-content {
+	    padding: 12px;
+	    background-color: var(--color-surface-subtle);
+	    border-radius: 6px;
+	    font-size: 14px;
+	    line-height: 1.6;
+	    color: var(--color-text);
+	    white-space: pre-wrap;
+	}
+
+	/* 3. 여백 및 정렬 개선 */
+	.detail-grid {
+	    display: grid;
+	    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	    gap: 24px;
+	}
+
+	.detail-item.full-width {
+	    grid-column: 1 / -1;
+	}
+
+	/* 탭 UI */
+	.env-tabs { margin-top: 16px; }
+	.tab-nav { display: flex; gap: 8px; border-bottom: 1px; margin: 0; padding-left: 8px; }
+	.tab-btn { padding: 10px 14px; border: 1px solid var(--color-border); border-bottom: none; background: var(--color-surface-subtle); color: var(--color-text); border-top-left-radius: 8px; border-top-right-radius: 8px; cursor: pointer; }
+	.tab-btn.active { background: var(--color-surface); color: #111827; font-weight: 600; border-color: #d1d5db; }
+	.tab-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+	.tab-panel { display: none; }
+	.tab-panel.active { display: block; }
+	/* 탭과 첫 섹션 사이 간격 최소화 */
+	.env-tabs .tab-panel { margin-top: 0; padding-top: 0; }
+	.env-tabs .tab-panel > .detail-section:first-child { margin-top: 0; }
+
+	/* 탭 버튼이 카드 상단에 자연스럽게 붙도록 보더 겹침 처리 */
+	.env-tabs .tab-nav { margin-bottom: 0; }
+	 /*.env-tabs .tab-btn { border-bottom: 1px solid var(--color-border); }*/
+	.env-tabs .tab-btn.active { border-bottom-color: var(--color-surface); margin-bottom: -1px; }
+	.env-tabs .tab-panel > .detail-section:first-child { border-top-left-radius: 0; border-top-right-radius: 0; }
+
+.customer-detail .customer-eos-alert {
+    margin-top: 8px;
+}
+
+.customer-detail .customer-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.customer-detail .detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 12px 0 0;
+}

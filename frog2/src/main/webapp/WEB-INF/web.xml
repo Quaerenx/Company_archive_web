@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>frog2</display-name>
+
+    <context-param>
+        <param-name>frog2AssetVersion</param-name>
+        <param-value>20260730-design-common-1</param-value>
+    </context-param>
+
+    <session-config>
+        <session-timeout>360</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+    </session-config>
+
+    <welcome-file-list>
+        <welcome-file>dashboard</welcome-file>
+    </welcome-file-list>
+
+    <error-page>
+        <error-code>400</error-code>
+        <location>/error/400.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/error/403.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/error/404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>405</error-code>
+        <location>/error/405.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>409</error-code>
+        <location>/error/409.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>503</error-code>
+        <location>/error/503.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/error/500.jsp</location>
+    </error-page>
+
+    <filter>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <filter-class>com.company.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>ApplicationExceptionFilter</filter-name>
+        <filter-class>com.company.filter.ApplicationExceptionFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>ApplicationExceptionFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <filter-class>com.company.filter.SecurityHeadersFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>AuthFilter</filter-name>
+        <filter-class>com.company.filter.AuthFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>CsrfFilter</filter-name>
+        <filter-class>com.company.security.CsrfFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CsrfFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <servlet>
+        <servlet-name>LoginServlet</servlet-name>
+        <servlet-class>com.company.controller.LoginServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LoginServlet</servlet-name>
+        <url-pattern>/login</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>LogoutServlet</servlet-name>
+        <servlet-class>com.company.controller.LogoutServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LogoutServlet</servlet-name>
+        <url-pattern>/logout</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>DashboardServlet</servlet-name>
+        <servlet-class>com.company.controller.DashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DashboardServlet</servlet-name>
+        <url-pattern>/dashboard</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>CustomersServlet</servlet-name>
+        <servlet-class>com.company.controller.CustomersServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CustomersServlet</servlet-name>
+        <url-pattern>/customers</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MaintenanceServlet</servlet-name>
+        <servlet-class>com.company.controller.MaintenanceServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MaintenanceServlet</servlet-name>
+        <url-pattern>/maintenance</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MeetingServlet</servlet-name>
+        <servlet-class>com.company.controller.MeetingServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MeetingServlet</servlet-name>
+        <url-pattern>/meeting</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TroubleshootingServlet</servlet-name>
+        <servlet-class>com.company.controller.TroubleshootingServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TroubleshootingServlet</servlet-name>
+        <url-pattern>/troubleshooting</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CommentServlet</servlet-name>
+        <servlet-class>com.company.controller.CommentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CommentServlet</servlet-name>
+        <url-pattern>/comment</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FaviconServlet</servlet-name>
+        <servlet-class>com.company.controller.FaviconServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FaviconServlet</servlet-name>
+        <url-pattern>/favicon.ico</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MyPageServlet</servlet-name>
+        <servlet-class>com.company.controller.MyPageServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MyPageServlet</servlet-name>
+        <url-pattern>/mypage</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UserVmHostServlet</servlet-name>
+        <servlet-class>com.company.controller.UserVmHostServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UserVmHostServlet</servlet-name>
+        <url-pattern>/vm-hosts</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FileRepositoryServlet</servlet-name>
+        <servlet-class>com.company.controller.FileRepositoryServlet</servlet-class>
+        <load-on-startup>2</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FileRepositoryServlet</servlet-name>
+        <url-pattern>/file-repository</url-pattern>
+        <url-pattern>/filerepo/filerepo_downlist.jsp</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FileRepositoryUploadServlet</servlet-name>
+        <servlet-class>com.company.controller.FileRepositoryUploadServlet</servlet-class>
+        <load-on-startup>3</load-on-startup>
+        <multipart-config>
+            <file-size-threshold>1048576</file-size-threshold>
+            <max-file-size>10485760</max-file-size>
+            <max-request-size>53477376</max-request-size>
+        </multipart-config>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FileRepositoryUploadServlet</servlet-name>
+        <url-pattern>/file-repository/upload</url-pattern>
+        <url-pattern>/filerepo/filerepo_upload.jsp</url-pattern>
+        <url-pattern>/filerepo/filerepo_uploadProcess.jsp</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FileRepositoryDownloadServlet</servlet-name>
+        <servlet-class>com.company.controller.FileRepositoryDownloadServlet</servlet-class>
+        <load-on-startup>4</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FileRepositoryDownloadServlet</servlet-name>
+        <url-pattern>/file-repository/download</url-pattern>
+        <url-pattern>/filerepo/filerepo_download.jsp</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PoolMonitorServlet</servlet-name>
+        <servlet-class>com.company.controller.PoolMonitorServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PoolMonitorServlet</servlet-name>
+        <url-pattern>/admin/pool-status</url-pattern>
+    </servlet-mapping>
+
+    <listener>
+        <listener-class>com.company.listener.AppLifecycleListener</listener-class>
+    </listener>
+</web-app>

@@ -1,0 +1,254 @@
+package com.company.controller;
+
+import com.company.util.LicenseSummaryFormatter;
+import com.company.util.LicenseUsageSeriesBuilder;
+import com.company.util.StrictDateParser;
+import java.io.IOException;
+import java.sql.Date;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.company.model.CustomerDAO;
+import com.company.model.CustomerDTO;
+import com.company.model.MaintenanceRecordDAO;
+import com.company.model.MaintenanceRecordDTO;
+import com.company.model.UserDTO;
+import com.company.security.SessionPrincipal;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+// @WebServlet("/maintenance") - web.xml에서 매핑하므로 주석 처리
+public class MaintenanceServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
+    @Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // 세션 확인
+        HttpSession session = request.getSession(false);
+        UserDTO user = SessionPrincipal.expose(request, session);
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        // 뷰 타입 확인
+        String viewType = request.getParameter("view");
+        if (viewType == null || viewType.isEmpty()) {
+            viewType = "cards";
+        }
+
+        MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
+        CustomerDAO customerDAO = new CustomerDAO();
+
+        if ("cards".equals(viewType)) {
+            // 담당자별 고객사 카드 목록 표시 (라이선스 요약 제거)
+            Map<String, List<CustomerDTO>> inspectorCustomers = getInspectorCustomersMap();
+            request.setAttribute("inspectorCustomers", inspectorCustomers);
+            request.setAttribute("viewType", "cards");
+            request.getRequestDispatcher("/maintenance/maintenance_cards.jsp").forward(request, response);
+
+        } else if ("history".equals(viewType)) {
+            // 특정 고객사의 정기점검 이력 목록
+            String customerName = request.getParameter("customerName");
+            if (customerName != null && !customerName.isEmpty()) {
+                // 해당 고객사의 정기점검 이력 조회
+                List<MaintenanceRecordDTO> records = maintenanceDAO.getMaintenanceRecordsByCustomer(customerName);
+                // 라이선스 사용률 시리즈
+                List<Map<String, Object>> usageSeries = LicenseUsageSeriesBuilder.build(records);
+
+                // 각 이력에 대한 라이선스 요약(TB) 문자열 생성
+                Map<Long, String> licenseSummaries = new LinkedHashMap<>();
+                for (MaintenanceRecordDTO rec : records) {
+                    String summary = LicenseSummaryFormatter.format(rec);
+                    if (summary != null) {
+                        licenseSummaries.put(rec.getMaintenanceId(), summary);
+                    }
+                }
+
+                // 고객사 기본 정보 조회
+                CustomerDTO customer = customerDAO.getCustomerByName(customerName);
+
+                request.setAttribute("records", records);
+                request.setAttribute("usageSeries", usageSeries);
+                request.setAttribute("licenseSummaries", licenseSummaries);
+                request.setAttribute("customer", customer);
+                request.setAttribute("customerName", customerName);
+                request.setAttribute("viewType", "history");
+                request.getRequestDispatcher("/maintenance/maintenance_history.jsp").forward(request, response);
+            } else {
+                response.sendRedirect("maintenance?view=cards");
+            }
+
+        } else if ("add".equals(viewType)) {
+            // 새 정기점검 이력 추가 폼
+            String customerName = request.getParameter("customerName");
+            request.setAttribute("customerName", customerName);
+            request.setAttribute("viewType", "add");
+            request.getRequestDispatcher("/maintenance/maintenance_add.jsp").forward(request, response);
+
+        } else if ("edit".equals(viewType)) {
+            // 정기점검 이력 수정 폼
+            String maintenanceIdStr = request.getParameter("id");
+            if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
+                try {
+                    Long maintenanceId = Long.parseLong(maintenanceIdStr);
+                    MaintenanceRecordDTO record = maintenanceDAO.getMaintenanceRecordById(maintenanceId);
+                    if (record != null) {
+                        request.setAttribute("record", record);
+                        request.setAttribute("viewType", "edit");
+                        request.getRequestDispatcher("/maintenance/maintenance_edit.jsp").forward(request, response);
+                    } else {
+                        session.setAttribute("error", "해당 정기점검 이력을 찾을 수 없습니다.");
+                        response.sendRedirect("maintenance?view=cards");
+                    }
+                } catch (NumberFormatException e) {
+                    session.setAttribute("error", "잘못된 요청입니다.");
+                    response.sendRedirect("maintenance?view=cards");
+                }
+            } else {
+                response.sendRedirect("maintenance?view=cards");
+            }
+
+        } else {
+            response.sendRedirect("maintenance?view=cards");
+        }
+    }
+
+ // 담당자별 고객사 목록을 Map으로 구성 (정기점검 계약 고객사이면서 활성 상태인 것만)
+    private Map<String, List<CustomerDTO>> getInspectorCustomersMap() {
+        Map<String, List<CustomerDTO>> inspectorCustomers = new LinkedHashMap<>();
+        CustomerDAO customerDAO = new CustomerDAO();
+
+        // getAllCustomers already filters inactive customers.
+        List<CustomerDTO> allCustomers = customerDAO.getAllCustomers("manager_name", "ASC", "maintenance");
+        for (CustomerDTO customer : allCustomers) {
+            String mainManager = customer.getManagerName();
+            String customerType = customer.getCustomerType();
+
+            if (mainManager != null && !mainManager.trim().isEmpty()
+                    && "정기점검 계약 고객사".equals(customerType)) {
+                inspectorCustomers.computeIfAbsent(mainManager.trim(), key -> new ArrayList<>()).add(customer);
+            }
+        }
+        return inspectorCustomers;
+    }
+
+    @Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // 세션 확인
+        HttpSession session = request.getSession(false);
+        if (SessionPrincipal.from(session) == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String actionType = request.getParameter("action");
+        MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
+
+        if ("add".equals(actionType)) {
+            // 새 정기점검 이력 추가
+            MaintenanceRecordDTO record = new MaintenanceRecordDTO();
+            record.setCustomerName(request.getParameter("customer_name"));
+            record.setInspectorName(request.getParameter("inspector_name"));
+            record.setInspectionDate(parseDate(request.getParameter("inspection_date")));
+            record.setVerticaVersion(request.getParameter("vertica_version"));
+            record.setNote(request.getParameter("note"));
+            // 문자열로 그대로 수집
+            record.setLicenseSizeGb(trimToNull(request.getParameter("license_size_gb")));
+            record.setLicenseUsageSize(trimToNull(request.getParameter("license_usage_size")));
+            record.setLicenseUsagePct(trimToNull(request.getParameter("license_usage_pct")));
+
+            boolean success = maintenanceDAO.addMaintenanceRecord(record);
+            if (success) {
+                session.setAttribute("message", "정기점검 이력이 성공적으로 추가되었습니다.");
+            } else {
+                session.setAttribute("error", "정기점검 이력 추가 중 오류가 발생했습니다.");
+            }
+
+            String customerName = record.getCustomerName();
+            String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
+            response.sendRedirect("maintenance?view=history&customerName=" + encodedName);
+
+        } else if ("update".equals(actionType)) {
+            // 정기점검 이력 수정
+            String maintenanceIdStr = request.getParameter("maintenance_id");
+            if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
+                try {
+                    MaintenanceRecordDTO record = new MaintenanceRecordDTO();
+                    record.setMaintenanceId(Long.parseLong(maintenanceIdStr));
+                    record.setCustomerName(request.getParameter("customer_name"));
+                    record.setInspectorName(request.getParameter("inspector_name"));
+                    record.setInspectionDate(parseDate(request.getParameter("inspection_date")));
+                    record.setVerticaVersion(request.getParameter("vertica_version"));
+                    record.setNote(request.getParameter("note"));
+                    // 문자열로 그대로 수집
+                    record.setLicenseSizeGb(trimToNull(request.getParameter("license_size_gb")));
+                    record.setLicenseUsageSize(trimToNull(request.getParameter("license_usage_size")));
+                    record.setLicenseUsagePct(trimToNull(request.getParameter("license_usage_pct")));
+
+                    boolean success = maintenanceDAO.updateMaintenanceRecord(record);
+                    if (success) {
+                        session.setAttribute("message", "정기점검 이력이 성공적으로 수정되었습니다.");
+                    } else {
+                        session.setAttribute("error", "정기점검 이력 수정 중 오류가 발생했습니다.");
+                    }
+
+                    String customerName = record.getCustomerName();
+                    String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
+                    response.sendRedirect("maintenance?view=history&customerName=" + encodedName);
+
+                } catch (NumberFormatException e) {
+                    session.setAttribute("error", "잘못된 요청입니다.");
+                    response.sendRedirect("maintenance?view=cards");
+                }
+            }
+
+        } else if ("delete".equals(actionType)) {
+            // 정기점검 이력 삭제
+            String maintenanceIdStr = request.getParameter("maintenance_id");
+            String customerName = request.getParameter("customer_name");
+
+            if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
+                try {
+                    Long maintenanceId = Long.parseLong(maintenanceIdStr);
+                    boolean success = maintenanceDAO.deleteMaintenanceRecord(maintenanceId);
+                    if (success) {
+                        session.setAttribute("message", "정기점검 이력이 성공적으로 삭제되었습니다.");
+                    } else {
+                        session.setAttribute("error", "정기점검 이력 삭제 중 오류가 발생했습니다.");
+                    }
+                } catch (NumberFormatException e) {
+                    session.setAttribute("error", "잘못된 요청입니다.");
+                }
+            }
+
+            if (customerName != null && !customerName.isEmpty()) {
+                String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
+                response.sendRedirect("maintenance?view=history&customerName=" + encodedName);
+            } else {
+                response.sendRedirect("maintenance?view=cards");
+            }
+
+        } else {
+            response.sendRedirect("maintenance?view=cards");
+        }
+    }
+
+    // 날짜 문자열을 Date 객체로 변환
+    private Date parseDate(String dateString) {
+        return StrictDateParser.parseSqlDateOrNull(dateString);
+    }
+
+    private String trimToNull(String v) {
+        if (v == null) return null;
+        String t = v.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+}

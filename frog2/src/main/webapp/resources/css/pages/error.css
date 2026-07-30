@@ -1,0 +1,43 @@
+.error-page {
+    margin: 40px;
+    color: #333;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.error-card {
+    margin: auto;
+    padding: 24px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.error-page--compact .error-card {
+    max-width: 640px;
+}
+
+.error-page--server .error-card {
+    max-width: 720px;
+}
+
+.error-card h1 {
+    margin: 0 0 12px;
+    font-size: 22px;
+}
+
+.error-page--compact .error-card p {
+    margin: 8px 0;
+}
+
+.error-card pre {
+    overflow: auto;
+    padding: 12px;
+    border-radius: 6px;
+    background: #f8f8f8;
+}
+
+.error-status {
+    max-width: 720px;
+    margin: 80px auto;
+    text-align: center;
+}

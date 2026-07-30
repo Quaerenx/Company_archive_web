@@ -1,0 +1,141 @@
+import java.security.MessageDigest
+import java.util.zip.ZipFile
+
+plugins {
+    id 'java'
+    id 'war'
+}
+
+group = 'com.company'
+version = '2.0.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    compileOnly 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+    compileOnly 'jakarta.servlet.jsp:jakarta.servlet.jsp-api:3.1.0'
+
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    implementation 'ch.qos.logback:logback-core:1.4.14'
+    implementation 'org.mindrot:jbcrypt:0.4'
+    implementation('jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:3.0.0') {
+        exclude group: 'jakarta.servlet', module: 'jakarta.servlet-api'
+        exclude group: 'jakarta.el', module: 'jakarta.el-api'
+    }
+    runtimeOnly 'org.glassfish.web:jakarta.servlet.jsp.jstl:3.0.1'
+    runtimeOnly files('libs/vertica-jdbc-23.3.0-0.jar')
+
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 22
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
+tasks.named('processResources') {
+    exclude 'db/**'
+}
+
+def verticaDriver = layout.projectDirectory.file('libs/vertica-jdbc-23.3.0-0.jar')
+def verticaDriverSha256 = 'f3fdb4eae26cebe05fba4c2427ea7b3846dfa73177f5b3ad2bb020ea28721d43'
+def allowedWarLibraries = [
+        'HikariCP-5.1.0.jar',
+        'jakarta.servlet.jsp.jstl-3.0.1.jar',
+        'jakarta.servlet.jsp.jstl-api-3.0.0.jar',
+        'jbcrypt-0.4.jar',
+        'logback-classic-1.4.14.jar',
+        'logback-core-1.4.14.jar',
+        'slf4j-api-2.0.9.jar',
+        'vertica-jdbc-23.3.0-0.jar'
+] as Set
+
+tasks.register('verifyVerticaDriver') {
+    inputs.file(verticaDriver)
+    doLast {
+        def digest = MessageDigest.getInstance('SHA-256')
+                .digest(verticaDriver.asFile.bytes)
+                .encodeHex()
+                .toString()
+        if (digest != verticaDriverSha256) {
+            throw new GradleException("Unexpected Vertica JDBC checksum: ${digest}")
+        }
+    }
+}
+
+tasks.named('classes') {
+    dependsOn tasks.named('verifyVerticaDriver')
+}
+
+def packagedWar = tasks.named('war')
+tasks.register('verifyWarContents') {
+    dependsOn packagedWar
+    inputs.file(packagedWar.flatMap { it.archiveFile })
+    doLast {
+        def entries = []
+        def archive = new ZipFile(packagedWar.get().archiveFile.get().asFile)
+        try {
+            archive.entries().each { entries.add(it.name) }
+        } finally {
+            archive.close()
+        }
+
+        def packagedLibraries = entries
+                .findAll { it.startsWith('WEB-INF/lib/') && it.endsWith('.jar') }
+                .collect { it.substring('WEB-INF/lib/'.length()) }
+                .toSet()
+        def unexpectedLibraries = packagedLibraries - allowedWarLibraries
+        def missingLibraries = allowedWarLibraries - packagedLibraries
+        def forbiddenEntries = entries.findAll { entry ->
+            def segments = entry.tokenize('/')
+            entry.endsWith('.java')
+                    || entry.contains('db.properties')
+                    || entry.startsWith('META-INF/maven/')
+                    || entry.startsWith('WEB-INF/classes/db/')
+                    || segments.any { it in ['build', '.settings', '.classpath', '.project'] }
+        }
+
+        if (unexpectedLibraries || missingLibraries || forbiddenEntries) {
+            throw new GradleException(
+                    "WAR allowlist violation. unexpectedLibraries=${unexpectedLibraries}, "
+                            + "missingLibraries=${missingLibraries}, forbiddenEntries=${forbiddenEntries}")
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyWarContents')
+}
+
+tasks.named('war') {
+    archiveFileName = 'frog2.war'
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    exclude 'META-INF/MANIFEST.MF'
+    exclude '**/.classpath', '**/.project', '**/.settings/**'
+    exclude '**/build/**', '**/db.properties', '**/db.properties.*'
+    exclude 'WEB-INF/classes/db/**'
+}

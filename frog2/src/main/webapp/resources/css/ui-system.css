@@ -1,0 +1,608 @@
+/*
+ * Frog2 shared UI system.
+ * Canonical ui-* classes are opt-in. Existing classes remain as a compatibility
+ * layer while pages are migrated.
+ */
+
+body.ui-system {
+    --page-content-max-width: 1018px;
+    --page-content-gutter: var(--space-16);
+    --page-content-total-gutter: calc(var(--page-content-gutter) * 2);
+    background: var(--background);
+    color: var(--color-text);
+    font-family: var(--font-base);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-base);
+}
+
+body.ui-system .content-shell {
+    margin-inline: auto;
+    max-width: var(--page-content-max-width);
+    padding-inline: 0;
+    width: calc(100% - var(--page-content-total-gutter));
+}
+
+.ui-system :is(button, input, select, textarea) {
+    font: inherit;
+}
+
+/* Buttons */
+.ui-system .ui-button {
+    align-items: center;
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    gap: var(--space-8);
+    justify-content: center;
+    line-height: 1.2;
+    min-block-size: var(--control-height-md);
+    padding: 0 var(--control-padding-inline-md);
+    text-align: center;
+    text-decoration: none;
+    transition:
+        background-color var(--motion-fast) var(--motion-ease),
+        border-color var(--motion-fast) var(--motion-ease),
+        box-shadow var(--motion-fast) var(--motion-ease),
+        color var(--motion-fast) var(--motion-ease),
+        transform var(--motion-fast) var(--motion-ease);
+    user-select: none;
+    white-space: nowrap;
+}
+
+.ui-system .ui-button:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.ui-system .ui-button:active {
+    transform: translateY(0);
+}
+
+.ui-system .ui-button:focus-visible,
+.ui-system .ui-touch-target:focus-visible,
+.ui-system .ui-control:focus-visible,
+.ui-system form.ui-form :is(
+    input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select,
+    textarea
+):focus-visible {
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 3px solid transparent;
+    outline-offset: 2px;
+}
+
+.ui-system .ui-touch-target {
+    min-block-size: var(--control-height-md);
+    min-inline-size: var(--control-height-md);
+}
+
+.ui-system .button--primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-surface);
+}
+
+.ui-system .button--primary:hover {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    color: var(--color-surface);
+}
+
+.ui-system .button--secondary {
+    background: var(--color-surface);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+
+.ui-system .button--secondary:hover {
+    background: var(--color-surface-muted);
+    border-color: var(--color-secondary);
+    color: var(--color-text-strong);
+}
+
+.ui-system .button--danger {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: var(--color-surface);
+}
+
+.ui-system .button--danger:hover {
+    background: var(--color-danger-hover);
+    border-color: var(--color-danger-hover);
+    color: var(--color-surface);
+}
+
+.ui-system .button--sm {
+    min-block-size: var(--control-height-sm);
+    padding-inline: var(--control-padding-inline-sm);
+}
+
+.ui-system .button--md {
+    min-block-size: var(--control-height-md);
+}
+
+.ui-system .ui-button:is(:disabled, [aria-disabled="true"]),
+.ui-system .ui-button.is-loading {
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.68;
+    pointer-events: none;
+    transform: none;
+}
+
+.ui-system .ui-button.is-loading::before {
+    animation: frog2-ui-spin 0.8s linear infinite;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-right-color: transparent;
+    content: "";
+    display: inline-block;
+    inline-size: 1em;
+    block-size: 1em;
+}
+
+/* Forms */
+.ui-system form.ui-form .form-group {
+    min-inline-size: 0;
+}
+
+.ui-system form.ui-form :is(.form-group > label, .ui-label) {
+    color: var(--color-text);
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    margin-block-end: var(--space-8);
+}
+
+.ui-system form.ui-form :is(
+    input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select,
+    textarea,
+    .ui-control
+) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    inline-size: 100%;
+    min-block-size: var(--control-height-md);
+    padding: 10px var(--control-padding-inline-sm);
+    transition:
+        border-color var(--motion-fast) var(--motion-ease),
+        box-shadow var(--motion-fast) var(--motion-ease),
+        background-color var(--motion-fast) var(--motion-ease);
+}
+
+.ui-system form.ui-form textarea {
+    line-height: var(--line-height-base);
+    min-block-size: 96px;
+    resize: vertical;
+}
+
+.ui-system form.ui-form :is(input, select, textarea):disabled,
+.ui-system form.ui-form :is(input, select, textarea)[readonly] {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+.ui-system form.ui-form :is(input, select, textarea)[aria-invalid="true"],
+.ui-system form.ui-form .field--error :is(input, select, textarea) {
+    border-color: var(--color-danger);
+}
+
+.ui-system .required {
+    color: var(--color-danger);
+}
+
+.ui-system :is(.ui-help-text, .help-text, .form-text) {
+    color: var(--color-text-muted);
+    display: block;
+    font-size: var(--font-size-xs);
+    margin-block-start: var(--space-4);
+}
+
+.ui-system .ui-field-error {
+    color: var(--color-danger-text);
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    margin-block-start: var(--space-4);
+}
+
+.ui-system form.ui-form[aria-busy="true"] {
+    cursor: progress;
+}
+
+/*
+ * Shared form layout. Domain styles keep only page-specific container widths,
+ * long-text controls, and exceptional action alignment.
+ */
+.ui-system .ui-form-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    box-sizing: border-box;
+    padding: var(--space-32);
+}
+
+.ui-system .ui-form-layout .section-title {
+    border-block-end: 2px solid var(--color-primary);
+    color: var(--color-text-strong);
+    font-size: var(--font-size-md);
+    font-weight: 700;
+    margin: 25px 0 15px;
+    padding-block-end: var(--space-8);
+}
+
+.ui-system .ui-form-layout .section-title:first-child {
+    margin-block-start: 0;
+}
+
+.ui-system .ui-form-layout .form-row {
+    display: flex;
+    gap: var(--space-20);
+    margin-block-end: var(--space-16);
+}
+
+.ui-system .ui-form-layout .form-group {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+.ui-system .ui-form-layout .form-group.full-width {
+    flex: 1 1 100%;
+}
+
+.ui-system .ui-form-layout .button-group {
+    border-block-start: 1px solid var(--color-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    justify-content: center;
+    margin-block-start: var(--space-32);
+    padding-block-start: var(--space-20);
+}
+
+.ui-system .ui-form-layout--actions-end .button-group {
+    justify-content: flex-end;
+}
+
+/* Shared read-only detail fields. Domain styles keep only grid sizing and rich content. */
+.ui-system .ui-detail .detail-section {
+    border: 0;
+    border-block-end: 1px solid var(--color-surface-subtle);
+    margin-block-end: 0;
+    padding: var(--space-20);
+}
+
+.ui-system .ui-detail .detail-section:last-child {
+    border-block-end: 0;
+    margin-block-end: 0;
+}
+
+.ui-system .ui-detail .detail-section-title {
+    align-items: center;
+    border-block-end: 2px solid var(--color-border);
+    color: var(--color-text);
+    display: flex;
+    font-size: 1.1rem;
+    font-weight: 700;
+    gap: var(--space-8);
+    margin-block-end: 15px;
+    padding-block-end: var(--space-8);
+}
+
+.ui-system .ui-detail .detail-grid {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.ui-system .ui-detail .detail-item {
+    border-block-end: 1px solid var(--color-surface-subtle);
+    display: flex;
+    justify-content: space-between;
+    padding-block: var(--space-8);
+}
+
+.ui-system .ui-detail .detail-label {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    min-inline-size: 110px;
+}
+
+.ui-system .ui-detail .detail-value {
+    color: var(--color-text);
+    flex: 1;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    margin-inline-start: var(--space-16);
+    min-inline-size: 0;
+    text-align: end;
+    word-break: break-word;
+}
+
+.ui-system .ui-detail .detail-item.full-width {
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.ui-system .ui-detail .detail-item.full-width .detail-label {
+    margin-block-end: var(--space-8);
+}
+
+.ui-system .ui-detail .detail-item.full-width .detail-value {
+    inline-size: 100%;
+    margin-inline-start: 0;
+    text-align: start;
+}
+
+/* Alerts, status messages, and toast notifications */
+.ui-system .ui-alert,
+.ui-system .ui-status {
+    align-items: flex-start;
+    border: 1px solid;
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+    display: flex;
+    font-size: var(--font-size-sm);
+    gap: var(--space-8);
+    line-height: var(--line-height-base);
+    margin-block-end: var(--space-20);
+    padding: var(--space-12) var(--space-16);
+}
+
+.ui-system .ui-status:empty {
+    display: none;
+}
+
+.ui-system :is(.ui-alert--success, .ui-status--success) {
+    background: var(--color-success-bg);
+    border-color: var(--color-success-border);
+    color: var(--color-success-text);
+}
+
+.ui-system :is(.ui-alert--danger, .ui-status--danger) {
+    background: var(--color-danger-bg);
+    border-color: var(--color-danger-border);
+    color: var(--color-danger-text);
+}
+
+.ui-system :is(.ui-alert--warning, .ui-status--warning) {
+    background: var(--color-warning-bg);
+    border-color: var(--color-warning-border);
+    color: var(--color-warning-text);
+}
+
+.ui-system :is(.ui-alert--info, .ui-status--info) {
+    background: var(--color-info-bg);
+    border-color: var(--color-info-border);
+    color: var(--color-info-text);
+}
+
+.ui-system :is(.ui-alert--neutral, .ui-status--neutral) {
+    background: var(--color-surface-subtle);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.ui-status-region {
+    border: 0;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    block-size: 1px;
+    inline-size: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+}
+
+.ui-toast-region {
+    display: grid;
+    gap: var(--space-8);
+    inset-block-start: var(--space-16);
+    inset-inline-end: var(--space-16);
+    max-block-size: calc(100vh - 32px);
+    max-inline-size: min(380px, calc(100vw - 32px));
+    overflow-y: auto;
+    pointer-events: none;
+    position: fixed;
+    z-index: 1200;
+}
+
+.ui-toast {
+    align-items: flex-start;
+    animation: frog2-ui-toast-in var(--motion-base) var(--motion-ease);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-inline-start: 4px solid var(--color-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    color: var(--color-text);
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+    padding: var(--space-12) var(--space-16);
+    pointer-events: auto;
+}
+
+.ui-toast[data-tone="success"] {
+    border-inline-start-color: var(--color-success);
+}
+
+.ui-toast[data-tone="danger"] {
+    border-inline-start-color: var(--color-danger);
+}
+
+.ui-toast[data-tone="warning"] {
+    border-inline-start-color: var(--color-warning);
+}
+
+.ui-toast__close {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-md);
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    inline-size: var(--control-height-md);
+    block-size: var(--control-height-md);
+    justify-content: center;
+    margin: calc(var(--space-8) * -1);
+}
+
+.ui-toast__close:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+/* Badges and tables use the same semantic tokens without changing layout. */
+.ui-system .ui-badge {
+    align-items: center;
+    display: inline-flex;
+    line-height: 1;
+}
+
+.ui-system .ui-badge--neutral {
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    min-block-size: 24px;
+    padding-inline: var(--space-8);
+}
+
+.ui-system .ui-table-wrap {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+}
+
+.ui-system .ui-table {
+    border-collapse: collapse;
+    inline-size: 100%;
+}
+
+.ui-system .ui-table :is(th, td) {
+    border-block-end: 1px solid var(--color-border);
+    padding: var(--space-12);
+}
+
+@keyframes frog2-ui-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes frog2-ui-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (pointer: coarse), (max-width: 768px) {
+    .ui-system .ui-button,
+    .ui-system .button--sm,
+    .ui-system .ui-toast__close {
+        min-block-size: 44px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ui-system .ui-form-card {
+        padding: var(--space-20);
+    }
+
+    .ui-system .ui-form-layout .form-row,
+    .ui-system .ui-form-layout .button-group {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ui-system .ui-form-layout .form-row {
+        gap: var(--space-12);
+    }
+
+    .ui-system .ui-form-layout .form-group {
+        flex: none;
+    }
+
+    .ui-system .ui-form-layout .button-group .ui-button {
+        inline-size: 100%;
+    }
+
+    .ui-system .ui-detail .detail-section {
+        padding: 15px;
+    }
+
+    .ui-system .ui-detail .detail-section-title {
+        font-size: 1rem;
+    }
+
+    .ui-system .ui-detail .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ui-system .ui-detail .detail-item {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-8);
+    }
+
+    .ui-system .ui-detail .detail-label {
+        min-inline-size: 0;
+    }
+
+    .ui-system .ui-detail .detail-value {
+        margin-inline-start: 0;
+        text-align: start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-system .ui-button,
+    .ui-system form.ui-form :is(input, select, textarea),
+    .ui-system .ui-toast {
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+        transition-duration: 0.01ms;
+    }
+
+    .ui-system .ui-button:hover {
+        transform: none;
+    }
+
+    .ui-system .ui-button.is-loading::before {
+        animation: none;
+    }
+}
+
+@media (max-width: 480px) {
+    body.ui-system {
+        --page-content-gutter: var(--space-12);
+    }
+}
