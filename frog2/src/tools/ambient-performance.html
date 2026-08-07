@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive ambient performance probe</title>
+    <style>
+        html,
+        body {
+            background: #202428;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .app-ambient-background {
+            color: #f1f3f5;
+            height: 100%;
+            inset: 0;
+            position: fixed;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="ui-system has-ambient-background">
+<canvas class="app-ambient-background"
+        data-app-ambient-background
+        aria-hidden="true"></canvas>
+<script>
+    (function () {
+        'use strict';
+
+        var lowPower = new URLSearchParams(window.location.search).has('lowPower');
+        if (lowPower) {
+            Object.defineProperty(navigator, 'hardwareConcurrency', {
+                configurable: true,
+                value: 4
+            });
+            Object.defineProperty(navigator, 'deviceMemory', {
+                configurable: true,
+                value: 4
+            });
+        }
+
+        var callbackCount = 0;
+        var callbackDurationTotal = 0;
+        var callbackDurationMaximum = 0;
+        var drawCallbackCount = 0;
+        var drawCallbackDurationTotal = 0;
+        var drawCallbackDurationMaximum = 0;
+        var drawFrameCount = 0;
+        var firstDrawTimestamp = null;
+        var lastDrawTimestamp = null;
+        var firstTimestamp = null;
+        var lastTimestamp = null;
+        var nativeGetContext = HTMLCanvasElement.prototype.getContext;
+        var nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
+
+        HTMLCanvasElement.prototype.getContext = function () {
+            var context = nativeGetContext.apply(this, arguments);
+            if (!context || context.__archivePerformanceWrapped) {
+                return context;
+            }
+            context.__archivePerformanceWrapped = true;
+            var nativeFillRect = context.fillRect.bind(context);
+            context.fillRect = function (x, y, width, height) {
+                if (
+                    x === 0
+                    && y === 0
+                    && width === document.documentElement.clientWidth
+                    && height === document.documentElement.clientHeight
+                ) {
+                    var timestamp = performance.now();
+                    drawFrameCount += 1;
+                    firstDrawTimestamp = firstDrawTimestamp === null
+                        ? timestamp
+                        : firstDrawTimestamp;
+                    lastDrawTimestamp = timestamp;
+                }
+                return nativeFillRect.apply(context, arguments);
+            };
+            return context;
+        };
+
+        window.requestAnimationFrame = function (callback) {
+            return nativeRequestAnimationFrame(function (timestamp) {
+                var drawFramesBeforeCallback = drawFrameCount;
+                var started = performance.now();
+                callback(timestamp);
+                var duration = performance.now() - started;
+
+                callbackCount += 1;
+                callbackDurationTotal += duration;
+                callbackDurationMaximum = Math.max(callbackDurationMaximum, duration);
+                firstTimestamp = firstTimestamp === null ? timestamp : firstTimestamp;
+                lastTimestamp = timestamp;
+                if (drawFrameCount > drawFramesBeforeCallback) {
+                    drawCallbackCount += 1;
+                    drawCallbackDurationTotal += duration;
+                    drawCallbackDurationMaximum = Math.max(
+                        drawCallbackDurationMaximum,
+                        duration
+                    );
+                }
+            });
+        };
+
+        window.readAmbientPerformance = function () {
+            var elapsed = Math.max(1, (lastTimestamp || 0) - (firstTimestamp || 0));
+            var drawElapsed = Math.max(
+                1,
+                (lastDrawTimestamp || 0) - (firstDrawTimestamp || 0)
+            );
+            var canvas = document.querySelector('[data-app-ambient-background]');
+            return {
+                averageCallbackMs: callbackCount === 0
+                    ? 0
+                    : callbackDurationTotal / callbackCount,
+                callbackCount: callbackCount,
+                canvasHeight: canvas.height,
+                canvasWidth: canvas.width,
+                deviceMemory: navigator.deviceMemory || null,
+                devicePixelRatio: window.devicePixelRatio,
+                drawAverageCallbackMs: drawCallbackCount === 0
+                    ? 0
+                    : drawCallbackDurationTotal / drawCallbackCount,
+                drawCallbackCount: drawCallbackCount,
+                drawFps: drawFrameCount <= 1
+                    ? 0
+                    : ((drawFrameCount - 1) * 1000) / drawElapsed,
+                drawFrameCount: drawFrameCount,
+                drawMaximumCallbackMs: drawCallbackDurationMaximum,
+                elapsedMs: elapsed,
+                schedulerFps: callbackCount <= 1
+                    ? 0
+                    : ((callbackCount - 1) * 1000) / elapsed,
+                hardwareConcurrency: navigator.hardwareConcurrency || null,
+                lowPower: lowPower,
+                maximumCallbackMs: callbackDurationMaximum,
+                viewportHeight: document.documentElement.clientHeight,
+                viewportWidth: document.documentElement.clientWidth
+            };
+        };
+    }());
+</script>
+<script src="/ambient-background.js"></script>
+</body>
+</html>
