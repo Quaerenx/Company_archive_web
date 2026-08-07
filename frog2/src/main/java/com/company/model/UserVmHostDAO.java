@@ -16,18 +16,6 @@ public class UserVmHostDAO {
         return MAX_HOSTS_PER_USER;
     }
 
-    public int countActiveHostsByOwner(String ownerUserId) {
-        Connection conn = null;
-        try {
-            conn = DBConnection.getConnection();
-            return countActiveHostsByOwner(ownerUserId, conn);
-        } catch (SQLException e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(conn);
-        }
-    }
-
     public List<UserVmHostDTO> getActiveHostsByOwner(String ownerUserId) {
         List<UserVmHostDTO> hosts = new ArrayList<>();
         Connection conn = null;

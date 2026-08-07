@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 
 public class MaintenanceRecordDTO {
     private Long maintenanceId;
+    private String creatorUserId;
     private String customerName;
     private String inspectorName;
     private Date inspectionDate;
@@ -28,6 +29,14 @@ public class MaintenanceRecordDTO {
 
     public void setMaintenanceId(Long maintenanceId) {
         this.maintenanceId = maintenanceId;
+    }
+
+    public String getCreatorUserId() {
+        return creatorUserId;
+    }
+
+    public void setCreatorUserId(String creatorUserId) {
+        this.creatorUserId = creatorUserId;
     }
 
     public String getCustomerName() {

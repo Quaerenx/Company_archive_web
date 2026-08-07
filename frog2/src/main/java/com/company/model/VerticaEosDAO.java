@@ -10,7 +10,6 @@ import com.company.util.DBConnection;
 
 public class VerticaEosDAO {
 
-    // Legacy comment normalized during UTF-8 migration.
     public java.util.Date findEosDateByVersion(String versionText) {
         if (versionText == null || versionText.trim().isEmpty()) {
             return null;
@@ -22,7 +21,7 @@ public class VerticaEosDAO {
         try {
             conn = DBConnection.getConnection();
 
-            // Legacy comment normalized during UTF-8 migration.
+            // Prefer the public schema when more than one legacy table exists.
             String schemaDetectSql = "SELECT table_schema FROM v_catalog.tables " +
                 "WHERE lower(table_name) = 'vertica_eos' ORDER BY CASE lower(table_schema) WHEN 'public' THEN 0 ELSE 1 END LIMIT 1";
             pstmt = conn.prepareStatement(schemaDetectSql);
@@ -37,7 +36,7 @@ public class VerticaEosDAO {
                 ? ("\"" + schemaName + "\".\"vertica_eos\"")
                 : "vertica_eos";
 
-            // Legacy comment normalized during UTF-8 migration.
+            // Deployed schemas use one of these two version column names.
             String[] candidateCols = new String[] { "vertica_version", "version" };
             for (String col : candidateCols) {
                 String quotedCol = "\"" + col + "\"";
@@ -51,7 +50,7 @@ public class VerticaEosDAO {
                 try {
                     pstmt = conn.prepareStatement(sql);
                 } catch (SQLException prepareEx) {
-                    // Legacy comment normalized during UTF-8 migration.
+                    // A missing candidate column is expected on one supported schema.
                     DBConnection.close(pstmt);
                     continue;
                 }
@@ -75,5 +74,4 @@ public class VerticaEosDAO {
         return null;
     }
 }
-
 

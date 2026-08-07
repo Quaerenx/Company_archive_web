@@ -1,6 +1,10 @@
 package com.company.controller;
 
+import com.company.model.UserDTO;
+import com.company.security.AdminAccessPolicy;
+import com.company.security.SessionPrincipal;
 import com.company.util.DBConnection;
+import com.company.web.ApplicationError;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +28,26 @@ public class PoolMonitorServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        
+        UserDTO user = SessionPrincipal.from(request);
+        if (user == null) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "authentication_required",
+                    "Authentication is required");
+            return;
+        }
+        if (!AdminAccessPolicy.isAdmin(user)) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "admin_access_required",
+                    "Administrator access is required");
+            return;
+        }
+
         response.setContentType("text/html; charset=UTF-8");
         PrintWriter out = response.getWriter();
         

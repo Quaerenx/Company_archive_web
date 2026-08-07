@@ -53,6 +53,39 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+    def testCatalinaBase = layout.buildDirectory.dir("test-catalina/${name}")
+    systemProperty 'catalina.base', testCatalinaBase.get().asFile.absolutePath
+    doFirst {
+        testCatalinaBase.get().asFile.mkdirs()
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'e2e', 'e2e-write'
+    }
+}
+
+tasks.register('e2eSmoke', Test) {
+    description = 'Runs read-only HTTP smoke tests against a running Frog2 server.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+    useJUnitPlatform {
+        includeTags 'e2e'
+    }
+}
+
+tasks.register('e2eWrite', Test) {
+    description = 'Runs bounded authenticated write and load checks against isolated staging.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    useJUnitPlatform {
+        includeTags 'e2e-write'
+    }
 }
 
 tasks.named('processResources') {

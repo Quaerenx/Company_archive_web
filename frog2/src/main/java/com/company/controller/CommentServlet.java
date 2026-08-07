@@ -107,21 +107,18 @@ public class CommentServlet extends HttpServlet {
         if (commentId == null) {
             return;
         }
-        if (!commentDAO.isCommentAuthor(commentId, user.getUserId())) {
-            JsonResponse.sendError(response, HttpServletResponse.SC_FORBIDDEN,
-                    "comment_forbidden", "댓글 수정 권한이 없습니다.");
-            return;
-        }
 
         MeetingCommentDTO comment = new MeetingCommentDTO();
         comment.setCommentId(commentId);
         comment.setContent(content.trim());
-        if (commentDAO.updateComment(comment)) {
+        if (commentDAO.updateCommentForAuthor(
+                comment, user.getUserId())) {
             JsonResponse.sendSuccess(
                     response, HttpServletResponse.SC_OK, "댓글이 성공적으로 수정되었습니다.");
         } else {
-            JsonResponse.sendError(response, HttpServletResponse.SC_CONFLICT,
-                    "comment_not_updated", "댓글을 수정하지 못했습니다.");
+            JsonResponse.sendError(response, HttpServletResponse.SC_FORBIDDEN,
+                    "comment_forbidden",
+                    "댓글 수정 권한이 없거나 댓글이 존재하지 않습니다.");
         }
     }
 
@@ -141,18 +138,15 @@ public class CommentServlet extends HttpServlet {
         if (commentId == null) {
             return;
         }
-        if (!commentDAO.isCommentAuthor(commentId, user.getUserId())) {
-            JsonResponse.sendError(response, HttpServletResponse.SC_FORBIDDEN,
-                    "comment_forbidden", "댓글 삭제 권한이 없습니다.");
-            return;
-        }
 
-        if (commentDAO.deleteComment(commentId)) {
+        if (commentDAO.deleteCommentForAuthor(
+                commentId, user.getUserId())) {
             JsonResponse.sendSuccess(
                     response, HttpServletResponse.SC_OK, "댓글이 성공적으로 삭제되었습니다.");
         } else {
-            JsonResponse.sendError(response, HttpServletResponse.SC_CONFLICT,
-                    "comment_not_deleted", "댓글을 삭제하지 못했습니다.");
+            JsonResponse.sendError(response, HttpServletResponse.SC_FORBIDDEN,
+                    "comment_forbidden",
+                    "댓글 삭제 권한이 없거나 댓글이 존재하지 않습니다.");
         }
     }
 

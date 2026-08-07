@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
+import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.UserDTO;
@@ -26,6 +28,16 @@ import jakarta.servlet.http.HttpSession;
 // @WebServlet("/maintenance") - web.xml에서 매핑하므로 주석 처리
 public class MaintenanceServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private final MaintenanceRecordDAO maintenanceDAO;
+
+    public MaintenanceServlet() {
+        this(new MaintenanceRecordDAO());
+    }
+
+    MaintenanceServlet(MaintenanceRecordDAO maintenanceDAO) {
+        this.maintenanceDAO = Objects.requireNonNull(
+                maintenanceDAO, "maintenanceDAO");
+    }
 
     @Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -43,13 +55,15 @@ public class MaintenanceServlet extends HttpServlet {
             viewType = "cards";
         }
 
-        MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
         CustomerDAO customerDAO = new CustomerDAO();
 
         if ("cards".equals(viewType)) {
             // 담당자별 고객사 카드 목록 표시 (라이선스 요약 제거)
             Map<String, List<CustomerDTO>> inspectorCustomers = getInspectorCustomersMap();
             request.setAttribute("inspectorCustomers", inspectorCustomers);
+            request.setAttribute(
+                    "maintenanceFrequencyLabels",
+                    getMaintenanceFrequencyLabels(customerDAO));
             request.setAttribute("viewType", "cards");
             request.getRequestDispatcher("/maintenance/maintenance_cards.jsp").forward(request, response);
 
@@ -99,13 +113,19 @@ public class MaintenanceServlet extends HttpServlet {
                 try {
                     Long maintenanceId = Long.parseLong(maintenanceIdStr);
                     MaintenanceRecordDTO record = maintenanceDAO.getMaintenanceRecordById(maintenanceId);
-                    if (record != null) {
+                    if (record != null && isOwner(record, user)) {
                         request.setAttribute("record", record);
                         request.setAttribute("viewType", "edit");
                         request.getRequestDispatcher("/maintenance/maintenance_edit.jsp").forward(request, response);
-                    } else {
+                    } else if (record == null) {
                         session.setAttribute("error", "해당 정기점검 이력을 찾을 수 없습니다.");
                         response.sendRedirect("maintenance?view=cards");
+                    } else {
+                        session.setAttribute("error", "수정 권한이 없습니다.");
+                        response.sendRedirect(
+                                "maintenance?view=history&customerName="
+                                        + java.net.URLEncoder.encode(
+                                                record.getCustomerName(), "UTF-8"));
                     }
                 } catch (NumberFormatException e) {
                     session.setAttribute("error", "잘못된 요청입니다.");
@@ -139,21 +159,34 @@ public class MaintenanceServlet extends HttpServlet {
         return inspectorCustomers;
     }
 
+    private Map<String, String> getMaintenanceFrequencyLabels(
+            CustomerDAO customerDAO) {
+        Map<String, String> labels = new LinkedHashMap<>();
+        for (MaintenanceCustomerAssignment assignment
+                : customerDAO.getAllMaintenanceCustomerAssignments()) {
+            labels.put(
+                    assignment.customerName(),
+                    assignment.schedule().isQuarterly() ? "분기" : "월별");
+        }
+        return labels;
+    }
+
     @Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // 세션 확인
         HttpSession session = request.getSession(false);
-        if (SessionPrincipal.from(session) == null) {
+        UserDTO currentUser = SessionPrincipal.from(session);
+        if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
         String actionType = request.getParameter("action");
-        MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
 
         if ("add".equals(actionType)) {
             // 새 정기점검 이력 추가
             MaintenanceRecordDTO record = new MaintenanceRecordDTO();
+            record.setCreatorUserId(currentUser.getUserId());
             record.setCustomerName(request.getParameter("customer_name"));
             record.setInspectorName(request.getParameter("inspector_name"));
             record.setInspectionDate(parseDate(request.getParameter("inspection_date")));
@@ -192,7 +225,8 @@ public class MaintenanceServlet extends HttpServlet {
                     record.setLicenseUsageSize(trimToNull(request.getParameter("license_usage_size")));
                     record.setLicenseUsagePct(trimToNull(request.getParameter("license_usage_pct")));
 
-                    boolean success = maintenanceDAO.updateMaintenanceRecord(record);
+                    boolean success = maintenanceDAO.updateMaintenanceRecordForOwner(
+                            record, currentUser.getUserId());
                     if (success) {
                         session.setAttribute("message", "정기점검 이력이 성공적으로 수정되었습니다.");
                     } else {
@@ -217,7 +251,8 @@ public class MaintenanceServlet extends HttpServlet {
             if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
                 try {
                     Long maintenanceId = Long.parseLong(maintenanceIdStr);
-                    boolean success = maintenanceDAO.deleteMaintenanceRecord(maintenanceId);
+                    boolean success = maintenanceDAO.deleteMaintenanceRecordForOwner(
+                            maintenanceId, currentUser.getUserId());
                     if (success) {
                         session.setAttribute("message", "정기점검 이력이 성공적으로 삭제되었습니다.");
                     } else {
@@ -249,6 +284,14 @@ public class MaintenanceServlet extends HttpServlet {
         if (v == null) return null;
         String t = v.trim();
         return t.isEmpty() ? null : t;
+    }
+
+    private static boolean isOwner(
+            MaintenanceRecordDTO record, UserDTO user) {
+        return record != null
+                && user != null
+                && Objects.equals(
+                        record.getCreatorUserId(), user.getUserId());
     }
 
 }

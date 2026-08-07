@@ -7,6 +7,7 @@ import java.util.Date;
  */
 public class MonthlyCustomerResponseDTO {
     private int id;
+    private String userId;
     private String userName;
     private Date responseDate;
     private String customerName;
@@ -42,6 +43,14 @@ public class MonthlyCustomerResponseDTO {
     
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
     
     public String getUserName() {
@@ -112,6 +121,7 @@ public class MonthlyCustomerResponseDTO {
     public String toString() {
         return "MonthlyCustomerResponseDTO{" +
                 "id=" + id +
+                ", userId='" + userId + '\'' +
                 ", userName='" + userName + '\'' +
                 ", responseDate=" + responseDate +
                 ", customerName='" + customerName + '\'' +

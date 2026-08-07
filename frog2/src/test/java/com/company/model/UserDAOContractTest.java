@@ -57,6 +57,33 @@ class UserDAOContractTest {
     }
 
     @Test
+    void passwordVerificationRunsAfterTheJdbcConnectionIsClosed() {
+        AtomicBoolean connectionClosed = new AtomicBoolean();
+        ResultSet resultSet = resultSet(Map.of(
+                "userId", "tester",
+                "password", "stored-hash",
+                "userName", "Test User"), true);
+        UserDAO dao = new UserDAO(
+                () -> connection(
+                        resultSet,
+                        new AtomicReference<>(),
+                        connectionClosed),
+                new SchemaCapabilityCache(),
+                (plainText, passwordHash) -> {
+                    assertTrue(connectionClosed.get());
+                    assertEquals("correct-password", plainText);
+                    assertEquals("stored-hash", passwordHash);
+                    return true;
+                });
+
+        UserDTO user = dao.authenticateUser(
+                "tester", "correct-password");
+
+        assertNotNull(user);
+        assertTrue(connectionClosed.get());
+    }
+
+    @Test
     void updateUserNameDoesNotWriteDepartment() {
         AtomicReference<String> preparedSql = new AtomicReference<>();
         Map<Integer, String> bindings = new HashMap<>();
@@ -72,6 +99,14 @@ class UserDAOContractTest {
 
     private static Connection connection(
             ResultSet resultSet, AtomicReference<String> boundUserId) {
+        return connection(
+                resultSet, boundUserId, new AtomicBoolean());
+    }
+
+    private static Connection connection(
+            ResultSet resultSet,
+            AtomicReference<String> boundUserId,
+            AtomicBoolean connectionClosed) {
         PreparedStatement statement = (PreparedStatement) Proxy.newProxyInstance(
                 PreparedStatement.class.getClassLoader(),
                 new Class<?>[] { PreparedStatement.class },
@@ -90,6 +125,10 @@ class UserDAOContractTest {
                 new Class<?>[] { Connection.class },
                 (ignored, call, args) -> switch (call.getName()) {
                     case "prepareStatement" -> statement;
+                    case "close" -> {
+                        connectionClosed.set(true);
+                        yield null;
+                    }
                     default -> defaultValue(call.getReturnType());
                 });
     }

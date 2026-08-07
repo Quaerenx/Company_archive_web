@@ -32,6 +32,7 @@ class TroubleshootingRequestMapperTest {
         assertEquals("Y", troubleshooting.getCaseOpenYn());
         assertEquals("2026-07-30",
                 StrictDateParser.formatDate(troubleshooting.getOccurrenceDate()));
+        assertEquals("user-1", troubleshooting.getCreatorUserId());
         assertEquals("Tester", troubleshooting.getCreator());
         assertNull(troubleshooting.getNote());
     }
@@ -77,6 +78,31 @@ class TroubleshootingRequestMapperTest {
         blankCustomer.put("customer_name", " ");
         assertThrows(IllegalArgumentException.class,
                 () -> mapper.mapCreate(request(blankCustomer), user()));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> mapper.mapCreate(
+                        request(validParameters()),
+                        new UserDTO(" ", "", "Tester", "QA")));
+    }
+
+    @Test
+    void normalizesPaginationBoundaries() {
+        assertEquals(
+                1, mapper.requestedPage(request(Map.of())));
+        assertEquals(
+                1,
+                mapper.requestedPage(
+                        request(Map.of("page", "invalid"))));
+        assertEquals(
+                Integer.MAX_VALUE,
+                mapper.requestedPage(
+                        request(Map.of("page", "999999999999"))));
+        assertEquals(
+                20, mapper.requestedPageSize(request(Map.of())));
+        assertEquals(
+                100,
+                mapper.requestedPageSize(
+                        request(Map.of("pageSize", "1000"))));
     }
 
     private static Map<String, String> validParameters() {

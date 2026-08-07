@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.company.config.ApplicationEnvironment;
 import com.company.util.DBConnection;
@@ -16,8 +17,17 @@ public class MeetingRecordDAO {
             "SELECT meeting_id, title, author_name, meeting_datetime "
                     + "FROM meeting_records "
                     + "ORDER BY meeting_datetime DESC LIMIT ? OFFSET ?";
+    private final JdbcConnectionProvider connectionProvider;
 
-    // Legacy comment normalized during UTF-8 migration.
+    public MeetingRecordDAO() {
+        this(DBConnection::getConnection);
+    }
+
+    MeetingRecordDAO(JdbcConnectionProvider connectionProvider) {
+        this.connectionProvider = Objects.requireNonNull(
+                connectionProvider, "connectionProvider");
+    }
+
     public List<MeetingRecordDTO> getMeetingRecords(int page) {
         List<MeetingRecordDTO> records = new ArrayList<>();
         Connection conn = null;
@@ -49,7 +59,6 @@ public class MeetingRecordDAO {
         return records;
     }
 
-    // Legacy comment normalized during UTF-8 migration.
     public int getTotalCount() {
         int count = 0;
         Connection conn = null;
@@ -74,7 +83,6 @@ public class MeetingRecordDAO {
         return count;
     }
 
-    // Legacy comment normalized during UTF-8 migration.
     public MeetingRecordDTO getMeetingRecord(Long meetingId) {
         MeetingRecordDTO record = null;
         Connection conn = null;
@@ -84,8 +92,6 @@ public class MeetingRecordDAO {
         try {
             conn = DBConnection.getConnection();
 
-            // Legacy comment normalized during UTF-8 migration.
-            // Legacy comment normalized during UTF-8 migration.
             String selectSql = "SELECT meeting_id, title, meeting_datetime, meeting_type, "
                     + "content, author_id, author_name, view_count, created_at, updated_at "
                     + "FROM meeting_records WHERE meeting_id = ?";
@@ -135,7 +141,6 @@ public class MeetingRecordDAO {
         }
     }
 
-    // Legacy comment normalized during UTF-8 migration.
     public boolean addMeetingRecord(MeetingRecordDTO record) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -166,88 +171,50 @@ public class MeetingRecordDAO {
         return success;
     }
 
-    // Legacy comment normalized during UTF-8 migration.
-    public boolean updateMeetingRecord(MeetingRecordDTO record) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        boolean success = false;
-
-        try {
-            conn = DBConnection.getConnection();
+    public boolean updateMeetingRecordForAuthor(
+            MeetingRecordDTO record, String authorUserId) {
+        if (record == null || authorUserId == null || authorUserId.isBlank()) {
+            return false;
+        }
+        try (Connection conn = connectionProvider.getConnection()) {
             String sql = "UPDATE meeting_records SET title = ?, meeting_datetime = ?, meeting_type = ?, " +
-                        "content = ?, updated_at = statement_timestamp() WHERE meeting_id = ?";
+                        "content = ?, updated_at = statement_timestamp() "
+                        + "WHERE meeting_id = ? AND author_id = ?";
 
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, record.getTitle());
-            pstmt.setTimestamp(2, record.getMeetingDatetime());
-            pstmt.setString(3, record.getMeetingType());
-            pstmt.setString(4, record.getContent());
-            pstmt.setLong(5, record.getMeetingId());
-
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
-        }
-
-        return success;
-    }
-
-    // Legacy comment normalized during UTF-8 migration.
-    public boolean deleteMeetingRecord(Long meetingId) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        boolean success = false;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "DELETE FROM meeting_records WHERE meeting_id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setLong(1, meetingId);
-
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
-        }
-
-        return success;
-    }
-
-    // Legacy comment normalized during UTF-8 migration.
-    public boolean isAuthor(Long meetingId, String userId) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        boolean isAuthor = false;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "SELECT author_id FROM meeting_records WHERE meeting_id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setLong(1, meetingId);
-            rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                String authorId = rs.getString("author_id");
-                isAuthor = userId.equals(authorId);
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, record.getTitle());
+                pstmt.setTimestamp(2, record.getMeetingDatetime());
+                pstmt.setString(3, record.getMeetingType());
+                pstmt.setString(4, record.getContent());
+                pstmt.setLong(5, record.getMeetingId());
+                pstmt.setString(6, authorUserId.trim());
+                return pstmt.executeUpdate() > 0;
             }
-        } catch (SQLException  e) {
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
         }
-
-        return isAuthor;
     }
 
-    // Legacy comment normalized during UTF-8 migration.
+    public boolean deleteMeetingRecordForAuthor(
+            Long meetingId, String authorUserId) {
+        if (meetingId == null
+                || authorUserId == null
+                || authorUserId.isBlank()) {
+            return false;
+        }
+        try (Connection conn = connectionProvider.getConnection()) {
+            String sql = "DELETE FROM meeting_records "
+                    + "WHERE meeting_id = ? AND author_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setLong(1, meetingId);
+                pstmt.setString(2, authorUserId.trim());
+                return pstmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            throw DataAccessException.from(e);
+        }
+    }
+
     public static int getPageSize() {
         return PAGE_SIZE;
     }

@@ -1,13 +1,13 @@
 package com.company.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.company.model.CustomerDAO;
+import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.UserDTO;
-import com.company.model.UserVmHostDAO;
-import com.company.model.UserVmHostDTO;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpSession;
 import java.lang.reflect.Proxy;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,11 +24,7 @@ import org.junit.jupiter.api.Test;
 
 class DashboardServletQueryContractTest {
     @Test
-    void dashboardPreservesVmHostSummaryAndViewContract() throws Exception {
-        StubUserVmHostDAO hostDAO = new StubUserVmHostDAO();
-        UserVmHostDTO first = new UserVmHostDTO();
-        UserVmHostDTO second = new UserVmHostDTO();
-        hostDAO.hosts = List.of(first, second);
+    void dashboardLoadsOnlyMaintenanceSummaryAndViewContract() throws Exception {
         StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
         LocalDate today = LocalDate.now();
         maintenanceDAO.records = List.of(
@@ -35,26 +32,47 @@ class DashboardServletQueryContractTest {
                 maintenanceRecord("future-low", today.plusDays(1), "40"),
                 maintenanceRecord("past-high", today.minusDays(1), "95"),
                 maintenanceRecord("future-high", today.plusDays(1), "95"));
-        DashboardServlet servlet = new DashboardServlet(hostDAO, maintenanceDAO);
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.assignments = List.of(
+                new MaintenanceCustomerAssignment("past-low", "Manager A"),
+                new MaintenanceCustomerAssignment("future-low", "Manager A"),
+                new MaintenanceCustomerAssignment("future-high", "Manager B"),
+                new MaintenanceCustomerAssignment("past-high", "Manager B"),
+                new MaintenanceCustomerAssignment("pending-only", "Manager B"));
+        DashboardServlet servlet = new DashboardServlet(
+                maintenanceDAO,
+                customerDAO);
         RequestFixture request = new RequestFixture();
         ResponseFixture response = new ResponseFixture();
 
         servlet.doGet(request.proxy(), response.proxy());
 
-        assertSame(hostDAO.hosts, request.attributes.get("vmHosts"));
-        assertEquals(2, request.attributes.get("vmHostCount"));
-        assertEquals(20, request.attributes.get("vmHostLimit"));
-        assertEquals(18, request.attributes.get("vmHostRemaining"));
-        assertEquals(4, request.attributes.get("monthlyMaintenanceTotal"));
-        assertEquals(2, request.attributes.get("monthlyMaintenanceDoneCount"));
-        assertEquals(2, request.attributes.get("monthlyMaintenanceDueCount"));
-        assertEquals(2, request.attributes.get("monthlyMaintenanceLicenseRiskCount"));
-        assertEquals(3, request.attributes.get("monthlyMaintenanceAttentionCount"));
-        assertEquals(2, request.attributes.get("monthlyMaintenanceReviewCount"));
+        assertFalse(request.attributes.containsKey("vmHosts"));
+        assertFalse(request.attributes.containsKey("vmHostCount"));
+        assertFalse(request.attributes.containsKey("dashboardMenus"));
+        assertFalse(request.attributes.containsKey("monthlyMaintenanceTotal"));
+        assertFalse(request.attributes.containsKey("monthlyMaintenanceDoneCount"));
+        assertFalse(request.attributes.containsKey("monthlyMaintenanceDueCount"));
+        assertFalse(request.attributes.containsKey(
+                "monthlyMaintenanceLicenseRiskCount"));
+        assertFalse(request.attributes.containsKey(
+                "monthlyMaintenanceAttentionCount"));
+        assertFalse(request.attributes.containsKey(
+                "monthlyMaintenanceReviewCount"));
+        assertFalse(request.attributes.containsKey("monthlyMaintenanceCards"));
+        @SuppressWarnings("unchecked")
+        List<DashboardServlet.MaintenanceAssigneeGroup> groups =
+                (List<DashboardServlet.MaintenanceAssigneeGroup>) request.attributes.get(
+                        "monthlyMaintenanceAssigneeGroups");
+        assertEquals(2, groups.size());
+        assertEquals("Manager A", groups.getFirst().getManagerName());
+        assertEquals(2, groups.getFirst().getCustomers().size());
+        assertEquals("past-low", groups.getFirst().getCustomers().getFirst().getCustomerName());
+        assertEquals(true, groups.getFirst().getCustomers().getFirst().isDone());
+        assertEquals(false, groups.getFirst().getCustomers().get(1).isDone());
         assertEquals("/dashboard.jsp", request.forwardedPath);
-        assertEquals(1, hostDAO.listCalls);
-        assertEquals(0, hostDAO.countCalls);
         assertEquals(1, maintenanceDAO.monthCalls);
+        assertEquals(1, customerDAO.assignmentCalls);
     }
 
     private static MaintenanceRecordDTO maintenanceRecord(
@@ -68,24 +86,6 @@ class DashboardServletQueryContractTest {
         return record;
     }
 
-    private static final class StubUserVmHostDAO extends UserVmHostDAO {
-        private List<UserVmHostDTO> hosts = new ArrayList<>();
-        private int listCalls;
-        private int countCalls;
-
-        @Override
-        public List<UserVmHostDTO> getActiveHostsByOwner(String ownerUserId) {
-            listCalls++;
-            return hosts;
-        }
-
-        @Override
-        public int countActiveHostsByOwner(String ownerUserId) {
-            countCalls++;
-            return hosts.size();
-        }
-    }
-
     private static final class StubMaintenanceRecordDAO extends MaintenanceRecordDAO {
         private List<MaintenanceRecordDTO> records = new ArrayList<>();
         private int monthCalls;
@@ -94,6 +94,18 @@ class DashboardServletQueryContractTest {
         public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
             monthCalls++;
             return records;
+        }
+    }
+
+    private static final class StubCustomerDAO extends CustomerDAO {
+        private List<MaintenanceCustomerAssignment> assignments = new ArrayList<>();
+        private int assignmentCalls;
+
+        @Override
+        public List<MaintenanceCustomerAssignment> getMaintenanceCustomerAssignments(
+                YearMonth targetMonth) {
+            assignmentCalls++;
+            return assignments;
         }
     }
 

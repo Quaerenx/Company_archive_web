@@ -12,12 +12,16 @@ import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.MonthlyCustomerResponseDAO;
 import com.company.model.MonthlyCustomerResponseDTO;
+import com.company.model.PageResult;
 import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
 import com.company.model.UserDAO;
 import com.company.model.UserDTO;
+import com.company.model.UserVmHostDAO;
+import com.company.model.UserVmHostDTO;
 import com.company.security.PasswordPolicy;
 import com.company.security.SessionPrincipal;
+import com.company.util.Pagination;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -27,6 +31,7 @@ import jakarta.servlet.http.HttpSession;
 
 public class MyPageServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final int ACTIVITY_PAGE_SIZE = 10;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
@@ -47,7 +52,7 @@ public class MyPageServlet extends HttpServlet {
 
         switch (action) {
             case "view":
-                showMyPage(request, response, currentUser);
+                renderMainPage(request, response, currentUser);
                 break;
             case "editProfile":
                 showEditProfile(request, response, currentUser);
@@ -59,7 +64,7 @@ public class MyPageServlet extends HttpServlet {
                 showMonthlyResponse(request, response, currentUser);
                 break;
             default:
-                showMyPage(request, response, currentUser);
+                renderMainPage(request, response, currentUser);
                 break;
         }
     }
@@ -90,12 +95,12 @@ public class MyPageServlet extends HttpServlet {
         } else if ("deleteResponse".equals(formAction)) {
             deleteMonthlyResponse(request, response, currentUser);
         } else {
-            showMyPage(request, response, currentUser);
+            renderMainPage(request, response, currentUser);
         }
     }
 
     // 마이페이지 메인 화면
-    private void showMyPage(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
+    static void renderMainPage(HttpServletRequest request, HttpServletResponse response, UserDTO user)
             throws ServletException, IOException {
         
         UserDAO userDAO = new UserDAO();
@@ -103,19 +108,55 @@ public class MyPageServlet extends HttpServlet {
         
         // 내가 작성한 Maintenance 기록 조회
         MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
-        List<MaintenanceRecordDTO> myMaintenanceRecords = 
-            maintenanceDAO.getMaintenanceRecordsByInspector(user.getUserName());
+        PageResult<MaintenanceRecordDTO> maintenancePage =
+                maintenanceDAO.getMaintenanceRecordsByOwner(
+                        user.getUserId(),
+                        user.getUserName(),
+                        Pagination.requestedPage(
+                                request.getParameter("maintenancePage")),
+                        ACTIVITY_PAGE_SIZE);
         
         // 내가 작성한 Troubleshooting 조회
         TroubleshootingDAO troubleshootingDAO = new TroubleshootingDAO();
-        List<TroubleshootingDTO> myTroubleshootings = 
-            troubleshootingDAO.getTroubleshootingByCreator(user.getUserName());
+        PageResult<TroubleshootingDTO> troubleshootingPage =
+                troubleshootingDAO.getTroubleshootingPageByOwner(
+                        user.getUserId(),
+                        user.getUserName(),
+                        Pagination.requestedPage(
+                                request.getParameter(
+                                        "troubleshootingPage")),
+                        ACTIVITY_PAGE_SIZE);
+
+        UserVmHostDAO userVmHostDAO = new UserVmHostDAO();
+        List<UserVmHostDTO> vmHosts =
+                userVmHostDAO.getActiveHostsByOwner(user.getUserId());
+        int vmHostLimit = userVmHostDAO.getMaxHostsPerUser();
+        int vmHostCount = vmHosts.size();
         
         request.setAttribute("userInfo", userInfo);
-        request.setAttribute("myMaintenanceRecords", myMaintenanceRecords);
-        request.setAttribute("myTroubleshootings", myTroubleshootings);
-        request.setAttribute("maintenanceCount", myMaintenanceRecords != null ? myMaintenanceRecords.size() : 0);
-        request.setAttribute("troubleshootingCount", myTroubleshootings != null ? myTroubleshootings.size() : 0);
+        request.setAttribute(
+                "myMaintenanceRecords", maintenancePage.items());
+        request.setAttribute(
+                "myTroubleshootings", troubleshootingPage.items());
+        request.setAttribute(
+                "maintenanceCount", maintenancePage.totalCount());
+        request.setAttribute(
+                "troubleshootingCount",
+                troubleshootingPage.totalCount());
+        request.setAttribute(
+                "maintenancePage", maintenancePage.page());
+        request.setAttribute(
+                "maintenanceTotalPages", maintenancePage.totalPages());
+        request.setAttribute(
+                "troubleshootingPage", troubleshootingPage.page());
+        request.setAttribute(
+                "troubleshootingTotalPages",
+                troubleshootingPage.totalPages());
+        request.setAttribute("vmHosts", vmHosts);
+        request.setAttribute("vmHostCount", vmHostCount);
+        request.setAttribute("vmHostLimit", vmHostLimit);
+        request.setAttribute(
+                "vmHostRemaining", Math.max(0, vmHostLimit - vmHostCount));
         
         request.getRequestDispatcher("/mypage/mypage.jsp").forward(request, response);
     }
@@ -160,7 +201,7 @@ public class MyPageServlet extends HttpServlet {
             request.setAttribute("messageType", "error");
         }
         
-        showMyPage(request, response, currentUser);
+        renderMainPage(request, response, currentUser);
     }
 
     // 비밀번호 변경 처리
@@ -202,7 +243,7 @@ public class MyPageServlet extends HttpServlet {
             request.setAttribute("messageType", "error");
         }
         
-        showMyPage(request, response, currentUser);
+        renderMainPage(request, response, currentUser);
     }
     
     // 월별 고객 응대 화면
@@ -229,7 +270,8 @@ public class MyPageServlet extends HttpServlet {
         
         MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
         List<MonthlyCustomerResponseDTO> monthlyResponses = 
-            dao.getMonthlyResponses(user.getUserName(), year, month);
+            dao.getMonthlyResponses(
+                    user.getUserId(), user.getUserName(), year, month);
         FlashMessage.expose(request);
         
         request.setAttribute("currentYear", currentYear);
@@ -256,6 +298,7 @@ public class MyPageServlet extends HttpServlet {
             Date responseDate = StrictDateParser.parseDate(responseDateStr);
             
             MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
+            dto.setUserId(user.getUserId());
             dto.setUserName(user.getUserName());
             dto.setResponseDate(responseDate);
             dto.setCustomerName(customerName);
@@ -297,6 +340,7 @@ public class MyPageServlet extends HttpServlet {
             
             MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
             dto.setId(id);
+            dto.setUserId(user.getUserId());
             dto.setUserName(user.getUserName());
             dto.setResponseDate(responseDate);
             dto.setCustomerName(customerName);
@@ -330,7 +374,7 @@ public class MyPageServlet extends HttpServlet {
             int id = Integer.parseInt(request.getParameter("responseId"));
             
             MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
-            boolean success = dao.deleteResponse(id, user.getUserName());
+            boolean success = dao.deleteResponse(id, user.getUserId());
             
             FlashMessage.store(
                     request,

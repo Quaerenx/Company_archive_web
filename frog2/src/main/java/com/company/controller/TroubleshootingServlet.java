@@ -2,9 +2,11 @@ package com.company.controller;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
+import com.company.model.PageResult;
 import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
 import com.company.model.UserDTO;
@@ -22,6 +24,16 @@ public class TroubleshootingServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private final TroubleshootingRequestMapper requestMapper =
             new TroubleshootingRequestMapper();
+    private final TroubleshootingDAO troubleshootingDAO;
+
+    public TroubleshootingServlet() {
+        this(new TroubleshootingDAO());
+    }
+
+    TroubleshootingServlet(TroubleshootingDAO troubleshootingDAO) {
+        this.troubleshootingDAO = Objects.requireNonNull(
+                troubleshootingDAO, "troubleshootingDAO");
+    }
 
     @Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -41,19 +53,22 @@ public class TroubleshootingServlet extends HttpServlet {
         if ("list".equals(viewType)) {
             // 목록/검색 조회
             String q = request.getParameter("q");
-            List<TroubleshootingDTO> troubleshootingList;
-            TroubleshootingDAO tsDAO = new TroubleshootingDAO();
-            if (q != null && !q.trim().isEmpty()) {
-                troubleshootingList = tsDAO.searchTroubleshooting(q.trim());
-                request.setAttribute("q", q.trim());
-            } else {
-                troubleshootingList = tsDAO.getAllTroubleshooting();
-            }
-            if (troubleshootingList == null) {
-                troubleshootingList = new java.util.ArrayList<>();
+            String normalizedQuery =
+                    q == null || q.trim().isEmpty() ? null : q.trim();
+            PageResult<TroubleshootingDTO> page =
+                    troubleshootingDAO.getTroubleshootingPage(
+                            normalizedQuery,
+                            requestMapper.requestedPage(request),
+                            requestMapper.requestedPageSize(request));
+            if (normalizedQuery != null) {
+                request.setAttribute("q", normalizedQuery);
             }
 
-            request.setAttribute("troubleshootingList", troubleshootingList);
+            request.setAttribute("troubleshootingList", page.items());
+            request.setAttribute("currentPage", page.page());
+            request.setAttribute("pageSize", page.pageSize());
+            request.setAttribute("totalPages", page.totalPages());
+            request.setAttribute("totalCount", page.totalCount());
             request.setAttribute("viewType", "list");
             request.getRequestDispatcher("/troubleshooting/troubleshooting_list.jsp").forward(request, response);
 
@@ -76,9 +91,12 @@ public class TroubleshootingServlet extends HttpServlet {
             }
 
             TroubleshootingDTO troubleshooting =
-                    new TroubleshootingDAO().getTroubleshootingById(id);
+                    troubleshootingDAO.getTroubleshootingById(id);
             if (troubleshooting != null) {
                 request.setAttribute("troubleshooting", troubleshooting);
+                request.setAttribute(
+                        "canManageTroubleshooting",
+                        isOwner(troubleshooting, user));
                 request.setAttribute("viewType", "view");
                 request.getRequestDispatcher(
                         "/troubleshooting/troubleshooting_view.jsp").forward(request, response);
@@ -98,16 +116,24 @@ public class TroubleshootingServlet extends HttpServlet {
             }
 
             TroubleshootingDTO troubleshooting =
-                    new TroubleshootingDAO().getTroubleshootingById(id);
+                    troubleshootingDAO.getTroubleshootingById(id);
             if (troubleshooting != null) {
-                CustomerDAO customerDAO = new CustomerDAO();
-                List<CustomerDTO> customerList = customerDAO.getAllCustomers("", "ASC");
+                if (isOwner(troubleshooting, user)) {
+                    CustomerDAO customerDAO = new CustomerDAO();
+                    List<CustomerDTO> customerList =
+                            customerDAO.getAllCustomers("", "ASC");
 
-                request.setAttribute("troubleshooting", troubleshooting);
-                request.setAttribute("customerList", customerList);
-                request.setAttribute("viewType", "edit");
-                request.getRequestDispatcher(
-                        "/troubleshooting/troubleshooting_edit.jsp").forward(request, response);
+                    request.setAttribute("troubleshooting", troubleshooting);
+                    request.setAttribute("customerList", customerList);
+                    request.setAttribute("viewType", "edit");
+                    request.getRequestDispatcher(
+                            "/troubleshooting/troubleshooting_edit.jsp")
+                            .forward(request, response);
+                } else {
+                    session.setAttribute("error", "수정 권한이 없습니다.");
+                    response.sendRedirect(
+                            "troubleshooting?view=view&id=" + id);
+                }
             } else {
                 session.setAttribute("error", "해당 트러블 슈팅 정보를 찾을 수 없습니다.");
                 response.sendRedirect("troubleshooting?view=list");
@@ -137,7 +163,8 @@ public class TroubleshootingServlet extends HttpServlet {
                 return;
             }
 
-            boolean success = new TroubleshootingDAO().addTroubleshooting(troubleshooting);
+            boolean success =
+                    troubleshootingDAO.addTroubleshooting(troubleshooting);
             if (success) {
                 session.setAttribute("message", "트러블 슈팅이 성공적으로 등록되었습니다.");
             } else {
@@ -157,13 +184,16 @@ public class TroubleshootingServlet extends HttpServlet {
 
             int id = troubleshooting.getId();
             boolean success =
-                    new TroubleshootingDAO().updateTroubleshooting(troubleshooting);
+                    troubleshootingDAO.updateTroubleshootingForOwner(
+                            troubleshooting, user.getUserId());
             if (success) {
                 session.setAttribute("message", "트러블 슈팅이 성공적으로 수정되었습니다.");
                 response.sendRedirect("troubleshooting?view=view&id=" + id);
             } else {
-                session.setAttribute("error", "트러블 슈팅 수정 중 오류가 발생했습니다.");
-                response.sendRedirect("troubleshooting?view=edit&id=" + id);
+                session.setAttribute(
+                        "error",
+                        "수정 권한이 없거나 트러블 슈팅 정보를 찾을 수 없습니다.");
+                response.sendRedirect("troubleshooting?view=list");
             }
 
         } else if ("delete".equals(actionType)) {
@@ -176,17 +206,30 @@ public class TroubleshootingServlet extends HttpServlet {
                 return;
             }
 
-            boolean success = new TroubleshootingDAO().deleteTroubleshooting(id);
+            boolean success =
+                    troubleshootingDAO.deleteTroubleshootingForOwner(
+                            id, user.getUserId());
             if (success) {
                 session.setAttribute("message", "트러블 슈팅이 성공적으로 삭제되었습니다.");
             } else {
-                session.setAttribute("error", "트러블 슈팅 삭제 중 오류가 발생했습니다.");
+                session.setAttribute(
+                        "error",
+                        "삭제 권한이 없거나 트러블 슈팅 정보를 찾을 수 없습니다.");
             }
             response.sendRedirect("troubleshooting?view=list");
 
         } else {
             response.sendRedirect("troubleshooting?view=list");
         }
+    }
+
+    private static boolean isOwner(
+            TroubleshootingDTO troubleshooting, UserDTO user) {
+        return troubleshooting != null
+                && user != null
+                && Objects.equals(
+                        troubleshooting.getCreatorUserId(),
+                        user.getUserId());
     }
 
     private static void sendBadRequest(

@@ -9,29 +9,54 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 public class UserDAO {
+    @FunctionalInterface
+    interface PasswordVerifier {
+        boolean matches(String plainTextPassword, String hashedPassword);
+    }
+
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
             new SchemaCapabilityCache();
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
+    private final PasswordVerifier passwordVerifier;
 
     public UserDAO() {
-        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES);
+        this(
+                DBConnection::getConnection,
+                APPLICATION_SCHEMA_CAPABILITIES,
+                PasswordUtils::checkPassword);
     }
 
     UserDAO(JdbcConnectionProvider connectionProvider) {
-        this(connectionProvider, new SchemaCapabilityCache());
+        this(
+                connectionProvider,
+                new SchemaCapabilityCache(),
+                PasswordUtils::checkPassword);
     }
 
     UserDAO(
             JdbcConnectionProvider connectionProvider,
             SchemaCapabilityCache schemaCapabilities) {
+        this(
+                connectionProvider,
+                schemaCapabilities,
+                PasswordUtils::checkPassword);
+    }
+
+    UserDAO(
+            JdbcConnectionProvider connectionProvider,
+            SchemaCapabilityCache schemaCapabilities,
+            PasswordVerifier passwordVerifier) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider");
         this.schemaCapabilities = Objects.requireNonNull(schemaCapabilities, "schemaCapabilities");
+        this.passwordVerifier = Objects.requireNonNull(
+                passwordVerifier, "passwordVerifier");
     }
 
     public UserDTO authenticateUser(String userId, String password) {
         String sql = "SELECT userId, password, userName FROM company_users WHERE userId = ?";
+        UserCredentials credentials;
         try (Connection connection = connectionProvider.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, userId);
@@ -39,32 +64,23 @@ public class UserDAO {
                 if (!resultSet.next()) {
                     return null;
                 }
-                String hashedPassword = resultSet.getString("password");
-                if (!PasswordUtils.checkPassword(password, hashedPassword)) {
-                    return null;
-                }
-                UserDTO user = new UserDTO();
-                user.setUserId(resultSet.getString("userId"));
-                user.setPassword("");
-                user.setUserName(resultSet.getString("userName"));
-                return user;
+                credentials = new UserCredentials(
+                        resultSet.getString("userId"),
+                        resultSet.getString("password"),
+                        resultSet.getString("userName"));
             }
         } catch (SQLException exception) {
             throw DataAccessException.from("authenticate user", exception);
         }
-    }
 
-    public boolean registerUser(UserDTO user) {
-        String sql = "INSERT INTO company_users (userId, password, userName) VALUES (?, ?, ?)";
-        try (Connection connection = connectionProvider.getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, user.getUserId());
-            statement.setString(2, PasswordUtils.hashPassword(user.getPassword()));
-            statement.setString(3, user.getUserName());
-            return statement.executeUpdate() > 0;
-        } catch (SQLException exception) {
-            throw DataAccessException.from("register user", exception);
+        if (!passwordVerifier.matches(password, credentials.passwordHash())) {
+            return null;
         }
+        UserDTO user = new UserDTO();
+        user.setUserId(credentials.userId());
+        user.setPassword("");
+        user.setUserName(credentials.userName());
+        return user;
     }
 
     public boolean updatePassword(String userId, String newPassword) {
@@ -117,29 +133,12 @@ public class UserDAO {
         }
     }
 
-    public boolean updateUserProfile(String userId, String userName, String department) {
-        try (Connection connection = connectionProvider.getConnection()) {
-            boolean hasDepartment = columnExists(connection, "company_users", "department");
-            String sql = hasDepartment
-                    ? "UPDATE company_users SET userName = ?, department = ? WHERE userId = ?"
-                    : "UPDATE company_users SET userName = ? WHERE userId = ?";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, userName);
-                if (hasDepartment) {
-                    statement.setString(2, department);
-                    statement.setString(3, userId);
-                } else {
-                    statement.setString(2, userId);
-                }
-                return statement.executeUpdate() > 0;
-            }
-        } catch (SQLException exception) {
-            throw DataAccessException.from("update user profile", exception);
-        }
-    }
-
     private boolean columnExists(Connection connection, String tableName, String columnName)
             throws SQLException {
         return schemaCapabilities.columnExists(connection, tableName, columnName);
+    }
+
+    private record UserCredentials(
+            String userId, String passwordHash, String userName) {
     }
 }

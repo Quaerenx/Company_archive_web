@@ -121,6 +121,21 @@ class CustomerRequestMapperTest {
                 CustomerJsonResponse.jsonString("a\"b\\c\n\b\f\u0001"));
     }
 
+    @Test
+    void normalizesListPaginationAndSearch() {
+        HttpServletRequest request = request(Map.of(
+                "page", "999999999999",
+                "pageSize", "1000",
+                "q", "  Acme  "));
+
+        assertEquals(Integer.MAX_VALUE, mapper.requestedPage(request));
+        assertEquals(100, mapper.requestedPageSize(request));
+        assertEquals("Acme", mapper.searchQuery(request));
+        assertEquals(1, mapper.requestedPage(request(Map.of("page", "0"))));
+        assertEquals(50, mapper.requestedPageSize(request(Map.of())));
+        assertNull(mapper.searchQuery(request(Map.of("q", "  "))));
+    }
+
     private static HttpServletRequest request(Map<String, String> parameters) {
         return (HttpServletRequest) Proxy.newProxyInstance(
                 HttpServletRequest.class.getClassLoader(),

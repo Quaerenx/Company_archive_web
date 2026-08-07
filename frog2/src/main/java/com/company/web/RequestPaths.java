@@ -6,7 +6,11 @@ import java.util.Set;
 
 public final class RequestPaths {
     private static final Set<String> LOGIN_PATHS = Set.of("/login", "/login.jsp");
-    private static final Set<String> FAVICON_PATHS = Set.of("/favicon.ico", "/favicon.png");
+    private static final Set<String> FAVICON_PATHS =
+            Set.of("/favicon.ico", "/favicon.png", "/favicon.svg");
+    private static final Set<String> BRAND_ASSET_PATHS = Set.of(
+            "/resources/images/archive-primary-logo.svg",
+            "/resources/images/archive-compact-horizontal.svg");
     private static final Set<String> ERROR_PATHS = Set.of(
             "/error/400.jsp",
             "/error/403.jsp",
@@ -15,7 +19,8 @@ public final class RequestPaths {
             "/error/409.jsp",
             "/error/500.jsp",
             "/error/503.jsp");
-    private static final Set<String> PUBLIC_STATIC_EXTENSIONS = Set.of(".css", ".js", ".png");
+    private static final Set<String> PUBLIC_STATIC_EXTENSIONS =
+            Set.of(".css", ".js", ".png", ".woff2");
     private static final String[] STATIC_PREFIXES = {
         "/resources/", "/images/", "/css/", "/js/", "/webjars/"
     };
@@ -40,7 +45,7 @@ public final class RequestPaths {
         if (path == null) {
             return false;
         }
-        if (FAVICON_PATHS.contains(path)) {
+        if (FAVICON_PATHS.contains(path) || BRAND_ASSET_PATHS.contains(path)) {
             return true;
         }
         if (path.indexOf(';') >= 0 || path.indexOf('%') >= 0

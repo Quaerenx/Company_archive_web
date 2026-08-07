@@ -1,7 +1,6 @@
 package com.company.config;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -14,15 +13,61 @@ class ApplicationEnvironmentTest {
     }
 
     @Test
-    void explicitReadOnlySettingAppliesOutsideDevelopment() {
+    void databaseWritesRequireExplicitProductionOptIn() {
         assertTrue(ApplicationEnvironment.resolveReadOnly("prod", "true"));
         assertFalse(ApplicationEnvironment.resolveReadOnly("prod", "false"));
-        assertFalse(ApplicationEnvironment.resolveReadOnly(null, null));
+        assertFalse(ApplicationEnvironment.resolveReadOnly(" PROD ", " FALSE "));
     }
 
     @Test
-    void invalidReadOnlySettingFailsLoudly() {
-        assertThrows(IllegalArgumentException.class,
-                () -> ApplicationEnvironment.resolveReadOnly("prod", "yes"));
+    void isolatedStagingCanExplicitlyOptInToWrites() {
+        assertTrue(ApplicationEnvironment.resolveReadOnly("staging", null));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("staging", "true"));
+        assertFalse(ApplicationEnvironment.resolveReadOnly("staging", "false"));
+        assertFalse(ApplicationEnvironment.resolveReadOnly(" STAGING ", " FALSE "));
+    }
+
+    @Test
+    void missingOrIncompleteSettingsFailClosed() {
+        assertTrue(ApplicationEnvironment.resolveReadOnly(null, null));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("", ""));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("prod", null));
+        assertTrue(ApplicationEnvironment.resolveReadOnly(null, "false"));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("test", "false"));
+    }
+
+    @Test
+    void invalidReadOnlySettingFailsClosed() {
+        assertTrue(ApplicationEnvironment.resolveReadOnly("prod", "yes"));
+    }
+
+    @Test
+    void publicAccessorsFailClosedWithoutJvmSettings() {
+        String originalEnvironment = System.getProperty(ApplicationEnvironment.ENV_PROPERTY);
+        String originalReadOnly = System.getProperty(ApplicationEnvironment.READ_ONLY_PROPERTY);
+        try {
+            System.clearProperty(ApplicationEnvironment.ENV_PROPERTY);
+            System.clearProperty(ApplicationEnvironment.READ_ONLY_PROPERTY);
+
+            assertTrue(ApplicationEnvironment.isReadOnly());
+            assertFalse(ApplicationEnvironment.isDatabaseWriteAllowed());
+
+            System.setProperty(ApplicationEnvironment.ENV_PROPERTY, "prod");
+            System.setProperty(ApplicationEnvironment.READ_ONLY_PROPERTY, "false");
+
+            assertFalse(ApplicationEnvironment.isReadOnly());
+            assertTrue(ApplicationEnvironment.isDatabaseWriteAllowed());
+        } finally {
+            restoreProperty(ApplicationEnvironment.ENV_PROPERTY, originalEnvironment);
+            restoreProperty(ApplicationEnvironment.READ_ONLY_PROPERTY, originalReadOnly);
+        }
+    }
+
+    private static void restoreProperty(String name, String value) {
+        if (value == null) {
+            System.clearProperty(name);
+        } else {
+            System.setProperty(name, value);
+        }
     }
 }

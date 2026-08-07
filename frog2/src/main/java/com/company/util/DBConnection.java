@@ -20,9 +20,12 @@ import java.util.Properties;
  */
 public class DBConnection {
     private static final String CONFIG_PROPERTY = "frog2.config";
+    private static final String QUERY_TIMEOUT_PROPERTY =
+            "jdbc.queryTimeoutSeconds";
     private static final String[] REQUIRED_PROPERTIES = { "db.url", "db.user", "db.password", "db.driver" };
     private static final Logger logger = LoggerFactory.getLogger(DBConnection.class);
     private static HikariDataSource dataSource;
+    private static int queryTimeoutSeconds;
     
     static {
         try {
@@ -39,6 +42,8 @@ public class DBConnection {
      */
     private static void initializeDataSource() throws IOException {
         Properties props = loadProperties();
+        queryTimeoutSeconds = positiveIntProperty(
+                props, QUERY_TIMEOUT_PROPERTY, 30);
         
         HikariConfig config = new HikariConfig();
         
@@ -72,8 +77,30 @@ public class DBConnection {
         
         dataSource = new HikariDataSource(config);
         
-        logger.info("Connection Pool 설정 완료 - MaxPoolSize: {}, MinIdle: {}, ReadOnly: {}",
-                    config.getMaximumPoolSize(), config.getMinimumIdle(), config.isReadOnly());
+        logger.info(
+                "Connection Pool 설정 완료 - MaxPoolSize: {}, MinIdle: {}, ReadOnly: {}, QueryTimeoutSeconds: {}",
+                config.getMaximumPoolSize(),
+                config.getMinimumIdle(),
+                config.isReadOnly(),
+                queryTimeoutSeconds);
+    }
+
+    private static int positiveIntProperty(
+            Properties properties,
+            String name,
+            int defaultValue) throws IOException {
+        try {
+            int value = Integer.parseInt(
+                    properties.getProperty(name, Integer.toString(defaultValue)));
+            if (value <= 0) {
+                throw new NumberFormatException();
+            }
+            return value;
+        } catch (NumberFormatException exception) {
+            throw new IOException(
+                    "Database configuration key must be a positive integer: " + name,
+                    exception);
+        }
     }
 
     private static Properties loadProperties() throws IOException {
@@ -111,6 +138,7 @@ public class DBConnection {
         }
         
         Connection conn = dataSource.getConnection();
+        conn = JdbcTiming.wrap(conn, queryTimeoutSeconds);
         if (ApplicationEnvironment.isReadOnly()) {
             conn = ReadOnlyJdbcGuard.wrap(conn);
         }

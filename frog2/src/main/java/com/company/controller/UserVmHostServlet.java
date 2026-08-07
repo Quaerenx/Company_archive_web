@@ -1,8 +1,6 @@
 package com.company.controller;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.company.model.UserDTO;
@@ -48,12 +46,12 @@ public class UserVmHostServlet extends HttpServlet {
         }
 
         String returnTo = trim(request.getParameter("returnTo"));
-        boolean dashboardRequest = "dashboard".equals(returnTo);
+        boolean myPageRequest = "mypage".equals(returnTo);
         String action = trim(request.getParameter("action"));
         if ("delete".equals(action)) {
             userVmHostDAO.deleteByIpAndOwner(trim(request.getParameter("ip")), user.getUserId());
-            if (dashboardRequest) {
-                response.sendRedirect(buildDashboardRedirect(request, "deleted"));
+            if (myPageRequest) {
+                response.sendRedirect(buildMyPageRedirect(request, "deleted"));
             } else {
                 response.sendRedirect(request.getContextPath() + "/vm-hosts?result=deleted");
             }
@@ -73,8 +71,8 @@ public class UserVmHostServlet extends HttpServlet {
         String originalIp = trim(request.getParameter("originalIp"));
         String errorMessage = userVmHostDAO.save(dto, originalIp);
         if (errorMessage != null) {
-            if (dashboardRequest) {
-                renderDashboard(request, response, user, dto, originalIp, errorMessage);
+            if (myPageRequest) {
+                renderMyPage(request, response, user, dto, originalIp, errorMessage);
                 return;
             }
             request.setAttribute("errorMessage", errorMessage);
@@ -82,8 +80,8 @@ public class UserVmHostServlet extends HttpServlet {
             return;
         }
 
-        if (dashboardRequest) {
-            response.sendRedirect(buildDashboardRedirect(request, "saved"));
+        if (myPageRequest) {
+            response.sendRedirect(buildMyPageRedirect(request, "saved"));
         } else {
             response.sendRedirect(request.getContextPath() + "/vm-hosts?result=saved");
         }
@@ -104,29 +102,17 @@ public class UserVmHostServlet extends HttpServlet {
         request.getRequestDispatcher("/vm_hosts/list.jsp").forward(request, response);
     }
 
-    private void renderDashboard(HttpServletRequest request, HttpServletResponse response, UserDTO user,
+    private void renderMyPage(HttpServletRequest request, HttpServletResponse response, UserDTO user,
             UserVmHostDTO formData, String originalIp, String errorMessage)
             throws ServletException, IOException {
-        List<UserVmHostDTO> vmHosts = userVmHostDAO.getActiveHostsByOwner(user.getUserId());
-        int vmHostLimit = userVmHostDAO.getMaxHostsPerUser();
-        int vmHostCount = vmHosts.size();
-
-        request.setAttribute("user", user);
-        request.setAttribute("vmHosts", vmHosts);
-        request.setAttribute("vmHostCount", vmHostCount);
-        request.setAttribute("vmHostLimit", vmHostLimit);
-        request.setAttribute("vmHostRemaining", Math.max(0, vmHostLimit - vmHostCount));
         request.setAttribute("vmHostForm", formData);
         request.setAttribute("vmHostOriginalIp", originalIp);
         request.setAttribute("vmHostErrorMessage", errorMessage);
-        request.setAttribute("dashboardMenus", DashboardMenuProvider.build());
-        request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
+        MyPageServlet.renderMainPage(request, response, user);
     }
 
-
-    private String buildDashboardRedirect(HttpServletRequest request, String result) {
-        return request.getContextPath() + "/dashboard?vmHostResult="
-                + URLEncoder.encode(result, StandardCharsets.UTF_8);
+    private String buildMyPageRedirect(HttpServletRequest request, String result) {
+        return request.getContextPath() + "/mypage?vmHostResult=" + result;
     }
 
     private String trim(String value) {

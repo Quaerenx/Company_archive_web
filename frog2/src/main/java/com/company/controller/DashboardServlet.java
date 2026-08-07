@@ -8,13 +8,17 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.company.model.CustomerDAO;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
+import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.UserDTO;
-import com.company.model.UserVmHostDAO;
-import com.company.model.UserVmHostDTO;
 import com.company.security.SessionPrincipal;
 
 import jakarta.servlet.ServletException;
@@ -25,18 +29,20 @@ import jakarta.servlet.http.HttpServletResponse;
 public class DashboardServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private final UserVmHostDAO userVmHostDAO;
     private final MaintenanceRecordDAO maintenanceRecordDAO;
+    private final CustomerDAO customerDAO;
     private static final DateTimeFormatter MONTH_PARAM_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM");
     private static final DateTimeFormatter MONTH_LABEL_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM");
 
     public DashboardServlet() {
-        this(new UserVmHostDAO(), new MaintenanceRecordDAO());
+        this(new MaintenanceRecordDAO(), new CustomerDAO());
     }
 
-    DashboardServlet(UserVmHostDAO userVmHostDAO, MaintenanceRecordDAO maintenanceRecordDAO) {
-        this.userVmHostDAO = userVmHostDAO;
+    DashboardServlet(
+            MaintenanceRecordDAO maintenanceRecordDAO,
+            CustomerDAO customerDAO) {
         this.maintenanceRecordDAO = maintenanceRecordDAO;
+        this.customerDAO = customerDAO;
     }
 
     @Override
@@ -47,56 +53,27 @@ public class DashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-
-
-        List<UserVmHostDTO> vmHosts =
-                userVmHostDAO.getActiveHostsByOwner(user.getUserId());
-        int vmHostCount = vmHosts.size();
-        int vmHostLimit = userVmHostDAO.getMaxHostsPerUser();
-
-        request.setAttribute("vmHosts", vmHosts);
-        request.setAttribute("vmHostCount", vmHostCount);
-        request.setAttribute("vmHostLimit", vmHostLimit);
-        request.setAttribute("vmHostRemaining", Math.max(0, vmHostLimit - vmHostCount));
-
         YearMonth selectedMonth = parseMaintenanceMonth(request.getParameter("maintenanceMonth"));
         LocalDate monthStart = selectedMonth.atDay(1);
         LocalDate nextMonthStart = selectedMonth.plusMonths(1).atDay(1);
         LocalDate today = LocalDate.now();
-        List<MonthlyMaintenanceCard> monthlyMaintenanceCards = buildMonthlyMaintenanceCards(
-                maintenanceRecordDAO.getMaintenanceRecordsByMonth(Date.valueOf(monthStart), Date.valueOf(nextMonthStart)),
-                today);
-
-        int doneCount = 0;
-        int dueCount = 0;
-        int licenseRiskCount = 0;
-        int attentionCount = 0;
-        for (MonthlyMaintenanceCard card : monthlyMaintenanceCards) {
-            if ("done".equals(card.getStatusCode())) {
-                doneCount++;
-            } else if ("due".equals(card.getStatusCode())) {
-                dueCount++;
-            }
-            if (card.isLicenseRisk()) {
-                licenseRiskCount++;
-            }
-            if ("due".equals(card.getStatusCode()) || card.isLicenseRisk()) {
-                attentionCount++;
-            }
-        }
+        List<MonthlyMaintenanceCard> monthlyMaintenanceCards =
+                buildMonthlyMaintenanceCards(
+                        maintenanceRecordDAO.getMaintenanceRecordsByMonth(
+                                Date.valueOf(monthStart),
+                                Date.valueOf(nextMonthStart)),
+                        today);
+        List<MaintenanceAssigneeGroup> monthlyMaintenanceAssigneeGroups =
+                buildMaintenanceAssigneeGroups(
+                        customerDAO.getMaintenanceCustomerAssignments(selectedMonth),
+                        monthlyMaintenanceCards);
 
         request.setAttribute("maintenanceMonthParam", selectedMonth.format(MONTH_PARAM_FORMATTER));
         request.setAttribute("maintenanceMonthLabel", selectedMonth.format(MONTH_LABEL_FORMATTER));
         request.setAttribute("maintenanceMonthTabs", buildMaintenanceMonthTabs(selectedMonth));
-        request.setAttribute("monthlyMaintenanceCards", monthlyMaintenanceCards);
-        request.setAttribute("monthlyMaintenanceTotal", monthlyMaintenanceCards.size());
-        request.setAttribute("monthlyMaintenanceDoneCount", doneCount);
-        request.setAttribute("monthlyMaintenanceDueCount", dueCount);
-        request.setAttribute("monthlyMaintenanceLicenseRiskCount", licenseRiskCount);
-        request.setAttribute("monthlyMaintenanceAttentionCount", attentionCount);
-        request.setAttribute("monthlyMaintenanceReviewCount", licenseRiskCount);
-
-        request.setAttribute("dashboardMenus", DashboardMenuProvider.build());
+        request.setAttribute(
+                "monthlyMaintenanceAssigneeGroups",
+                monthlyMaintenanceAssigneeGroups);
         request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
     }
 
@@ -168,6 +145,96 @@ public class DashboardServlet extends HttpServlet {
                     licenseRisk));
         }
         return cards;
+    }
+
+    private List<MaintenanceAssigneeGroup> buildMaintenanceAssigneeGroups(
+            List<MaintenanceCustomerAssignment> assignments,
+            List<MonthlyMaintenanceCard> cards) {
+        Map<String, CustomerMonthState> stateByCustomer = new LinkedHashMap<>();
+        for (MonthlyMaintenanceCard card : cards) {
+            String customerName = normalizedName(card.getCustomerName());
+            if (customerName.isEmpty()) {
+                continue;
+            }
+            CustomerMonthState state = stateByCustomer.computeIfAbsent(
+                    customerName,
+                    ignored -> new CustomerMonthState());
+            state.done = state.done || "done".equals(card.getStatusCode());
+            state.licenseRisk = state.licenseRisk || card.isLicenseRisk();
+            if (!isMissingValue(card.getInspectorName())) {
+                state.inspectorName = card.getInspectorName().trim();
+            }
+        }
+
+        Map<String, List<MonthlyMaintenanceCustomer>> customersByManager =
+                new LinkedHashMap<>();
+        Set<String> assignedCustomers = new HashSet<>();
+        if (assignments != null) {
+            for (MaintenanceCustomerAssignment assignment : assignments) {
+                String customerName = normalizedName(assignment.customerName());
+                if (customerName.isEmpty() || !assignedCustomers.add(customerName)) {
+                    continue;
+                }
+                CustomerMonthState state = stateByCustomer.get(customerName);
+                addMaintenanceCustomer(
+                        customersByManager,
+                        displayManagerName(assignment.managerName()),
+                        customerName,
+                        state,
+                        assignment.schedule().isQuarterly());
+            }
+        }
+
+        for (Map.Entry<String, CustomerMonthState> entry : stateByCustomer.entrySet()) {
+            if (assignedCustomers.contains(entry.getKey())) {
+                continue;
+            }
+            addMaintenanceCustomer(
+                    customersByManager,
+                    displayManagerName(entry.getValue().inspectorName),
+                    entry.getKey(),
+                    entry.getValue(),
+                    false);
+        }
+
+        List<MaintenanceAssigneeGroup> groups = new ArrayList<>();
+        customersByManager.forEach((managerName, customers) ->
+                groups.add(new MaintenanceAssigneeGroup(managerName, customers)));
+        return groups;
+    }
+
+    private void addMaintenanceCustomer(
+            Map<String, List<MonthlyMaintenanceCustomer>> customersByManager,
+            String managerName,
+            String customerName,
+            CustomerMonthState state,
+            boolean quarterly) {
+        boolean done = state != null && state.done;
+        boolean licenseRisk = state != null && state.licenseRisk;
+        customersByManager
+                .computeIfAbsent(managerName, ignored -> new ArrayList<>())
+                .add(new MonthlyMaintenanceCustomer(
+                        customerName,
+                        done,
+                        licenseRisk,
+                        quarterly));
+    }
+
+    private String displayManagerName(String value) {
+        String normalized = normalizedName(value);
+        return normalized.isEmpty() ? "담당자 미지정" : normalized;
+    }
+
+    private String normalizedName(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.trim();
+        return "-".equals(normalized) ? "" : normalized;
+    }
+
+    private boolean isMissingValue(String value) {
+        return normalizedName(value).isEmpty();
     }
 
     private String formatDate(LocalDate date) {
@@ -290,5 +357,73 @@ public class DashboardServlet extends HttpServlet {
         public boolean isLicenseRisk() {
             return licenseRisk;
         }
+    }
+
+    public static class MaintenanceAssigneeGroup {
+        private final String managerName;
+        private final List<MonthlyMaintenanceCustomer> customers;
+
+        public MaintenanceAssigneeGroup(
+                String managerName,
+                List<MonthlyMaintenanceCustomer> customers) {
+            this.managerName = managerName;
+            this.customers = List.copyOf(customers);
+        }
+
+        public String getManagerName() {
+            return managerName;
+        }
+
+        public List<MonthlyMaintenanceCustomer> getCustomers() {
+            return customers;
+        }
+    }
+
+    public static class MonthlyMaintenanceCustomer {
+        private final String customerName;
+        private final boolean done;
+        private final boolean licenseRisk;
+        private final boolean quarterly;
+
+        public MonthlyMaintenanceCustomer(
+                String customerName,
+                boolean done,
+                boolean licenseRisk,
+                boolean quarterly) {
+            this.customerName = customerName;
+            this.done = done;
+            this.licenseRisk = licenseRisk;
+            this.quarterly = quarterly;
+        }
+
+        public String getCustomerName() {
+            return customerName;
+        }
+
+        public boolean isDone() {
+            return done;
+        }
+
+        public boolean isLicenseRisk() {
+            return licenseRisk;
+        }
+
+        public boolean isQuarterly() {
+            return quarterly;
+        }
+
+        public String getStatusCode() {
+            return done ? "done" : "due";
+        }
+
+        public String getStatusLabel() {
+            return done ? "점검 완료" : "미진행";
+        }
+    }
+
+    private static class CustomerMonthState {
+        private boolean done;
+        private boolean licenseRisk;
+        private String inspectorName;
     }
 }

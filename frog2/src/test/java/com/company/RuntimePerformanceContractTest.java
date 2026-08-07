@@ -88,10 +88,13 @@ class RuntimePerformanceContractTest {
         String core = Files.readString(WEBAPP.resolve("WEB-INF/includes/core_styles.jspf"));
         assertFoundationOrder(core, "core_styles.jspf");
         assertEquals(1, countOccurrences(core, "/resources/css/components.css"));
+        assertEquals(1, countOccurrences(core, "/resources/css/ui-system.css"));
         assertEquals(1, countOccurrences(core, "/resources/css/utilities.css"));
         assertTrue(core.indexOf("/resources/css/base.css")
                 < core.indexOf("/resources/css/components.css"));
         assertTrue(core.indexOf("/resources/css/components.css")
+                < core.indexOf("/resources/css/ui-system.css"));
+        assertTrue(core.indexOf("/resources/css/ui-system.css")
                 < core.indexOf("/resources/css/utilities.css"));
 
         for (String page : new String[] {"error/409.jsp", "error/503.jsp"}) {

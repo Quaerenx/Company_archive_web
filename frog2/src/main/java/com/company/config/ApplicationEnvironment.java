@@ -8,12 +8,10 @@ import java.util.Locale;
 public final class ApplicationEnvironment {
     public static final String ENV_PROPERTY = "frog2.env";
     public static final String READ_ONLY_PROPERTY = "frog2.readOnly";
+    private static final String PRODUCTION_ENVIRONMENT = "prod";
+    private static final String STAGING_ENVIRONMENT = "staging";
 
     private ApplicationEnvironment() {
-    }
-
-    public static boolean isDevelopment() {
-        return "dev".equals(normalize(System.getProperty(ENV_PROPERTY)));
     }
 
     public static boolean isReadOnly() {
@@ -25,22 +23,12 @@ public final class ApplicationEnvironment {
     }
 
     static boolean resolveReadOnly(String environment, String readOnlySetting) {
-        if ("dev".equals(normalize(environment))) {
-            return true;
-        }
-        if (readOnlySetting == null || readOnlySetting.isBlank()) {
-            return false;
-        }
-
-        String normalized = normalize(readOnlySetting);
-        if ("true".equals(normalized)) {
-            return true;
-        }
-        if ("false".equals(normalized)) {
-            return false;
-        }
-        throw new IllegalArgumentException(
-                READ_ONLY_PROPERTY + " must be either true or false, but was: " + readOnlySetting);
+        String normalizedEnvironment = normalize(environment);
+        boolean writeCapableEnvironment =
+                PRODUCTION_ENVIRONMENT.equals(normalizedEnvironment)
+                        || STAGING_ENVIRONMENT.equals(normalizedEnvironment);
+        return !(writeCapableEnvironment
+                && "false".equals(normalize(readOnlySetting)));
     }
 
     private static String normalize(String value) {

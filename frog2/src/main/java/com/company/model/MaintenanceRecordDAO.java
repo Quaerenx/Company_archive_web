@@ -1,6 +1,6 @@
 package com.company.model;
 
-import com.company.util.StrictDateParser;
+import com.company.util.Pagination;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,81 +8,60 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.Date;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import com.company.util.DBConnection;
 
 public class MaintenanceRecordDAO {
+    private static final String TABLE_NAME = "maintenance_records";
+    private static final String CREATOR_USER_ID_COLUMN = "created_by_user_id";
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
             new SchemaCapabilityCache();
     private static final String BASE_SELECT_COLUMNS =
             "maintenance_id, customer_name, inspector_name, inspection_date, "
                     + "vertica_version, note, created_at, updated_at";
 
+    private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
 
     public MaintenanceRecordDAO() {
-        this(APPLICATION_SCHEMA_CAPABILITIES);
+        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES);
     }
 
     MaintenanceRecordDAO(SchemaCapabilityCache schemaCapabilities) {
+        this(DBConnection::getConnection, schemaCapabilities);
+    }
+
+    MaintenanceRecordDAO(
+            JdbcConnectionProvider connectionProvider,
+            SchemaCapabilityCache schemaCapabilities) {
+        this.connectionProvider = Objects.requireNonNull(
+                connectionProvider, "connectionProvider");
         this.schemaCapabilities = Objects.requireNonNull(
                 schemaCapabilities, "schemaCapabilities");
     }
 
-    // ?�정 ?�당?�의 고객??목록 조회 (?�성 ?�태 고객?�만)
-    public List<String> getCustomersByInspector(String inspectorName) {
-        List<String> customers = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "SELECT DISTINCT customer_name FROM vertica_customer_detail " +
-                        "WHERE (main_manager = ? OR sub_manager = ?) " +
-                        "ORDER BY customer_name";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, inspectorName);
-            pstmt.setString(2, inspectorName);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                customers.add(rs.getString("customer_name"));
-            }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
-        }
-
-        return customers;
-    }
-
-    // ?�로???�기?��? ?�력 추�? (존재?�는 컬럼�??�적?�로 ?�함)
     public boolean addMaintenanceRecord(MaintenanceRecordDTO record) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        boolean success = false;
-
-        try {
-            conn = DBConnection.getConnection();
+        if (record == null || isBlank(record.getCreatorUserId())) {
+            return false;
+        }
+        try (Connection conn = connectionProvider.getConnection()) {
+            if (!columnExists(conn, TABLE_NAME, CREATOR_USER_ID_COLUMN)) {
+                return false;
+            }
             boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
             boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
             boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
 
-            // 기본 컬럼
             List<String> cols = new ArrayList<>();
             cols.add("customer_name");
             cols.add("inspector_name");
+            cols.add(CREATOR_USER_ID_COLUMN);
             cols.add("inspection_date");
             cols.add("vertica_version");
             cols.add("note");
 
-            // ?�택 컬럼
             if (hasSize) cols.add("license_size_gb");
             if (hasUsageSize) cols.add("license_usage_size");
             if (hasUsagePct) {
@@ -99,37 +78,35 @@ public class MaintenanceRecordDAO {
             }
             sb.append(")");
 
-            pstmt = conn.prepareStatement(sb.toString());
-            int idx = 1;
-            pstmt.setString(idx++, record.getCustomerName());
-            pstmt.setString(idx++, record.getInspectorName());
-            pstmt.setDate(idx++, record.getInspectionDate());
-            setStringOrNull(pstmt, idx++, record.getVerticaVersion());
-            setStringOrNull(pstmt, idx++, record.getNote());
-            if (hasSize) setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
-            if (hasUsageSize) setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
-            if (hasUsagePct) setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
-
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+                int idx = 1;
+                pstmt.setString(idx++, record.getCustomerName());
+                pstmt.setString(idx++, record.getInspectorName());
+                pstmt.setString(idx++, record.getCreatorUserId().trim());
+                pstmt.setDate(idx++, record.getInspectionDate());
+                setStringOrNull(pstmt, idx++, record.getVerticaVersion());
+                setStringOrNull(pstmt, idx++, record.getNote());
+                if (hasSize) setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
+                if (hasUsageSize) setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
+                if (hasUsagePct) setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                return pstmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
         }
-
-        return success;
     }
 
-    // ?�기?��? ?�력 ?�정 (존재?�는 컬럼�??�적?�로 ?�함)
-    public boolean updateMaintenanceRecord(MaintenanceRecordDTO record) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        boolean success = false;
-
-        try {
-            conn = DBConnection.getConnection();
+    public boolean updateMaintenanceRecordForOwner(
+            MaintenanceRecordDTO record, String creatorUserId) {
+        if (record == null
+                || record.getMaintenanceId() == null
+                || isBlank(creatorUserId)) {
+            return false;
+        }
+        try (Connection conn = connectionProvider.getConnection()) {
+            if (!columnExists(conn, TABLE_NAME, CREATOR_USER_ID_COLUMN)) {
+                return false;
+            }
             boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
             boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
             boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
@@ -140,57 +117,49 @@ public class MaintenanceRecordDAO {
             if (hasSize) sb.append(", license_size_gb = ?");
             if (hasUsageSize) sb.append(", license_usage_size = ?");
             if (hasUsagePct) sb.append(", license_usage_pct = ?");
-            sb.append(", updated_at = statement_timestamp() WHERE maintenance_id = ?");
+            sb.append(", updated_at = statement_timestamp() ");
+            sb.append("WHERE maintenance_id = ? AND created_by_user_id = ?");
 
-            pstmt = conn.prepareStatement(sb.toString());
-            int idx = 1;
-            pstmt.setString(idx++, record.getCustomerName());
-            pstmt.setString(idx++, record.getInspectorName());
-            pstmt.setDate(idx++, record.getInspectionDate());
-            setStringOrNull(pstmt, idx++, record.getVerticaVersion());
-            setStringOrNull(pstmt, idx++, record.getNote());
-            if (hasSize) setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
-            if (hasUsageSize) setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
-            if (hasUsagePct) setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
-            pstmt.setLong(idx++, record.getMaintenanceId());
-
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+                int idx = 1;
+                pstmt.setString(idx++, record.getCustomerName());
+                pstmt.setString(idx++, record.getInspectorName());
+                pstmt.setDate(idx++, record.getInspectionDate());
+                setStringOrNull(pstmt, idx++, record.getVerticaVersion());
+                setStringOrNull(pstmt, idx++, record.getNote());
+                if (hasSize) setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
+                if (hasUsageSize) setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
+                if (hasUsagePct) setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                pstmt.setLong(idx++, record.getMaintenanceId());
+                pstmt.setString(idx, creatorUserId.trim());
+                return pstmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
         }
-
-        return success;
     }
 
-    // ?�기?��? ?�력 ??��
-    public boolean deleteMaintenanceRecord(Long maintenanceId) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        boolean success = false;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "DELETE FROM maintenance_records WHERE maintenance_id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setLong(1, maintenanceId);
-
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
+    public boolean deleteMaintenanceRecordForOwner(
+            Long maintenanceId, String creatorUserId) {
+        if (maintenanceId == null || isBlank(creatorUserId)) {
+            return false;
         }
-
-        return success;
+        try (Connection conn = connectionProvider.getConnection()) {
+            if (!columnExists(conn, TABLE_NAME, CREATOR_USER_ID_COLUMN)) {
+                return false;
+            }
+            String sql = "DELETE FROM maintenance_records "
+                    + "WHERE maintenance_id = ? AND created_by_user_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setLong(1, maintenanceId);
+                pstmt.setString(2, creatorUserId.trim());
+                return pstmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            throw DataAccessException.from(e);
+        }
     }
 
-    // ID�??�정 ?�기?��? ?�력 조회
     public MaintenanceRecordDTO getMaintenanceRecordById(Long maintenanceId) {
         MaintenanceRecordDTO record = null;
         Connection conn = null;
@@ -202,15 +171,19 @@ public class MaintenanceRecordDAO {
             boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
             boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
             boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
+            boolean hasCreatorUserId = columnExists(
+                    conn, TABLE_NAME, CREATOR_USER_ID_COLUMN);
 
-            String sql = "SELECT " + selectColumns(hasSize, hasUsagePct, hasUsageSize)
+            String sql = "SELECT " + selectColumns(
+                    hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId)
                     + " FROM maintenance_records WHERE maintenance_id = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setLong(1, maintenanceId);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                record = mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize);
+                record = mapRowToDto(
+                        rs, hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId);
             }
         } catch (SQLException  e) {
             throw DataAccessException.from(e);
@@ -221,7 +194,6 @@ public class MaintenanceRecordDAO {
         return record;
     }
 
-    // ?�정 고객?�의 ?�기?��? ?�력 조회
     public List<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(String customerName) {
         List<MaintenanceRecordDTO> records = new ArrayList<>();
         Connection conn = null;
@@ -233,15 +205,19 @@ public class MaintenanceRecordDAO {
             boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
             boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
             boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
+            boolean hasCreatorUserId = columnExists(
+                    conn, TABLE_NAME, CREATOR_USER_ID_COLUMN);
 
-            String sql = "SELECT " + selectColumns(hasSize, hasUsagePct, hasUsageSize)
+            String sql = "SELECT " + selectColumns(
+                    hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId)
                     + " FROM maintenance_records WHERE customer_name = ? ORDER BY inspection_date DESC";
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, customerName);
             rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                MaintenanceRecordDTO record = mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize);
+                MaintenanceRecordDTO record = mapRowToDto(
+                        rs, hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId);
                 records.add(record);
             }
         } catch (SQLException  e) {
@@ -287,102 +263,6 @@ public class MaintenanceRecordDAO {
         return records;
     }
 
-    /**
-     * @deprecated Build the series from an already loaded maintenance-record list with
-     *         {@code LicenseUsageSeriesBuilder} to avoid a duplicate query.
-     */
-    @Deprecated(forRemoval = false)
-    public List<Map<String, Object>> getLicenseUsageSeries(String customerName) {
-        List<Map<String, Object>> points = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
-            if (!hasUsagePct && !hasSize && !hasUsageSize) {
-                return points; // ?�무 관??컬럼???�으�?�?결과
-            }
-
-            String sql = "SELECT inspection_date, " +
-                         (hasUsagePct ? "license_usage_pct" : "NULL AS license_usage_pct") + ", " +
-                         (hasSize ? "license_size_gb" : "NULL AS license_size_gb") + ", " +
-                         (hasUsageSize ? "license_usage_size" : "NULL AS license_usage_size") +
-                         " FROM maintenance_records WHERE customer_name = ? " +
-                         " AND (" + (hasUsagePct ? "license_usage_pct IS NOT NULL" : "1=0") +
-                         " OR " + (hasSize ? "license_size_gb IS NOT NULL" : "1=0") +
-                         " OR " + (hasUsageSize ? "license_usage_size IS NOT NULL" : "1=0") + ") " +
-                         " ORDER BY inspection_date ASC";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, customerName);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                java.sql.Date d = rs.getDate("inspection_date");
-                if (d == null) continue;
-
-                String pctStr = hasUsagePct ? rs.getString("license_usage_pct") : null;
-                String sizeStr = hasSize ? rs.getString("license_size_gb") : null; // ?�제 ?�위??TB
-                String usageSizeStr = hasUsageSize ? rs.getString("license_usage_size") : null; // TB ?�위
-
-                // �??�싱
-                Integer pct = tryParseInt(pctStr);
-                Double sizeTb = parseToTbStrict(sizeStr);   // TB�??�싱
-                Double usedTb = parseToTbStrict(usageSizeStr); // TB�??�싱
-
-                // ?�용�?미제�???size/usage�?계산
-                if (pct == null && sizeTb != null && sizeTb > 0 && usedTb != null) {
-                    int rounded = (int) Math.round((usedTb / sizeTb) * 100.0);
-                    pct = rounded;
-                }
-                // ?�용??미제�???size?� pct�?계산
-                if (usedTb == null && sizeTb != null && pct != null) {
-                    usedTb = (sizeTb * pct) / 100.0;
-                }
-                // ?�이?�스 ?�기 미제�???used?� pct�?계산 (pct>0 보호)
-                if (sizeTb == null && usedTb != null && pct != null && pct > 0) {
-                    sizeTb = (usedTb * 100.0) / pct;
-                }
-
-                Map<String, Object> point = new LinkedHashMap<>();
-                point.put("date", StrictDateParser.formatDate(d));
-                if (pct != null) {
-                    point.put("value", pct);
-                } else {
-                    point.put("value", null);
-                }
-                point.put("pct", pct);
-                point.put("usedTb", usedTb);
-                point.put("sizeTb", sizeTb);
-                points.add(point);
-            }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
-        }
-
-        return points;
-    }
-
-    // TB ?�위 ?�자�??�전 ?�싱: "3.5TB" -> 3.5, "3500 GB" -> 3.41796875, ?�위 ?�으�?TB�?간주
-    private Double parseToTbStrict(String s) {
-        if (s == null) return null;
-        String raw = s.trim();
-        if (raw.isEmpty()) return null;
-        String lower = raw.toLowerCase();
-        boolean hasGb = lower.contains("gb");
-        boolean hasTb = lower.contains("tb");
-        Double n = parseNumber(raw);
-        if (n == null) return null;
-        if (hasGb) return n / 1024.0;  // GB -> TB 변??        // TB 명시 ?�는 ?�위 미표????TB�?취급
-        return n;
-    }
-
-    // 빈 문자열을 NULL로 처리하는 헬퍼 메서드
     private void setStringOrNull(PreparedStatement pstmt, int parameterIndex, String value) throws SQLException {
         if (value == null || value.trim().isEmpty()) {
             pstmt.setNull(parameterIndex, Types.VARCHAR);
@@ -392,8 +272,20 @@ public class MaintenanceRecordDAO {
     }
 
     private MaintenanceRecordDTO mapRowToDto(ResultSet rs, boolean hasSize, boolean hasUsagePct, boolean hasUsageSize) throws SQLException {
+        return mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize, false);
+    }
+
+    private MaintenanceRecordDTO mapRowToDto(
+            ResultSet rs,
+            boolean hasSize,
+            boolean hasUsagePct,
+            boolean hasUsageSize,
+            boolean hasCreatorUserId) throws SQLException {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
         record.setMaintenanceId(rs.getLong("maintenance_id"));
+        if (hasCreatorUserId) {
+            record.setCreatorUserId(rs.getString(CREATOR_USER_ID_COLUMN));
+        }
         record.setCustomerName(rs.getString("customer_name"));
         record.setInspectorName(rs.getString("inspector_name"));
         record.setInspectionDate(rs.getDate("inspection_date"));
@@ -415,27 +307,24 @@ public class MaintenanceRecordDAO {
         return record;
     }
 
-    private Integer tryParseInt(String s) {
-        if (s == null) return null;
-        try {
-            String trimmed = s.trim();
-            if (trimmed.isEmpty()) return null;
-            // ?�자�??�기�??�싱 ?�도 (?? "75%" -> 75)
-            String digits = trimmed.replaceAll("[^0-9-]", "");
-            if (digits.isEmpty()) return null;
-            return Integer.parseInt(digits);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     boolean columnExists(Connection conn, String tableName, String columnName) {
         return schemaCapabilities.columnExists(conn, tableName, columnName);
     }
 
     private static String selectColumns(
             boolean hasSize, boolean hasUsagePct, boolean hasUsageSize) {
+        return selectColumns(hasSize, hasUsagePct, hasUsageSize, false);
+    }
+
+    private static String selectColumns(
+            boolean hasSize,
+            boolean hasUsagePct,
+            boolean hasUsageSize,
+            boolean hasCreatorUserId) {
         StringBuilder columns = new StringBuilder(BASE_SELECT_COLUMNS);
+        if (hasCreatorUserId) {
+            columns.append(", ").append(CREATOR_USER_ID_COLUMN);
+        }
         if (hasSize) {
             columns.append(", license_size_gb");
         }
@@ -448,94 +337,94 @@ public class MaintenanceRecordDAO {
         return columns.toString();
     }
 
-    // ?�자/?�위 문자?�을 ?�전?�게 ?�자�??�싱
-    private Double parseNumber(String s) {
-        if (s == null) return null;
-        String t = s.trim();
-        if (t.isEmpty()) return null;
-        // 콤마 ?�거 ???�자/?�수/부?�만 ?��?
-        t = t.replace(",", "");
-        t = t.replaceAll("[^0-9.\\-]", "");
-        if (t.isEmpty() || t.equals("-") || t.equals(".")) return null;
-        try {
-            return Double.parseDouble(t);
-        } catch (NumberFormatException e) {
-            return null;
+    public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByOwner(
+            String creatorUserId,
+            String legacyInspectorName,
+            int requestedPage,
+            int pageSize) {
+        Pagination.totalPages(0, pageSize);
+        if (isBlank(creatorUserId) && isBlank(legacyInspectorName)) {
+            return new PageResult<>(List.of(), 0, 1, pageSize);
         }
-    }
 
-    // "12TB", "500 GB" 같�? 값을 GB ?�위 ?�자�??�산
-    private Double parseToGb(String s) {
-        if (s == null) return null;
-        String raw = s.trim();
-        if (raw.isEmpty()) return null;
-        String lower = raw.toLowerCase();
-        boolean isTb = lower.contains("tb");
-        boolean isGb = lower.contains("gb");
-        Double n = parseNumber(raw);
-        if (n == null) return null;
-        if (isTb || (!isGb && !isTb)) {
-            // TB 명시 ?�는 ?�위 미표??기본 TB)??경우 GB�??�산
-            return n * 1024.0;
-        }
-        return n; // GB 명시 ??그�?�?반환
-    }
-
-    public MaintenanceRecordDTO getLatestMaintenanceRecordForCustomer(String customerName) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        try {
-            conn = DBConnection.getConnection();
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
-
-            String sql = "SELECT " + selectColumns(hasSize, hasUsagePct, hasUsageSize)
-                    + " FROM maintenance_records WHERE customer_name = ? ORDER BY inspection_date DESC LIMIT 1";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, customerName);
-            rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize);
+        try (Connection connection = connectionProvider.getConnection()) {
+            boolean hasCreatorUserId = columnExists(
+                    connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
+            if (hasCreatorUserId && isBlank(creatorUserId)) {
+                return new PageResult<>(List.of(), 0, 1, pageSize);
             }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
-        }
-        return null;
-    }
-
-    // 특정 담당자의 점검 기록 목록 조회 (List 형태)
-    public List<MaintenanceRecordDTO> getMaintenanceRecordsByInspector(String inspectorName) {
-        List<MaintenanceRecordDTO> records = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
-
-            String sql = "SELECT " + selectColumns(hasSize, hasUsagePct, hasUsageSize)
-                    + " FROM maintenance_records WHERE inspector_name = ? ORDER BY inspection_date DESC";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, inspectorName);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                MaintenanceRecordDTO record = mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize);
-                records.add(record);
+            if (!hasCreatorUserId && isBlank(legacyInspectorName)) {
+                return new PageResult<>(List.of(), 0, 1, pageSize);
             }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
-        }
+            boolean hasSize = columnExists(
+                    connection, "maintenance_records", "license_size_gb");
+            boolean hasUsagePct = columnExists(
+                    connection, "maintenance_records", "license_usage_pct");
+            boolean hasUsageSize = columnExists(
+                    connection, "maintenance_records", "license_usage_size");
 
-        return records;
+            String ownerColumn = hasCreatorUserId
+                    ? CREATOR_USER_ID_COLUMN
+                    : "inspector_name";
+            String ownerValue = hasCreatorUserId
+                    ? creatorUserId.trim()
+                    : legacyInspectorName.trim();
+            int totalCount;
+            String countSql = "SELECT COUNT(*) FROM maintenance_records "
+                    + "WHERE " + ownerColumn + " = ?";
+            try (PreparedStatement statement =
+                            connection.prepareStatement(countSql)) {
+                statement.setString(1, ownerValue);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    totalCount = resultSet.next() ? resultSet.getInt(1) : 0;
+                }
+            }
+
+            int totalPages = Pagination.totalPages(totalCount, pageSize);
+            int page = Pagination.clampPage(requestedPage, totalPages);
+            if (totalCount == 0) {
+                return new PageResult<>(List.of(), 0, page, pageSize);
+            }
+
+            String itemSql = "SELECT "
+                    + selectColumns(
+                            hasSize,
+                            hasUsagePct,
+                            hasUsageSize,
+                            hasCreatorUserId)
+                    + " FROM maintenance_records WHERE "
+                    + ownerColumn + " = ? "
+                    + "ORDER BY CASE WHEN inspection_date IS NULL "
+                    + "THEN 1 ELSE 0 END, inspection_date DESC, "
+                    + "maintenance_id DESC LIMIT ? OFFSET ?";
+            List<MaintenanceRecordDTO> records = new ArrayList<>();
+            try (PreparedStatement statement =
+                            connection.prepareStatement(itemSql)) {
+                statement.setString(1, ownerValue);
+                statement.setInt(2, pageSize);
+                statement.setInt(
+                        3, Pagination.offset(page, pageSize));
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        records.add(mapRowToDto(
+                                resultSet,
+                                hasSize,
+                                hasUsagePct,
+                                hasUsageSize,
+                                hasCreatorUserId));
+                    }
+                }
+            }
+            return new PageResult<>(
+                    records, totalCount, page, pageSize);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load maintenance page by owner", exception);
+        }
     }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
 }

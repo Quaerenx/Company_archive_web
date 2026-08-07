@@ -7,12 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.DataAccessException;
 import com.company.model.UserDTO;
+import com.company.security.LoginAttemptLimiter;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.lang.reflect.Proxy;
 import java.sql.SQLException;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,6 +84,47 @@ class LoginServletTest {
         assertEquals(0, authenticatedSession.maxInactiveIntervalUpdates.get());
     }
 
+    @Test
+    void repeatedFailuresAreRejectedBeforeAnotherDatabaseAuthentication()
+            throws Exception {
+        AtomicInteger authenticationCalls = new AtomicInteger();
+        LoginAttemptLimiter limiter = new LoginAttemptLimiter(
+                Clock.systemUTC(),
+                2,
+                100,
+                Duration.ofMinutes(5),
+                Duration.ofMinutes(1),
+                100);
+        LoginServlet servlet = new LoginServlet(
+                (userId, password) -> {
+                    authenticationCalls.incrementAndGet();
+                    return null;
+                },
+                limiter);
+
+        ResponseFixture firstResponse = submitInvalidLogin(servlet);
+        ResponseFixture secondResponse = submitInvalidLogin(servlet);
+        ResponseFixture thirdResponse = submitInvalidLogin(servlet);
+
+        assertEquals(
+                HttpServletResponse.SC_UNAUTHORIZED,
+                firstResponse.status.get());
+        assertEquals(429, secondResponse.status.get());
+        assertEquals(429, thirdResponse.status.get());
+        assertTrue(secondResponse.headers.containsKey("Retry-After"));
+        assertEquals(2, authenticationCalls.get());
+    }
+
+    private static ResponseFixture submitInvalidLogin(LoginServlet servlet)
+            throws Exception {
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("userId", "tester");
+        request.parameters.put("password", "wrong");
+        ResponseFixture response = new ResponseFixture();
+        servlet.doPost(request.proxy(), response.proxy());
+        return response;
+    }
+
     private static final class RequestFixture {
         private final Map<String, String> parameters = new HashMap<>();
         private final Map<String, Object> attributes = new HashMap<>();
@@ -114,6 +158,7 @@ class LoginServletTest {
                     (ignored, call, args) -> switch (call.getName()) {
                         case "getParameter" -> parameters.get((String) args[0]);
                         case "getContextPath" -> "/frog2";
+                        case "getRemoteAddr" -> "127.0.0.1";
                         case "setAttribute" -> {
                             attributes.put((String) args[0], args[1]);
                             yield null;
@@ -176,6 +221,7 @@ class LoginServletTest {
 
     private static final class ResponseFixture {
         private final AtomicInteger status = new AtomicInteger(HttpServletResponse.SC_OK);
+        private final Map<String, String> headers = new HashMap<>();
 
         private String redirect;
         private HttpServletResponse proxy() {
@@ -189,6 +235,10 @@ class LoginServletTest {
                         }
                         case "sendRedirect" -> {
                             redirect = (String) args[0];
+                            yield null;
+                        }
+                        case "setHeader" -> {
+                            headers.put((String) args[0], (String) args[1]);
                             yield null;
                         }
                         default -> defaultValue(call.getReturnType());

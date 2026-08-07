@@ -8,120 +8,113 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.company.util.DBConnection;
+import com.company.util.Pagination;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TroubleshootingDAO {
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(TroubleshootingDAO.class);
+    private static final String TABLE_NAME = "troubleshooting";
+    private static final String CREATOR_USER_ID_COLUMN = "creator_user_id";
+    private static final String SUMMARY_COLUMNS =
+            "id, title, customer_name, occurrence_date, creator, create_date";
+    private static final String SEARCH_PREDICATE =
+            "(title ILIKE ? "
+                    + "OR customer_name ILIKE ? "
+                    + "OR creator ILIKE ? "
+                    + "OR CAST(SUBSTR(overview,1,65000) AS VARCHAR(65000)) "
+                    + "ILIKE CAST(? AS VARCHAR(65000)) "
+                    + "OR CAST(SUBSTR(cause_analysis,1,65000) AS VARCHAR(65000)) "
+                    + "ILIKE CAST(? AS VARCHAR(65000)) "
+                    + "OR CAST(SUBSTR(error_content,1,65000) AS VARCHAR(65000)) "
+                    + "ILIKE CAST(? AS VARCHAR(65000)) "
+                    + "OR CAST(SUBSTR(action_taken,1,65000) AS VARCHAR(65000)) "
+                    + "ILIKE CAST(? AS VARCHAR(65000)) "
+                    + "OR CAST(SUBSTR(script_content,1,65000) AS VARCHAR(65000)) "
+                    + "ILIKE CAST(? AS VARCHAR(65000)) "
+                    + "OR CAST(SUBSTR(note,1,65000) AS VARCHAR(65000)) "
+                    + "ILIKE CAST(? AS VARCHAR(65000)))";
+    private static final String STABLE_SUMMARY_ORDER =
+            " ORDER BY CASE WHEN occurrence_date IS NULL THEN 1 ELSE 0 END, "
+                    + "occurrence_date DESC, create_date DESC, id DESC";
+    private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
+            new SchemaCapabilityCache();
 
-    // 모든 ?�러�??�팅 목록 조회
-    public List<TroubleshootingDTO> getAllTroubleshooting() {
-        List<TroubleshootingDTO> troubleshootingList = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+    private final JdbcConnectionProvider connectionProvider;
+    private final SchemaCapabilityCache schemaCapabilities;
 
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "SELECT id, title, customer_name, occurrence_date, creator, create_date " +
-                        // ?�렬: 발생?�자 ?�림차순, NULL?� ?�로, ?�일 ???�성???�림차순
-                        "FROM troubleshooting ORDER BY occurrence_date DESC";
-            pstmt = conn.prepareStatement(sql);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                TroubleshootingDTO ts = new TroubleshootingDTO();
-                ts.setId(rs.getInt("id"));
-                ts.setTitle(rs.getString("title"));
-                ts.setCustomerName(rs.getString("customer_name"));
-
-                Timestamp occurrenceTs = rs.getTimestamp("occurrence_date");
-                if (occurrenceTs != null) {
-                    ts.setOccurrenceDate(new java.util.Date(occurrenceTs.getTime()));
-                }
-
-                ts.setCreator(rs.getString("creator"));
-
-                Timestamp createTs = rs.getTimestamp("create_date");
-                if (createTs != null) {
-                    ts.setCreateDate(new java.util.Date(createTs.getTime()));
-                }
-
-                troubleshootingList.add(ts);
-            }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
-        }
-
-        return troubleshootingList;
+    public TroubleshootingDAO() {
+        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES);
     }
 
-    // 검색: 제목/고객명/작성자 및 본문 필드까지 ILIKE 검색
-    public List<TroubleshootingDTO> searchTroubleshooting(String query) {
-        List<TroubleshootingDTO> troubleshootingList = new ArrayList<>();
-        if (query == null || query.trim().isEmpty()) {
-            return troubleshootingList;
-        }
-
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql =
-                "SELECT id, title, customer_name, occurrence_date, creator, create_date " +
-                "FROM troubleshooting " +
-                "WHERE title ILIKE ? " +
-                "   OR customer_name ILIKE ? " +
-                "   OR creator ILIKE ? " +
-                "   OR CAST(SUBSTR(overview,1,65000) AS VARCHAR(65000)) ILIKE CAST(? AS VARCHAR(65000)) " +
-                "   OR CAST(SUBSTR(cause_analysis,1,65000) AS VARCHAR(65000)) ILIKE CAST(? AS VARCHAR(65000)) " +
-                "   OR CAST(SUBSTR(error_content,1,65000) AS VARCHAR(65000)) ILIKE CAST(? AS VARCHAR(65000)) " +
-                "   OR CAST(SUBSTR(action_taken,1,65000) AS VARCHAR(65000)) ILIKE CAST(? AS VARCHAR(65000)) " +
-                "   OR CAST(SUBSTR(script_content,1,65000) AS VARCHAR(65000)) ILIKE CAST(? AS VARCHAR(65000)) " +
-                "   OR CAST(SUBSTR(note,1,65000) AS VARCHAR(65000)) ILIKE CAST(? AS VARCHAR(65000)) " +
-                // ?�렬: 발생?�자 ?�림차순, NULL?� ?�로, ?�일 ???�성???�림차순
-                "ORDER BY occurrence_date DESC NULLS LAST, create_date DESC";
-
-            pstmt = conn.prepareStatement(sql);
-            String like = "%" + query.trim() + "%";
-            for (int i = 1; i <= 9; i++) {
-                pstmt.setString(i, like);
-            }
-
-            rs = pstmt.executeQuery();
-            while (rs.next()) {
-                TroubleshootingDTO ts = new TroubleshootingDTO();
-                ts.setId(rs.getInt("id"));
-                ts.setTitle(rs.getString("title"));
-                ts.setCustomerName(rs.getString("customer_name"));
-
-                Timestamp occurrenceTs = rs.getTimestamp("occurrence_date");
-                if (occurrenceTs != null) {
-                    ts.setOccurrenceDate(new java.util.Date(occurrenceTs.getTime()));
-                }
-
-                ts.setCreator(rs.getString("creator"));
-
-                Timestamp createTs = rs.getTimestamp("create_date");
-                if (createTs != null) {
-                    ts.setCreateDate(new java.util.Date(createTs.getTime()));
-                }
-
-                troubleshootingList.add(ts);
-            }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
-        }
-
-        return troubleshootingList;
+    TroubleshootingDAO(
+            JdbcConnectionProvider connectionProvider,
+            SchemaCapabilityCache schemaCapabilities) {
+        this.connectionProvider = Objects.requireNonNull(
+                connectionProvider, "connectionProvider");
+        this.schemaCapabilities = Objects.requireNonNull(
+                schemaCapabilities, "schemaCapabilities");
     }
 
-    // ?�정 ?�러�??�팅 ?�세 조회
+    public PageResult<TroubleshootingDTO> getTroubleshootingPage(
+            String query, int requestedPage, int pageSize) {
+        String normalizedQuery = normalizedQuery(query);
+        String whereClause =
+                normalizedQuery == null ? "" : " WHERE " + SEARCH_PREDICATE;
+        StatementBinder binder = normalizedQuery == null
+                ? (statement, startIndex) -> startIndex
+                : (statement, startIndex) ->
+                        bindSearch(statement, startIndex, normalizedQuery);
+
+        try (Connection connection = connectionProvider.getConnection()) {
+            return loadSummaryPage(
+                    connection,
+                    whereClause,
+                    binder,
+                    false,
+                    requestedPage,
+                    pageSize);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load troubleshooting page", exception);
+        }
+    }
+
+    public PageResult<TroubleshootingDTO> getTroubleshootingPageByOwner(
+            String creatorUserId,
+            String legacyCreatorName,
+            int requestedPage,
+            int pageSize) {
+        try (Connection connection = connectionProvider.getConnection()) {
+            boolean hasCreatorUserId = hasCreatorUserId(connection);
+            String ownerValue =
+                    hasCreatorUserId ? creatorUserId : legacyCreatorName;
+            if (isBlank(ownerValue)) {
+                return new PageResult<>(List.of(), 0, 1, pageSize);
+            }
+            String ownerColumn =
+                    hasCreatorUserId ? CREATOR_USER_ID_COLUMN : "creator";
+            StatementBinder binder = (statement, startIndex) -> {
+                statement.setString(startIndex, ownerValue.trim());
+                return startIndex + 1;
+            };
+            return loadSummaryPage(
+                    connection,
+                    " WHERE " + ownerColumn + " = ?",
+                    binder,
+                    hasCreatorUserId,
+                    requestedPage,
+                    pageSize);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load owned troubleshooting page", exception);
+        }
+    }
+
     public TroubleshootingDTO getTroubleshootingById(int id) {
         TroubleshootingDTO ts = null;
         Connection conn = null;
@@ -129,11 +122,13 @@ public class TroubleshootingDAO {
         ResultSet rs = null;
 
         try {
-            conn = DBConnection.getConnection();
+            conn = connectionProvider.getConnection();
+            boolean hasCreatorUserId = hasCreatorUserId(conn);
             String sql = "SELECT id, title, customer_name, customer_manager, occurrence_date, "
                     + "work_personnel, work_period, creator, create_date, support_type, "
                     + "case_open_yn, overview, cause_analysis, error_content, action_taken, "
-                    + "script_content, note, updated_date "
+                    + "script_content, note, updated_date"
+                    + (hasCreatorUserId ? ", creator_user_id " : " ")
                     + "FROM troubleshooting WHERE id = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, id);
@@ -154,6 +149,9 @@ public class TroubleshootingDAO {
                 ts.setWorkPersonnel(rs.getString("work_personnel"));
                 ts.setWorkPeriod(rs.getString("work_period"));
                 ts.setCreator(rs.getString("creator"));
+                if (hasCreatorUserId) {
+                    ts.setCreatorUserId(rs.getString(CREATOR_USER_ID_COLUMN));
+                }
 
                 Timestamp createTs = rs.getTimestamp("create_date");
                 if (createTs != null) {
@@ -174,28 +172,29 @@ public class TroubleshootingDAO {
                     ts.setUpdatedDate(new java.util.Date(updatedTs.getTime()));
                 }
             }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
+        } catch (SQLException e) {
+            throw DataAccessException.from("load troubleshooting", e);
         } finally {
-            DBConnection.close(rs, pstmt, conn);
+            close(rs, pstmt, conn);
         }
 
         return ts;
     }
 
-    // ???�러�??�팅 추�?
     public boolean addTroubleshooting(TroubleshootingDTO ts) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        boolean success = false;
 
         try {
-            conn = DBConnection.getConnection();
+            conn = connectionProvider.getConnection();
+            if (!hasCreatorUserId(conn) || isBlank(ts.getCreatorUserId())) {
+                return false;
+            }
             String sql = "INSERT INTO troubleshooting (" +
                         "title, customer_name, customer_manager, occurrence_date, work_personnel, " +
-                        "work_period, creator, support_type, case_open_yn, overview, " +
+                        "work_period, creator_user_id, creator, support_type, case_open_yn, overview, " +
                         "cause_analysis, error_content, action_taken, script_content, note" +
-                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             pstmt = conn.prepareStatement(sql);
 
@@ -211,42 +210,44 @@ public class TroubleshootingDAO {
 
             setStringOrNull(pstmt, 5, ts.getWorkPersonnel());
             setStringOrNull(pstmt, 6, ts.getWorkPeriod());
-            pstmt.setString(7, ts.getCreator());
-            setStringOrNull(pstmt, 8, ts.getSupportType());
-            setStringOrNull(pstmt, 9, ts.getCaseOpenYn());
-            setStringOrNull(pstmt, 10, ts.getOverview());
-            setStringOrNull(pstmt, 11, ts.getCauseAnalysis());
-            setStringOrNull(pstmt, 12, ts.getErrorContent());
-            setStringOrNull(pstmt, 13, ts.getActionTaken());
-            setStringOrNull(pstmt, 14, ts.getScriptContent());
-            setStringOrNull(pstmt, 15, ts.getNote());
+            pstmt.setString(7, ts.getCreatorUserId().trim());
+            pstmt.setString(8, ts.getCreator());
+            setStringOrNull(pstmt, 9, ts.getSupportType());
+            setStringOrNull(pstmt, 10, ts.getCaseOpenYn());
+            setStringOrNull(pstmt, 11, ts.getOverview());
+            setStringOrNull(pstmt, 12, ts.getCauseAnalysis());
+            setStringOrNull(pstmt, 13, ts.getErrorContent());
+            setStringOrNull(pstmt, 14, ts.getActionTaken());
+            setStringOrNull(pstmt, 15, ts.getScriptContent());
+            setStringOrNull(pstmt, 16, ts.getNote());
 
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw DataAccessException.from("add troubleshooting", e);
         } finally {
-            DBConnection.close(pstmt, conn);
+            close(pstmt, conn);
         }
-
-        return success;
     }
 
-    // ?�러�??�팅 ?�정
-    public boolean updateTroubleshooting(TroubleshootingDTO ts) {
+    public boolean updateTroubleshootingForOwner(
+            TroubleshootingDTO ts, String creatorUserId) {
+        if (isBlank(creatorUserId)) {
+            return false;
+        }
         Connection conn = null;
         PreparedStatement pstmt = null;
-        boolean success = false;
 
         try {
-            conn = DBConnection.getConnection();
+            conn = connectionProvider.getConnection();
+            if (!hasCreatorUserId(conn)) {
+                return false;
+            }
             String sql = "UPDATE troubleshooting SET " +
                         "title = ?, customer_name = ?, customer_manager = ?, occurrence_date = ?, " +
                         "work_personnel = ?, work_period = ?, support_type = ?, case_open_yn = ?, " +
                         "overview = ?, cause_analysis = ?, error_content = ?, action_taken = ?, " +
                         "script_content = ?, note = ?, updated_date = NOW() " +
-                        "WHERE id = ?";
+                        "WHERE id = ? AND creator_user_id = ?";
 
             pstmt = conn.prepareStatement(sql);
 
@@ -271,86 +272,227 @@ public class TroubleshootingDAO {
             setStringOrNull(pstmt, 13, ts.getScriptContent());
             setStringOrNull(pstmt, 14, ts.getNote());
             pstmt.setInt(15, ts.getId());
+            pstmt.setString(16, creatorUserId.trim());
 
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw DataAccessException.from("update troubleshooting", e);
         } finally {
-            DBConnection.close(pstmt, conn);
+            close(pstmt, conn);
         }
-
-        return success;
     }
 
-    // ?�러�??�팅 ??��
-    public boolean deleteTroubleshooting(int id) {
+    public boolean deleteTroubleshootingForOwner(int id, String creatorUserId) {
+        if (isBlank(creatorUserId)) {
+            return false;
+        }
         Connection conn = null;
         PreparedStatement pstmt = null;
-        boolean success = false;
 
         try {
-            conn = DBConnection.getConnection();
-            String sql = "DELETE FROM troubleshooting WHERE id = ?";
+            conn = connectionProvider.getConnection();
+            if (!hasCreatorUserId(conn)) {
+                return false;
+            }
+            String sql = "DELETE FROM troubleshooting "
+                    + "WHERE id = ? AND creator_user_id = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, id);
+            pstmt.setString(2, creatorUserId.trim());
 
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw DataAccessException.from("delete troubleshooting", e);
         } finally {
-            DBConnection.close(pstmt, conn);
+            close(pstmt, conn);
         }
-
-        return success;
     }
 
-    // 특정 작성자의 트러블슈팅 목록 조회
-    public List<TroubleshootingDTO> getTroubleshootingByCreator(String creator) {
-        List<TroubleshootingDTO> troubleshootingList = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+    private boolean hasCreatorUserId(Connection connection) {
+        return schemaCapabilities.columnExists(
+                connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
+    }
 
+    private PageResult<TroubleshootingDTO> loadSummaryPage(
+            Connection connection,
+            String whereClause,
+            StatementBinder binder,
+            boolean includeCreatorUserId,
+            int requestedPage,
+            int pageSize) throws SQLException {
+        Pagination.totalPages(0, pageSize);
+        int page = Math.max(1, requestedPage);
+        SummaryRows rows;
         try {
-            conn = DBConnection.getConnection();
-            String sql = "SELECT id, title, customer_name, occurrence_date, creator, create_date " +
-                        "FROM troubleshooting WHERE creator = ? " +
-                        "ORDER BY occurrence_date DESC";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, creator);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                TroubleshootingDTO ts = new TroubleshootingDTO();
-                ts.setId(rs.getInt("id"));
-                ts.setTitle(rs.getString("title"));
-                ts.setCustomerName(rs.getString("customer_name"));
-
-                Timestamp occurrenceTs = rs.getTimestamp("occurrence_date");
-                if (occurrenceTs != null) {
-                    ts.setOccurrenceDate(new java.util.Date(occurrenceTs.getTime()));
-                }
-
-                ts.setCreator(rs.getString("creator"));
-
-                Timestamp createTs = rs.getTimestamp("create_date");
-                if (createTs != null) {
-                    ts.setCreateDate(new java.util.Date(createTs.getTime()));
-                }
-
-                troubleshootingList.add(ts);
-            }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
+            rows = loadSummaryRows(
+                    connection,
+                    whereClause,
+                    binder,
+                    includeCreatorUserId,
+                    page,
+                    pageSize);
+        } catch (ArithmeticException exception) {
+            rows = new SummaryRows(List.of(), 0);
         }
 
-        return troubleshootingList;
+        if (!rows.items().isEmpty() || page == 1) {
+            return new PageResult<>(
+                    rows.items(),
+                    rows.totalCount(),
+                    page,
+                    pageSize);
+        }
+
+        int totalCount = countSummaryRows(
+                connection, whereClause, binder);
+        int correctedPage = Pagination.clampPage(
+                page,
+                Pagination.totalPages(totalCount, pageSize));
+        if (totalCount == 0) {
+            return new PageResult<>(
+                    List.of(), 0, correctedPage, pageSize);
+        }
+        SummaryRows correctedRows = loadSummaryRows(
+                connection,
+                whereClause,
+                binder,
+                includeCreatorUserId,
+                correctedPage,
+                pageSize);
+        return new PageResult<>(
+                correctedRows.items(),
+                correctedRows.totalCount(),
+                correctedPage,
+                pageSize);
+    }
+
+    private SummaryRows loadSummaryRows(
+            Connection connection,
+            String whereClause,
+            StatementBinder binder,
+            boolean includeCreatorUserId,
+            int page,
+            int pageSize) throws SQLException {
+        String itemSql = "SELECT " + SUMMARY_COLUMNS
+                + (includeCreatorUserId ? ", " + CREATOR_USER_ID_COLUMN : "")
+                + ", COUNT(*) OVER () AS total_count"
+                + " FROM " + TABLE_NAME
+                + whereClause
+                + STABLE_SUMMARY_ORDER
+                + " LIMIT ? OFFSET ?";
+        List<TroubleshootingDTO> items = new ArrayList<>();
+        int totalCount = 0;
+        try (PreparedStatement statement =
+                        connection.prepareStatement(itemSql)) {
+            int parameterIndex = binder.bind(statement, 1);
+            statement.setInt(parameterIndex++, pageSize);
+            statement.setInt(
+                    parameterIndex,
+                    Pagination.offset(page, pageSize));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    if (items.isEmpty()) {
+                        totalCount = resultSet.getInt("total_count");
+                    }
+                    items.add(mapSummary(
+                            resultSet, includeCreatorUserId));
+                }
+            }
+        }
+        return new SummaryRows(items, totalCount);
+    }
+
+    private int countSummaryRows(
+            Connection connection,
+            String whereClause,
+            StatementBinder binder) throws SQLException {
+        String countSql = "SELECT COUNT(*) FROM " + TABLE_NAME + whereClause;
+        try (PreparedStatement statement =
+                        connection.prepareStatement(countSql)) {
+            binder.bind(statement, 1);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getInt(1) : 0;
+            }
+        }
+    }
+
+    private static TroubleshootingDTO mapSummary(
+            ResultSet resultSet,
+            boolean includeCreatorUserId) throws SQLException {
+        TroubleshootingDTO troubleshooting = new TroubleshootingDTO();
+        troubleshooting.setId(resultSet.getInt("id"));
+        troubleshooting.setTitle(resultSet.getString("title"));
+        troubleshooting.setCustomerName(
+                resultSet.getString("customer_name"));
+
+        Timestamp occurrenceTimestamp =
+                resultSet.getTimestamp("occurrence_date");
+        if (occurrenceTimestamp != null) {
+            troubleshooting.setOccurrenceDate(
+                    new java.util.Date(occurrenceTimestamp.getTime()));
+        }
+
+        troubleshooting.setCreator(resultSet.getString("creator"));
+        if (includeCreatorUserId) {
+            troubleshooting.setCreatorUserId(
+                    resultSet.getString(CREATOR_USER_ID_COLUMN));
+        }
+
+        Timestamp createTimestamp =
+                resultSet.getTimestamp("create_date");
+        if (createTimestamp != null) {
+            troubleshooting.setCreateDate(
+                    new java.util.Date(createTimestamp.getTime()));
+        }
+        return troubleshooting;
+    }
+
+    private static int bindSearch(
+            PreparedStatement statement,
+            int startIndex,
+            String query) throws SQLException {
+        String like = "%" + query + "%";
+        int parameterIndex = startIndex;
+        for (int field = 0; field < 9; field++) {
+            statement.setString(parameterIndex++, like);
+        }
+        return parameterIndex;
+    }
+
+    private static String normalizedQuery(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return null;
+        }
+        return query.trim();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    @FunctionalInterface
+    private interface StatementBinder {
+        int bind(PreparedStatement statement, int startIndex)
+                throws SQLException;
+    }
+
+    private record SummaryRows(
+            List<TroubleshootingDTO> items, int totalCount) {
+    }
+
+    private static void close(AutoCloseable... resources) {
+        for (AutoCloseable resource : resources) {
+            if (resource == null) {
+                continue;
+            }
+            try {
+                resource.close();
+            } catch (Exception exception) {
+                LOGGER.warn(
+                        "Troubleshooting JDBC resource cleanup failed",
+                        exception);
+            }
+        }
     }
 
     // 빈 문자열을 NULL로 처리하는 헬퍼 메서드

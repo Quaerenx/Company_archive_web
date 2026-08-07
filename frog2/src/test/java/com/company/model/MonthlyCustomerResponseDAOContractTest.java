@@ -1,22 +1,139 @@
 package com.company.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.Date;
 import java.sql.SQLNonTransientException;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class MonthlyCustomerResponseDAOContractTest {
+    @Test
+    void monthlyLookupUsesHalfOpenDateRange() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        MonthlyCustomerResponseDAO dao =
+                new MonthlyCustomerResponseDAO(jdbc::open);
+
+        assertTrue(dao.getMonthlyResponses(
+                "user-1", "tester", 2026, 7).isEmpty());
+
+        assertEquals(1, jdbc.statements.size());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "response_date >= ? AND response_date < ?"));
+        assertFalse(statement.sql.contains("YEAR("));
+        assertFalse(statement.sql.contains("MONTH("));
+        assertEquals("tester", statement.parameters.get(1));
+        assertEquals(Date.valueOf("2026-07-01"),
+                statement.parameters.get(2));
+        assertEquals(Date.valueOf("2026-08-01"),
+                statement.parameters.get(3));
+    }
+
+    @Test
+    void monthlyLookupHandlesLeapYearAndYearBoundary() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue();
+        MonthlyCustomerResponseDAO dao =
+                new MonthlyCustomerResponseDAO(jdbc::open);
+
+        dao.getMonthlyResponses("user-1", "tester", 2024, 2);
+        dao.getMonthlyResponses("user-1", "tester", 2026, 12);
+
+        assertEquals(Date.valueOf("2024-02-01"),
+                jdbc.statements.get(0).parameters.get(2));
+        assertEquals(Date.valueOf("2024-03-01"),
+                jdbc.statements.get(0).parameters.get(3));
+        assertEquals(Date.valueOf("2026-12-01"),
+                jdbc.statements.get(1).parameters.get(2));
+        assertEquals(Date.valueOf("2027-01-01"),
+                jdbc.statements.get(1).parameters.get(3));
+    }
+
+    @Test
+    void invalidMonthKeepsEmptyResultWithoutOpeningDatabase() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        MonthlyCustomerResponseDAO dao =
+                new MonthlyCustomerResponseDAO(jdbc::open);
+
+        assertTrue(dao.getMonthlyResponses(
+                "user-1", "tester", 2026, 13).isEmpty());
+        assertTrue(dao.getMonthlyResponses(
+                "user-1", "tester", 999_999_999, 12).isEmpty());
+        assertEquals(0, jdbc.openCount);
+    }
+
+    @Test
+    void migratedLookupUsesStableUserId() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns =
+                Set.of("monthly_customer_response.created_by_user_id");
+        jdbc.enqueue();
+        MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        assertTrue(dao.getMonthlyResponses(
+                " user-1 ", "Old Name", 2026, 7).isEmpty());
+
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "WHERE created_by_user_id = ?"));
+        assertEquals("user-1", statement.parameters.get(1));
+    }
+
+    @Test
+    void writeFailsClosedWhenOwnershipColumnIsMissing() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO(
+                jdbc::open, new SchemaCapabilityCache());
+        MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
+        dto.setUserId("user-1");
+
+        assertFalse(dao.addResponse(dto));
+        assertTrue(jdbc.statements.isEmpty());
+    }
+
+    @Test
+    void writePersistsStableOwnerWhenMigrationIsReady() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns =
+                Set.of("monthly_customer_response.created_by_user_id");
+        jdbc.enqueueUpdate(1);
+        MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO(
+                jdbc::open, new SchemaCapabilityCache());
+        MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
+        dto.setUserId("user-1");
+        dto.setUserName("Renamed");
+        dto.setResponseDate(Date.valueOf("2026-07-31"));
+        dto.setCustomerName("Acme");
+
+        assertTrue(dao.addResponse(dto));
+
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains("created_by_user_id"));
+        assertEquals("user-1", statement.parameters.get(1));
+        assertEquals("Renamed", statement.parameters.get(2));
+    }
+
     @Test
     void readOnlyWriteFailureRemainsExplicit() {
         MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO(() -> {
             throw new SQLNonTransientException("blocked", "25006");
         });
+        MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
+        dto.setUserId("user-1");
 
         DataAccessException exception = assertThrows(
                 DataAccessException.class,
-                () -> dao.addResponse(new MonthlyCustomerResponseDTO()));
+                () -> dao.addResponse(dto));
 
         assertTrue(exception.isReadOnlyViolation());
         assertEquals(DataAccessException.Kind.READ_ONLY, exception.getKind());

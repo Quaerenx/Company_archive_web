@@ -11,6 +11,7 @@ public class TroubleshootingDTO {
     private Date occurrenceDate;
     private String workPersonnel;
     private String workPeriod;
+    private String creatorUserId;
     private String creator;
     private Date createDate;
     private String supportType;
@@ -84,6 +85,14 @@ public class TroubleshootingDTO {
 
     public void setWorkPeriod(String workPeriod) {
         this.workPeriod = workPeriod;
+    }
+
+    public String getCreatorUserId() {
+        return creatorUserId;
+    }
+
+    public void setCreatorUserId(String creatorUserId) {
+        this.creatorUserId = creatorUserId;
     }
 
     public String getCreator() {

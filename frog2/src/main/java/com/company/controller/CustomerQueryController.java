@@ -5,6 +5,8 @@ import com.company.model.CustomerCounts;
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDAO;
 import com.company.model.CustomerDetailDTO;
+import com.company.model.CustomerPage;
+import com.company.model.PageResult;
 import com.company.model.VerticaEosDAO;
 import com.company.web.ApplicationError;
 import com.company.web.JsonResponse;
@@ -67,17 +69,29 @@ final class CustomerQueryController {
         String sortField = defaultValue(request.getParameter("sortField"), "");
         String sortDirection = defaultValue(request.getParameter("sortDirection"), "ASC");
         String filter = defaultValue(request.getParameter("filter"), "maintenance");
-        List<CustomerDTO> customers =
-                nullToEmpty(customerDAO.getAllCustomers(sortField, sortDirection, filter));
-        CustomerCounts counts = customerDAO.getCustomerCounts();
+        String query = mapper.searchQuery(request);
+        CustomerPage customerPage = customerDAO.getCustomerPage(
+                sortField,
+                sortDirection,
+                filter,
+                query,
+                mapper.requestedPage(request),
+                mapper.requestedPageSize(request));
+        PageResult<CustomerDTO> page = customerPage.result();
+        CustomerCounts counts = customerPage.counts();
 
-        request.setAttribute("customerList", customers);
+        request.setAttribute("customerList", page.items());
         request.setAttribute("sortField", sortField);
         request.setAttribute("sortDirection", sortDirection);
         request.setAttribute("filter", filter);
-        request.setAttribute("currentCount", customers.size());
+        request.setAttribute("q", query);
+        request.setAttribute("currentCount", page.totalCount());
+        request.setAttribute("pageItemCount", page.items().size());
         request.setAttribute("totalCount", counts.total());
         request.setAttribute("maintenanceCount", counts.maintenance());
+        request.setAttribute("currentPage", page.page());
+        request.setAttribute("pageSize", page.pageSize());
+        request.setAttribute("totalPages", page.totalPages());
         forward(request, response, "/customers/customers_list.jsp", "list");
     }
 

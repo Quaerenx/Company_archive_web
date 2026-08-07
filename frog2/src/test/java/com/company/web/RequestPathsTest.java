@@ -30,7 +30,11 @@ class RequestPathsTest {
                 "/css/legacy.css",
                 "/js/legacy.js",
                 "/webjars/library/file.js",
+                "/resources/fonts/ibm-plex-sans-kr/1.1.0/font.woff2",
+                "/resources/images/archive-primary-logo.svg",
+                "/resources/images/archive-compact-horizontal.svg",
                 "/favicon.ico",
+                "/favicon.svg",
                 "/favicon.png"}) {
             assertTrue(RequestPaths.isStaticResource(path), () -> "Expected static path: " + path);
         }
@@ -42,6 +46,9 @@ class RequestPathsTest {
                 "/resources/hidden.class",
                 "/resources/active.html",
                 "/resources/vector.svg",
+                "/resources/images/archive-primary-logo.svg/extra",
+                "/resources/images/other.svg",
+                "/favicon.svg/extra",
                 "/resources/hidden.jsp;asset=.js",
                 "/resources/hidden.jsp%3Basset=.js",
                 "/resources/../WEB-INF/hidden.css",
@@ -65,7 +72,13 @@ class RequestPathsTest {
         assertTrue(RequestPaths.isPublicStaticRequest(
                 request("GET", "/frog2/resources/css/base.css", "/frog2")));
         assertTrue(RequestPaths.isPublicStaticRequest(
+                request("GET", "/frog2/resources/fonts/font.woff2", "/frog2")));
+        assertTrue(RequestPaths.isPublicStaticRequest(
+                request("GET", "/frog2/resources/images/archive-primary-logo.svg", "/frog2")));
+        assertTrue(RequestPaths.isPublicStaticRequest(
                 request("HEAD", "/frog2/favicon.ico", "/frog2")));
+        assertTrue(RequestPaths.isPublicStaticRequest(
+                request("GET", "/frog2/favicon.svg", "/frog2")));
         assertFalse(RequestPaths.isPublicStaticRequest(
                 request("POST", "/frog2/resources/js/app.js", "/frog2")));
         assertFalse(RequestPaths.isPublicStaticRequest(

@@ -2,6 +2,7 @@ package com.company.controller;
 
 import com.company.model.TroubleshootingDTO;
 import com.company.model.UserDTO;
+import com.company.util.Pagination;
 import com.company.util.StrictDateParser;
 import jakarta.servlet.http.HttpServletRequest;
 import java.text.ParseException;
@@ -9,12 +10,17 @@ import java.util.Date;
 import java.util.Set;
 
 final class TroubleshootingRequestMapper {
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int MAXIMUM_PAGE_SIZE = 100;
     private static final Set<String> SUPPORT_TYPES = Set.of("방문", "원격");
     private static final Set<String> CASE_OPEN_VALUES = Set.of("Y", "N");
 
     TroubleshootingDTO mapCreate(HttpServletRequest request, UserDTO user) {
         TroubleshootingDTO troubleshooting = mapForm(request);
-        troubleshooting.setCreator(user.getUserName());
+        troubleshooting.setCreatorUserId(requiredIdentity(
+                user == null ? null : user.getUserId()));
+        troubleshooting.setCreator(requiredIdentity(
+                user == null ? null : user.getUserName()));
         return troubleshooting;
     }
 
@@ -39,6 +45,17 @@ final class TroubleshootingRequestMapper {
         } catch (NumberFormatException exception) {
             throw invalid("트러블 슈팅 ID가 올바르지 않습니다.");
         }
+    }
+
+    int requestedPage(HttpServletRequest request) {
+        return Pagination.requestedPage(request.getParameter("page"));
+    }
+
+    int requestedPageSize(HttpServletRequest request) {
+        return Pagination.requestedPageSize(
+                request.getParameter("pageSize"),
+                DEFAULT_PAGE_SIZE,
+                MAXIMUM_PAGE_SIZE);
     }
 
     private TroubleshootingDTO mapForm(HttpServletRequest request) {
@@ -106,6 +123,14 @@ final class TroubleshootingRequestMapper {
             return null;
         }
         return value.trim();
+    }
+
+    private static String requiredIdentity(String value) {
+        String identity = trimmed(value);
+        if (identity == null) {
+            throw invalid("로그인 사용자 정보를 확인할 수 없습니다.");
+        }
+        return identity;
     }
 
     private static IllegalArgumentException invalid(String message) {

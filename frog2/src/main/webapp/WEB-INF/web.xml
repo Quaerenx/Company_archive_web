@@ -4,11 +4,11 @@
          xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
          version="6.0">
 
-    <display-name>frog2</display-name>
+    <display-name>Archive</display-name>
 
     <context-param>
         <param-name>frog2AssetVersion</param-name>
-        <param-value>20260730-design-common-1</param-value>
+        <param-value>20260807-preview-retirement-1</param-value>
     </context-param>
 
     <session-config>
@@ -65,6 +65,15 @@
     </filter>
     <filter-mapping>
         <filter-name>CharacterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>RequestTimingFilter</filter-name>
+        <filter-class>com.company.filter.RequestTimingFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>RequestTimingFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 

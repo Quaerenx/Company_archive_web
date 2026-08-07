@@ -10,6 +10,8 @@ import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDAO;
 import com.company.model.CustomerDetailDTO;
 import com.company.model.CustomerDetailSet;
+import com.company.model.CustomerPage;
+import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.model.VerticaEosDAO;
 import jakarta.servlet.RequestDispatcher;
@@ -44,15 +46,19 @@ class CustomerControllerCompatibilityTest {
         assertEquals("", customerDAO.lastSortField);
         assertEquals("ASC", customerDAO.lastSortDirection);
         assertEquals("maintenance", customerDAO.lastFilter);
-        assertEquals(List.of(), customerDAO.countFilters);
-        assertEquals(1, customerDAO.summaryCalls);
+        assertEquals(1, customerDAO.lastPage);
+        assertEquals(50, customerDAO.lastPageSize);
+        assertEquals(null, customerDAO.lastQuery);
         assertEquals("/customers/customers_list.jsp", request.forwardedPath);
         assertEquals("list", request.attributes.get("viewType"));
         assertEquals("maintenance", request.attributes.get("filter"));
         assertSame(customerDAO.customers, request.attributes.get("customerList"));
         assertEquals(2, request.attributes.get("currentCount"));
+        assertEquals(2, request.attributes.get("pageItemCount"));
         assertEquals(3, request.attributes.get("totalCount"));
         assertEquals(2, request.attributes.get("maintenanceCount"));
+        assertEquals(1, request.attributes.get("currentPage"));
+        assertEquals(1, request.attributes.get("totalPages"));
     }
 
     @Test
@@ -253,28 +259,32 @@ class CustomerControllerCompatibilityTest {
         private String lastSortField;
         private String lastSortDirection;
         private String lastFilter;
+        private String lastQuery;
         private String lastCustomerName;
-        private final List<String> countFilters = new ArrayList<>();
-        private int summaryCalls;
+        private int lastPage;
+        private int lastPageSize;
 
         @Override
-        public List<CustomerDTO> getAllCustomers(
-                String sortField, String sortDirection, String filter) {
+        public CustomerPage getCustomerPage(
+                String sortField,
+                String sortDirection,
+                String filter,
+                String query,
+                int requestedPage,
+                int pageSize) {
             lastSortField = sortField;
             lastSortDirection = sortDirection;
             lastFilter = filter;
-            return customers;
-        }
-
-        @Override
-        public int getCustomerCount(String filter) {
-            countFilters.add(filter);
-            return "maintenance".equals(filter) ? 2 : 3;
-        }
-        @Override
-        public CustomerCounts getCustomerCounts() {
-            summaryCalls++;
-            return new CustomerCounts(3, 2);
+            lastQuery = query;
+            lastPage = requestedPage;
+            lastPageSize = pageSize;
+            return new CustomerPage(
+                    new PageResult<>(
+                            customers,
+                            customers.size(),
+                            1,
+                            pageSize),
+                    new CustomerCounts(3, 2));
         }
 
         @Override

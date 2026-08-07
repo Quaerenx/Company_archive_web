@@ -164,18 +164,15 @@ public class MeetingServlet extends HttpServlet {
 
             long meetingId = meeting.getMeetingId();
             MeetingRecordDAO meetingDAO = new MeetingRecordDAO();
-
-            // 작성자 권한 확인
-            if (meetingDAO.isAuthor(meetingId, user.getUserId())) {
-                boolean success = meetingDAO.updateMeetingRecord(meeting);
-                if (success) {
-                    session.setAttribute("message", "회의록이 성공적으로 수정되었습니다.");
-                } else {
-                    session.setAttribute("error", "회의록 수정 중 오류가 발생했습니다.");
-                }
+            boolean success = meetingDAO.updateMeetingRecordForAuthor(
+                    meeting, user.getUserId());
+            if (success) {
+                session.setAttribute("message", "회의록이 성공적으로 수정되었습니다.");
                 response.sendRedirect("meeting?view=view&id=" + meetingId);
             } else {
-                session.setAttribute("error", "수정 권한이 없습니다.");
+                session.setAttribute(
+                        "error",
+                        "수정 권한이 없거나 회의록이 존재하지 않습니다.");
                 response.sendRedirect("meeting?view=list");
             }
 
@@ -189,16 +186,14 @@ public class MeetingServlet extends HttpServlet {
             }
 
             MeetingRecordDAO meetingDAO = new MeetingRecordDAO();
-            // 작성자 권한 확인
-            if (meetingDAO.isAuthor(meetingId, user.getUserId())) {
-                boolean success = meetingDAO.deleteMeetingRecord(meetingId);
-                if (success) {
-                    session.setAttribute("message", "회의록이 성공적으로 삭제되었습니다.");
-                } else {
-                    session.setAttribute("error", "회의록 삭제 중 오류가 발생했습니다.");
-                }
+            boolean success = meetingDAO.deleteMeetingRecordForAuthor(
+                    meetingId, user.getUserId());
+            if (success) {
+                session.setAttribute("message", "회의록이 성공적으로 삭제되었습니다.");
             } else {
-                session.setAttribute("error", "삭제 권한이 없습니다.");
+                session.setAttribute(
+                        "error",
+                        "삭제 권한이 없거나 회의록이 존재하지 않습니다.");
             }
             response.sendRedirect("meeting?view=list");
 

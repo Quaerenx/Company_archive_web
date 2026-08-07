@@ -2,12 +2,16 @@ package com.company.controller;
 
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDTO;
+import com.company.util.Pagination;
 import com.company.util.StrictDateParser;
 import jakarta.servlet.http.HttpServletRequest;
 import java.text.ParseException;
 import java.util.Date;
 
 final class CustomerRequestMapper {
+    private static final int DEFAULT_PAGE_SIZE = 50;
+    private static final int MAXIMUM_PAGE_SIZE = 100;
+
     CustomerDTO mapCustomer(HttpServletRequest request) {
         CustomerDTO customer = new CustomerDTO();
         customer.setCustomerName(request.getParameter("customer_name"));
@@ -97,6 +101,21 @@ final class CustomerRequestMapper {
             return value;
         }
         return value;
+    }
+
+    int requestedPage(HttpServletRequest request) {
+        return Pagination.requestedPage(request.getParameter("page"));
+    }
+
+    int requestedPageSize(HttpServletRequest request) {
+        return Pagination.requestedPageSize(
+                request.getParameter("pageSize"),
+                DEFAULT_PAGE_SIZE,
+                MAXIMUM_PAGE_SIZE);
+    }
+
+    String searchQuery(HttpServletRequest request) {
+        return trimmed(request, "q");
     }
 
     private static String trimmed(HttpServletRequest request, String name) {
