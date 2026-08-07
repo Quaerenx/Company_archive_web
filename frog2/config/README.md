@@ -7,3 +7,20 @@ Frog2 does not package database credentials in the WAR. Start Tomcat with the JV
 ```
 
 Use `db.properties.sample` as the key-only template. Never commit a populated `db.properties` file.
+
+Safety and authorization settings are supplied as JVM system properties:
+
+```text
+-Dfrog2.env=dev
+-Dfrog2.readOnly=true
+-Dfrog2.adminUserIds=user-id-1,user-id-2
+```
+
+Database writes are allowed only when `frog2.env=prod` or
+`frog2.env=staging` and `frog2.readOnly=false` are both explicit. The
+`staging` option is reserved for isolated, non-production instances during a
+bounded test window; development and test environments remain read-only.
+`/admin/pool-status` is denied to
+everyone unless the authenticated stable user ID is listed in
+`frog2.adminUserIds` (or `FROG2_ADMIN_USER_IDS`). Do not put passwords or other
+secrets in that list.
