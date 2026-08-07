@@ -4,18 +4,23 @@
 
 <c:set var="pageTitle" value="회의록 수정" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_form.css,/resources/css/pages/customers.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_form.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/meeting_form.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
+<c:url var="meetingDetailReturnUrl" value="/meeting">
+    <c:param name="view" value="view" />
+    <c:param name="id" value="${meeting.meetingId}" />
+    <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+</c:url>
 
-<div class="meeting-page-container customer-management content-shell" data-meeting-mode="edit">
+<div class="meeting-page-container content-management content-shell" data-meeting-mode="edit">
     <t:pageHeader>
         <jsp:attribute name="title"><i class="fas fa-edit"></i> 회의록 수정</jsp:attribute>
         <jsp:attribute name="subtitle">회의 내용을 수정해주세요.</jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/meeting?view=view&id=${meeting.meetingId}"
+            <a href="<c:out value='${meetingDetailReturnUrl}' />"
                class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-file-alt"></i> 상세보기</a>
         </jsp:attribute>
     </t:pageHeader>
@@ -73,7 +78,7 @@
 
             <!-- 버튼 -->
             <div class="button-group">
-                <a href="${pageContext.request.contextPath}/meeting?view=view&id=${meeting.meetingId}"
+                <a href="<c:out value='${meetingDetailReturnUrl}' />"
                    class="btn btn-cancel ui-button button--secondary button--md">취소</a>
                 <button type="button"
                         class="btn btn-secondary ui-button button--secondary button--md"
@@ -100,13 +105,20 @@
 </div>
 
 <!-- 미리보기 모달 -->
-<div id="previewModal" class="modal modal-wide">
+<div id="previewModal"
+     class="modal modal-wide"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="previewModalTitle"
+     aria-hidden="true"
+     tabindex="-1">
     <div class="modal-content">
         <div class="modal-header">
-            <h3><i class="fas fa-eye"></i> 미리보기</h3>
+            <h3 id="previewModalTitle"><i class="fas fa-eye"></i> 미리보기</h3>
             <button type="button"
                     class="modal-close ui-touch-target"
                     data-meeting-action="close-preview"
+                    data-dialog-initial-focus
                     aria-label="미리보기 닫기">&times;</button>
         </div>
         <div class="modal-body">

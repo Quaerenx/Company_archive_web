@@ -5,7 +5,7 @@
 <c:set var="pageTitle" value="월별 고객 응대 현황" scope="request" />
 <c:set var="pageDocumentTitle" value="${pageTitle}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers monthly-response-page" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/customers.css,/resources/css/pages/monthly_customer_response.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/monthly_customer_response.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/monthly_customer_response.js" scope="request" />
 
 <%@ include file="/includes/header.jsp" %>
@@ -54,7 +54,8 @@
         <form class="filter-form ui-form"
               method="GET"
               action="${pageContext.request.contextPath}/mypage"
-              id="filterForm">
+              id="filterForm"
+              data-ui-submit-lock="auto">
             <input type="hidden" name="action" value="monthlyResponse">
             <div class="filter-inputs">
                 <div class="form-group">
@@ -91,7 +92,7 @@
                 <c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월 고객 응대 현황 (<c:out value="${monthlyResponses.size()}" />건)
             </h3>
             <button type="button"
-                    class="btn-min primary ui-button button--primary button--sm"
+                    class="btn-min ui-button button--secondary button--sm"
                     data-monthly-action="add">
                 <i class="fas fa-plus"></i> 추가
             </button>
@@ -127,12 +128,12 @@
                                 <button type="button"
                                         class="btn-icon btn-edit ui-button button--secondary button--sm ui-touch-target"
                                         aria-label="응대 기록 수정">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
                                 </button>
                                 <button type="button"
                                         class="btn-icon btn-delete ui-button button--danger button--sm ui-touch-target"
                                         aria-label="응대 기록 삭제">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>
@@ -153,7 +154,7 @@
                 <c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월 고객 응대 현황
             </h3>
             <button type="button"
-                    class="btn-min primary ui-button button--primary button--sm"
+                    class="btn-min ui-button button--secondary button--sm"
                     data-monthly-action="add">
                 <i class="fas fa-plus"></i> 추가
             </button>
@@ -162,7 +163,7 @@
             <i class="fas fa-inbox"></i>
             <p><c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월에는 고객 응대 기록이 없습니다.</p>
             <button type="button"
-                    class="add-button ui-button button--primary button--md"
+                    class="add-button secondary ui-button button--secondary button--md"
                     data-monthly-action="add">
                 <i class="fas fa-plus"></i> 첫 응대 기록 추가
             </button>
@@ -172,7 +173,13 @@
 </div>
 
 <!-- 추가/수정 모달 -->
-<div id="responseModal" class="modal">
+<div id="responseModal"
+     class="modal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="modalTitle"
+     aria-hidden="true"
+     tabindex="-1">
     <div class="modal-content">
         <div class="modal-header">
             <h2 id="modalTitle">고객 응대 추가</h2>
@@ -195,7 +202,11 @@
             <div class="modal-body">
                 <div class="modal-form-group">
                     <label for="responseDate">날짜 <span class="required">*</span></label>
-                    <input type="date" id="responseDate" name="responseDate" required>
+                    <input type="date"
+                           id="responseDate"
+                           name="responseDate"
+                           data-dialog-initial-focus
+                           required>
                 </div>
 
                 <div class="modal-form-group">

@@ -30,8 +30,12 @@ class UiDesignSystemContractTest {
                 "--color-warning-strong:",
                 "--color-info-strong:",
                 "--color-text:",
+                "--color-text-muted:",
                 "--color-border:",
+                "--color-border-strong:",
                 "--color-surface:",
+                "--color-surface-muted:",
+                "--color-surface-selected:",
                 "--color-focus:",
                 "--control-height-sm:",
                 "--control-height-md:",
@@ -74,20 +78,50 @@ class UiDesignSystemContractTest {
                 ".content-shell")) {
             assertTrue(styles.contains(selector), selector);
         }
-        assertTrue(styles.contains("--page-content-max-width: 1018px"));
-        assertTrue(styles.contains("--page-content-gutter: var(--space-16)"));
         assertTrue(styles.contains(
+                "body.ui-system [hidden] {\n    display: none;\n}"));
+        assertTrue(tokens.contains("--page-content-max-width: 1018px"));
+        assertTrue(tokens.contains("--page-content-gutter: var(--space-16)"));
+        assertTrue(tokens.contains(
                 "--page-content-total-gutter: calc(var(--page-content-gutter) * 2)"));
         assertTrue(styles.contains("background: var(--background)"));
         assertTrue(styles.contains("width: calc(100% - var(--page-content-total-gutter))"));
+        assertTrue(styles.contains("padding-block: var(--space-32)"));
+        assertTrue(styles.contains(
+                "--page-content-total-gutter: calc(var(--page-content-gutter) * 2)"));
         assertTrue(styles.contains("padding-inline: 0"));
         assertTrue(styles.contains(":focus-visible"));
         assertTrue(styles.contains("min-block-size: 44px"));
         assertTrue(styles.contains("prefers-reduced-motion: reduce"));
         assertTrue(styles.contains(".ui-button.is-loading::before"));
+        assertTrue(styles.contains("padding: var(--space-24)"));
+        assertTrue(styles.contains(
+                "border-block-end: 1px solid var(--color-border)"));
         assertTrue(styles.contains("animation: none"));
         assertFalse(styles.contains("!important"));
         assertFalse(styles.contains("transition: all"));
+        assertTrue(styles.matches(
+                "(?s).*\\.ui-system \\.ui-button\\s*\\{[^}]*font-weight:\\s*500;.*"));
+        assertTrue(styles.matches(
+                "(?s).*form\\.ui-form :is\\(\\.form-group > label, \\.ui-label\\)"
+                        + "\\s*\\{[^}]*font-weight:\\s*500;.*"));
+
+        for (String pageStyle : List.of(
+                "resources/css/components.css",
+                "resources/css/pages/dashboard.css",
+                "resources/css/pages/download.css",
+                "resources/css/pages/maintenance.css",
+                "resources/css/pages/maintenance_cards.css",
+                "resources/css/pages/maintenance_history.css",
+                "resources/css/pages/monthly_customer_response.css",
+                "resources/css/pages/mypage.css",
+                "resources/css/pages/troubleshooting_form.css",
+                "resources/css/pages/troubleshooting_list.css",
+                "resources/css/pages/troubleshooting_view.css",
+                "resources/css/pages/upload.css")) {
+            assertFalse(read(pageStyle).contains(
+                    "max-width: var(--page-content-max-width)"), pageStyle);
+        }
     }
 
     @Test
@@ -108,7 +142,8 @@ class UiDesignSystemContractTest {
                 "(?s).*\\.(?:text|bg|border)-(?:success|danger|warning|info)"
                         + "[^{]*\\{[^}]*#[0-9a-fA-F]{3,8}.*"));
         assertTrue(header.contains("var(--color-divider)"));
-        assertTrue(header.contains("var(--shadow-header)"));
+        assertTrue(header.contains("box-shadow: none"));
+        assertFalse(header.contains("box-shadow: var(--shadow-header)"));
         assertTrue(components.contains("var(--color-primary-ring)"));
         assertFalse(base.contains("@media (max-width: 992px)"));
         assertFalse(base.contains("@media (max-width: 991.98px)"));
@@ -146,8 +181,7 @@ class UiDesignSystemContractTest {
     @Test
     void remainingOperationalSurfacesUseCanonicalControls() throws Exception {
         String myPage = read("mypage/mypage.jsp");
-        assertTrue(myPage.contains(
-                "btn btn-primary btn-sm ui-button button--primary button--sm"));
+        assertTrue(myPage.contains("ui-button button--primary button--md"));
         assertTrue(myPage.contains(
                 "btn btn-secondary btn-sm ui-button button--secondary button--sm"));
 
@@ -174,9 +208,8 @@ class UiDesignSystemContractTest {
         assertTrue(vmHosts.contains("class=\"vm-table ui-table\""));
         assertTrue(vmHosts.contains("class=\"js-vm-host-delete ui-form\""));
 
-        String dashboard = read("dashboard.jsp");
-        assertTrue(dashboard.contains("class=\"vm-table-wrap ui-table-wrap\""));
-        assertTrue(dashboard.contains("class=\"vm-table ui-table\""));
+        assertTrue(myPage.contains("class=\"vm-table-wrap ui-table-wrap\""));
+        assertTrue(myPage.contains("class=\"vm-table ui-table\""));
     }
 
     @Test
@@ -197,14 +230,21 @@ class UiDesignSystemContractTest {
     }
 
     @Test
-    void sharedAssetsLoadAfterPageStylesAndBeforePageScripts() throws Exception {
+    void sharedStylesLoadBeforePageStylesAndSharedScriptsBeforePageScripts()
+            throws Exception {
+        String coreStyles = read("WEB-INF/includes/core_styles.jspf");
         String header = read("includes/header.jsp");
+        int components = coreStyles.indexOf("/resources/css/components.css");
+        int uiStyle = coreStyles.indexOf("/resources/css/ui-system.css");
+        int utilities = coreStyles.indexOf("/resources/css/utilities.css");
         int pageStyleSlot = header.indexOf("not empty pageCss");
-        int uiStyle = header.indexOf("/resources/css/ui-system.css");
         int headEnd = header.indexOf("</head>");
+        assertTrue(components >= 0);
+        assertTrue(uiStyle > components);
+        assertTrue(utilities > uiStyle);
         assertTrue(pageStyleSlot >= 0);
-        assertTrue(uiStyle > pageStyleSlot);
-        assertTrue(headEnd > uiStyle);
+        assertTrue(headEnd > pageStyleSlot);
+        assertFalse(header.contains("/resources/css/ui-system.css"));
         assertTrue(header.contains("<body class=\"ui-system "));
 
         String footer = read("includes/footer.jsp");

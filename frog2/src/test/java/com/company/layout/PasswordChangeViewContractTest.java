@@ -32,15 +32,15 @@ class PasswordChangeViewContractTest {
         assertTrue(behavior.contains("현재 비밀번호를 입력해주세요."));
         assertTrue(behavior.contains("새 비밀번호는 최소 8자 이상이어야 합니다."));
         assertTrue(behavior.contains("새 비밀번호가 일치하지 않습니다."));
-        assertTrue(behavior.contains("현재 비밀번호와 새 비밀번호가 동일합니다."));
+        assertTrue(behavior.contains("현재 비밀번호와 다른 비밀번호를 입력해주세요."));
         assertTrue(behavior.contains("비밀번호를 변경하시겠습니까?"));
 
         String styles = read("resources/css/components.css")
                 + "\n"
                 + read("resources/css/pages/password_change.css");
         assertTrue(styles.contains("max-width: 600px"));
-        assertTrue(styles.contains("background-color: #EEF1F6"));
-        assertTrue(styles.contains("color: #3D5A80"));
+        assertTrue(styles.contains("background-color: var(--color-surface-muted)"));
+        assertTrue(styles.contains("color: var(--color-primary)"));
     }
 
     private static String read(String path) throws Exception {

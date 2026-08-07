@@ -5,15 +5,24 @@
 
 <c:set var="pageTitle" value="${meeting.title}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_view.css,/resources/css/pages/customers.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_view.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/meeting_view.js" scope="request" />
 <c:set var="meetingTypeValue" value="${empty meeting.meetingType ? 'other' : fn:toLowerCase(meeting.meetingType)}" />
 <c:set var="meetingTypeLabel" value="${empty meeting.meetingType ? '기타' : meeting.meetingType}" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
+<c:url var="meetingListReturnUrl" value="/meeting">
+    <c:param name="view" value="list" />
+    <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
+</c:url>
+<c:url var="meetingEditUrl" value="/meeting">
+    <c:param name="view" value="edit" />
+    <c:param name="id" value="${meeting.meetingId}" />
+    <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+</c:url>
 
-<div class="meeting-view customer-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />" data-meeting-id="<c:out value='${meeting.meetingId}' />">
+<div class="meeting-view content-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />" data-meeting-id="<c:out value='${meeting.meetingId}' />">
     <t:pageHeader>
         <jsp:attribute name="title"><i class="fas fa-file-alt"></i> <c:out value="${meeting.title}" /></jsp:attribute>
         <jsp:attribute name="subtitle">
@@ -23,16 +32,16 @@
         </jsp:attribute>
         <jsp:attribute name="actions">
             <c:if test="${meeting.authorId == user.userId}">
-                <a href="${pageContext.request.contextPath}/meeting?view=edit&id=${meeting.meetingId}"
-                   class="add-button ui-button button--primary button--md"><i class="fas fa-edit"></i> 수정하기</a>
+                <a href="<c:out value='${meetingEditUrl}' />"
+                   class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-edit"></i> 수정하기</a>
             </c:if>
-            <a href="${pageContext.request.contextPath}/meeting?view=list"
+            <a href="<c:out value='${meetingListReturnUrl}' />"
                class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-list"></i> 목록</a>
         </jsp:attribute>
     </t:pageHeader>
     <!-- 뒤로 가기 -->
     <div class="back-navigation">
-        <a href="${pageContext.request.contextPath}/meeting?view=list" class="back-link">
+        <a href="<c:out value='${meetingListReturnUrl}' />" class="back-link">
             <i class="fas fa-arrow-left"></i>
             회의록 목록으로 돌아가기
         </a>
@@ -118,7 +127,10 @@
                                 <c:if test="${comment.authorId == user.userId}">
                                     <div class="comment-actions">
                                         <button type="button"
-                                                class="comment-btn edit ui-button button--secondary button--sm">
+                                                id="edit-comment-<c:out value='${comment.commentId}' />"
+                                                class="comment-btn edit ui-button button--secondary button--sm"
+                                                aria-controls="edit-form-<c:out value='${comment.commentId}' />"
+                                                aria-expanded="false">
                                             <i class="fas fa-edit"></i> 수정
                                         </button>
                                         <button type="button"
@@ -131,8 +143,14 @@
 
                             <div class="comment-content" id="content-<c:out value='${comment.commentId}' />"><c:out value="${comment.content}" /></div>
 
-                            <div class="comment-edit-form" id="edit-form-<c:out value='${comment.commentId}' />">
-                                <textarea class="comment-edit-textarea" id="edit-content-<c:out value='${comment.commentId}' />"><c:out value="${comment.content}" /></textarea>
+                            <div class="comment-edit-form"
+                                 id="edit-form-<c:out value='${comment.commentId}' />"
+                                 role="region"
+                                 aria-labelledby="edit-comment-<c:out value='${comment.commentId}' />"
+                                 hidden>
+                                <textarea class="comment-edit-textarea"
+                                          id="edit-content-<c:out value='${comment.commentId}' />"
+                                          aria-label="댓글 수정 내용"><c:out value="${comment.content}" /></textarea>
                                 <div class="comment-edit-actions">
                                     <button type="button"
                                             class="btn-save ui-button button--primary button--sm">저장</button>

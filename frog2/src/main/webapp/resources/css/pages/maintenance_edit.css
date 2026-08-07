@@ -1,4 +1,4 @@
 .maintenance-delete-form {
     display: inline;
-    margin-right: 8px;
+    margin-right: var(--space-8);
 }

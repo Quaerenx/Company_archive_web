@@ -5,8 +5,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>잘못된 요청 (400)</title>
-  <link rel="icon" href="<c:url value='/favicon.png' />" type="image/png" sizes="32x32">
+  <title>잘못된 요청 (400) | Archive</title>
+  <%@ include file="/WEB-INF/includes/favicon.jspf" %>
+  <link rel="stylesheet" href="<c:url value='/resources/css/tokens.css' />?v=${initParam.frog2AssetVersion}">
+  <link rel="stylesheet" href="<c:url value='/resources/css/base.css' />?v=${initParam.frog2AssetVersion}">
   <link rel="stylesheet" href="<c:url value='/resources/css/pages/error.css' />?v=${initParam.frog2AssetVersion}">
 </head>
 <body class="error-page error-page--compact">

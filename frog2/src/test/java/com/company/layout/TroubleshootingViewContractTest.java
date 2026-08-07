@@ -60,9 +60,13 @@ class TroubleshootingViewContractTest {
     @Test
     void listKeepsSearchAndRowNavigationContract() throws Exception {
         String page = read("troubleshooting/troubleshooting_list.jsp");
+        assertTrue(page.contains("<t:pageHeader>"));
         assertTrue(page.contains("method=\"get\""));
         assertTrue(page.contains("name=\"view\" value=\"list\""));
         assertTrue(page.contains("name=\"q\""));
+        assertTrue(page.contains("pageSize"));
+        assertTrue(page.contains("ui-pagination"));
+        assertTrue(page.contains("aria-current=\"page\""));
         assertTrue(page.contains("data-detail-url="));
         assertTrue(page.contains("class=\"title-link\""));
         assertTrue(page.contains("troubleshootingList"));
@@ -74,15 +78,20 @@ class TroubleshootingViewContractTest {
 
         String styles = styles(
                 page, "resources/css/pages/troubleshooting_list.css");
-        assertTrue(styles.contains("max-width: 1000px"));
-        assertTrue(styles.contains("min-height: 800px"));
+        String sharedStyles = read("resources/css/ui-system.css");
+        assertTrue(sharedStyles.contains("max-width: var(--page-content-max-width)"));
+        assertFalse(styles.contains("max-width: var(--page-content-max-width)"));
+        assertFalse(styles.contains("min-height: 800px"));
         assertTrue(styles.contains("@media (max-width: 768px)"));
     }
 
     @Test
     void detailKeepsContentActionsAndDeleteConfirmationContract() throws Exception {
         String page = read("troubleshooting/troubleshooting_view.jsp");
+        assertTrue(page.contains("<t:pageHeader>"));
         assertTrue(page.contains("deleteTroubleshootingButton"));
+        assertTrue(page.contains(
+                "<c:if test=\"${canManageTroubleshooting}\">"));
         assertTrue(page.contains("troubleshooting.overview"));
         assertTrue(page.contains("troubleshooting.causeAnalysis"));
         assertTrue(page.contains("troubleshooting.errorContent"));
@@ -100,7 +109,9 @@ class TroubleshootingViewContractTest {
 
         String styles = styles(
                 page, "resources/css/pages/troubleshooting_view.css");
-        assertTrue(styles.contains("max-width: 1000px"));
+        String sharedStyles = read("resources/css/ui-system.css");
+        assertTrue(sharedStyles.contains("max-width: var(--page-content-max-width)"));
+        assertFalse(styles.contains("max-width: var(--page-content-max-width)"));
         assertTrue(styles.contains("grid-template-columns: 1fr 1fr"));
         assertTrue(styles.contains("min-width: 120px"));
         assertTrue(styles.contains("@media (max-width: 768px)"));
@@ -127,12 +138,14 @@ class TroubleshootingViewContractTest {
 
     private static void assertFormVisualContract(
             String styles, String sharedStyles) {
-        assertTrue(styles.contains("max-width: 1000px"));
-        assertTrue(sharedStyles.contains("padding: var(--space-32)"));
+        assertTrue(sharedStyles.contains("max-width: var(--page-content-max-width)"));
+        assertTrue(sharedStyles.contains("padding-block: var(--space-32)"));
+        assertFalse(styles.contains("max-width: var(--page-content-max-width)"));
+        assertTrue(sharedStyles.contains("padding: var(--space-24)"));
         assertTrue(sharedStyles.contains(
-                "border-block-end: 2px solid var(--color-primary)"));
+                "border-block-end: 1px solid var(--color-border)"));
         assertTrue(styles.contains(".troubleshooting-form-page .ui-form textarea"));
-        assertTrue(styles.contains("@media (max-width: 768px)"));
+        assertTrue(sharedStyles.contains("@media (max-width: 768px)"));
     }
 
     private static String behavior(String page, String path) throws Exception {

@@ -2,25 +2,7 @@
 
 /* 유지보수 추가 페이지 */
 .maintenance-add-page .container {
-    width: 100%;
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: var(--space-32, 32px) var(--space-16, 16px);
-}
-
-.maintenance-add-page .page-header {
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-.maintenance-add-page .page-header h2 {
-    color: var(--color-text);
-    margin-bottom: 10px;
-}
-
-.maintenance-add-page .page-header p {
-    color: var(--color-text-muted);
-    margin: 0;
+    min-width: 0;
 }
 
 /* 점검 기록은 일반 폼보다 긴 본문 입력 영역을 유지합니다. */
@@ -30,57 +12,61 @@
 
 /* 유지보수 카드 페이지 */
 .maintenance-cards-page {
-    padding: 20px;
+    padding: var(--space-20);
 }
 
 .customer-card {
-    background: white;
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.2s;
+    border-radius: var(--radius-lg);
+    padding: var(--space-20);
+    box-shadow: none;
+    transition:
+        background-color var(--motion-fast) var(--motion-ease),
+        border-color var(--motion-fast) var(--motion-ease);
 }
 
 .customer-card:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: var(--color-surface-hover);
+    border-color: var(--color-border-strong);
+    box-shadow: none;
 }
 
 .customer-card h3 {
-    margin: 0 0 10px 0;
+    margin: 0 0 var(--space-12) 0;
     color: var(--color-text);
-    font-size: 18px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
 }
 
 .customer-info {
-    margin-bottom: 15px;
+    margin-bottom: var(--space-16);
 }
 
 .customer-info p {
-    margin: 5px 0;
+    margin: var(--space-4) 0;
     color: var(--color-text-muted);
-    font-size: 14px;
+    font-size: var(--font-size-sm);
 }
 
 .customer-actions {
     display: flex;
-    gap: 10px;
+    gap: var(--space-12);
     flex-wrap: wrap;
 }
 
 .customer-actions .btn {
-    padding: 8px 16px;
-    font-size: 13px;
-    border-radius: 4px;
+    padding: var(--space-8) var(--space-16);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-sm);
     text-decoration: none;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: background-color var(--motion-fast) var(--motion-ease);
 }
 
 .customer-actions .btn-primary {
     background: var(--color-primary);
-    color: white;
+    color: var(--color-on-primary);
 }
 
 .customer-actions .btn-primary:hover {
@@ -88,28 +74,28 @@
 }
 
 .customer-actions .btn-secondary {
-    background: var(--color-text-muted);
-    color: white;
+    background: var(--color-secondary);
+    color: var(--color-on-secondary);
 }
 
 .customer-actions .btn-secondary:hover {
-    background: #4b5563;
+    background: var(--color-secondary-hover);
 }
 
 /* 유지보수 이력 페이지 */
 .maintenance-history-page {
-    padding: 20px;
+    padding: var(--space-20);
 }
 
 .history-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: var(--space-20);
 }
 
 .history-table th,
 .history-table td {
-    padding: 12px;
+    padding: var(--space-12);
     text-align: left;
     border-bottom: 1px solid var(--color-border);
 }
@@ -125,14 +111,14 @@
 }
 
 .status-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+    padding: var(--space-4) var(--space-8);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
     font-weight: 500;
 }
 
 .status-completed {
-    background: #d1fae5;
+    background: var(--color-success-bg);
     color: var(--color-success-text);
 }
 
@@ -142,6 +128,6 @@
 }
 
 .status-cancelled {
-    background: #fee2e2;
+    background: var(--color-danger-bg);
     color: var(--color-danger-text);
 }

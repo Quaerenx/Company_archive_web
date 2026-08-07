@@ -4,7 +4,7 @@
 <c:set var="pageTitle" value="비밀번호 변경" scope="request" />
 <c:set var="pageDocumentTitle" value="${pageTitle}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers page-mypage" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/customers.css,/resources/css/pages/password_change.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/password_change.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/password_change.js" scope="request" />
 
 <%@ include file="/includes/header.jsp" %>
@@ -19,7 +19,7 @@
         </jsp:attribute>
     </t:pageHeader>
 
-    <div class="form-card">
+    <div class="form-card ui-form-card">
         <div class="password-requirements">
             <h3>
                 <i class="fas fa-info-circle password-requirement-icon"></i>
@@ -57,7 +57,7 @@
                     <i class="fas fa-lock"></i> 현재 비밀번호 <span class="required">*</span>
                 </label>
                 <input type="password" class="form-control" id="currentPassword" name="currentPassword"
-                       required placeholder="현재 비밀번호를 입력하세요">
+                       required autocomplete="current-password" placeholder="현재 비밀번호를 입력하세요">
             </div>
 
             <div class="form-group">
@@ -65,7 +65,7 @@
                     <i class="fas fa-lock-open"></i> 새 비밀번호 <span class="required">*</span>
                 </label>
                 <input type="password" class="form-control" id="newPassword" name="newPassword"
-                       required placeholder="새 비밀번호를 입력하세요">
+                       required autocomplete="new-password" placeholder="새 비밀번호를 입력하세요">
                 <div class="help-text">최소 8자 이상 입력해주세요.</div>
             </div>
 
@@ -74,7 +74,7 @@
                     <i class="fas fa-check-circle"></i> 새 비밀번호 확인 <span class="required">*</span>
                 </label>
                 <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
-                       required placeholder="새 비밀번호를 다시 입력하세요">
+                       required autocomplete="new-password" placeholder="새 비밀번호를 다시 입력하세요">
             </div>
 
             <div class="form-actions">

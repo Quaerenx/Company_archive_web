@@ -10,6 +10,8 @@
     var currentFilter = root.getAttribute('data-filter') || 'maintenance';
     var currentSortField = root.getAttribute('data-sort-field') || '';
     var currentSortDirection = root.getAttribute('data-sort-direction') || 'ASC';
+    var currentQuery = root.getAttribute('data-query') || '';
+    var currentPageSize = root.getAttribute('data-page-size') || '50';
 
     document.addEventListener('DOMContentLoaded', function() {
         updateSortIcons();
@@ -46,10 +48,8 @@
             function openDetail() {
                 window.location.href = row.dataset.detailUrl;
             }
-            row.addEventListener('click', openDetail);
-            row.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
+            row.addEventListener('click', function(event) {
+                if (!event.target.closest('a, button, input, select, textarea')) {
                     openDetail();
                 }
             });
@@ -57,48 +57,28 @@
     }
 
     function initializeSearch() {
+        var searchForm = document.getElementById('customer-search-form');
         var searchInput = document.getElementById('search-input');
         var clearButton = document.getElementById('clear-search');
-        var searchCount = document.getElementById('search-count');
-        var searchLabel = document.getElementById('search-text');
-        var noResults = document.getElementById('no-results');
 
-        if (!searchInput || !clearButton || !searchCount || !searchLabel || !noResults) {
+        if (!searchForm || !searchInput || !clearButton) {
             return;
         }
 
-        searchInput.addEventListener('input', function() {
-            var searchTerm = this.value.toLowerCase().trim();
-            var rows = document.querySelectorAll('.customer-row');
-            var visibleCount = 0;
-
-            rows.forEach(function(row) {
-                var rowSearchText = (row.getAttribute('data-search-text') || '').toLowerCase();
-                if (!searchTerm || rowSearchText.includes(searchTerm)) {
-                    row.classList.remove('hidden');
-                    visibleCount++;
-                } else {
-                    row.classList.add('hidden');
-                }
-            });
-
-            noResults.classList.toggle('d-none', visibleCount !== 0 || !searchTerm);
-            clearButton.classList.toggle('d-none', !searchTerm);
-            searchCount.textContent = searchTerm ? visibleCount + '/' + rows.length : '전체';
-            searchLabel.textContent = searchTerm ? '검색 결과' : '결과 표시 중';
-        });
-
         clearButton.addEventListener('click', function() {
             searchInput.value = '';
-            searchInput.focus();
-            searchInput.dispatchEvent(new Event('input'));
+            searchForm.requestSubmit();
         });
     }
 
     function initializeFilters() {
         document.querySelectorAll('.js-customer-filter[data-filter]').forEach(function(button) {
             button.addEventListener('click', function() {
-                navigateToList(button.getAttribute('data-filter'), currentSortField, currentSortDirection);
+                navigateToList(
+                        button.getAttribute('data-filter'),
+                        currentSortField,
+                        currentSortDirection,
+                        currentQuery);
             });
         });
     }
@@ -111,18 +91,22 @@
                 var direction = currentSortField === field && currentSortDirection === 'ASC'
                         ? 'DESC'
                         : 'ASC';
-                navigateToList(currentFilter, field, direction);
+                navigateToList(currentFilter, field, direction, currentQuery);
             });
         });
     }
 
-    function navigateToList(filter, sortField, sortDirection) {
+    function navigateToList(filter, sortField, sortDirection, query) {
         var parameters = new URLSearchParams();
         parameters.set('view', 'list');
         parameters.set('filter', filter);
+        parameters.set('pageSize', currentPageSize);
         if (sortField) {
             parameters.set('sortField', sortField);
             parameters.set('sortDirection', sortDirection);
+        }
+        if (query) {
+            parameters.set('q', query);
         }
         window.location.href = contextPath + '/customers?' + parameters.toString();
     }

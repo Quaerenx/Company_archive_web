@@ -1,17 +1,12 @@
 /* Troubleshooting list page */
 .troubleshooting-management {
-    width: 100%;
-	min-height: 800px;
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: var(--space-32) var(--space-16);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-width: 0;
 }
 
 .troubleshooting-management .table-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
     overflow: hidden;
     border: 1px solid var(--color-border);
 }
@@ -24,46 +19,36 @@
 .troubleshooting-management .troubleshooting-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
 }
 
 .troubleshooting-management .troubleshooting-table th {
     background: var(--color-surface-subtle);
     color: var(--color-text);
     font-weight: 600;
-    padding: 1rem 0.75rem;
+    padding: var(--space-16) var(--space-12);
     text-align: center;
     border-bottom: 1px solid var(--color-border);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: var(--z-table-sticky);
     white-space: nowrap;
 }
 
 .troubleshooting-management .troubleshooting-table tbody tr {
-    transition: all 0.2s ease;
-    border-bottom: 1px solid var(--color-surface-subtle);
+    transition: background-color var(--motion-fast) var(--motion-ease);
+    border-bottom: 1px solid var(--color-border);
     cursor: pointer;
-}
-
-.troubleshooting-management .troubleshooting-table tbody tr:nth-child(even) {
-    background-color: #fafbfc;
 }
 
 .troubleshooting-management .troubleshooting-table tbody tr:hover {
     background-color: var(--color-surface-subtle);
-    box-shadow: 0 2px 8px rgba(61, 90, 128, 0.10);
 }
 
 .troubleshooting-management .troubleshooting-table td {
-    padding: 0.75rem;
-    border-right: 1px solid var(--color-surface-subtle);
+    padding: var(--space-12);
     vertical-align: middle;
     color: var(--color-text);
-}
-
-.troubleshooting-management .troubleshooting-table td:last-child {
-    border-right: none;
 }
 
 .troubleshooting-management .title-link {
@@ -73,116 +58,112 @@
 }
 
 .troubleshooting-management .title-link:hover {
-    color: var(--primary);
+    color: var(--color-primary);
     text-decoration: underline;
 }
 
 .troubleshooting-management .action-buttons {
     display: flex;
-    gap: 0.25rem;
+    gap: var(--space-4);
     justify-content: center;
 }
 
 .troubleshooting-management .action-buttons .btn {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    padding: var(--space-4) var(--space-8);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
     font-weight: 400;
-    gap: 0.25rem;
+    gap: var(--space-4);
 }
 
 .troubleshooting-management .btn-view {
-    background: var(--color-text-muted);
-    color: white;
+    background: var(--color-secondary);
+    color: var(--color-on-secondary);
 }
 
 .troubleshooting-management .btn-view:hover {
-    background: #4b5563;
-    color: white;
+    background: var(--color-secondary-hover);
+    color: var(--color-on-secondary);
     text-decoration: none;
 }
 
 .troubleshooting-management .btn-edit {
-    background: #059669;
-    color: white;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
 }
 
 .troubleshooting-management .btn-edit:hover {
-    background: #047857;
-    color: white;
+    background: var(--color-primary-hover);
+    color: var(--color-on-primary);
     text-decoration: none;
 }
 
 .troubleshooting-management .btn-delete {
     background: var(--color-danger-hover);
-    color: white;
+    color: var(--color-on-danger);
 }
 
 .troubleshooting-management .btn-delete:hover {
-    background: #b91c1c;
-    color: white;
+    background: var(--color-danger-strong-hover);
+    color: var(--color-on-danger);
     text-decoration: none;
 }
 
 .troubleshooting-management .empty-state {
     text-align: center;
-    padding: 3rem;
-    color: #9ca3af;
+    padding: var(--space-48);
+    color: var(--color-text-muted);
     font-style: italic;
 }
 
 .troubleshooting-management .empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    font-size: var(--illustration-icon-size-md);
+    margin-bottom: var(--space-16);
     opacity: 0.5;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-    .troubleshooting-management {
-        max-width: 100%;
-        padding: var(--space-24) var(--space-16);
-    }
-
     .troubleshooting-management .troubleshooting-table {
-        font-size: 12px;
+        font-size: var(--font-size-xs);
     }
 
     .troubleshooting-management .troubleshooting-table th,
     .troubleshooting-management .troubleshooting-table td {
-        padding: 0.5rem;
+        padding: var(--space-8);
     }
 }
 
 /* 검색 바 */
 .troubleshooting-management .ts-search-bar {
     display: flex;
-    gap: 8px;
+    gap: var(--space-8);
     align-items: center;
-    padding: 12px;
+    padding: var(--space-12);
     background: var(--color-surface);
-    border: none;
-    border-radius: 12px;
-    margin-bottom: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+    margin-bottom: var(--space-12);
 }
 .troubleshooting-management .ts-search-form {
     display: flex;
-    gap: 8px;
+    gap: var(--space-8);
     align-items: center;
     width: 100%;
 }
 
 .troubleshooting-management .ts-search-input {
     flex: 1;
-    padding: 10px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    font-size: 14px;
+    padding: var(--space-12);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
 }
 .troubleshooting-management .btn-search-simple {
-    padding: 10px 14px;
+    padding: var(--space-12) var(--space-16);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     background: var(--color-surface);
     color: var(--color-text);
     cursor: pointer;

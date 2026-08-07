@@ -1,44 +1,41 @@
 /* Troubleshooting detail page */
 .troubleshooting-detail {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-width: 0;
 }
 
 /* 액션 바: 제목과 구분되는 별도 행 */
 .troubleshooting-detail .action-bar {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--space-12);
     justify-content: flex-end;
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: var(--space-12);
+    padding-top: var(--space-12);
     border-top: 1px solid var(--color-border);
 }
 /* 액션 버튼 고정 크기/톤 통일 */
 .troubleshooting-detail .action-bar .btn {
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
-    border-radius: 6px;
+    padding: var(--space-12) var(--space-16);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
     min-width: 120px;
     justify-content: center;
 }
 .troubleshooting-detail .action-bar .btn i {
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
 }
 /* 상세 섹션 하단 액션 영역 */
 .troubleshooting-detail .section-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--space-12);
     justify-content: flex-end;
-    margin-top: 16px;
-    padding-top: 12px;
+    margin-top: var(--space-16);
+    padding-top: var(--space-12);
     border-top: 1px solid var(--color-border);
 }
 .troubleshooting-detail .section-actions .btn {
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
-    border-radius: 6px;
+    padding: var(--space-12) var(--space-16);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
     min-width: 120px;
     justify-content: center;
 }
@@ -47,17 +44,17 @@
     background: transparent;
     border: none;
     color: var(--color-text);
-    padding: 0.25rem 0.5rem;
+    padding: var(--space-4) var(--space-8);
     min-width: auto;
     border-radius: 0;
 }
 .troubleshooting-detail .section-actions .btn-ghost:hover {
-    color: var(--primary);
+    color: var(--color-primary);
     text-decoration: underline;
     background: transparent;
 }
 .troubleshooting-detail .section-actions .btn-ghost-danger {
-    color: #b91c1c;
+    color: var(--color-danger-text);
 }
 .troubleshooting-detail .section-actions .btn-ghost-danger:hover {
     color: var(--color-danger-text);
@@ -71,15 +68,15 @@
     .troubleshooting-detail .action-bar {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.5rem;
+        gap: var(--space-8);
     }
     .troubleshooting-detail .action-bar .btn { width: 100%; }
 }
 
 .troubleshooting-detail .detail-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
     overflow: hidden;
     border: 1px solid var(--color-border);
 }
@@ -92,29 +89,30 @@
     align-items: flex-start;
 }
 
-	.troubleshooting-detail .detail-item:nth-last-child(1),
-	.troubleshooting-detail .detail-item:nth-last-child(2) {
-	    border-bottom: none;
-	}
+.troubleshooting-detail .detail-item:nth-last-child(1),
+.troubleshooting-detail .detail-item:nth-last-child(2) {
+    border-bottom: none;
+}
 
 .troubleshooting-detail .detail-item.full-width {
     grid-column: 1 / -1;
 }
 
-	.troubleshooting-detail .detail-item.full-width .detail-value {
-	    background: var(--color-surface-subtle);
-	    padding: 12px;
-	    border-radius: 6px;
-	    border: 1px solid var(--color-border);
-	    min-height: 60px;
-	    white-space: pre-line;  /* pre-wrap을 pre-line으로 변경 */
-	    font-family: 'Courier New', monospace;
-	    font-size: 13px;
-	    line-height: 1.4;
-	}
+.troubleshooting-detail .detail-item.full-width .detail-value {
+    background: var(--color-surface-subtle);
+    padding: var(--space-12);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    min-height: 60px;
+    white-space: pre-line;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    max-inline-size: var(--measure-wide);
+}
 
 .troubleshooting-detail .empty-value {
-    color: #9ca3af;
+    color: var(--color-text-muted);
     font-style: italic;
 }
 
@@ -122,7 +120,7 @@
 @media (max-width: 768px) {
     .troubleshooting-detail {
         max-width: 100%;
-        padding: 15px;
+        padding: var(--space-16);
     }
 
     .troubleshooting-detail .header-actions {
@@ -133,5 +131,5 @@
 }
 
 .troubleshooting-detail .troubleshooting-updated-at {
-    font-size: 13px;
+    font-size: var(--font-size-sm);
 }

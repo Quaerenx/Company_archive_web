@@ -1,5 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
+</main>
+
 <c:if test="${not empty vendorScript}">
     <script src="${vendorScript}"></script>
 </c:if>
@@ -21,6 +23,7 @@
      aria-relevant="additions"></div>
 
 <script src="${pageContext.request.contextPath}/resources/js/ui-system.js?v=${frog2AssetVersion}"></script>
+<script src="${pageContext.request.contextPath}/resources/js/ambient-background.js?v=${frog2AssetVersion}"></script>
 
 <c:if test="${not empty pageScript}">
     <c:forTokens items="${pageScript}" delims="," var="script">

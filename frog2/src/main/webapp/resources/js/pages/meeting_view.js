@@ -18,19 +18,19 @@
 
         if (editButton) {
             editButton.addEventListener('click', function() {
-                editComment(commentId);
+                editComment(commentId, editButton);
             });
         }
         if (deleteButton) {
             deleteButton.addEventListener('click', function() {
-                deleteComment(commentId);
+                deleteComment(commentId, deleteButton);
             });
         }
         saveButton.addEventListener('click', function() {
-            saveComment(commentId);
+            saveComment(commentId, saveButton);
         });
         cancelButton.addEventListener('click', function() {
-            cancelEdit(commentId);
+            cancelEdit(commentId, editButton);
         });
     });
 
@@ -56,18 +56,29 @@
             });
     });
 
-    function editComment(commentId) {
-        document.getElementById('content-' + commentId).classList.add('d-none');
-        document.getElementById('edit-form-' + commentId).classList.remove('d-none');
+    function editComment(commentId, editButton) {
+        const content = document.getElementById('content-' + commentId);
+        const editForm = document.getElementById('edit-form-' + commentId);
+        content.hidden = true;
+        editForm.hidden = false;
+        editForm.classList.add('is-open');
+        editButton.setAttribute('aria-expanded', 'true');
         document.getElementById('edit-content-' + commentId).focus();
     }
 
-    function cancelEdit(commentId) {
-        document.getElementById('content-' + commentId).classList.remove('d-none');
-        document.getElementById('edit-form-' + commentId).classList.add('d-none');
+    function cancelEdit(commentId, editButton) {
+        const content = document.getElementById('content-' + commentId);
+        const editForm = document.getElementById('edit-form-' + commentId);
+        content.hidden = false;
+        editForm.hidden = true;
+        editForm.classList.remove('is-open');
+        if (editButton) {
+            editButton.setAttribute('aria-expanded', 'false');
+            editButton.focus();
+        }
     }
 
-    function saveComment(commentId) {
+    function saveComment(commentId, button) {
         const newContent = document.getElementById('edit-content-' + commentId).value.trim();
         if (!newContent) {
             window.Frog2UI.showFieldError(
@@ -76,21 +87,29 @@
             return;
         }
 
+        window.Frog2UI.setButtonLoading(button, true, '저장 중');
         postComment(
                 'update',
                 {comment_id: commentId, content: newContent},
-                '댓글 수정 중 오류가 발생했습니다.');
+                '댓글 수정 중 오류가 발생했습니다.')
+            .finally(function() {
+                window.Frog2UI.setButtonLoading(button, false);
+            });
     }
 
-    function deleteComment(commentId) {
-        if (!window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+    function deleteComment(commentId, button) {
+        if (!window.Frog2UI.confirmAction('정말로 이 댓글을 삭제하시겠습니까?')) {
             return;
         }
 
+        window.Frog2UI.setButtonLoading(button, true, '삭제 중');
         postComment(
                 'delete',
                 {comment_id: commentId},
-                '댓글 삭제 중 오류가 발생했습니다.');
+                '댓글 삭제 중 오류가 발생했습니다.')
+            .finally(function() {
+                window.Frog2UI.setButtonLoading(button, false);
+            });
     }
 
     function postComment(action, values, fallbackMessage) {

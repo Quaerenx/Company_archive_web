@@ -6,12 +6,12 @@
 <c:set var="pageTitle" value="개인 호스트 관리" scope="request" />
 <c:set var="pageDocumentTitle" value="${pageTitle}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers page-vm-hosts" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/customers.css,/resources/css/pages/vm_hosts.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/vm_hosts.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/vm_hosts.js" scope="request" />
 
 <%@ include file="/includes/header.jsp" %>
 
-  <div class="customer-management content-shell">
+  <div class="content-management content-shell">
     <t:pageHeader>
       <jsp:attribute name="title"><i class="fas fa-network-wired"></i> 개인 호스트 관리</jsp:attribute>
       <jsp:attribute name="subtitle">

@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,9 @@ class DesignAssetConsolidationTest {
     private static final Pattern PAGE_CSS = Pattern.compile(
             "<c:set\\b(?=[^>]*\\bvar=\"pageCss\")"
                     + "(?=[^>]*\\bvalue=\"([^\"]+)\")[^>]*>");
+    private static final Pattern PAGE_BODY_FONT_OVERRIDE = Pattern.compile(
+            "\\bbody(?:\\.[\\w-]+)*\\s*\\{[^}]*\\bfont-family\\s*:",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     private static final Pattern STYLESHEET_LINK = Pattern.compile(
             "<link\\b[^>]*\\brel\\s*=\\s*['\"]stylesheet['\"]",
             Pattern.CASE_INSENSITIVE);
@@ -31,22 +36,26 @@ class DesignAssetConsolidationTest {
         String tokens = "/resources/css/tokens.css";
         String base = "/resources/css/base.css";
         String components = "/resources/css/components.css";
+        String uiSystem = "/resources/css/ui-system.css";
         String utilities = "/resources/css/utilities.css";
 
         assertEquals(1, countOccurrences(fragment, tokens));
         assertEquals(1, countOccurrences(fragment, base));
         assertEquals(1, countOccurrences(fragment, components));
+        assertEquals(1, countOccurrences(fragment, uiSystem));
         assertEquals(1, countOccurrences(fragment, utilities));
         assertFalse(fragment.contains("/resources/css/main_style.css"));
         assertTrue(fragment.indexOf(tokens) < fragment.indexOf(base));
         assertTrue(fragment.indexOf(base) < fragment.indexOf(components));
-        assertTrue(fragment.indexOf(components) < fragment.indexOf(utilities));
+        assertTrue(fragment.indexOf(components) < fragment.indexOf(uiSystem));
+        assertTrue(fragment.indexOf(uiSystem) < fragment.indexOf(utilities));
 
         String header = readWebapp("includes/header.jsp");
         assertTrue(header.contains("include file=\"/WEB-INF/includes/core_styles.jspf\""));
         assertFalse(header.contains(tokens));
         assertFalse(header.contains(base));
         assertFalse(header.contains(components));
+        assertFalse(header.contains(uiSystem));
         assertFalse(header.contains(utilities));
     }
 
@@ -61,7 +70,7 @@ class DesignAssetConsolidationTest {
 
         assertTrue(coreStyles >= 0, "core style include is missing");
         assertTrue(vendorCss > coreStyles, "vendor styles must follow core styles");
-        assertTrue(headerCss >= 0, "header.css slot is missing");
+        assertTrue(headerCss > vendorCss, "header.css must follow vendor styles");
         assertTrue(pageCss > headerCss, "pageCss must follow header.css");
         assertTrue(headEnd > pageCss, "pageCss must remain inside <head>");
         assertFalse(header.contains("pageCssBeforeVendor"));
@@ -71,6 +80,61 @@ class DesignAssetConsolidationTest {
         assertTrue(orderedSlot.contains("<c:forTokens"));
         assertTrue(orderedSlot.contains("items=\"${pageCss}\""));
         assertTrue(orderedSlot.contains("delims=\",\""));
+    }
+
+    @Test
+    void pageStylesDoNotOverrideSharedBodyTypeface() throws Exception {
+        Path pages = CSS.resolve("pages");
+        try (var paths = Files.walk(pages)) {
+            for (Path path : paths.filter(Files::isRegularFile)
+                    .filter(file -> file.getFileName().toString().endsWith(".css"))
+                    .toList()) {
+                String source = Files.readString(path);
+                assertFalse(
+                        PAGE_BODY_FONT_OVERRIDE.matcher(source).find(),
+                        () -> "page stylesheet overrides shared body typeface: "
+                                + pages.relativize(path));
+            }
+        }
+    }
+
+    @Test
+    void sharedStyleLayersDoNotRedeclareTheSameSelectors() throws Exception {
+        Map<String, String> selectorOwner = new LinkedHashMap<>();
+        for (String stylesheet : new String[] {
+                "base.css",
+                "components.css",
+                "ui-system.css",
+                "utilities.css",
+                "pages/header.css"
+        }) {
+            for (String selector : selectors(
+                    Files.readString(CSS.resolve(stylesheet)))) {
+                String existingOwner =
+                        selectorOwner.putIfAbsent(selector, stylesheet);
+                assertTrue(existingOwner == null,
+                        () -> selector + " is declared in both "
+                                + existingOwner + " and " + stylesheet);
+            }
+        }
+    }
+
+    @Test
+    void customerDomainStylesAreNotLoadedByOtherDomains() throws Exception {
+        try (var paths = Files.walk(WEBAPP)) {
+            for (Path path : paths.filter(Files::isRegularFile)
+                    .filter(file -> file.toString().endsWith(".jsp"))
+                    .toList()) {
+                String relative = WEBAPP.relativize(path)
+                        .toString()
+                        .replace('\\', '/');
+                if (!relative.startsWith("customers/")) {
+                    assertFalse(Files.readString(path).contains(
+                                    "/resources/css/pages/customers.css"),
+                            relative);
+                }
+            }
+        }
     }
 
     @Test
@@ -91,41 +155,33 @@ class DesignAssetConsolidationTest {
                 "/resources/css/pages/customers.css");
         expectedPageStyles.put(
                 "maintenance/maintenance_add.jsp",
-                "/resources/css/pages/customers.css,"
-                        + "/resources/css/pages/maintenance.css");
+                "/resources/css/pages/maintenance.css");
         expectedPageStyles.put(
                 "maintenance/maintenance_cards.jsp",
-                "/resources/css/pages/customers.css,"
-                        + "/resources/css/pages/maintenance_cards.css");
+                "/resources/css/pages/maintenance_cards.css");
         expectedPageStyles.put(
                 "maintenance/maintenance_edit.jsp",
-                "/resources/css/pages/customers.css,"
-                        + "/resources/css/pages/maintenance_edit.css");
+                "/resources/css/pages/maintenance_edit.css");
         expectedPageStyles.put(
                 "maintenance/maintenance_history.jsp",
-                "/resources/css/pages/customers.css,"
-                        + "/resources/css/pages/maintenance_history.css");
+                "/resources/css/pages/maintenance_history.css");
         expectedPageStyles.put(
                 "meeting/meeting_edit.jsp",
                 "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css,"
-                        + "/resources/css/pages/customers.css");
+                        + "/resources/css/pages/meeting_form.css");
         expectedPageStyles.put(
                 "meeting/meeting_list.jsp",
                 "/resources/css/pages/meeting.css,"
                         + "/resources/css/pages/meeting_list_layout.css,"
-                        + "/resources/css/pages/customers.css,"
                         + "/resources/css/pages/meeting_list.css");
         expectedPageStyles.put(
                 "meeting/meeting_view.jsp",
                 "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_view.css,"
-                        + "/resources/css/pages/customers.css");
+                        + "/resources/css/pages/meeting_view.css");
         expectedPageStyles.put(
                 "meeting/meeting_write.jsp",
                 "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css,"
-                        + "/resources/css/pages/customers.css");
+                        + "/resources/css/pages/meeting_form.css");
 
         for (Map.Entry<String, String> entry : expectedPageStyles.entrySet()) {
             String page = readWebapp(entry.getKey());
@@ -150,6 +206,14 @@ class DesignAssetConsolidationTest {
 
         assertTrue(hasClass(add, "customer-form-page"));
         assertTrue(hasClass(edit, "customer-form-page"));
+        assertTrue(hasClass(add, "content-management"));
+        assertTrue(hasClass(edit, "content-management"));
+        assertTrue(Files.readString(CSS.resolve("components.css"))
+                .contains(".content-management {"));
+        assertFalse(Pattern.compile(
+                        "(?m)^\\.customer-management\\s*\\{")
+                .matcher(customers)
+                .find());
         assertTrue(customers.contains(".customer-form-page > .container"));
         assertTrue(add.contains("ui-form-card"));
         assertTrue(edit.contains("ui-form-card"));
@@ -256,6 +320,69 @@ class DesignAssetConsolidationTest {
 
     private static String normalizeCommaList(String value) {
         return value.trim().replaceAll("\\s*,\\s*", ",");
+    }
+
+    private static Set<String> selectors(String stylesheet) {
+        String withoutComments = stylesheet.replaceAll(
+                "(?s)/\\*.*?\\*/", "");
+        Set<String> selectors = new LinkedHashSet<>();
+        Matcher matcher = Pattern.compile("([^{}]+)\\{")
+                .matcher(withoutComments);
+        while (matcher.find()) {
+            String selectorList = matcher.group(1).trim();
+            if (selectorList.startsWith("@")
+                    || selectorList.matches("(?:from|to|\\d+%)")) {
+                continue;
+            }
+            for (String selector : splitSelectorList(selectorList)) {
+                String normalized = selector.trim()
+                        .replaceAll("\\s+", " ");
+                if (!normalized.isEmpty()) {
+                    selectors.add(normalized);
+                }
+            }
+        }
+        return selectors;
+    }
+
+    private static Set<String> splitSelectorList(String selectorList) {
+        Set<String> selectors = new LinkedHashSet<>();
+        StringBuilder current = new StringBuilder();
+        int parenthesisDepth = 0;
+        int bracketDepth = 0;
+        char quote = 0;
+
+        for (int index = 0; index < selectorList.length(); index++) {
+            char character = selectorList.charAt(index);
+            if (quote != 0) {
+                current.append(character);
+                if (character == quote
+                        && (index == 0 || selectorList.charAt(index - 1) != '\\')) {
+                    quote = 0;
+                }
+                continue;
+            }
+            if (character == '\'' || character == '"') {
+                quote = character;
+            } else if (character == '(') {
+                parenthesisDepth++;
+            } else if (character == ')') {
+                parenthesisDepth--;
+            } else if (character == '[') {
+                bracketDepth++;
+            } else if (character == ']') {
+                bracketDepth--;
+            } else if (character == ','
+                    && parenthesisDepth == 0
+                    && bracketDepth == 0) {
+                selectors.add(current.toString());
+                current.setLength(0);
+                continue;
+            }
+            current.append(character);
+        }
+        selectors.add(current.toString());
+        return selectors;
     }
 
     private static boolean hasClass(String source, String className) {

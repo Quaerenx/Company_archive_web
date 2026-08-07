@@ -65,19 +65,13 @@
             <div class="logo">
                 <a href="${pageContext.request.contextPath}/dashboard"
                    class="brand-link"
-                   aria-label="ARCHIVE 대시보드">
-                    <span class="logo-icon d-flex align-items-center" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             viewBox="0 0 24 24"
-                             width="28"
-                             height="28"
-                             focusable="false">
-                            <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2zm0 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"
-                                  fill="#333333"
-                                  opacity="0.9"/>
-                        </svg>
-                    </span>
-                    <span class="logo-text">ARCHIVE</span>
+                   aria-label="Archive 대시보드">
+                    <img class="brand-logo"
+                         src="${pageContext.request.contextPath}/resources/images/archive-compact-horizontal.svg"
+                         width="373"
+                         height="112"
+                         alt=""
+                         aria-hidden="true">
                 </a>
             </div>
 
@@ -176,6 +170,20 @@
                         </ul>
                     </li>
 
+                    <li class="quick-nav-item">
+                        <button type="button"
+                                id="quickNavOpenButton"
+                                class="nav-link quick-nav-trigger"
+                                aria-haspopup="dialog"
+                                aria-controls="quickNavDialog"
+                                aria-expanded="false"
+                                aria-keyshortcuts="Control+K Meta+K">
+                            <i class="fas fa-search mr-1" aria-hidden="true"></i>
+                            <span>빠른 이동</span>
+                            <span class="quick-nav-shortcut" aria-hidden="true">Ctrl K</span>
+                        </button>
+                    </li>
+
                     <li>
                         <a href="${pageContext.request.contextPath}/mypage"
                            class="nav-link${navMyPageCurrent ? ' active' : ''}"
@@ -198,5 +206,56 @@
         </div>
     </div>
 </header>
+
+<div id="quickNavBackdrop"
+     class="quick-nav-backdrop"
+     aria-hidden="true"
+     hidden>
+    <section id="quickNavDialog"
+             class="quick-nav-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="quickNavTitle"
+             aria-describedby="quickNavDescription"
+             aria-hidden="true"
+             tabindex="-1">
+        <header class="quick-nav-header">
+            <div>
+                <h2 id="quickNavTitle">빠른 이동</h2>
+                <p id="quickNavDescription">메뉴 이름을 검색한 뒤 Enter로 이동하세요.</p>
+            </div>
+            <button type="button"
+                    id="quickNavCloseButton"
+                    class="quick-nav-close ui-touch-target"
+                    aria-label="빠른 이동 닫기">&times;</button>
+        </header>
+        <div class="quick-nav-search">
+            <label class="sr-only" for="quickNavInput">메뉴 검색</label>
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <input id="quickNavInput"
+                   type="search"
+                   autocomplete="off"
+                   spellcheck="false"
+                   role="combobox"
+                   aria-autocomplete="list"
+                   aria-controls="quickNavResults"
+                   aria-expanded="false"
+                   data-dialog-initial-focus
+                   placeholder="대시보드, 고객사, 정기점검…">
+        </div>
+        <ul id="quickNavResults"
+            class="quick-nav-results"
+            role="listbox"
+            aria-label="이동할 메뉴"></ul>
+        <p id="quickNavEmpty" class="quick-nav-empty" role="status" hidden>
+            일치하는 메뉴가 없습니다.
+        </p>
+        <p class="quick-nav-help">
+            <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> 선택</span>
+            <span><kbd>Enter</kbd> 이동</span>
+            <span><kbd>Esc</kbd> 닫기</span>
+        </p>
+    </section>
+</div>
 
 <script src="${pageContext.request.contextPath}/resources/js/header_nav.js?v=${frog2AssetVersion}"></script>

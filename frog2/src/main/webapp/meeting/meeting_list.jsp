@@ -4,13 +4,13 @@
 
 <c:set var="pageTitle" value="회의록 관리" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_list_layout.css,/resources/css/pages/customers.css,/resources/css/pages/meeting_list.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_list_layout.css,/resources/css/pages/meeting_list.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/meeting_list.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
 
-<div class="meeting-management customer-management content-shell">
+<div class="meeting-management content-management content-shell">
     <t:pageHeader>
         <jsp:attribute name="title">
         	<i class="fas fa-clipboard-list"></i> 회의록 관리
@@ -63,6 +63,7 @@
                                 <c:url var="meetingViewUrl" value="/meeting">
                                     <c:param name="view" value="view" />
                                     <c:param name="id" value="${meeting.meetingId}" />
+                                    <c:param name="returnPage" value="${currentPage}" />
                                 </c:url>
                                 <tr data-detail-url="<c:out value='${meetingViewUrl}' />">
                                     <td>
@@ -87,8 +88,8 @@
                         </div>
                         <div class="pagination">
                             <c:if test="${currentPage > 1}">
-                                <a href="?view=list&page=1" class="page-link"><i class="fas fa-angle-double-left"></i></a>
-                                <a href="?view=list&page=${currentPage - 1}" class="page-link"><i class="fas fa-angle-left"></i></a>
+                                <a href="?view=list&page=1" class="page-link ui-touch-target" aria-label="첫 페이지"><i class="fas fa-angle-double-left" aria-hidden="true"></i></a>
+                                <a href="?view=list&page=${currentPage - 1}" class="page-link ui-touch-target" aria-label="이전 페이지"><i class="fas fa-angle-left" aria-hidden="true"></i></a>
                             </c:if>
                             <c:set var="startPage" value="${currentPage - 2}" />
                             <c:set var="endPage" value="${currentPage + 2}" />
@@ -101,8 +102,8 @@
                                 </c:choose>
                             </c:forEach>
                             <c:if test="${currentPage < totalPages}">
-                                <a href="?view=list&page=${currentPage + 1}" class="page-link"><i class="fas fa-angle-right"></i></a>
-                                <a href="?view=list&page=${totalPages}" class="page-link"><i class="fas fa-angle-double-right"></i></a>
+                                <a href="?view=list&page=${currentPage + 1}" class="page-link ui-touch-target" aria-label="다음 페이지"><i class="fas fa-angle-right" aria-hidden="true"></i></a>
+                                <a href="?view=list&page=${totalPages}" class="page-link ui-touch-target" aria-label="마지막 페이지"><i class="fas fa-angle-double-right" aria-hidden="true"></i></a>
                             </c:if>
                         </div>
                     </div>
@@ -113,7 +114,7 @@
                         <h3>등록된 회의록이 없습니다</h3>
                         <p>첫 번째 회의록을 작성해보세요.</p>
                         <a href="${pageContext.request.contextPath}/meeting?view=write"
-                           class="add-button ui-button button--primary button--md">
+                           class="add-button secondary ui-button button--secondary button--md">
                             <i class="fas fa-pen"></i>
                             회의록 작성하기
                         </a>

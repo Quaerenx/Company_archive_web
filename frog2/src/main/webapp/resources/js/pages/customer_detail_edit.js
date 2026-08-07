@@ -11,7 +11,7 @@ document.getElementById('customerDetailForm').addEventListener('submit', functio
     }
 
     // 저장 확인
-    if (!confirm('변경사항을 저장하시겠습니까?')) {
+    if (!window.Frog2UI.confirmAction('변경사항을 저장하시겠습니까?')) {
         e.preventDefault();
         return false;
     }

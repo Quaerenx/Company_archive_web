@@ -1,5 +1,5 @@
 .edit-container .form-control:disabled {
-    background-color: #F7F7F7;
-    color: #666666;
+    background-color: var(--color-surface-muted);
+    color: var(--color-text-muted);
     cursor: not-allowed;
 }

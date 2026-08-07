@@ -7,12 +7,11 @@
     form.addEventListener('submit', function(event) {
         if (!userName.value.trim()) {
             event.preventDefault();
-            window.alert('이름을 입력해주세요.');
-            userName.focus();
+            window.Frog2UI.showFieldError(userName, '이름을 입력해주세요.');
             return;
         }
 
-        if (!window.confirm('프로필을 수정하시겠습니까?')) {
+        if (!window.Frog2UI.confirmAction('프로필을 수정하시겠습니까?')) {
             event.preventDefault();
         }
     });

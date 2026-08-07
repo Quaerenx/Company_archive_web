@@ -15,7 +15,11 @@ class HeaderNavViewContractTest {
         String header = read("WEB-INF/includes/header_nav.jspf");
         assertTrue(header.contains("class=\"main-header\""));
         assertTrue(header.contains("data-csrf-token="));
-        assertTrue(header.contains("class=\"logo-text\">ARCHIVE"));
+        assertTrue(header.contains("class=\"brand-logo\""));
+        assertTrue(header.contains("/resources/images/archive-compact-horizontal.svg"));
+        assertTrue(header.contains("width=\"373\""));
+        assertTrue(header.contains("height=\"112\""));
+        assertTrue(header.contains("aria-label=\"Archive 대시보드\""));
         assertTrue(header.contains("id=\"mobileNavToggle\""));
         assertTrue(header.contains("id=\"primaryNavigation\""));
         assertTrue(header.contains("aria-label=\"주요 메뉴\""));

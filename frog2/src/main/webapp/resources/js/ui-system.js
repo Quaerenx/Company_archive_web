@@ -5,6 +5,19 @@
     var submittingForms = new WeakSet();
     var originalButtonState = new WeakMap();
     var generatedId = 0;
+    var openDialogCount = 0;
+
+    var FOCUSABLE_SELECTOR = [
+        'a[href]',
+        'area[href]',
+        'button:not([disabled])',
+        'input:not([disabled]):not([type="hidden"])',
+        'select:not([disabled])',
+        'textarea:not([disabled])',
+        'iframe',
+        '[contenteditable="true"]',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(',');
 
     function statusRegion() {
         return document.getElementById('ui-status-region');
@@ -193,6 +206,126 @@
         element.classList.add('ui-status--' + (tone || 'neutral'));
     }
 
+    function confirmAction(message) {
+        if (typeof message !== 'string' || !message.trim()) {
+            throw new TypeError('Confirmation message is required.');
+        }
+        return window.confirm(message);
+    }
+
+    function isVisible(element) {
+        return element.getClientRects().length > 0
+            && window.getComputedStyle(element).visibility !== 'hidden'
+            && element.getAttribute('aria-hidden') !== 'true';
+    }
+
+    function focusableElements(dialog) {
+        return Array.prototype.filter.call(
+            dialog.querySelectorAll(FOCUSABLE_SELECTOR),
+            isVisible
+        );
+    }
+
+    function createDialogController(dialog) {
+        if (!dialog) {
+            throw new TypeError('Dialog element is required.');
+        }
+
+        var opener = null;
+        var opened = false;
+
+        function focusInitialElement() {
+            var initial = dialog.querySelector('[data-dialog-initial-focus]');
+            if (!initial || !isVisible(initial)) {
+                initial = focusableElements(dialog)[0] || dialog;
+            }
+            initial.focus();
+        }
+
+        function handleKeydown(event) {
+            if (!opened) {
+                return;
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                close();
+                return;
+            }
+            if (event.key !== 'Tab') {
+                return;
+            }
+
+            var focusable = focusableElements(dialog);
+            if (!focusable.length) {
+                event.preventDefault();
+                dialog.focus();
+                return;
+            }
+
+            var first = focusable[0];
+            var last = focusable[focusable.length - 1];
+            if (event.shiftKey && (document.activeElement === first
+                    || !dialog.contains(document.activeElement))) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last
+                    || !dialog.contains(document.activeElement))) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+
+        function open(trigger) {
+            if (opened) {
+                return;
+            }
+            opener = trigger && typeof trigger.focus === 'function'
+                ? trigger
+                : document.activeElement;
+            opened = true;
+            openDialogCount += 1;
+            dialog.classList.add('show');
+            dialog.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('ui-dialog-open');
+            document.addEventListener('keydown', handleKeydown);
+            window.requestAnimationFrame(focusInitialElement);
+        }
+
+        function close() {
+            if (!opened) {
+                return;
+            }
+            opened = false;
+            openDialogCount = Math.max(0, openDialogCount - 1);
+            dialog.classList.remove('show');
+            dialog.setAttribute('aria-hidden', 'true');
+            document.removeEventListener('keydown', handleKeydown);
+            if (openDialogCount === 0) {
+                document.body.classList.remove('ui-dialog-open');
+            }
+
+            var focusTarget = opener;
+            opener = null;
+            if (focusTarget && focusTarget.isConnected
+                    && typeof focusTarget.focus === 'function') {
+                window.requestAnimationFrame(function () {
+                    focusTarget.focus();
+                });
+            }
+        }
+
+        function isOpen() {
+            return opened;
+        }
+
+        return Object.freeze({
+            close: close,
+            isOpen: isOpen,
+            open: open
+        });
+    }
+
     document.addEventListener('input', function (event) {
         if (event.target.matches('[data-ui-error-id]')) {
             clearFieldError(event.target);
@@ -232,6 +365,8 @@
     window.Frog2UI = Object.freeze({
         announce: announce,
         clearFieldError: clearFieldError,
+        confirmAction: confirmAction,
+        createDialogController: createDialogController,
         notify: notify,
         setButtonLoading: setButtonLoading,
         setStatus: setStatus,

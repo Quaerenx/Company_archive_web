@@ -4,11 +4,11 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>페이지를 찾을 수 없습니다 (404)</title>
+  <title>페이지를 찾을 수 없습니다 (404) | Archive</title>
   <!-- Favicon -->
-  <link rel="icon" href="${pageContext.request.contextPath}/favicon.png" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="${pageContext.request.contextPath}/favicon.png">
-  <link rel="shortcut icon" href="${pageContext.request.contextPath}/favicon.png" type="image/png">
+  <%@ include file="/WEB-INF/includes/favicon.jspf" %>
+  <link rel="stylesheet" href="<c:url value='/resources/css/tokens.css' />?v=${initParam.frog2AssetVersion}">
+  <link rel="stylesheet" href="<c:url value='/resources/css/base.css' />?v=${initParam.frog2AssetVersion}">
   <link rel="stylesheet" href="<c:url value='/resources/css/pages/error.css' />?v=${initParam.frog2AssetVersion}">
 </head>
 <body class="error-page error-page--compact">

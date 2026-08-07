@@ -12,6 +12,7 @@
     const filterForm = document.getElementById('filterForm');
     const responseForm = document.getElementById('responseForm');
     const modal = document.getElementById('responseModal');
+    const responseDialog = window.Frog2UI.createDialogController(modal);
 
     document.addEventListener('DOMContentLoaded', initialize);
 
@@ -31,13 +32,14 @@
                     row.querySelector('.response-customer-name').value,
                     row.querySelector('.response-reason').value,
                     row.querySelector('.response-action-content').value,
-                    row.querySelector('.response-note').value
+                    row.querySelector('.response-note').value,
+                    button
                 );
             });
         });
         page.querySelectorAll('.btn-delete').forEach(function(button) {
             button.addEventListener('click', function() {
-                deleteResponse(button.closest('tr').dataset.responseId);
+                deleteResponse(button.closest('tr').dataset.responseId, button);
             });
         });
         page.querySelectorAll('[data-monthly-action="close"]').forEach(function(button) {
@@ -48,15 +50,11 @@
                 closeModal();
             }
         });
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeModal();
-            }
-        });
     }
 
     function submitFilter() {
-        filterForm.submit();
+        window.Frog2UI.announce('선택한 기간의 응대 기록을 불러오는 중입니다.');
+        filterForm.requestSubmit();
     }
 
     function getDefaultResponseDate() {
@@ -70,16 +68,16 @@
             + '-' + String(day).padStart(2, '0');
     }
 
-    function openAddModal() {
+    function openAddModal(event) {
         responseForm.reset();
         document.getElementById('modalTitle').textContent = '고객 응대 추가';
         document.getElementById('formAction').value = 'addResponse';
         document.getElementById('responseId').value = '';
         document.getElementById('responseDate').value = getDefaultResponseDate();
-        modal.classList.add('show');
+        responseDialog.open(event.currentTarget);
     }
 
-    function openEditModal(id, date, customerName, reason, actionContent, note) {
+    function openEditModal(id, date, customerName, reason, actionContent, note, opener) {
         document.getElementById('modalTitle').textContent = '고객 응대 수정';
         document.getElementById('formAction').value = 'updateResponse';
         document.getElementById('responseId').value = id;
@@ -88,15 +86,15 @@
         document.getElementById('reason').value = reason;
         document.getElementById('actionContent').value = actionContent;
         document.getElementById('note').value = note;
-        modal.classList.add('show');
+        responseDialog.open(opener);
     }
 
     function closeModal() {
-        modal.classList.remove('show');
+        responseDialog.close();
     }
 
-    function deleteResponse(id) {
-        if (!window.confirm('정말로 이 응대 기록을 삭제하시겠습니까?')) {
+    function deleteResponse(id, trigger) {
+        if (!window.Frog2UI.confirmAction('정말로 이 응대 기록을 삭제하시겠습니까?')) {
             return;
         }
 
@@ -110,7 +108,8 @@
         appendHiddenInput(form, 'year', String(selectedYear));
         appendHiddenInput(form, 'month', String(selectedMonth));
         document.body.appendChild(form);
-        form.submit();
+        window.Frog2UI.setButtonLoading(trigger, true, '삭제 중');
+        form.requestSubmit();
     }
 
     function appendHiddenInput(form, name, value) {

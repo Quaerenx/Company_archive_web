@@ -32,6 +32,9 @@
         }
     ];
     const deleteForm = document.getElementById('deleteFormHeader');
+    const optionsStatus = document.getElementById('maintenanceOptionsStatus');
+    const optionsStatusMessage = document.getElementById('maintenanceOptionsStatusMessage');
+    const retryOptionsButton = document.getElementById('retryMaintenanceOptions');
     let optionsUnavailable = false;
 
     if (document.readyState === 'loading') {
@@ -44,6 +47,9 @@
         form.addEventListener('submit', validateForm);
         if (deleteForm) {
             deleteForm.addEventListener('submit', confirmDelete);
+        }
+        if (retryOptionsButton) {
+            retryOptionsButton.addEventListener('click', retryMaintenanceOptions);
         }
 
         if (mode === 'add') {
@@ -58,21 +64,41 @@
             }
         }
 
-        loadMaintenanceOptions()
+        loadAndApplyMaintenanceOptions(false);
+    }
+
+    function loadAndApplyMaintenanceOptions(showLoading) {
+        if (showLoading) {
+            showOptionsStatus('고객사와 점검자 정보를 다시 불러오는 중입니다.', 'info', false);
+        }
+        return loadMaintenanceOptions()
             .then(function() {
                 if (mode === 'edit') {
                     preserveCurrentValues();
+                    hideOptionsStatus();
                     return;
                 }
                 if (mode === 'add' && !isSelect(customerField)) {
                     const customerName = normalizedValue(customerField.value);
                     if (customerName) {
                         return prefillFromCustomerDetail(customerName)
+                            .then(hideOptionsStatus)
                             .catch(logPrefillFailure);
                     }
                 }
+                hideOptionsStatus();
             })
             .catch(handleOptionsFailure);
+    }
+
+    function retryMaintenanceOptions() {
+        if (!retryOptionsButton) {
+            return;
+        }
+        retryOptionsButton.disabled = true;
+        loadAndApplyMaintenanceOptions(true).finally(function() {
+            retryOptionsButton.disabled = false;
+        });
     }
 
     function setDefaultInspectionDate() {
@@ -184,11 +210,45 @@
             preserveCurrentValues();
         }
         setOptionsValidity('고객사 및 점검자 정보를 불러올 수 없습니다.');
+        showOptionsStatus(
+            '고객사 및 점검자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+            'danger',
+            true);
         console.error('Unable to load maintenance options:', error);
     }
 
     function logPrefillFailure(error) {
+        showOptionsStatus(
+            '선택한 고객사의 기본값을 자동으로 채우지 못했습니다. 입력값을 확인하거나 다시 시도해 주세요.',
+            'warning',
+            true);
         console.error('Unable to prefill maintenance customer detail:', error);
+    }
+
+    function showOptionsStatus(message, tone, showRetry) {
+        if (!optionsStatus || !optionsStatusMessage) {
+            return;
+        }
+        ['danger', 'warning', 'info', 'success', 'neutral'].forEach(function(candidate) {
+            optionsStatus.classList.remove('ui-alert--' + candidate);
+        });
+        optionsStatus.classList.add('ui-alert--' + tone);
+        optionsStatusMessage.textContent = message;
+        optionsStatus.setAttribute('role', tone === 'danger' ? 'alert' : 'status');
+        optionsStatus.setAttribute('aria-live', tone === 'danger' ? 'assertive' : 'polite');
+        if (retryOptionsButton) {
+            retryOptionsButton.hidden = !showRetry;
+        }
+        optionsStatus.hidden = false;
+    }
+
+    function hideOptionsStatus() {
+        if (optionsStatus) {
+            optionsStatus.hidden = true;
+        }
+        if (optionsStatusMessage) {
+            optionsStatusMessage.textContent = '';
+        }
     }
 
     function setOptionsValidity(message) {
@@ -235,7 +295,7 @@
     }
 
     function confirmDelete(event) {
-        if (!window.confirm('정말 삭제하시겠습니까?')) {
+        if (!window.Frog2UI.confirmAction('정말 삭제하시겠습니까?')) {
             event.preventDefault();
         }
     }

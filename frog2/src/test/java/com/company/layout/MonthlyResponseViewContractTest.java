@@ -1,5 +1,6 @@
 package com.company.layout;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -41,9 +42,14 @@ class MonthlyResponseViewContractTest {
         String styles = page.contains("/resources/css/pages/monthly_customer_response.css")
                 ? read("resources/css/pages/monthly_customer_response.css")
                 : page;
-        assertTrue(styles.contains("max-width: 1000px"));
-        assertTrue(styles.contains("padding: 32px 16px"));
-        assertTrue(styles.contains("background-color: #5B8FB9"));
+        String sharedStyles = read("resources/css/ui-system.css");
+        assertTrue(sharedStyles.contains("max-width: var(--page-content-max-width)"));
+        assertTrue(sharedStyles.contains("padding-block: var(--space-32)"));
+        assertFalse(styles.contains("max-width: var(--page-content-max-width)"));
+        assertTrue(styles.contains("background-color: var(--color-surface-muted)"));
+        assertTrue(styles.contains("border: 1px solid var(--color-border)"));
+        assertTrue(styles.contains("box-shadow: none"));
+        assertFalse(styles.contains("translateY("));
         assertTrue(styles.contains("@media (max-width: 768px)"));
     }
 

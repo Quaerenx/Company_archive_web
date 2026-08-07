@@ -33,8 +33,8 @@ class VmHostViewContractTest {
                 ? read("resources/css/pages/vm_hosts.css")
                 : page;
         assertTrue(styles.contains("minmax(320px, 420px) minmax(0, 1fr)"));
-        assertTrue(styles.contains("background: #1d4ed8"));
-        assertTrue(styles.contains("background: #dc2626"));
+        assertTrue(styles.contains("background: var(--color-primary)"));
+        assertTrue(styles.contains("background: var(--color-danger)"));
     }
 
     private static int count(String source, String needle) {

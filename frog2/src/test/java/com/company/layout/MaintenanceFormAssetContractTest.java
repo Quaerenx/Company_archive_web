@@ -63,7 +63,11 @@ class MaintenanceFormAssetContractTest {
 
         assertTrue(history.contains("typeof window.Chart !== 'function'"));
         assertTrue(history.contains("new window.Chart("));
-        assertTrue(history.contains("item.addEventListener('click'"));
+        assertTrue(history.contains("prefers-reduced-motion: reduce"));
+        assertTrue(history.contains("typeof item.animate === 'function'"));
+        assertFalse(history.contains("item.addEventListener('click'"));
+        assertTrue(readWebapp("maintenance/maintenance_history.jsp")
+                .contains("<a class=\"history-item\""));
     }
 
     private static String readWebapp(String relativePath) throws Exception {

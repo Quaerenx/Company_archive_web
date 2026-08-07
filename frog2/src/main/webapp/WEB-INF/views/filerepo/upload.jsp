@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 
 <c:set var="pageTitle" value="업무자료 업로드" scope="request" />
 <c:set var="pageDocumentTitle" value="${pageTitle}" scope="request" />
@@ -13,11 +14,13 @@
 
 <%@ include file="/includes/header.jsp" %>
 
-<main class="upload-page content-shell">
-    <section class="upload-container" aria-labelledby="upload-title">
-        <div class="upload-icon" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i></div>
-        <h1 id="upload-title" class="upload-title">업무자료 업로드</h1>
-        <p class="upload-description">최대 5개, 파일당 10 MB까지 업로드할 수 있습니다.</p>
+<div class="upload-page content-shell">
+    <t:pageHeader>
+        <jsp:attribute name="title"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i> 업무자료 업로드</jsp:attribute>
+        <jsp:attribute name="subtitle">최대 5개, 파일당 10 MB까지 업로드할 수 있습니다.</jsp:attribute>
+    </t:pageHeader>
+
+    <section class="upload-container" aria-label="업무자료 파일 선택">
 
         <form id="file-upload-form"
               class="ui-form"
@@ -49,13 +52,15 @@
                aria-live="polite"
                aria-atomic="true"></p>
 
-            <button id="upload-button"
-                    class="upload-button ui-button button--primary button--md"
-                    type="submit">업로드</button>
-            <a class="upload-button ui-button button--secondary button--md"
-               href="<c:out value="${listUrl}" />">목록으로</a>
+            <div class="upload-actions">
+                <a class="upload-button ui-button button--secondary button--md"
+                   href="<c:out value="${listUrl}" />">목록으로</a>
+                <button id="upload-button"
+                        class="upload-button ui-button button--primary button--md"
+                        type="submit">업로드</button>
+            </div>
         </form>
     </section>
-</main>
+</div>
 
 <%@ include file="/includes/footer.jsp" %>

@@ -105,15 +105,20 @@ class PageShellContractTest {
         assertTrue(header.contains("var=\"frog2AssetVersion\""));
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
-        assertEquals(1, occurrences(webXml, "20260730-design-common-1"));
-        assertEquals(4, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
-        assertEquals(3, occurrences(header, "?v=${frog2AssetVersion}"));
+        assertEquals(1, occurrences(webXml, "20260807-preview-retirement-1"));
+        assertEquals(6, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
+        assertEquals(2, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("ui-system.js?v=${frog2AssetVersion}"));
+        assertTrue(footer.contains("ambient-background.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("${script}?v=${frog2AssetVersion}"));
 
         String login = read("login.jsp");
-        assertEquals(4, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
+        assertEquals(5, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
+        assertTrue(login.contains(
+                "/resources/js/ui-system.js?v=${initParam.frog2AssetVersion}"));
+        assertTrue(login.contains(
+                "/resources/js/pages/login.js?v=${initParam.frog2AssetVersion}"));
         assertFalse(login.matches("(?s).*\\?v=202\\d+.*"));
         for (String errorPage : List.of(
                 "error/400.jsp",
@@ -133,9 +138,9 @@ class PageShellContractTest {
         String upload = read("resources/css/pages/upload.css");
         String download = read("resources/css/pages/download.css");
 
-        assertTrue(upload.contains(".page-file-upload * {"));
-        assertTrue(upload.contains("body.page-file-upload {"));
-        assertTrue(upload.contains(".page-file-upload .container {"));
+        assertFalse(upload.contains(".page-file-upload * {"));
+        assertTrue(upload.contains(".page-file-upload .upload-page {"));
+        assertTrue(upload.contains(".page-file-upload .upload-container {"));
         assertFalse(upload.matches("(?m)^\\*\\s*\\{"));
         assertFalse(upload.matches("(?m)^body\\s*\\{"));
         assertFalse(upload.matches("(?m)^\\.container\\s*\\{"));
@@ -172,6 +177,24 @@ class PageShellContractTest {
     }
 
     @Test
+    void retiredTypographyDashboardPreviewStaysRemoved() throws Exception {
+        assertFalse(Files.exists(Path.of(
+                "src/main/java/com/company/controller/TypographyDashboardPreviewServlet.java")));
+        assertFalse(Files.exists(
+                WEBAPP.resolve("WEB-INF/views/design/typography_dashboard.jsp")));
+        assertFalse(Files.exists(WEBAPP.resolve(
+                "resources/css/pages/typography_dashboard_assignees.css")));
+
+        String webXml = read("WEB-INF/web.xml");
+        String ambientCss = read("resources/css/ambient-background.css");
+        String ambientScript = read("resources/js/ambient-background.js");
+        assertFalse(webXml.contains("TypographyDashboardPreviewServlet"));
+        assertFalse(webXml.contains("dashboard-typography-preview"));
+        assertFalse(ambientCss.contains("typography-dashboard-page"));
+        assertFalse(ambientScript.contains("typography-dashboard-page"));
+    }
+
+    @Test
     void migratedPagesPreserveBodyClassesAndAssetOrderDeclarations() throws Exception {
         Map<String, PageAssets> expected = new LinkedHashMap<>();
         expected.put("dashboard.jsp", new PageAssets(
@@ -192,24 +215,23 @@ class PageShellContractTest {
                 "/resources/js/pages/file_repository_upload.js"));
         expected.put("mypage/mypage.jsp", new PageAssets(
                 "page-1050 page-customers page-mypage",
-                "/resources/css/pages/customers.css,/resources/css/pages/mypage.css",
-                null));
+                "/resources/css/pages/mypage.css",
+                "/resources/js/pages/mypage_hosts.js"));
         expected.put("mypage/edit_profile.jsp", new PageAssets(
                 "page-1050 page-customers page-mypage",
-                "/resources/css/pages/customers.css,/resources/css/pages/profile_edit.css",
+                "/resources/css/pages/profile_edit.css",
                 "/resources/js/pages/profile_edit.js"));
         expected.put("mypage/change_password.jsp", new PageAssets(
                 "page-1050 page-customers page-mypage",
-                "/resources/css/pages/customers.css,/resources/css/pages/password_change.css",
+                "/resources/css/pages/password_change.css",
                 "/resources/js/pages/password_change.js"));
         expected.put("mypage/monthly_customer_response.jsp", new PageAssets(
                 "page-1050 page-customers monthly-response-page",
-                "/resources/css/pages/customers.css,"
-                        + "/resources/css/pages/monthly_customer_response.css",
+                "/resources/css/pages/monthly_customer_response.css",
                 "/resources/js/pages/monthly_customer_response.js"));
         expected.put("vm_hosts/list.jsp", new PageAssets(
                 "page-1050 page-customers page-vm-hosts",
-                "/resources/css/pages/customers.css,/resources/css/pages/vm_hosts.css",
+                "/resources/css/pages/vm_hosts.css",
                 "/resources/js/pages/vm_hosts.js"));
 
         for (Map.Entry<String, PageAssets> entry : expected.entrySet()) {

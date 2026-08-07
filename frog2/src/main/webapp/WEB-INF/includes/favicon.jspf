@@ -1,0 +1,1 @@
+<link rel="icon" href="${pageContext.request.contextPath}/favicon.svg?v=${initParam.frog2AssetVersion}" type="image/svg+xml" sizes="any">

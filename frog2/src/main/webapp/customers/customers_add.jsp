@@ -9,7 +9,7 @@
 <%@ include file="/includes/header.jsp" %>
 
 <!-- 전체를 customer-add-page 클래스로 감싸기 -->
-<div class="customer-add-page customer-form-page customer-management content-shell">
+<div class="customer-add-page customer-form-page customer-management content-management content-shell">
         <t:pageHeader>
             <jsp:attribute name="title">
                 <i class="fas fa-plus-circle"></i> 새 고객사 등록

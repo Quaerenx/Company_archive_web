@@ -1,26 +1,4 @@
 /* meeting_write.jsp 전용 스타일 */
-.meeting-page-container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* meeting_write 전용 page-header 범위를 제한하여 공용 page-header에 영향 주지 않게 함 */
-.meeting-page-container > .page-header {
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-.meeting-page-container > .page-header h2 {
-    color: var(--color-text);
-    margin-bottom: 10px;
-}
-
-.meeting-page-container > .page-header p {
-    color: var(--color-text-muted);
-    margin: 0;
-}
-
 /* 회의록 본문은 일반 폼보다 넉넉한 편집 영역을 유지합니다. */
 .meeting-page-container .ui-form textarea {
     min-height: 300px;
@@ -33,45 +11,42 @@
 }
 
 .preview-meta {
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e9ecef;
+    margin-bottom: var(--space-32);
+    padding-bottom: var(--space-16);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .preview-meta h2 {
-    margin: 0 0 1rem 0;
+    margin: 0 0 var(--space-16) 0;
     color: var(--color-text);
-    font-size: 1.5rem;
+    font-size: var(--font-size-xl);
 }
 
 .preview-info {
     display: flex;
-    gap: 1rem;
+    gap: var(--space-16);
     flex-wrap: wrap;
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
 }
 
 .preview-info span {
     background: var(--color-surface-subtle);
-    padding: 0.25rem 0.75rem;
-    border-radius: 4px;
-    border: 1px solid #e9ecef;
+    padding: var(--space-4) var(--space-12);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
 }
 
 .preview-text {
     line-height: 1.8;
     color: var(--color-text);
     white-space: pre-wrap;
-    font-size: 0.95rem;
+    font-size: var(--font-size-md);
+    max-inline-size: var(--measure-wide);
 }
 
 /* 반응형 */
 @media (max-width: 768px) {
-    .meeting-page-container {
-        padding: 15px;
-    }
-
     .modal-wide .modal-content {
         width: 95%;
         margin: 2% auto;
@@ -79,6 +54,6 @@
 
     .preview-info {
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--space-8);
     }
 }

@@ -12,11 +12,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 카드 클릭 시 로딩 효과
+    // Keep the native link contract so keyboard and modified-click navigation work.
     cards.forEach(card => {
-        card.addEventListener('click', function() {
+        card.addEventListener('click', function(event) {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey
+                    || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
             this.classList.add('is-loading');
-            window.location.href = this.dataset.detailUrl;
         });
     });
 });

@@ -5,7 +5,7 @@
 
 <c:set var="pageTitle" value="정기점검 이력 - ${fn:escapeXml(customerName)}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/customers.css,/resources/css/pages/maintenance_history.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/maintenance_history.css" scope="request" />
 <c:set var="vendorScript" value="https://cdn.jsdelivr.net/npm/chart.js@4.4.4" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/maintenance_history.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
@@ -114,7 +114,9 @@
                             <c:param name="view" value="edit" />
                             <c:param name="id" value="${record.maintenanceId}" />
                         </c:url>
-                        <div class="history-item" data-detail-url="<c:out value='${maintenanceEditUrl}' />">
+                        <a class="history-item"
+                           href="<c:out value='${maintenanceEditUrl}' />"
+                           data-detail-url="<c:out value='${maintenanceEditUrl}' />">
                             <div class="history-meta">
                                 <div class="inspection-date">
                                     <i class="fas fa-calendar-check"></i>
@@ -157,7 +159,7 @@
                                 </div><c:out value="${record.note}" /></div>
                             </c:if>
                             <div class="history-actions"></div>
-                        </div>
+                        </a>
                     </c:forEach>
                 </c:when>
                 <c:otherwise>
@@ -166,7 +168,7 @@
                         <h3>정기점검 이력이 없습니다</h3>
                         <p><c:out value="${customerName}" />의 정기점검 이력이 아직 등록되지 않았습니다.</p>
                         <a href="${addHistoryUrl}"
-                           class="btn btn-primary ui-button button--primary button--md">
+                           class="btn btn-secondary ui-button button--secondary button--md">
                             <i class="fas fa-plus"></i>
                             첫 번째 점검 이력 추가하기
                         </a>

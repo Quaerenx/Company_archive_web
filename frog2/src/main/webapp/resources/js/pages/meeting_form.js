@@ -9,6 +9,7 @@
     const mode = root.getAttribute('data-meeting-mode');
     const form = document.getElementById('meetingForm');
     const modal = document.getElementById('previewModal');
+    const previewDialog = window.Frog2UI.createDialogController(modal);
     const fields = {
         title: document.getElementById('title'),
         meetingType: document.getElementById('meeting_type'),
@@ -40,11 +41,6 @@
 
         modal.addEventListener('click', function(event) {
             if (event.target === modal) {
-                closePreview();
-            }
-        });
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
                 closePreview();
             }
         });
@@ -80,7 +76,7 @@
         return true;
     }
 
-    function previewContent() {
+    function previewContent(event) {
         if (!validateForm()) {
             return;
         }
@@ -91,16 +87,17 @@
         document.querySelector('.preview-datetime').textContent =
                 formatDateTime(fields.meetingDateTime.value);
         document.getElementById('preview-content').textContent = fields.content.value.trim();
-        modal.classList.add('show');
+        previewDialog.open(event.currentTarget);
     }
 
     function closePreview() {
-        modal.classList.remove('show');
+        previewDialog.close();
     }
 
-    function confirmDelete() {
-        if (window.confirm('정말로 이 회의록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) {
-            document.getElementById('deleteForm').submit();
+    function confirmDelete(event) {
+        if (window.Frog2UI.confirmAction('정말로 이 회의록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) {
+            window.Frog2UI.setButtonLoading(event.currentTarget, true, '삭제 중');
+            document.getElementById('deleteForm').requestSubmit();
         }
     }
 
@@ -136,7 +133,7 @@
         const message = mode === 'edit'
                 ? '회의록을 수정하시겠습니까?'
                 : '회의록을 등록하시겠습니까?';
-        if (!window.confirm(message)) {
+        if (!window.Frog2UI.confirmAction(message)) {
             event.preventDefault();
             return;
         }

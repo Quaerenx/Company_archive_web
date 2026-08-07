@@ -250,7 +250,8 @@ class CssLayoutStructureTest {
         int headerCss = header.indexOf("/resources/css/pages/header.css");
         assertTrue(headEnd > 0);
         assertTrue(headerCss > 0 && headerCss < headEnd);
-        assertTrue(header.substring(0, headEnd).contains("rel=\"icon\""));
+        assertTrue(header.substring(0, headEnd).contains(
+                "include file=\"/WEB-INF/includes/favicon.jspf\""));
         assertTrue(header.indexOf("/resources/css/pages/header.css")
                 == header.lastIndexOf("/resources/css/pages/header.css"));
     }
@@ -269,25 +270,38 @@ class CssLayoutStructureTest {
         assertFalse(page.contains("onchange="));
         assertFalse(page.contains("onsubmit="));
         assertFalse(page.contains("style=\""));
-        assertTrue(page.contains("id=\"vmHostDeleteForm\""));
-        assertTrue(page.contains("id=\"vmHostDeleteForm\" method=\"post\""));
-        assertTrue(page.contains("vmHostDeleteForm") && page.contains("hidden"));
+        assertFalse(page.contains("dashboard-quick-actions"));
+        assertFalse(page.contains("vmHostDeleteForm"));
 
         String script = Files.readString(
                 WEBAPP.resolve("resources/js/pages/dashboard.js"));
-        assertTrue(script.contains("deleteForm.hidden = !isEdit"));
-        assertTrue(script.contains("deleteForm.addEventListener('submit'"));
+        assertFalse(script.contains("vmHost"));
         assertFalse(script.contains(".style."));
         assertFalse(script.contains("$" + "{"));
 
         String styles = Files.readString(CSS.resolve("pages/dashboard.css"));
         assertTrue(styles.contains(
-                "/* Dashboard workspace, maintenance, and VM host components */"));
+                "/* Dashboard workspace and maintenance components */"));
+        assertFalse(styles.contains(".dashboard-page .page-header"));
+        assertFalse(styles.contains(".dashboard-page .maintenance-kpi-"));
         assertTrue(styles.contains(".dashboard-page .maintenance-month-board"));
-        assertTrue(styles.contains(".dashboard-page .vm-modal-backdrop"));
-        assertTrue(styles.contains("body.dashboard-page.vm-modal-open"));
+        assertFalse(styles.contains(".dashboard-page .vm-modal-backdrop"));
         assertTrue(styles.contains("border: 1px solid var(--color-border);"));
-        assertFalse(styles.contains(".dashboard-page body.vm-modal-open"));
+
+        assertExternalized(
+                "mypage/mypage.jsp",
+                "resources/js/pages/mypage_hosts.js",
+                true);
+        String myPage = Files.readString(WEBAPP.resolve("mypage/mypage.jsp"));
+        assertTrue(myPage.contains("id=\"vmHostDeleteForm\" method=\"post\""));
+        assertTrue(myPage.contains("vmHostDeleteForm") && myPage.contains("hidden"));
+        String myPageScript = Files.readString(
+                WEBAPP.resolve("resources/js/pages/mypage_hosts.js"));
+        assertTrue(myPageScript.contains("deleteForm.hidden = !isEdit"));
+        assertTrue(myPageScript.contains("deleteForm.addEventListener('submit'"));
+        String myPageStyles = Files.readString(CSS.resolve("pages/mypage.css"));
+        assertTrue(myPageStyles.contains(".page-mypage .vm-modal-backdrop"));
+        assertTrue(myPageStyles.contains("body.page-mypage.vm-modal-open"));
 
         String headerStyles = Files.readString(CSS.resolve("pages/header.css"));
         assertTrue(headerStyles.contains(".page-1050 .main-header .header-box"));
@@ -407,7 +421,9 @@ class CssLayoutStructureTest {
 
         String script = Files.readString(
                 WEBAPP.resolve("resources/js/pages/monthly_customer_response.js"));
-        assertTrue(script.contains("modal.classList.add('show')"));
+        assertTrue(script.contains("Frog2UI.createDialogController"));
+        assertTrue(script.contains("responseDialog.open("));
+        assertFalse(script.contains("modal.classList.add('show')"));
         assertTrue(script.contains("form.action = responseForm.action"));
         assertTrue(script.contains("Frog2Csrf.appendTo(form)"));
         assertFalse(script.contains("window.onclick"));

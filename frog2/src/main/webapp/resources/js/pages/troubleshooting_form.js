@@ -50,7 +50,7 @@
         }
 
         if (mode === 'edit'
-                && !window.confirm('트러블 슈팅 정보를 수정하시겠습니까?')) {
+                && !window.Frog2UI.confirmAction('트러블 슈팅 정보를 수정하시겠습니까?')) {
             event.preventDefault();
         }
     }

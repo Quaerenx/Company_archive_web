@@ -4,7 +4,7 @@
 <c:set var="pageTitle" value="프로필 수정" scope="request" />
 <c:set var="pageDocumentTitle" value="${pageTitle}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers page-mypage" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/customers.css,/resources/css/pages/profile_edit.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/profile_edit.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/profile_edit.js" scope="request" />
 
 <%@ include file="/includes/header.jsp" %>
@@ -19,7 +19,7 @@
         </jsp:attribute>
     </t:pageHeader>
 
-    <div class="form-card">
+    <div class="form-card ui-form-card">
         <form id="profileEditForm"
               class="ui-form"
               action="${pageContext.request.contextPath}/mypage"
@@ -43,7 +43,7 @@
                 </label>
                 <input type="text" class="form-control" id="userName" name="userName"
                        value="<c:out value='${userInfo.userName}' />"
-                       required placeholder="이름을 입력하세요">
+                       required autocomplete="name" placeholder="이름을 입력하세요">
             </div>
 
             <div class="form-actions">

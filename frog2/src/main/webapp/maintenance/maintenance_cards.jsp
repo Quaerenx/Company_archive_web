@@ -3,7 +3,7 @@
 
 <c:set var="pageTitle" value="정기점검 이력관리" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/customers.css,/resources/css/pages/maintenance_cards.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/maintenance_cards.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/maintenance_cards.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
@@ -60,12 +60,14 @@
                                     <c:param name="view" value="history" />
                                     <c:param name="customerName" value="${customer.customerName}" />
                                 </c:url>
-                                <div class="customer-card"
-                                     data-detail-url="<c:out value='${historyUrl}' />">
+                                <a class="customer-card"
+                                   href="<c:out value='${historyUrl}' />"
+                                   data-detail-url="<c:out value='${historyUrl}' />">
                                     
                                     <div class="customer-name">
                                         <i class="fas fa-building"></i>
-                                        <c:out value="${customer.customerName}" />
+                                        <span class="customer-name-text"><c:out value="${customer.customerName}" /></span>
+                                        <span class="maintenance-frequency"><c:out value="${empty maintenanceFrequencyLabels[customer.customerName] ? '월별' : maintenanceFrequencyLabels[customer.customerName]}" /></span>
                                     </div>
                                     
                                     <div class="customer-info">
@@ -95,7 +97,7 @@
                                         </div>
                                     </div>
                                     
-                                </div>
+                                </a>
                             </c:forEach>
                         </div>
                     </div>
@@ -119,12 +121,14 @@
                                     <c:param name="view" value="history" />
                                     <c:param name="customerName" value="${customer.customerName}" />
                                 </c:url>
-                                <div class="customer-card"
-                                     data-detail-url="<c:out value='${historyUrl}' />">
+                                <a class="customer-card"
+                                   href="<c:out value='${historyUrl}' />"
+                                   data-detail-url="<c:out value='${historyUrl}' />">
                                     
                                     <div class="customer-name">
                                         <i class="fas fa-building"></i>
-                                        <c:out value="${customer.customerName}" />
+                                        <span class="customer-name-text"><c:out value="${customer.customerName}" /></span>
+                                        <span class="maintenance-frequency"><c:out value="${empty maintenanceFrequencyLabels[customer.customerName] ? '월별' : maintenanceFrequencyLabels[customer.customerName]}" /></span>
                                     </div>
                                     
                                     <div class="customer-info">
@@ -154,7 +158,7 @@
                                         </div>
                                     </div>
                                     
-                                </div>
+                                </a>
                             </c:forEach>
                         </div>
                     </div>

@@ -15,10 +15,25 @@
 <c:url var="currentCustomerEditUrl" value="/customers">
     <c:param name="view" value="editDetail" />
     <c:param name="customerName" value="${currentCustomerName}" />
+    <c:if test="${not empty param.returnFilter}"><c:param name="returnFilter" value="${param.returnFilter}" /></c:if>
+    <c:if test="${not empty param.returnSortField}"><c:param name="returnSortField" value="${param.returnSortField}" /></c:if>
+    <c:if test="${not empty param.returnSortDirection}"><c:param name="returnSortDirection" value="${param.returnSortDirection}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnPageSize}"><c:param name="returnPageSize" value="${param.returnPageSize}" /></c:if>
+</c:url>
+<c:url var="customerListReturnUrl" value="/customers">
+    <c:param name="view" value="list" />
+    <c:if test="${not empty param.returnFilter}"><c:param name="filter" value="${param.returnFilter}" /></c:if>
+    <c:if test="${not empty param.returnSortField}"><c:param name="sortField" value="${param.returnSortField}" /></c:if>
+    <c:if test="${not empty param.returnSortDirection}"><c:param name="sortDirection" value="${param.returnSortDirection}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="q" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnPageSize}"><c:param name="pageSize" value="${param.returnPageSize}" /></c:if>
 </c:url>
 
 
-<div class="customer-detail customer-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />">
+<div class="customer-detail customer-management content-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />">
     <t:pageHeader>
         <jsp:attribute name="title">
             <i class="fas fa-building"></i>
@@ -40,7 +55,7 @@
         </jsp:attribute>
 		<jsp:attribute name="actions">
 			<div class="header-actions">
-				<a href="${pageContext.request.contextPath}/customers?view=list"
+					<a href="<c:out value='${customerListReturnUrl}' />"
                    class="btn-min ui-button button--secondary button--sm">
 					<i class="fas fa-arrow-left"></i> 목록으로
 				</a>
@@ -83,12 +98,18 @@
     <c:set var="hasAnyDetail" value="${not empty customerDetail or not empty customerDetailStg or not empty customerDetailDev}" />
     <c:if test="${hasAnyDetail}">
         <div class="detail-container env-tabs">
-            <div class="tab-nav">
-                <button type="button" class="tab-btn ui-touch-target" data-target="env-prod">운영</button>
-                <button type="button" class="tab-btn ui-touch-target" data-target="env-stg">스테이징</button>
-                <button type="button" class="tab-btn ui-touch-target" data-target="env-dev">개발</button>
+            <div class="tab-nav" role="tablist" aria-label="고객사 환경">
+                <button type="button" id="env-prod-tab" class="tab-btn ui-touch-target active"
+                        role="tab" aria-selected="true" aria-controls="env-prod" tabindex="0"
+                        data-target="env-prod">운영</button>
+                <button type="button" id="env-stg-tab" class="tab-btn ui-touch-target"
+                        role="tab" aria-selected="false" aria-controls="env-stg" tabindex="-1"
+                        data-target="env-stg">스테이징</button>
+                <button type="button" id="env-dev-tab" class="tab-btn ui-touch-target"
+                        role="tab" aria-selected="false" aria-controls="env-dev" tabindex="-1"
+                        data-target="env-dev">개발</button>
             </div>
-            <div class="tab-panel" id="env-prod">
+            <div class="tab-panel active" id="env-prod" role="tabpanel" aria-labelledby="env-prod-tab">
                 <c:if test="${empty customerDetail}">
                     <div class="alert alert-light ui-alert ui-alert--neutral">운영 환경 데이터가 없습니다.</div>
                 </c:if>
@@ -97,7 +118,7 @@
                     <%@ include file="/customers/_detail_sections.jspf" %>
                 </c:if>
             </div>
-            <div class="tab-panel" id="env-stg">
+            <div class="tab-panel" id="env-stg" role="tabpanel" aria-labelledby="env-stg-tab" hidden>
         <c:if test="${empty customerDetailStg}">
             <div class="alert alert-light ui-alert ui-alert--neutral">스테이징 환경 데이터가 없습니다.</div>
         </c:if>
@@ -106,7 +127,7 @@
             <%@ include file="/customers/_detail_sections.jspf" %>
         </c:if>
     </div>
-    <div class="tab-panel" id="env-dev">
+    <div class="tab-panel" id="env-dev" role="tabpanel" aria-labelledby="env-dev-tab" hidden>
         <c:if test="${empty customerDetailDev}">
             <div class="alert alert-light ui-alert ui-alert--neutral">개발 환경 데이터가 없습니다.</div>
         </c:if>
@@ -128,13 +149,13 @@
                     상세정보를 등록하려면 수정 페이지에서 추가해 주세요.
                 </p>
                 <div class="d-flex gap-3 justify-content-center">
-                    <a href="${pageContext.request.contextPath}/customers?view=list"
+                    <a href="<c:out value='${customerListReturnUrl}' />"
                        class="btn btn-secondary ui-button button--secondary button--md">
                         <i class="fas fa-arrow-left"></i>
                         목록으로 돌아가기
                     </a>
 				    <a href="<c:out value='${currentCustomerEditUrl}' />"
-                       class="btn btn-primary ui-button button--primary button--md">
+                       class="btn btn-secondary ui-button button--secondary button--md">
 				        <i class="fas fa-edit"></i>
 				        정보 수정하기
 				    </a>
@@ -149,8 +170,8 @@
                 <i class="fas fa-exclamation-triangle text-danger customer-empty-icon"></i>
                 <h3 class="text-dark mb-3">고객사 정보를 찾을 수 없습니다</h3>
                 <p class="text-muted mb-4">요청하신 고객사 정보가 존재하지 않거나 삭제되었을 수 있습니다.</p>
-                <a href="${pageContext.request.contextPath}/customers?view=list"
-                   class="btn btn-primary ui-button button--primary button--md">
+                <a href="<c:out value='${customerListReturnUrl}' />"
+                   class="btn btn-secondary ui-button button--secondary button--md">
                     <i class="fas fa-arrow-left"></i>
                     목록으로 돌아가기
                 </a>
@@ -160,14 +181,18 @@
 
     <c:if test="${not empty customer}">
         <div class="detail-actions">
-            <a href="#" id="editCustomerButton" data-customer-name="<c:out value='${currentCustomerName}' />"
-               class="btn-min primary ui-button button--primary button--sm">
+            <a href="<c:out value='${currentCustomerEditUrl}' />"
+               id="editCustomerButton" data-customer-name="<c:out value='${currentCustomerName}' />"
+               class="btn-min ui-button button--secondary button--sm">
                 <i class="fas fa-edit"></i> 정보수정
             </a>
-            <a href="#" id="deleteCustomerButton" data-customer-name="<c:out value='${currentCustomerName}' />"
-               class="btn-min danger ui-button button--danger button--sm">
+            <button type="button"
+                    id="deleteCustomerButton"
+                    data-customer-name="<c:out value='${currentCustomerName}' />"
+                    class="btn-min danger ui-button button--danger button--sm"
+                    data-busy-label="삭제 중">
                 <i class="fas fa-trash"></i> 고객사 삭제
-            </a>
+            </button>
         </div>
     </c:if>
 </div>

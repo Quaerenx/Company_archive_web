@@ -1,0 +1,74 @@
+/* Full-page ambience sits behind opaque business surfaces. */
+body.ui-system.has-ambient-background {
+    background-color: var(--color-ambient-background);
+    background-image: none;
+    background-attachment: fixed;
+    isolation: isolate;
+}
+
+.app-ambient-background {
+    color: var(--color-ambient-particle);
+    display: block;
+    block-size: 100%;
+    inline-size: 100%;
+    inset: 0;
+    pointer-events: none;
+    position: fixed;
+    z-index: var(--z-background);
+}
+
+body.ui-system.has-ambient-background > .app-main,
+body.ui-system.has-ambient-background > .main-footer {
+    position: relative;
+}
+
+body.ui-system.has-ambient-background > .main-footer {
+    border-block-start: 0;
+    color: var(--color-text-inverse);
+}
+
+body.ui-system.has-ambient-background .content-shell > .back-link {
+    color: var(--color-text-inverse);
+}
+
+body.ui-system.has-ambient-background .content-shell > .back-link:hover {
+    color: var(--color-text-inverse);
+    text-decoration: underline;
+}
+
+body.ui-system.has-ambient-background .content-shell > .back-link:focus-visible,
+body.ui-system.has-ambient-background > .main-footer a:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-ambient-background);
+    outline: 2px solid var(--color-text-inverse);
+    outline-offset: 3px;
+}
+
+/*
+ * The outer shell owns page rhythm. Opaque white blocks are top-level work
+ * surfaces; muted blocks inside them remain local grouping surfaces.
+ */
+body.ui-system.has-ambient-background .content-shell > * {
+    margin-block: 0;
+}
+
+body.ui-system.has-ambient-background .content-shell > * + * {
+    margin-block-start: var(--page-section-gap);
+}
+
+@media (max-width: 1050px) {
+    .app-ambient-background {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    body.ui-system.has-ambient-background {
+        --page-section-gap: var(--space-20);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-ambient-background {
+        display: none;
+    }
+}

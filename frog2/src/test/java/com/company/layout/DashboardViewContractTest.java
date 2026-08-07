@@ -12,26 +12,19 @@ class DashboardViewContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
 
     @Test
-    void dashboardKeepsMaintenanceVmHostAndVisualContract() throws Exception {
+    void dashboardKeepsMaintenanceContractWithoutQuickActionsOrPersonalHosts() throws Exception {
         String page = read("dashboard.jsp");
         assertTrue(page.contains("/resources/css/pages/dashboard.css"));
-        assertKpiLink(page, "done", "monthlyMaintenanceDoneCount");
-        assertKpiLink(page, "due", "monthlyMaintenanceDueCount");
-        assertKpiLink(page, "attention", "monthlyMaintenanceAttentionCount");
-        assertKpiLink(page, "license-risk", "monthlyMaintenanceLicenseRiskCount");
-        int kpiStart = page.indexOf("monthlyMaintenanceDoneCount");
-        int vmBoardStart = page.indexOf("class=\"card dashboard-card vm-board");
-        assertTrue(kpiStart >= 0 && vmBoardStart > kpiStart,
-                "The maintenance KPIs must precede the auxiliary VM board");
-        for (String metric : new String[] {
-                "monthlyMaintenanceDoneCount",
-                "monthlyMaintenanceDueCount",
-                "monthlyMaintenanceAttentionCount",
-                "monthlyMaintenanceLicenseRiskCount"
-        }) {
-            assertTrue(page.indexOf(metric) < vmBoardStart,
-                    () -> metric + " must precede the auxiliary VM board");
-        }
+        assertFalse(page.contains("maintenance-kpi-section"));
+        assertFalse(page.contains("월간 정기점검 요약"));
+        assertFalse(page.contains("monthlyMaintenanceDoneCount"));
+        assertFalse(page.contains("dashboard-quick-actions"));
+        assertFalse(page.contains("dashboardMenus"));
+        assertFalse(page.contains("vmHostBoardBody"));
+        assertFalse(page.contains("vmHostModalBackdrop"));
+        assertFalse(page.contains("returnTo\" value=\"dashboard"));
+        assertFalse(page.contains("dashboard-support"));
+        assertFalse(page.contains("외부 참고 링크"));
 
         assertTrue(page.contains("id=\"maintenanceMonthBoard\""));
         assertTrue(page.contains("id=\"maintenanceMonthBoardBody\""));
@@ -41,86 +34,93 @@ class DashboardViewContractTest {
         assertTrue(tagById(page, "toggleMaintenanceBoardBtn")
                 .contains("aria-expanded=\"true\""));
         assertTrue(page.contains("maintenanceMonthTabs"));
-        assertTrue(page.contains("monthlyMaintenanceCards"));
+        assertTrue(page.contains("monthlyMaintenanceAssigneeGroups"));
         assertTrue(Pattern.compile(
-                "<article\\b[^>]*class=\"[^\"]*maintenance-record-card[^\"]*\"",
+                "<li\\b[^>]*class=\"[^\"]*maintenance-assignee-customer[^\"]*\"",
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(page).find());
         assertFalse(Pattern.compile(
-                "<a\\b[^>]*class=\"[^\"]*maintenance-record-card[^\"]*\"",
+                "<article\\b[^>]*class=\"[^\"]*maintenance-record-card[^\"]*\"",
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(page).find(),
-                "A maintenance card must not be one large link");
-        assertTrue(Pattern.compile(
-                "<a\\b[^>]*class=\"[^\"]*maintenance-detail-link[^\"]*\"",
-                Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(page).find());
-        assertTrue(page.contains("<c:out value=\"${record.customerName}\" />"));
+                "The typography maintenance view must not restore record cards");
+        assertTrue(page.contains("class=\"maintenance-assignee-grid\""));
+        assertTrue(page.contains("<c:out value=\"${group.managerName}\" />"));
+        assertFalse(page.contains("maintenance-assignee-count"));
+        assertFalse(page.contains("fn:length(group.customers)"));
+        assertTrue(page.contains("<c:out value=\"${customer.customerName}\" />"));
+        assertTrue(page.contains("data-maintenance-status=\"${customer.statusCode}\""));
+        assertFalse(page.contains("data-license-risk="));
+        assertTrue(page.contains("href=\"${customerHistoryUrl}\""));
         assertTrue(page.contains("aria-current=\"page\""));
-
-        assertTrue(page.contains("id=\"vmHostBoardBody\""));
-        assertTrue(page.contains("id=\"toggleVmHostBoardBtn\""));
-        assertTrue(tagById(page, "toggleVmHostBoardBtn")
-                .contains("aria-controls=\"vmHostBoardBody\""));
-        assertTrue(tagById(page, "toggleVmHostBoardBtn")
-                .contains("aria-expanded=\"true\""));
-        assertTrue(page.contains("id=\"openVmHostAddBtn\""));
-        assertTrue(page.contains("id=\"vmHostModalBackdrop\""));
-        assertTrue(page.contains("id=\"vmHostSaveForm\""));
-        assertTrue(page.contains("id=\"vmHostDeleteForm\""));
-        assertTrue(page.contains("data-original-ip=\"<c:out value='${vmHostOriginalIp}'/>\""));
-        assertFalse(page.contains("data-original-ip=\"<c:out value='${vmHostForm.ip}'/>\""));
-        assertTrue(Pattern.compile(
-                "<button\\b[^>]*class=\"[^\"]*vm-edit-btn[^\"]*\"",
-                Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(page).find());
-        assertTrue(page.contains("<c:out value=\"${host.ip}\" />"));
-        assertFalse(page.contains("vm-row-clickable"));
-        assertTrue(page.contains("csrf_input.jspf"));
-        assertTrue(page.contains("name=\"action\" value=\"save\""));
-        assertTrue(page.contains("name=\"action\" value=\"delete\""));
-        for (String field : new String[] {
-                "ip", "purpose", "osInfo", "verticaVersion", "remoteHost", "note"
-        }) {
-            assertTrue(page.contains("name=\"" + field + "\""), field);
-        }
 
         String behavior = page.contains("/resources/js/pages/dashboard.js")
                 ? read("resources/js/pages/dashboard.js")
                 : page;
-        assertTrue(behavior.contains("frog2.dashboard.personal-hosts.collapsed"));
         assertTrue(behavior.contains("frog2.dashboard.monthly-maintenance.collapsed"));
-        assertTrue(behavior.contains("populateModal"));
-        assertTrue(behavior.contains("querySelectorAll('.vm-edit-btn')"));
-        assertTrue(behavior.contains(".dataset.ip"));
         assertTrue(behavior.contains("setAttribute('aria-expanded'"));
-        assertTrue(behavior.contains("event.key === 'Tab'"));
-        assertTrue(behavior.contains("document.activeElement"));
-        assertTrue(behavior.contains("focusable"));
-        assertTrue(behavior.contains("previouslyFocusedElement"));
-        assertTrue(behavior.contains(".focus()"));
-        assertTrue(behavior.contains("event.key === 'Escape'"));
-        assertTrue(behavior.contains("해당 호스트를 삭제하시겠습니까?"));
         assertTrue(behavior.contains("event.button !== 0"));
         assertTrue(behavior.contains("maintenanceBody.classList.add('is-loading')"));
-        assertTrue(behavior.contains("link.setAttribute('aria-current', 'true')"));
+        assertFalse(behavior.contains("maintenanceItems"));
+        assertFalse(behavior.contains("maintenanceGroups"));
+        assertFalse(behavior.contains("maintenance-kpi-link"));
 
         String styles = page.contains("/resources/js/pages/dashboard.js")
                 ? read("resources/css/pages/dashboard.css")
                 : page;
-        assertTrue(styles.contains("grid-template-columns: repeat(2, minmax(0, 1fr))"));
-        assertTrue(styles.contains("width: min(720px, 100%)"));
-        assertTrue(styles.contains("z-index: 2000"));
-        assertTrue(styles.contains("@media (max-width: 840px)"));
-    }
-
-    private static void assertKpiLink(
-            String page, String status, String valueExpression) {
-        Pattern linkedValue = Pattern.compile(
-                "<a\\b(?=[^>]*class=\"[^\"]*maintenance-kpi-link[^\"]*\")"
-                        + "(?=[^>]*data-status=\"" + Pattern.quote(status) + "\")"
-                        + "[^>]*>.*?\\$\\{"
-                        + Pattern.quote(valueExpression)
-                        + "\\}.*?</a>",
-                Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-        assertTrue(linkedValue.matcher(page).find(),
-                () -> valueExpression + " must be rendered inside a real link");
+        assertTrue(styles.contains(".maintenance-assignee-grid"));
+        String assigneeGrid = cssRule(
+                styles,
+                ".dashboard-page .maintenance-assignee-grid");
+        assertTrue(assigneeGrid.contains("display: grid;"));
+        assertTrue(assigneeGrid.contains("grid-auto-rows: 1fr;"));
+        assertTrue(assigneeGrid.contains(
+                "grid-template-columns: repeat(2, minmax(0, 1fr));"));
+        String assigneeGroup = cssRule(
+                styles,
+                ".dashboard-page .maintenance-assignee-group");
+        assertTrue(assigneeGroup.contains(
+                "background: var(--color-surface-subtle);"));
+        assertTrue(assigneeGroup.contains(
+                "border-radius: var(--radius-lg);"));
+        assertTrue(assigneeGroup.contains("block-size: 100%;"));
+        assertTrue(assigneeGroup.contains(
+                "grid-template-rows: max-content max-content;"));
+        assertFalse(assigneeGroup.contains("border-block-end:"));
+        String assigneeCustomers = cssRule(
+                styles,
+                ".dashboard-page .maintenance-assignee-customers");
+        assertTrue(assigneeCustomers.contains("align-content: start;"));
+        assertTrue(assigneeCustomers.contains("grid-auto-rows: max-content;"));
+        assertTrue(styles.contains(".maintenance-assignee-customer::before"));
+        assertTrue(styles.contains("background: var(--color-success);"));
+        assertTrue(styles.contains(".maintenance-assignee-customer--due::before"));
+        assertTrue(styles.contains("background: var(--color-border-strong);"));
+        String completedPoint = cssRule(
+                styles,
+                ".dashboard-page .maintenance-assignee-customer::before");
+        String pendingPoint = cssRule(
+                styles,
+                ".dashboard-page .maintenance-assignee-customer--due::before");
+        assertFalse(completedPoint.contains("border:"));
+        assertFalse(pendingPoint.contains("border:"));
+        assertTrue(completedPoint.contains("block-size: 6px;"));
+        assertTrue(styles.contains(".maintenance-assignee-customer:hover"));
+        assertTrue(styles.contains("background: var(--color-surface-hover);"));
+        String monthHeader = cssRule(
+                styles,
+                ".dashboard-page .maintenance-month-header");
+        assertTrue(monthHeader.contains(
+                "border-block-end: 1px solid var(--color-divider);"));
+        String monthBoard = cssRule(
+                styles,
+                ".dashboard-page .maintenance-month-board");
+        assertTrue(monthBoard.contains("background: var(--color-surface);"));
+        assertTrue(monthBoard.contains("border: 1px solid var(--color-border);"));
+        assertTrue(monthBoard.contains("border-radius: var(--radius-lg);"));
+        assertTrue(monthBoard.contains("padding: var(--space-24);"));
+        assertFalse(styles.contains(".dashboard-support"));
+        assertTrue(styles.contains("container-type: inline-size"));
+        assertTrue(styles.contains("@container dashboard-maintenance"));
+        assertTrue(styles.contains("@media (max-width: 768px)"));
     }
 
     private static String tagById(String source, String id) {
@@ -129,6 +129,15 @@ class DashboardViewContractTest {
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(source);
         assertTrue(matcher.find(), () -> "Element is missing: #" + id);
         return matcher.group();
+    }
+
+    private static String cssRule(String source, String selector) {
+        int selectorStart = source.indexOf(selector);
+        assertTrue(selectorStart >= 0, () -> "Missing selector: " + selector);
+        int ruleStart = source.indexOf('{', selectorStart);
+        int ruleEnd = source.indexOf('}', ruleStart);
+        assertTrue(ruleStart >= 0 && ruleEnd > ruleStart, selector);
+        return source.substring(ruleStart + 1, ruleEnd);
     }
 
     private static String read(String path) throws Exception {

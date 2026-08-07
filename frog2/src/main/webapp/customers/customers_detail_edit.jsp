@@ -10,13 +10,28 @@
 <c:url var="customerDetailUrl" value="/customers">
     <c:param name="view" value="detail" />
     <c:param name="customerName" value="${currentCustomerName}" />
+    <c:if test="${not empty param.returnFilter}"><c:param name="returnFilter" value="${param.returnFilter}" /></c:if>
+    <c:if test="${not empty param.returnSortField}"><c:param name="returnSortField" value="${param.returnSortField}" /></c:if>
+    <c:if test="${not empty param.returnSortDirection}"><c:param name="returnSortDirection" value="${param.returnSortDirection}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnPageSize}"><c:param name="returnPageSize" value="${param.returnPageSize}" /></c:if>
+</c:url>
+<c:url var="customerListReturnUrl" value="/customers">
+    <c:param name="view" value="list" />
+    <c:if test="${not empty param.returnFilter}"><c:param name="filter" value="${param.returnFilter}" /></c:if>
+    <c:if test="${not empty param.returnSortField}"><c:param name="sortField" value="${param.returnSortField}" /></c:if>
+    <c:if test="${not empty param.returnSortDirection}"><c:param name="sortDirection" value="${param.returnSortDirection}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="q" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnPageSize}"><c:param name="pageSize" value="${param.returnPageSize}" /></c:if>
 </c:url>
 
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
 
-<div class="customer-detail customer-management content-shell">
+<div class="customer-detail customer-management content-management content-shell">
     <t:pageHeader>
         <jsp:attribute name="title">
             <i class="fas fa-edit"></i>
@@ -33,7 +48,7 @@
                class="add-button secondary ui-button button--secondary button--md">
                 <i class="fas fa-info-circle"></i> 상세보기
             </a>
-            <a href="${pageContext.request.contextPath}/customers?view=list"
+            <a href="<c:out value='${customerListReturnUrl}' />"
                class="add-button ui-button button--secondary button--md">
                 <i class="fas fa-list"></i> 목록으로
             </a>
@@ -554,7 +569,7 @@
                 <i class="fas fa-times"></i>
                 취소
             </a>
-            <a href="${pageContext.request.contextPath}/customers?view=list"
+            <a href="<c:out value='${customerListReturnUrl}' />"
                class="btn btn-secondary ui-button button--secondary button--md">
                 <i class="fas fa-list"></i>
                 목록으로

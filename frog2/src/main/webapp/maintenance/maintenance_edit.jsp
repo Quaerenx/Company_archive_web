@@ -4,7 +4,7 @@
 
 <c:set var="pageTitle" value="정기점검 이력 수정" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/customers.css,/resources/css/pages/maintenance_edit.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/maintenance_edit.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/maintenance_form.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
@@ -60,6 +60,18 @@
             <input type="hidden" name="maintenance_id" value="${record.maintenanceId}">
             <input type="hidden" id="current_customer_value" value="<c:out value='${record.customerName}'/>">
             <input type="hidden" id="current_inspector_value" value="<c:out value='${record.inspectorName}'/>">
+
+            <div id="maintenanceOptionsStatus"
+                 class="ui-alert ui-alert--danger"
+                 role="alert"
+                 aria-atomic="true"
+                 hidden>
+                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                <span id="maintenanceOptionsStatusMessage"></span>
+                <button type="button"
+                        id="retryMaintenanceOptions"
+                        class="ui-button button--secondary button--sm">다시 불러오기</button>
+            </div>
             
             <!-- 기본 정보 -->
             <div class="section-title">기본 정보</div>

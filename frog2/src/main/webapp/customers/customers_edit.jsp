@@ -14,7 +14,7 @@
 <%@ include file="/includes/header.jsp" %>
 
 <!-- 목록 페이지의 레이아웃 감각 적용: 폭/여백/타이포 일치 -->
-<div class="customer-edit-page customer-form-page customer-management content-shell">
+<div class="customer-edit-page customer-form-page customer-management content-management content-shell">
     <!-- 공통 페이지 헤더 컴포넌트 사용 -->
     <t:pageHeader>
         <jsp:attribute name="title">

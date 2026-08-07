@@ -40,6 +40,25 @@
     const ctx = document.getElementById('licenseUsageChart');
     if (!ctx || typeof window.Chart !== 'function') return;
 
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    function cssColor(tokenName) {
+        const value = rootStyles.getPropertyValue(tokenName).trim();
+        if (!value) throw new Error('Missing chart color token: ' + tokenName);
+        return value;
+    }
+
+    const chartColors = {
+        brand: cssColor('--color-primary'),
+        brandSubtle: cssColor('--color-primary-subtle'),
+        text: cssColor('--color-text'),
+        textMuted: cssColor('--color-text-muted'),
+        textStrong: cssColor('--color-text-strong'),
+        surface: cssColor('--color-surface'),
+        surfaceMuted: cssColor('--color-surface-muted'),
+        border: cssColor('--color-border'),
+        borderStrong: cssColor('--color-border-strong')
+    };
+
     new window.Chart(ctx, {
         type: 'line',
         data: {
@@ -49,8 +68,8 @@
                     label: '사용률(%)',
                     data: usageData,
                     yAxisID: 'y',
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59,130,246,0.15)',
+                    borderColor: chartColors.brand,
+                    backgroundColor: chartColors.brandSubtle,
                     tension: 0.25,
                     spanGaps: true,
                     pointRadius: 3,
@@ -61,8 +80,8 @@
                     label: '라이선스 사용량(TB)',
                     data: usedSizeData,
                     yAxisID: 'y1',
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16,185,129,0.15)',
+                    borderColor: chartColors.text,
+                    backgroundColor: chartColors.surfaceMuted,
                     tension: 0,
                     stepped: true,
                     spanGaps: true,
@@ -74,8 +93,8 @@
                     label: '라이선스 크기(TB)',
                     data: capacitySizeData,
                     yAxisID: 'y1',
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239,68,68,0.15)',
+                    borderColor: chartColors.textMuted,
+                    backgroundColor: chartColors.border,
                     tension: 0,
                     stepped: true,
                     pointRadius: 2,
@@ -88,8 +107,16 @@
             responsive: true,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'top' },
+                legend: {
+                    position: 'top',
+                    labels: { color: chartColors.text }
+                },
                 tooltip: {
+                    backgroundColor: chartColors.textStrong,
+                    titleColor: chartColors.surface,
+                    bodyColor: chartColors.surface,
+                    borderColor: chartColors.borderStrong,
+                    borderWidth: 1,
                     // 숫자 값이 있는 항목만 노출
                     filter: function(context) {
                         const y = context && context.parsed ? context.parsed.y : null;
@@ -131,21 +158,28 @@
                     suggestedMin: 0,
                     suggestedMax: 100,
                     ticks: {
+                        color: chartColors.textMuted,
                         callback: function(v) {
                             const n = Number(v);
                             return Number.isFinite(n) ? n.toFixed(0) : String(v);
                         }
                     },
-                    title: { display: true, text: '사용률(%)' }
+                    grid: { color: chartColors.border },
+                    title: { display: true, text: '사용률(%)', color: chartColors.text }
                 },
                 y1: {
                     type: 'linear',
                     position: 'right',
                     min: 0,
-                    grid: { drawOnChartArea: false },
-                    title: { display: true, text: '용량(TB)' }
+                    grid: { drawOnChartArea: false, color: chartColors.border },
+                    ticks: { color: chartColors.textMuted },
+                    title: { display: true, text: '용량(TB)', color: chartColors.text }
                 },
-                x: { title: { display: true, text: '점검일' } }
+                x: {
+                    grid: { color: chartColors.border },
+                    ticks: { color: chartColors.textMuted },
+                    title: { display: true, text: '점검일', color: chartColors.text }
+                }
             }
         }
     });
@@ -156,12 +190,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const historyItems = document.querySelectorAll('.history-item');
     const staggerStep = historyItems.length > 20 ? 15 : 40;
     const maxDelay = 240;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     historyItems.forEach((item, index) => {
-        item.addEventListener('click', function() {
-            window.location.href = this.dataset.detailUrl;
-        });
-        if (typeof item.animate === 'function') {
+        if (!reduceMotion && typeof item.animate === 'function') {
             item.animate(
                 [
                     { opacity: 0, transform: 'translateY(20px)' },

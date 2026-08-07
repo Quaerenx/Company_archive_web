@@ -50,23 +50,19 @@ class MeetingCssSplitContractTest {
                 "meeting/meeting_list.jsp",
                 "/resources/css/pages/meeting.css,"
                         + "/resources/css/pages/meeting_list_layout.css,"
-                        + "/resources/css/pages/customers.css,"
                         + "/resources/css/pages/meeting_list.css");
         expectedStyles.put(
                 "meeting/meeting_view.jsp",
                 "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_view.css,"
-                        + "/resources/css/pages/customers.css");
+                        + "/resources/css/pages/meeting_view.css");
         expectedStyles.put(
                 "meeting/meeting_write.jsp",
                 "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css,"
-                        + "/resources/css/pages/customers.css");
+                        + "/resources/css/pages/meeting_form.css");
         expectedStyles.put(
                 "meeting/meeting_edit.jsp",
                 "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css,"
-                        + "/resources/css/pages/customers.css");
+                        + "/resources/css/pages/meeting_form.css");
 
         for (Map.Entry<String, String> entry : expectedStyles.entrySet()) {
             String page = Files.readString(WEBAPP.resolve(entry.getKey()));
@@ -90,9 +86,9 @@ class MeetingCssSplitContractTest {
             assertTrue(entry.getValue().indexOf("/resources/css/pages/meeting.css")
                             < entry.getValue().indexOf(selectedChunk),
                     entry.getKey());
-            assertTrue(entry.getValue().indexOf(selectedChunk)
-                            < entry.getValue().indexOf("/resources/css/pages/customers.css"),
-                    entry.getKey());
+            assertFalse(entry.getValue().contains(
+                    "/resources/css/pages/customers.css"), entry.getKey());
+            assertTrue(page.contains("content-management"), entry.getKey());
         }
     }
 

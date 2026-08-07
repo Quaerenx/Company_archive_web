@@ -34,7 +34,7 @@ class ProfileEditViewContractTest {
                 + "\n"
                 + read("resources/css/pages/profile_edit.css");
         assertTrue(styles.contains("max-width: 600px"));
-        assertTrue(styles.contains("border-color: #3D5A80"));
+        assertTrue(styles.contains("border-color: var(--color-focus)"));
     }
 
     private static String read(String path) throws Exception {

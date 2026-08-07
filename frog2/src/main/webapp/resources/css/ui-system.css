@@ -5,9 +5,6 @@
  */
 
 body.ui-system {
-    --page-content-max-width: 1018px;
-    --page-content-gutter: var(--space-16);
-    --page-content-total-gutter: calc(var(--page-content-gutter) * 2);
     background: var(--background);
     color: var(--color-text);
     font-family: var(--font-base);
@@ -15,11 +12,38 @@ body.ui-system {
     line-height: var(--line-height-base);
 }
 
+body.ui-system [hidden] {
+    display: none;
+}
+
 body.ui-system .content-shell {
     margin-inline: auto;
     max-width: var(--page-content-max-width);
+    padding-block: var(--space-32);
     padding-inline: 0;
     width: calc(100% - var(--page-content-total-gutter));
+}
+
+/* Keyboard users can bypass persistent navigation without affecting layout. */
+.ui-system .skip-link {
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-focus);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    color: var(--color-text-strong);
+    inset-block-start: var(--space-8);
+    inset-inline-start: var(--space-8);
+    padding: var(--space-12) var(--space-16);
+    position: fixed;
+    transform: translateY(calc(-100% - var(--space-24)));
+    transition: transform var(--motion-fast) var(--motion-ease);
+    z-index: var(--z-skip-link);
+}
+
+.ui-system .skip-link:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+    transform: translateY(0);
 }
 
 .ui-system :is(button, input, select, textarea) {
@@ -37,10 +61,10 @@ body.ui-system .content-shell {
     display: inline-flex;
     font-family: inherit;
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: 500;
     gap: var(--space-8);
     justify-content: center;
-    line-height: 1.2;
+    line-height: var(--line-height-heading);
     min-block-size: var(--control-height-md);
     padding: 0 var(--control-padding-inline-md);
     text-align: center;
@@ -56,12 +80,13 @@ body.ui-system .content-shell {
 }
 
 .ui-system .ui-button:hover {
+    box-shadow: none;
     text-decoration: none;
-    transform: translateY(-1px);
+    transform: none;
 }
 
 .ui-system .ui-button:active {
-    transform: translateY(0);
+    transform: scale(0.985);
 }
 
 .ui-system .ui-button:focus-visible,
@@ -74,7 +99,7 @@ body.ui-system .content-shell {
 ):focus-visible {
     border-color: var(--color-focus);
     box-shadow: 0 0 0 3px var(--color-focus-ring);
-    outline: 3px solid transparent;
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
 }
 
@@ -83,16 +108,36 @@ body.ui-system .content-shell {
     min-inline-size: var(--control-height-md);
 }
 
+/* Paired icons inherit the label color and stay optically centered. */
+.ui-system :is(a, button, h1, h2, h3, h4, label) > i[class*="fa-"] {
+    align-self: center;
+    color: currentColor;
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
+.ui-system :is(a, button, label) > i[class*="fa-"] {
+    font-size: var(--icon-size-sm);
+}
+
+.ui-system h1 > i[class*="fa-"] {
+    font-size: var(--icon-size-lg);
+}
+
+.ui-system :is(h2, h3, h4) > i[class*="fa-"] {
+    font-size: var(--icon-size-md);
+}
+
 .ui-system .button--primary {
     background: var(--color-primary);
     border-color: var(--color-primary);
-    color: var(--color-surface);
+    color: var(--color-on-primary);
 }
 
 .ui-system .button--primary:hover {
     background: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
-    color: var(--color-surface);
+    color: var(--color-on-primary);
 }
 
 .ui-system .button--secondary {
@@ -110,13 +155,13 @@ body.ui-system .content-shell {
 .ui-system .button--danger {
     background: var(--color-danger);
     border-color: var(--color-danger);
-    color: var(--color-surface);
+    color: var(--color-on-danger);
 }
 
 .ui-system .button--danger:hover {
     background: var(--color-danger-hover);
     border-color: var(--color-danger-hover);
-    color: var(--color-surface);
+    color: var(--color-on-danger);
 }
 
 .ui-system .button--sm {
@@ -138,7 +183,7 @@ body.ui-system .content-shell {
 }
 
 .ui-system .ui-button.is-loading::before {
-    animation: frog2-ui-spin 0.8s linear infinite;
+    animation: frog2-ui-spin var(--motion-loading) linear infinite;
     border: 2px solid currentColor;
     border-radius: 50%;
     border-right-color: transparent;
@@ -157,8 +202,8 @@ body.ui-system .content-shell {
     color: var(--color-text);
     display: block;
     font-size: var(--font-size-sm);
-    font-weight: 600;
-    margin-block-end: var(--space-8);
+    font-weight: 500;
+    margin-block-end: var(--space-4);
 }
 
 .ui-system form.ui-form :is(
@@ -168,7 +213,7 @@ body.ui-system .content-shell {
     .ui-control
 ) {
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
     box-sizing: border-box;
     color: var(--color-text);
@@ -176,7 +221,7 @@ body.ui-system .content-shell {
     font-size: var(--font-size-sm);
     inline-size: 100%;
     min-block-size: var(--control-height-md);
-    padding: 10px var(--control-padding-inline-sm);
+    padding: var(--space-12) var(--control-padding-inline-sm);
     transition:
         border-color var(--motion-fast) var(--motion-ease),
         box-shadow var(--motion-fast) var(--motion-ease),
@@ -199,6 +244,13 @@ body.ui-system .content-shell {
 .ui-system form.ui-form :is(input, select, textarea)[aria-invalid="true"],
 .ui-system form.ui-form .field--error :is(input, select, textarea) {
     border-color: var(--color-danger);
+}
+
+/* Progressive enhancement: older browsers keep the existing field--error fallback. */
+.ui-system form.ui-form .form-group:has(
+    :is(input, select, textarea)[aria-invalid="true"]
+) > label {
+    color: var(--color-danger-text);
 }
 
 .ui-system .required {
@@ -229,20 +281,20 @@ body.ui-system .content-shell {
  * long-text controls, and exceptional action alignment.
  */
 .ui-system .ui-form-card {
-    background: var(--color-surface);
+    background: var(--color-surface-elevated);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     box-sizing: border-box;
-    padding: var(--space-32);
+    padding: var(--space-24);
 }
 
 .ui-system .ui-form-layout .section-title {
-    border-block-end: 2px solid var(--color-primary);
+    border-block-end: 1px solid var(--color-border);
     color: var(--color-text-strong);
     font-size: var(--font-size-md);
-    font-weight: 700;
-    margin: 25px 0 15px;
+    font-weight: 600;
+    margin: var(--space-24) 0 var(--space-16);
     padding-block-end: var(--space-8);
 }
 
@@ -282,7 +334,7 @@ body.ui-system .content-shell {
 /* Shared read-only detail fields. Domain styles keep only grid sizing and rich content. */
 .ui-system .ui-detail .detail-section {
     border: 0;
-    border-block-end: 1px solid var(--color-surface-subtle);
+    border-block-end: 1px solid var(--color-divider);
     margin-block-end: 0;
     padding: var(--space-20);
 }
@@ -294,13 +346,13 @@ body.ui-system .content-shell {
 
 .ui-system .ui-detail .detail-section-title {
     align-items: center;
-    border-block-end: 2px solid var(--color-border);
+    border-block-end: 1px solid var(--color-border);
     color: var(--color-text);
     display: flex;
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
     gap: var(--space-8);
-    margin-block-end: 15px;
+    margin-block-end: var(--space-16);
     padding-block-end: var(--space-8);
 }
 
@@ -310,7 +362,7 @@ body.ui-system .content-shell {
 }
 
 .ui-system .ui-detail .detail-item {
-    border-block-end: 1px solid var(--color-surface-subtle);
+    border-block-end: 1px solid var(--color-divider);
     display: flex;
     justify-content: space-between;
     padding-block: var(--space-8);
@@ -365,6 +417,13 @@ body.ui-system .content-shell {
     padding: var(--space-12) var(--space-16);
 }
 
+.ui-system :is(.ui-alert, .ui-status) a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 .ui-system .ui-status:empty {
     display: none;
 }
@@ -417,18 +476,18 @@ body.ui-system .content-shell {
     gap: var(--space-8);
     inset-block-start: var(--space-16);
     inset-inline-end: var(--space-16);
-    max-block-size: calc(100vh - 32px);
-    max-inline-size: min(380px, calc(100vw - 32px));
+    max-block-size: calc(100vh - var(--space-32));
+    max-inline-size: min(380px, calc(100vw - var(--space-32)));
     overflow-y: auto;
     pointer-events: none;
     position: fixed;
-    z-index: 1200;
+    z-index: var(--z-toast);
 }
 
 .ui-toast {
     align-items: flex-start;
     animation: frog2-ui-toast-in var(--motion-base) var(--motion-ease);
-    background: var(--color-surface);
+    background: var(--color-surface-elevated);
     border: 1px solid var(--color-border);
     border-inline-start: 4px solid var(--color-primary);
     border-radius: var(--radius-lg);
@@ -507,6 +566,90 @@ body.ui-system .content-shell {
     padding: var(--space-12);
 }
 
+.ui-system .ui-table thead th {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.ui-system .ui-table tbody tr {
+    transition: background-color var(--motion-fast) var(--motion-ease);
+}
+
+.ui-system .ui-table tbody tr:is(:hover, :focus-within) {
+    background: var(--color-surface-hover);
+}
+
+.ui-system :is(.ui-empty-state, .empty-state, .empty-history, .empty-comments) {
+    color: var(--color-text-muted);
+    line-height: var(--line-height-base);
+    padding: var(--space-32) var(--space-20);
+    text-align: center;
+}
+
+body.ui-dialog-open {
+    overflow: hidden;
+}
+
+.ui-system .ui-pagination {
+    align-items: center;
+    border-block-start: 1px solid var(--color-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    justify-content: space-between;
+    padding: var(--space-16);
+}
+
+.ui-system .ui-pagination__summary {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.ui-system .ui-pagination__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ui-system .ui-pagination__link {
+    align-items: center;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    display: inline-flex;
+    font-size: var(--font-size-sm);
+    justify-content: center;
+    min-block-size: var(--control-height-md);
+    min-inline-size: var(--control-height-md);
+    padding-inline: var(--space-8);
+    text-decoration: none;
+}
+
+.ui-system .ui-pagination__link:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.ui-system .ui-pagination__link:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.ui-system .ui-pagination__link[aria-current="page"] {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: 600;
+}
+
 @keyframes frog2-ui-spin {
     to {
         transform: rotate(360deg);
@@ -524,6 +667,19 @@ body.ui-system .content-shell {
     }
 }
 
+/* Native entry styles enhance the existing keyframe fallback when supported. */
+@starting-style {
+    .ui-system .ui-toast {
+        opacity: 0;
+        transform: translateY(calc(var(--space-8) * -1));
+    }
+
+    .ui-system .modal.show .modal-content {
+        opacity: 0;
+        transform: translateY(calc(var(--space-8) * -1));
+    }
+}
+
 @media (pointer: coarse), (max-width: 768px) {
     .ui-system .ui-button,
     .ui-system .button--sm,
@@ -533,6 +689,10 @@ body.ui-system .content-shell {
 }
 
 @media (max-width: 768px) {
+    body.ui-system .content-shell {
+        padding-block: var(--space-24);
+    }
+
     .ui-system .ui-form-card {
         padding: var(--space-20);
     }
@@ -556,11 +716,11 @@ body.ui-system .content-shell {
     }
 
     .ui-system .ui-detail .detail-section {
-        padding: 15px;
+        padding: var(--space-16);
     }
 
     .ui-system .ui-detail .detail-section-title {
-        font-size: 1rem;
+        font-size: var(--font-size-md);
     }
 
     .ui-system .ui-detail .detail-grid {
@@ -580,6 +740,15 @@ body.ui-system .content-shell {
     .ui-system .ui-detail .detail-value {
         margin-inline-start: 0;
         text-align: start;
+    }
+
+    .ui-system .ui-pagination {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ui-system .ui-pagination__links {
+        justify-content: center;
     }
 }
 
@@ -604,5 +773,10 @@ body.ui-system .content-shell {
 @media (max-width: 480px) {
     body.ui-system {
         --page-content-gutter: var(--space-12);
+        --page-content-total-gutter: calc(var(--page-content-gutter) * 2);
+    }
+
+    body.ui-system .content-shell {
+        padding-block: var(--space-20);
     }
 }

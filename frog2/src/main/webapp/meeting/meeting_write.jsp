@@ -3,13 +3,13 @@
 
 <c:set var="pageTitle" value="회의록 작성" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_form.css,/resources/css/pages/customers.css" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_form.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/meeting_form.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
 
-<div class="meeting-page-container customer-management content-shell" data-meeting-mode="write">
+<div class="meeting-page-container content-management content-shell" data-meeting-mode="write">
     <t:pageHeader>
         <jsp:attribute name="title"><i class="fas fa-pen"></i> 새 회의록 작성</jsp:attribute>
         <jsp:attribute name="subtitle">회의 내용을 정리하여 등록해주세요.</jsp:attribute>
@@ -57,13 +57,20 @@
 </div>
 
 <!-- 미리보기 모달 -->
-<div id="previewModal" class="modal modal-wide">
+<div id="previewModal"
+     class="modal modal-wide"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="previewModalTitle"
+     aria-hidden="true"
+     tabindex="-1">
     <div class="modal-content">
         <div class="modal-header">
-            <h3><i class="fas fa-eye"></i> 미리보기</h3>
+            <h3 id="previewModalTitle"><i class="fas fa-eye"></i> 미리보기</h3>
             <button type="button"
                     class="modal-close ui-touch-target"
                     data-meeting-action="close-preview"
+                    data-dialog-initial-focus
                     aria-label="미리보기 닫기">&times;</button>
         </div>
         <div class="modal-body">

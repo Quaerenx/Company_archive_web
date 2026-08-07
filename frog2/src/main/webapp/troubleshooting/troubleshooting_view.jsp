@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 
 <c:set var="pageTitle" value="트러블 슈팅 상세보기" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-troubleshooting" scope="request" />
@@ -8,23 +9,32 @@
 <c:set var="pageScript" value="/resources/js/pages/troubleshooting_view.js" scope="request" />
 <%@ include file="/includes/header.jsp" %>
 
+<c:url var="troubleshootingListReturnUrl" value="/troubleshooting">
+    <c:param name="view" value="list" />
+    <c:if test="${not empty param.returnQ}"><c:param name="q" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnPageSize}"><c:param name="pageSize" value="${param.returnPageSize}" /></c:if>
+</c:url>
+<c:url var="troubleshootingEditUrl" value="/troubleshooting">
+    <c:param name="view" value="edit" />
+    <c:param name="id" value="${troubleshooting.id}" />
+    <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnPageSize}"><c:param name="returnPageSize" value="${param.returnPageSize}" /></c:if>
+</c:url>
 
 <div class="troubleshooting-detail content-shell">
-    <div class="page-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1><i class="fas fa-tools"></i> <c:out value="${troubleshooting.title}" /></h1>
-                <p class="lead">트러블 슈팅 상세정보</p>
-            </div>
-        </div>
-        <div class="action-bar">
-            <a href="${pageContext.request.contextPath}/troubleshooting?view=list"
+    <t:pageHeader>
+        <jsp:attribute name="title"><i class="fas fa-tools" aria-hidden="true"></i> <c:out value="${troubleshooting.title}" /></jsp:attribute>
+        <jsp:attribute name="subtitle">트러블 슈팅 상세정보</jsp:attribute>
+        <jsp:attribute name="actions">
+            <a href="<c:out value='${troubleshootingListReturnUrl}' />"
                class="btn btn-secondary ui-button button--secondary button--md">
-                <i class="fas fa-arrow-left"></i>
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
                 목록으로
             </a>
-        </div>
-    </div>
+        </jsp:attribute>
+    </t:pageHeader>
     
     <!-- 성공/에러 메시지 표시 -->
     <c:if test="${not empty sessionScope.message}">
@@ -211,25 +221,27 @@
                     최종 수정: <fmt:formatDate value="${troubleshooting.updatedDate}" pattern="yyyy-MM-dd HH:mm" />
                 </div>
             </c:if>
-            <div class="section-actions">
-                <a href="${pageContext.request.contextPath}/troubleshooting?view=edit&id=${troubleshooting.id}"
-                   class="btn btn-ghost ui-button button--secondary button--sm">수정하기</a>
-                <button type="submit"
-                        id="deleteTroubleshootingButton"
-                        class="btn btn-ghost btn-ghost-danger ui-button button--danger button--sm"
-                        form="deleteTroubleshootingForm"
-                        data-busy-label="삭제 중">삭제하기</button>
-            </div>
-            <form id="deleteTroubleshootingForm"
-                  class="ui-form"
-                  method="post"
-                  action="${pageContext.request.contextPath}/troubleshooting"
-                  data-ui-submit-lock="auto"
-                  hidden>
-                <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="id" value="<c:out value='${troubleshooting.id}' />">
-            </form>
+            <c:if test="${canManageTroubleshooting}">
+                <div class="section-actions">
+                    <a href="<c:out value='${troubleshootingEditUrl}' />"
+                       class="btn btn-ghost ui-button button--secondary button--sm">수정하기</a>
+                    <button type="submit"
+                            id="deleteTroubleshootingButton"
+                            class="btn btn-ghost btn-ghost-danger ui-button button--danger button--sm"
+                            form="deleteTroubleshootingForm"
+                            data-busy-label="삭제 중">삭제하기</button>
+                </div>
+                <form id="deleteTroubleshootingForm"
+                      class="ui-form"
+                      method="post"
+                      action="${pageContext.request.contextPath}/troubleshooting"
+                      data-ui-submit-lock="auto"
+                      hidden>
+                    <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="<c:out value='${troubleshooting.id}' />">
+                </form>
+            </c:if>
         </div>
     </div>
 </div>

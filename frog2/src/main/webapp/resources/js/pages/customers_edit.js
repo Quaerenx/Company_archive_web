@@ -1,6 +1,6 @@
 // 폼 유효성 검사 및 확인
 document.querySelector('form').addEventListener('submit', function(e) {
-    if (!confirm('고객사 정보를 수정하시겠습니까?')) {
+    if (!window.Frog2UI.confirmAction('고객사 정보를 수정하시겠습니까?')) {
         e.preventDefault();
         return false;
     }

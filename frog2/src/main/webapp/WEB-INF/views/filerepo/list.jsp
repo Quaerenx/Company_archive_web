@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 
 <c:set var="pageTitle" value="업무자료" scope="request" />
 <c:set var="pageDocumentTitle" value="${pageTitle}" scope="request" />
@@ -11,18 +12,19 @@
 
 <%@ include file="/includes/header.jsp" %>
 
-<main class="main-content content-shell">
-    <section class="file-main" aria-labelledby="repository-title">
-        <div class="upload-section">
-            <div class="upload-info">
-                <h5 id="repository-title"><i class="fas fa-folder-open"></i> 업무자료</h5>
-                <small>안전한 외부 저장소에서 제공되는 파일입니다.</small>
-            </div>
-            <a class="upload-btn ui-button button--primary button--md"
+<div class="main-content content-shell">
+    <t:pageHeader>
+        <jsp:attribute name="title"><i class="fas fa-folder-open" aria-hidden="true"></i> 업무자료</jsp:attribute>
+        <jsp:attribute name="subtitle">안전한 외부 저장소에서 제공되는 파일입니다.</jsp:attribute>
+        <jsp:attribute name="actions">
+            <a class="ui-button button--primary button--md"
                href="<c:out value="${uploadUrl}" />">
-                <i class="fas fa-upload"></i> 파일 업로드
+                <i class="fas fa-upload" aria-hidden="true"></i> 파일 업로드
             </a>
-        </div>
+        </jsp:attribute>
+    </t:pageHeader>
+
+    <section class="file-main" aria-label="업무자료 목록">
 
         <nav class="breadcrumb" aria-label="자료실 경로">
             <c:url var="rootUrl" value="/file-repository" />
@@ -86,7 +88,10 @@
 
                     <c:if test="${empty listing.entries and empty listing.currentPath}">
                         <tr>
-                            <td colspan="4" class="empty-state">등록된 파일이 없습니다.</td>
+                            <td colspan="4" class="empty-state">
+                                <i class="fas fa-folder-open" aria-hidden="true"></i>
+                                <div>등록된 파일이 없습니다.</div>
+                            </td>
                         </tr>
                     </c:if>
                 </tbody>
@@ -99,6 +104,6 @@
             합계 <strong><c:out value="${listing.totalSizeText}" /></strong>
         </div>
     </section>
-</main>
+</div>
 
 <%@ include file="/includes/footer.jsp" %>

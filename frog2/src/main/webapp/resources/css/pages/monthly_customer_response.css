@@ -1,37 +1,35 @@
 /* Monthly customer response page */
 .monthly-response-page .monthly-response-container {
-    width: 100%;
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 32px 16px;
+    min-width: 0;
 }
 
 .monthly-response-page .filter-card {
-    background: white;
-    padding: 24px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--space-24);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+    margin-bottom: var(--space-20);
 }
 
 .monthly-response-page .filter-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #e5e7eb;
+    gap: var(--space-8);
+    margin-bottom: var(--space-16);
+    padding-bottom: var(--space-12);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .monthly-response-page .filter-header h3 {
     margin: 0;
-    font-size: 1.125rem;
-    color: #333333;
+    font-size: var(--font-size-lg);
+    color: var(--color-text-strong);
 }
 
 .monthly-response-page .filter-form {
     display: flex;
-    gap: 12px;
+    gap: var(--space-12);
     align-items: flex-end;
     justify-content: flex-start;
     flex-wrap: wrap;
@@ -39,7 +37,7 @@
 
 .monthly-response-page .filter-inputs {
     display: flex;
-    gap: 12px;
+    gap: var(--space-12);
     align-items: flex-end;
     flex-wrap: wrap;
     flex: 1;
@@ -48,87 +46,90 @@
 .monthly-response-page .form-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--space-8);
 }
 
 .monthly-response-page .form-group label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #666666;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
 }
 
 .monthly-response-page .form-group select {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.875rem;
+    padding: var(--space-8) var(--space-12);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
     min-width: 150px;
 }
 
 .monthly-response-page .results-card {
-    background: white;
-    padding: 24px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--space-24);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+    margin-bottom: var(--space-20);
 }
 
 .monthly-response-page .results-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-12);
     flex-wrap: wrap;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: var(--space-16);
+    padding-bottom: var(--space-12);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .monthly-response-page .results-header h3 {
     margin: 0;
-    font-size: 1.125rem;
-    color: #333333;
+    font-size: var(--font-size-lg);
+    color: var(--color-text-strong);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .monthly-response-page .table-responsive {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
     overflow-x: auto;
 }
 
 .monthly-response-page .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
 }
 
 .monthly-response-page .data-table thead {
-    background-color: #f9fafb;
+    background-color: var(--color-surface-subtle);
 }
 
 .monthly-response-page .data-table th {
-    padding: 12px;
+    padding: var(--space-12);
     text-align: left;
     font-weight: 600;
-    color: #374151;
-    border-bottom: 2px solid #e5e7eb;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
     white-space: nowrap;
 }
 
 .monthly-response-page .data-table td {
-    padding: 12px;
-    border-bottom: 1px solid #e5e7eb;
-    color: #4b5563;
+    padding: var(--space-12);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
     vertical-align: top;
 }
 
 .monthly-response-page .data-table tbody tr:hover {
-    background-color: #f9fafb;
+    background-color: var(--color-surface-hover);
 }
 
 .monthly-response-page .data-table a {
-    color: #3D5A80;
+    color: var(--color-primary);
     text-decoration: none;
     font-weight: 500;
 }
@@ -139,48 +140,51 @@
 
 .monthly-response-page .badge {
     display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    padding: var(--space-4) var(--space-8);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
     font-weight: 600;
+    background-color: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
 }
 
 .monthly-response-page .badge-maintenance {
-    background-color: #dbeafe;
-    color: #1e40af;
+    background-color: var(--color-surface-muted);
+    color: var(--color-text);
 }
 
 .monthly-response-page .badge-troubleshooting {
-    background-color: #fee2e2;
-    color: #991b1b;
+    background-color: var(--color-surface-muted);
+    color: var(--color-text);
 }
 
 .monthly-response-page .empty-state {
     text-align: center;
-    padding: 60px 20px;
-    color: #9ca3af;
+    padding: var(--space-64) var(--space-20);
+    color: var(--color-text-muted);
 }
 
 .monthly-response-page .empty-state i {
-    font-size: 3.5rem;
-    margin-bottom: 16px;
+    font-size: var(--illustration-icon-size-lg);
+    margin-bottom: var(--space-16);
     opacity: 0.5;
 }
 
 .monthly-response-page .empty-state p {
-    font-size: 1rem;
-    margin: 0 0 16px 0;
+    font-size: var(--font-size-md);
+    margin: 0 0 var(--space-16) 0;
 }
 
 .monthly-response-page .back-link {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    color: #3D5A80;
+    gap: var(--space-8);
+    color: var(--color-primary);
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
     font-weight: 500;
-    margin-bottom: 16px;
+    margin-bottom: var(--space-16);
 }
 
 .monthly-response-page .back-link:hover {
@@ -220,46 +224,47 @@
 /* 액션 버튼 스타일 */
 .monthly-response-page .action-buttons {
     display: flex;
-    gap: 8px;
+    gap: var(--space-8);
     justify-content: center;
 }
 
 .monthly-response-page .btn-icon {
-    padding: 6px 10px;
+    padding: var(--space-8) var(--space-12);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.2s;
+    font-size: var(--font-size-sm);
+    transition: background-color var(--motion-fast) var(--motion-ease);
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-4);
+}
+
+.monthly-response-page .btn-icon i {
+    font-size: var(--icon-size-sm);
+    line-height: 1;
 }
 
 .monthly-response-page .btn-edit {
-    background-color: #5B8FB9;
-    color: white;
+    background-color: var(--color-surface-muted);
+    color: var(--color-text);
 }
 
 .monthly-response-page .btn-edit:hover {
-    background-color: #4A7BA0;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: var(--color-surface-hover);
 }
 
 .monthly-response-page .btn-delete {
-    background-color: #B66B6B;
-    color: white;
+    background-color: var(--color-danger);
+    color: var(--color-on-danger);
 }
 
 .monthly-response-page .btn-delete:hover {
-    background-color: #A05555;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: var(--color-danger-hover);
 }
 
 .monthly-response-page .required {
-    color: #ef4444;
+    color: var(--color-danger);
 }
 
 .monthly-response-page .monthly-response-actions-column {
@@ -286,10 +291,10 @@
     }
 
     /* 모바일에서는 컬럼 너비 제한 제거 */
-    .monthly-response-page .data-table th,
-    .monthly-response-page .data-table td {
-        width: auto !important;
-        min-width: auto !important;
+    .monthly-response-page .data-table th:nth-child(n),
+    .monthly-response-page .data-table td:nth-child(n) {
+        width: auto;
+        min-width: auto;
     }
 
     .monthly-response-page #responseModal .modal-content {
