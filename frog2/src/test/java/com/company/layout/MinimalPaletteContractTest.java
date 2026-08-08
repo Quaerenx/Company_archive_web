@@ -25,12 +25,12 @@ class MinimalPaletteContractTest {
             "(?i)\\b(?:rgb|hsl)a?\\s*\\(");
 
     @Test
-    void globalLightThemeUsesExactlyTheApprovedSeventeenOpaqueColors() throws Exception {
+    void globalLightThemeUsesExactlyTheApprovedEighteenOpaqueColors() throws Exception {
         String tokens = read("resources/css/tokens.css");
         Map<String, String> palette = palette(tokens);
 
         assertEquals(expectedLight(), palette);
-        assertEquals(17, palette.size());
+        assertEquals(18, palette.size());
 
         Set<String> opaqueColors = new LinkedHashSet<>();
         Matcher matcher = OPAQUE_COLOR.matcher(tokens);
@@ -163,15 +163,15 @@ class MinimalPaletteContractTest {
 
     private static Map<String, String> expectedLight() {
         return expected(
-                "#F6F7F8", "#FFFFFF", "#F1F3F5", "#DDE2E6", "#87919B",
-                "#202428", "#46515C", "#66727D", "#EDF2F6", "#3F5E78",
-                "#30495F", "#EEF6F1", "#347A58", "#FFF6E5", "#8A5A00",
+                "#EFF2F5", "#D9DEE4", "#F8F9FA", "#EEF1F4", "#D5DAE0", "#87919B",
+                "#20252B", "#47535F", "#646F7A", "#E7EDF2", "#455F7A",
+                "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#8A5A00",
                 "#FFF1F1", "#B64B4B");
     }
 
     private static Map<String, String> expected(String... values) {
         String[] roles = {
-                "canvas", "surface", "surface-muted", "border", "border-strong",
+                "canvas", "ambient", "surface", "surface-muted", "border", "border-strong",
                 "text-strong", "text", "text-muted", "brand-subtle", "brand",
                 "brand-hover", "success-subtle", "success", "warning-subtle",
                 "warning", "danger-subtle", "danger"

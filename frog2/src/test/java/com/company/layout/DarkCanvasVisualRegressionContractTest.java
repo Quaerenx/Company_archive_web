@@ -46,7 +46,7 @@ class DarkCanvasVisualRegressionContractTest {
         assertTrue(ui.contains(".ui-toast"));
         assertTrue(ui.contains("background: var(--color-surface-elevated);"));
         assertTrue(ambient.contains(".content-shell > .back-link"));
-        assertTrue(ambient.contains("color: var(--color-text-inverse);"));
+        assertTrue(ambient.contains("color: var(--color-link);"));
     }
 
     @Test

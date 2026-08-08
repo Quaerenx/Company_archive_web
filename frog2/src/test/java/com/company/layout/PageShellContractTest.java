@@ -105,7 +105,7 @@ class PageShellContractTest {
         assertTrue(header.contains("var=\"frog2AssetVersion\""));
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
-        assertEquals(1, occurrences(webXml, "20260807-preview-retirement-1"));
+        assertEquals(1, occurrences(webXml, "20260808-unified-login-bg-1"));
         assertEquals(6, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
         assertEquals(2, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));
@@ -114,11 +114,11 @@ class PageShellContractTest {
         assertTrue(footer.contains("${script}?v=${frog2AssetVersion}"));
 
         String login = read("login.jsp");
-        assertEquals(5, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
+        assertEquals(6, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
         assertTrue(login.contains(
                 "/resources/js/ui-system.js?v=${initParam.frog2AssetVersion}"));
         assertTrue(login.contains(
-                "/resources/js/pages/login.js?v=${initParam.frog2AssetVersion}"));
+                "/resources/js/ambient-background.js?v=${initParam.frog2AssetVersion}"));
         assertFalse(login.matches("(?s).*\\?v=202\\d+.*"));
         for (String errorPage : List.of(
                 "error/400.jsp",

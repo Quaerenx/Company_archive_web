@@ -11,11 +11,12 @@
     <%@ include file="/WEB-INF/includes/favicon.jspf" %>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/tokens.css?v=${initParam.frog2AssetVersion}">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/ui-system.css?v=${initParam.frog2AssetVersion}">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/ambient-background.css?v=${initParam.frog2AssetVersion}">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/login_style.css?v=${initParam.frog2AssetVersion}">
 </head>
-<body class="ui-system login-page">
-    <canvas class="login-background"
-            data-glitter-wrap
+<body class="ui-system login-page has-ambient-background">
+    <canvas class="login-background app-ambient-background"
+            data-app-ambient-background
             aria-hidden="true"></canvas>
     <main id="main-content" class="login-shell" tabindex="-1">
         <section class="login-card" aria-label="로그인">
@@ -84,6 +85,6 @@
         </section>
     </main>
     <script src="${pageContext.request.contextPath}/resources/js/ui-system.js?v=${initParam.frog2AssetVersion}"></script>
-    <script src="${pageContext.request.contextPath}/resources/js/pages/login.js?v=${initParam.frog2AssetVersion}"></script>
+    <script src="${pageContext.request.contextPath}/resources/js/ambient-background.js?v=${initParam.frog2AssetVersion}"></script>
 </body>
 </html>

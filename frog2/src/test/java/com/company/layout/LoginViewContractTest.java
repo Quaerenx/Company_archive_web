@@ -48,16 +48,21 @@ class LoginViewContractTest {
         assertFalse(page.contains("아이디 저장"));
         assertFalse(page.contains("로그인 폼으로 건너뛰기"));
         assertFalse(page.contains("class=\"login-footer\""));
-        assertTrue(page.contains("class=\"login-background\""));
-        assertTrue(page.contains("data-glitter-wrap"));
+        assertTrue(page.contains(
+                "class=\"login-background app-ambient-background\""));
+        assertTrue(page.contains("app-ambient-background"));
+        assertTrue(page.contains("data-app-ambient-background"));
+        assertTrue(page.contains("has-ambient-background"));
+        assertFalse(page.contains("data-glitter-wrap"));
         assertFalse(page.contains("graphitePreview"));
         assertFalse(page.contains("data-login-preview="));
         assertFalse(page.contains("data-glitter-preset="));
         assertTrue(page.contains("aria-hidden=\"true\""));
-        assertTrue(page.contains("/resources/js/pages/login.js?v=${initParam.frog2AssetVersion}"));
+        assertTrue(page.contains("/resources/css/ambient-background.css?v=${initParam.frog2AssetVersion}"));
+        assertTrue(page.contains("/resources/js/ambient-background.js?v=${initParam.frog2AssetVersion}"));
+        assertFalse(page.contains("/resources/js/pages/login.js"));
         assertTrue(styles.contains("background: var(--color-login-background);"));
         assertTrue(styles.contains("color: var(--color-login-particle);"));
-        assertTrue(styles.contains("pointer-events: none;"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-form\\s*\\{[^}]*"
                         + "gap:\\s*var\\(--space-12\\);.*"));
@@ -111,20 +116,23 @@ class LoginViewContractTest {
     }
 
     @Test
-    void loginBackgroundUsesTheApprovedOriginkitPresetAndReducedMotionFallback()
+    void loginBackgroundUsesTheSharedLowPowerAmbientAnimation()
             throws Exception {
-        String script = read("resources/js/pages/login.js");
+        String script = read("resources/js/ambient-background.js");
 
-        assertTrue(script.contains("var PARTICLE_COUNT = 260;"));
-        assertTrue(script.contains("var SPEED = 1;"));
-        assertTrue(script.contains("var DENSITY = 44;"));
-        assertTrue(script.contains("var STAR_SIZE = 15;"));
+        assertTrue(script.contains("var DEFAULT_PARTICLE_COUNT = 36;"));
+        assertTrue(script.contains("var LOW_POWER_PARTICLE_COUNT = 24;"));
+        assertTrue(script.contains("var TARGET_FRAME_RATE = 30;"));
+        assertTrue(script.contains("var SPEED = 0.18;"));
+        assertTrue(script.contains("var DENSITY = 36;"));
+        assertTrue(script.contains("var STAR_SIZE = 4;"));
         assertTrue(script.contains("var FOCAL_DEPTH = 21;"));
-        assertTrue(script.contains("var BRIGHTNESS = 20;"));
-        assertTrue(script.contains("var GLITTER_INTENSITY = 1;"));
-        assertTrue(script.contains("var TRAIL_AMOUNT = 75;"));
+        assertTrue(script.contains("var BRIGHTNESS = 9;"));
+        assertTrue(script.contains("var GLITTER_INTENSITY = 0.03;"));
+        assertTrue(script.contains("var TRAIL_AMOUNT = 30;"));
         assertTrue(script.contains("requestAnimationFrame"));
         assertTrue(script.contains("ResizeObserver"));
+        assertTrue(script.contains("(min-width: 1051px)"));
         assertTrue(script.contains("prefers-reduced-motion: reduce"));
         assertTrue(script.contains("document.hidden"));
         assertFalse(script.contains("localStorage"));

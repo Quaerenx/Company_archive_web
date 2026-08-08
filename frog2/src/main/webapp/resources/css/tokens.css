@@ -1,18 +1,19 @@
 :root {
     color-scheme: light;
 
-    /* Archive: Cool Graphite + Ink Blue. Semantic tokens below are the public API. */
-    --palette-canvas: #F6F7F8;
-    --palette-surface: #FFFFFF;
-    --palette-surface-muted: #F1F3F5;
-    --palette-border: #DDE2E6;
+    /* Archive: Light Graphite Mist + Ink Blue. Semantic tokens below are the public API. */
+    --palette-canvas: #EFF2F5;
+    --palette-ambient: #D9DEE4;
+    --palette-surface: #F8F9FA;
+    --palette-surface-muted: #EEF1F4;
+    --palette-border: #D5DAE0;
     --palette-border-strong: #87919B;
-    --palette-text-strong: #202428;
-    --palette-text: #46515C;
-    --palette-text-muted: #66727D;
-    --palette-brand-subtle: #EDF2F6;
-    --palette-brand: #3F5E78;
-    --palette-brand-hover: #30495F;
+    --palette-text-strong: #20252B;
+    --palette-text: #47535F;
+    --palette-text-muted: #646F7A;
+    --palette-brand-subtle: #E7EDF2;
+    --palette-brand: #455F7A;
+    --palette-brand-hover: #344A60;
     --palette-success-subtle: #EEF6F1;
     --palette-success: #347A58;
     --palette-warning-subtle: #FFF6E5;
@@ -80,10 +81,10 @@
     --color-border-strong: var(--palette-border-strong);
     --color-divider: var(--palette-border);
     --color-focus: var(--palette-brand);
-    --color-focus-ring: rgba(63, 94, 120, 0.24);
-    --color-primary-ring: rgba(63, 94, 120, 0.18);
-    --color-overlay: rgba(32, 36, 40, 0.62);
-    --color-overlay-soft: rgba(32, 36, 40, 0.48);
+    --color-focus-ring: rgba(69, 95, 122, 0.24);
+    --color-primary-ring: rgba(69, 95, 122, 0.18);
+    --color-overlay: rgba(32, 37, 43, 0.62);
+    --color-overlay-soft: rgba(32, 37, 43, 0.48);
     --color-on-primary: var(--palette-surface);
     --color-on-secondary: var(--palette-surface);
     --color-on-success: var(--palette-surface);
@@ -93,11 +94,14 @@
     --color-on-strong: var(--palette-surface);
     --color-on-strong-muted: rgba(255, 255, 255, 0.15);
 
-    /* Canvas colors reuse the approved neutral palette. */
-    --color-login-background: black;
-    --color-login-particle: var(--palette-surface-muted);
-    --color-ambient-background: var(--color-surface-inverse);
-    --color-ambient-particle: var(--palette-surface-muted);
+    /* Login and authenticated pages share one quiet graphite mist. */
+    --color-login-background: var(--color-ambient-background);
+    --color-login-particle: var(--color-ambient-particle);
+    --color-ambient-background: var(--palette-ambient);
+    --color-ambient-channel: rgba(239, 242, 245, 0.90);
+    --color-ambient-glow-light: rgba(255, 255, 255, 0.35);
+    --color-ambient-glow-ink: rgba(65, 85, 108, 0.10);
+    --color-ambient-particle: rgba(69, 95, 122, 0.30);
 
     --color-success-bg: var(--palette-success-subtle);
     --color-success-border: var(--palette-success);
@@ -186,8 +190,8 @@
     --illustration-icon-size-xl: 64px;
 
     --shadow-sm: none;
-    --shadow-md: 0 2px 6px rgba(32, 36, 40, 0.10);
-    --shadow-lg: 0 12px 30px rgba(32, 36, 40, 0.16);
+    --shadow-md: 0 2px 6px rgba(32, 37, 43, 0.10);
+    --shadow-lg: 0 12px 30px rgba(32, 37, 43, 0.16);
     --shadow-header: none;
 
     /* One root layer scale prevents local dialogs from falling behind navigation. */

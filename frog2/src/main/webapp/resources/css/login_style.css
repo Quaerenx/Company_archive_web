@@ -20,13 +20,6 @@ body.login-page {
 
 .login-page .login-background {
     color: var(--color-login-particle);
-    display: block;
-    height: 100%;
-    inset: 0;
-    pointer-events: none;
-    position: fixed;
-    width: 100%;
-    z-index: 0;
 }
 
 .login-page .login-shell {
@@ -98,8 +91,8 @@ body.login-page {
 }
 
 .login-page .login-submit:hover {
-    background: var(--color-login-background);
-    border-color: var(--color-login-background);
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
     color: var(--color-text-inverse);
 }
 

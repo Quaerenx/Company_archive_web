@@ -11,18 +11,18 @@
         return;
     }
 
-    var DEFAULT_PARTICLE_COUNT = 72;
-    var LOW_POWER_PARTICLE_COUNT = 60;
+    var DEFAULT_PARTICLE_COUNT = 36;
+    var LOW_POWER_PARTICLE_COUNT = 24;
     var TARGET_FRAME_RATE = 30;
     var FRAME_INTERVAL = 1000 / TARGET_FRAME_RATE;
     var MAX_DEVICE_PIXEL_RATIO = 1.5;
-    var SPEED = 0.45;
-    var DENSITY = 44;
-    var STAR_SIZE = 8;
+    var SPEED = 0.18;
+    var DENSITY = 36;
+    var STAR_SIZE = 4;
     var FOCAL_DEPTH = 21;
-    var BRIGHTNESS = 16;
-    var GLITTER_INTENSITY = 0.12;
-    var TRAIL_AMOUNT = 72;
+    var BRIGHTNESS = 9;
+    var GLITTER_INTENSITY = 0.03;
+    var TRAIL_AMOUNT = 30;
 
     var stepZ = SPEED * 0.0008;
     var focalDepth = FOCAL_DEPTH / 100;

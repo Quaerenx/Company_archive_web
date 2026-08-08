@@ -20,8 +20,9 @@ class AmbientBackgroundContractTest {
         assertTrue(header.contains("data-app-ambient-background"));
         assertTrue(header.contains("aria-hidden=\"true\""));
         assertTrue(footer.contains("/resources/js/ambient-background.js?v=${frog2AssetVersion}"));
-        assertFalse(login.contains("data-app-ambient-background"));
-        assertFalse(login.contains("ambient-background.js"));
+        assertTrue(login.contains("has-ambient-background"));
+        assertTrue(login.contains("data-app-ambient-background"));
+        assertTrue(login.contains("ambient-background.js?v=${initParam.frog2AssetVersion}"));
     }
 
     @Test
@@ -30,17 +31,27 @@ class AmbientBackgroundContractTest {
         String script = read("resources/js/ambient-background.js");
 
         assertTrue(styles.contains("var(--color-ambient-background)"));
-        assertTrue(styles.contains("background-image: none;"));
+        assertTrue(styles.contains("var(--color-ambient-channel)"));
+        assertTrue(styles.contains("var(--color-ambient-glow-light)"));
+        assertTrue(styles.contains("var(--color-ambient-glow-ink)"));
+        assertTrue(styles.contains("max-width: var(--page-content-max-width);"));
+        assertTrue(styles.contains(
+                "width: calc(100% - var(--page-content-total-gutter));"));
+        assertTrue(styles.contains("> .app-main > .content-shell"));
+        assertTrue(styles.contains("border-radius: var(--radius-lg);"));
+        assertTrue(styles.contains("padding-inline: var(--page-content-gutter);"));
+        assertFalse(styles.contains(
+                "var(--page-content-max-width) + var(--page-content-total-gutter)"));
         assertTrue(styles.contains("border-block-start: 0;"));
-        assertTrue(styles.contains("color: var(--color-text-inverse);"));
+        assertTrue(styles.contains("color: var(--color-text-muted);"));
         assertTrue(styles.contains("pointer-events: none;"));
         assertTrue(styles.contains("@media (max-width: 1050px)"));
-        assertTrue(script.contains("var DEFAULT_PARTICLE_COUNT = 72;"));
-        assertTrue(script.contains("var LOW_POWER_PARTICLE_COUNT = 60;"));
+        assertTrue(script.contains("var DEFAULT_PARTICLE_COUNT = 36;"));
+        assertTrue(script.contains("var LOW_POWER_PARTICLE_COUNT = 24;"));
         assertTrue(script.contains("var TARGET_FRAME_RATE = 30;"));
         assertTrue(script.contains("var MAX_DEVICE_PIXEL_RATIO = 1.5;"));
-        assertTrue(script.contains("var SPEED = 0.45;"));
-        assertTrue(script.contains("var BRIGHTNESS = 16;"));
+        assertTrue(script.contains("var SPEED = 0.18;"));
+        assertTrue(script.contains("var BRIGHTNESS = 9;"));
         assertTrue(script.contains("(min-width: 1051px)"));
         assertFalse(styles.contains("typography-dashboard-page"));
         assertFalse(script.contains("typography-dashboard-page"));

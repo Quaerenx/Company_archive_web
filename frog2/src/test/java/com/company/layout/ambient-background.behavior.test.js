@@ -110,26 +110,26 @@ function mediaQuery(matches) {
     };
 }
 
-test('standard desktop caps drawing at 72 particles and 30fps', () => {
+test('standard desktop caps drawing at 36 particles and 30fps', () => {
     const harness = createHarness();
 
     assert.equal(harness.animationFrames.size, 1);
     harness.runAnimationFrame();
-    assert.equal(harness.context.fillRectCalls, 73);
+    assert.equal(harness.context.fillRectCalls, 37);
     assert.equal(harness.animationFrames.size, 1);
     assert.equal(harness.canvas.width, 2160);
 
     harness.runAnimationFrame(1050);
-    assert.equal(harness.context.fillRectCalls, 73);
+    assert.equal(harness.context.fillRectCalls, 37);
     harness.runAnimationFrame(1067);
-    assert.equal(harness.context.fillRectCalls, 146);
+    assert.equal(harness.context.fillRectCalls, 74);
 });
 
-test('low-power desktop reduces the particle loop to 60 items', () => {
+test('low-power desktop reduces the particle loop to 24 items', () => {
     const harness = createHarness({ hardwareConcurrency: 4 });
 
     harness.runAnimationFrame();
-    assert.equal(harness.context.fillRectCalls, 61);
+    assert.equal(harness.context.fillRectCalls, 25);
 });
 
 test('mobile and reduced-motion modes do not start animation', () => {
