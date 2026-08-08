@@ -32,6 +32,8 @@ const driver = spawn('/snap/bin/geckodriver', ['--port', String(driverPort)], {
 });
 let driverError = '';
 let sessionId;
+let bidiClient;
+let browsingContextId;
 
 driver.stdout.on('data', () => {});
 driver.stderr.on('data', (chunk) => {
@@ -49,6 +51,7 @@ try {
                 acceptInsecureCerts: true,
                 browserName: 'firefox',
                 pageLoadStrategy: 'normal',
+                webSocketUrl: true,
                 'moz:firefoxOptions': {
                     args: ['-headless', '-profile', profilePath]
                 }
@@ -56,6 +59,12 @@ try {
         }
     });
     sessionId = session.sessionId;
+    bidiClient = await connectBidi(session.capabilities.webSocketUrl);
+    const contextTree = await bidiClient.command('browsingContext.getTree', {});
+    browsingContextId = contextTree.contexts[0]?.context;
+    if (!browsingContextId) {
+        throw new Error('Firefox did not provide a browsing context for viewport emulation');
+    }
     await request('POST', `/session/${sessionId}/timeouts`, {
         implicit: 0,
         pageLoad: 30000,
@@ -64,12 +73,7 @@ try {
 
     for (const route of routes) {
         for (const [width, height] of viewports) {
-            await request('POST', `/session/${sessionId}/window/rect`, {
-                height,
-                width,
-                x: 0,
-                y: 0
-            });
+            await setViewport(width, height);
             const targetUrl = new URL(route.path, `${baseUrl.href.replace(/\/$/, '')}/`);
             if (targetUrl.origin !== baseUrl.origin || !targetUrl.pathname.startsWith(basePath)) {
                 throw new Error(`Route is outside the approved development application: ${route.name}`);
@@ -92,6 +96,7 @@ try {
         }
     }
 } finally {
+    bidiClient?.close();
     if (sessionId) {
         await request('DELETE', `/session/${sessionId}`).catch(() => {});
     }
@@ -109,6 +114,94 @@ function readRoutes(manifestPath) {
             }
             return { name, path };
         });
+}
+
+async function setViewport(width, height) {
+    await bidiClient.command('browsingContext.setViewport', {
+        context: browsingContextId,
+        devicePixelRatio: 1,
+        viewport: { height, width }
+    });
+    const metrics = await viewportMetrics();
+    if (metrics.width !== width || metrics.height !== height) {
+        throw new Error(
+            `Requested viewport ${width}x${height}, but Firefox provided `
+            + `${metrics.width}x${metrics.height}`
+        );
+    }
+    if (metrics.scrollWidth > metrics.width) {
+        throw new Error(
+            `Horizontal overflow at ${width}x${height}: `
+            + `${metrics.scrollWidth}px content in ${metrics.width}px viewport`
+        );
+    }
+}
+
+function viewportMetrics() {
+    return request('POST', `/session/${sessionId}/execute/sync`, {
+        script: `return {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scrollWidth: document.documentElement.scrollWidth
+        };`,
+        args: []
+    });
+}
+
+function connectBidi(url) {
+    if (!url) {
+        throw new Error('Firefox did not provide a WebDriver BiDi URL');
+    }
+    return new Promise((resolveConnect, rejectConnect) => {
+        const socket = new WebSocket(url);
+        const timeout = setTimeout(() => {
+            socket.close();
+            rejectConnect(new Error('WebDriver BiDi connection timed out'));
+        }, 10000);
+        socket.addEventListener('open', () => {
+            clearTimeout(timeout);
+            resolveConnect(createBidiClient(socket));
+        }, { once: true });
+        socket.addEventListener('error', () => {
+            clearTimeout(timeout);
+            rejectConnect(new Error('WebDriver BiDi connection failed'));
+        }, { once: true });
+    });
+}
+
+function createBidiClient(socket) {
+    let nextId = 1;
+    const pending = new Map();
+    socket.addEventListener('message', (event) => {
+        const message = JSON.parse(String(event.data));
+        const pendingCommand = pending.get(message.id);
+        if (!pendingCommand) {
+            return;
+        }
+        pending.delete(message.id);
+        if (message.type === 'success') {
+            pendingCommand.resolve(message.result);
+        } else {
+            pendingCommand.reject(new Error(
+                message.message || message.error || 'WebDriver BiDi command failed'
+            ));
+        }
+    });
+    return {
+        command(method, params) {
+            const id = nextId++;
+            return new Promise((resolveCommand, rejectCommand) => {
+                pending.set(id, {
+                    reject: rejectCommand,
+                    resolve: resolveCommand
+                });
+                socket.send(JSON.stringify({ id, method, params }));
+            });
+        },
+        close() {
+            socket.close();
+        }
+    };
 }
 
 async function waitForDriver() {

@@ -32,13 +32,10 @@ class HeaderNavViewContractTest {
         assertTrue(header.contains("navContextRootPath"));
         assertTrue(header.contains("navVmHostsPath"));
         assertTrue(header.contains("navVmHostsPrefix"));
-        assertTrue(header.contains("navVmHostsLegacyPath"));
-        assertTrue(header.contains("navVmHostsLegacyPrefix"));
+        assertFalse(header.contains("navVmHostsLegacy"));
         assertTrue(header.contains("navRequestUri eq navContextRootPath"));
         assertTrue(header.contains("navRequestUri eq navVmHostsPath"));
         assertTrue(header.contains("fn:startsWith(navRequestUri, navVmHostsPrefix)"));
-        assertTrue(header.contains("navRequestUri eq navVmHostsLegacyPath"));
-        assertTrue(header.contains("fn:startsWith(navRequestUri, navVmHostsLegacyPrefix)"));
         assertTrue(header.contains("/dashboard"));
         assertTrue(header.contains("/customers?view=list"));
         assertTrue(header.contains("/maintenance"));

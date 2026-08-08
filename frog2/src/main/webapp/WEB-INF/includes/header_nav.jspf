@@ -12,8 +12,6 @@
 <c:set var="navContextRootPath" value="${pageContext.request.contextPath}/" />
 <c:set var="navVmHostsPath" value="${pageContext.request.contextPath}/vm-hosts" />
 <c:set var="navVmHostsPrefix" value="${navVmHostsPath}/" />
-<c:set var="navVmHostsLegacyPath" value="${pageContext.request.contextPath}/vm_hosts" />
-<c:set var="navVmHostsLegacyPrefix" value="${navVmHostsLegacyPath}/" />
 <c:set var="navCustomersPath" value="${pageContext.request.contextPath}/customers" />
 <c:set var="navCustomersPrefix" value="${navCustomersPath}/" />
 <c:set var="navMaintenancePath" value="${pageContext.request.contextPath}/maintenance" />
@@ -35,9 +33,7 @@
                || navRequestUri eq navContextRootPath
                || navRequestUri eq pageContext.request.contextPath
                || navRequestUri eq navVmHostsPath
-               || fn:startsWith(navRequestUri, navVmHostsPrefix)
-               || navRequestUri eq navVmHostsLegacyPath
-               || fn:startsWith(navRequestUri, navVmHostsLegacyPrefix)}" />
+               || fn:startsWith(navRequestUri, navVmHostsPrefix)}" />
 <c:set var="navCustomersCurrent"
        value="${navRequestUri eq navCustomersPath || fn:startsWith(navRequestUri, navCustomersPrefix)}" />
 <c:set var="navMaintenanceCurrent"
