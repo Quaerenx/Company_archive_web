@@ -19,6 +19,11 @@ const basePath = `${baseUrl.pathname.replace(/\/$/, '')}/`;
 const profilePath = resolve(profileArgument);
 const destinationPath = resolve(destinationArgument);
 const routes = readRoutes(resolve(manifestArgument));
+const e2eUserId = process.env.FROG2_E2E_USER_ID || '';
+const e2ePassword = process.env.FROG2_E2E_PASSWORD || '';
+if (Boolean(e2eUserId) !== Boolean(e2ePassword)) {
+    throw new Error('Both development E2E credential variables are required');
+}
 const viewports = [
     [360, 900],
     [768, 1024],
@@ -34,6 +39,7 @@ let driverError = '';
 let sessionId;
 let bidiClient;
 let browsingContextId;
+const consoleErrors = [];
 
 driver.stdout.on('data', () => {});
 driver.stderr.on('data', (chunk) => {
@@ -70,10 +76,26 @@ try {
         pageLoad: 30000,
         script: 10000
     });
+    bidiClient.on('log.entryAdded', (params) => {
+        const entry = params.entry || params;
+        if (entry.level === 'error') {
+            consoleErrors.push(entry);
+        }
+    });
+    await bidiClient.command('session.subscribe', {
+        events: ['log.entryAdded']
+    });
+
+    if (e2eUserId) {
+        const errorStart = consoleErrors.length;
+        await loginWithCredentials(e2eUserId, e2ePassword);
+        assertNoConsoleErrors('login', errorStart);
+    }
 
     for (const route of routes) {
         for (const [width, height] of viewports) {
             await setViewport(width, height);
+            const errorStart = consoleErrors.length;
             const targetUrl = new URL(route.path, `${baseUrl.href.replace(/\/$/, '')}/`);
             if (targetUrl.origin !== baseUrl.origin || !targetUrl.pathname.startsWith(basePath)) {
                 throw new Error(`Route is outside the approved development application: ${route.name}`);
@@ -89,6 +111,7 @@ try {
             ) {
                 throw new Error(`Authenticated session is unavailable for route: ${route.name}`);
             }
+            assertNoConsoleErrors(`${route.name}-${width}x${height}`, errorStart);
 
             const screenshot = await request('GET', `/session/${sessionId}/screenshot`);
             const output = resolve(destinationPath, `${route.name}-${width}x${height}.png`);
@@ -101,6 +124,52 @@ try {
         await request('DELETE', `/session/${sessionId}`).catch(() => {});
     }
     driver.kill('SIGTERM');
+}
+
+async function loginWithCredentials(userId, password) {
+    const loginUrl = new URL('login', `${baseUrl.href.replace(/\/$/, '')}/`);
+    await request('POST', `/session/${sessionId}/url`, { url: loginUrl.href });
+
+    const userIdElement = await findElement('#userId');
+    const passwordElement = await findElement('#password');
+    const submitElement = await findElement('#loginForm button[type="submit"]');
+    await setElementValue(userIdElement, userId);
+    await setElementValue(passwordElement, password);
+    await request('POST', `/session/${sessionId}/element/${submitElement}/click`, {});
+    await delay(500);
+
+    const currentUrl = new URL(await request('GET', `/session/${sessionId}/url`));
+    if (currentUrl.pathname !== `${basePath}dashboard`) {
+        throw new Error('Development browser login did not reach the dashboard');
+    }
+}
+
+async function findElement(selector) {
+    const element = await request('POST', `/session/${sessionId}/element`, {
+        using: 'css selector',
+        value: selector
+    });
+    const elementId = element['element-6066-11e4-a52e-4f735466cecf'];
+    if (!elementId) {
+        throw new Error(`Browser element is unavailable: ${selector}`);
+    }
+    return elementId;
+}
+
+function setElementValue(elementId, value) {
+    return request('POST', `/session/${sessionId}/element/${elementId}/value`, {
+        text: value,
+        value: Array.from(value)
+    });
+}
+
+function assertNoConsoleErrors(routeName, startIndex) {
+    const newErrorCount = consoleErrors.length - startIndex;
+    if (newErrorCount > 0) {
+        throw new Error(
+            `Browser console reported ${newErrorCount} error(s) on ${routeName}`
+        );
+    }
 }
 
 function readRoutes(manifestPath) {
@@ -172,8 +241,16 @@ function connectBidi(url) {
 function createBidiClient(socket) {
     let nextId = 1;
     const pending = new Map();
+    const listeners = new Map();
     socket.addEventListener('message', (event) => {
         const message = JSON.parse(String(event.data));
+        if (message.type === 'event') {
+            const handlers = listeners.get(message.method) || [];
+            for (const handler of handlers) {
+                handler(message.params || {});
+            }
+            return;
+        }
         const pendingCommand = pending.get(message.id);
         if (!pendingCommand) {
             return;
@@ -197,6 +274,11 @@ function createBidiClient(socket) {
                 });
                 socket.send(JSON.stringify({ id, method, params }));
             });
+        },
+        on(method, handler) {
+            const handlers = listeners.get(method) || [];
+            handlers.push(handler);
+            listeners.set(method, handlers);
         },
         close() {
             socket.close();

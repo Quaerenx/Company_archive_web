@@ -24,6 +24,11 @@ class MaintenanceCardsViewContractTest {
                 ".maintenance-management .maintenance-frequency"));
         assertTrue(styles.contains("font-size: var(--font-size-xs)"));
         assertTrue(styles.contains("color: var(--color-text-muted)"));
+        assertTrue(styles.contains(
+                ".maintenance-management .inspector-section {\n"
+                        + "            flex-direction: column;"));
+        assertTrue(styles.contains("min-width: 0;"));
+        assertTrue(styles.contains("width: 100%;"));
     }
 
     private static int occurrences(String source, String target) {

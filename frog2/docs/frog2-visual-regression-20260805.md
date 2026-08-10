@@ -9,17 +9,28 @@ file repository, and my page at 360, 768, 1024, and 1440 pixel widths.
 ## Safety contract
 
 - The runner accepts loopback HTTP development URLs only.
-- It performs browser GET navigation only; it does not submit login or business forms.
+- It submits only the login form when development E2E credentials are supplied;
+  every business route is opened with GET and no business form is submitted.
 - It never reads database configuration and never targets the production 8080 service.
 - It copies an already authenticated Firefox profile to a temporary directory and
   removes that copy when the run finishes.
 - Do not place a Firefox profile, cookies, credentials, or generated baselines in Git.
+- Credentials are accepted only through process environment variables and are never
+  written to the profile, command line, screenshots, logs, or baseline manifest.
 - Reduced motion is forced so the decorative canvas cannot create random pixel diffs.
 
 ## Create the first baseline
 
-Use a Firefox profile that is already signed in to the development 18081 service.
-The profile path is not printed or persisted by the runner.
+Prefer development-only credentials supplied through the process environment. The
+runner creates and removes a temporary Firefox profile:
+
+```bash
+FROG2_E2E_USER_ID=... FROG2_E2E_PASSWORD=... \
+bash src/tools/visual-regression.sh baseline
+```
+
+An already authenticated Firefox profile remains supported. Its path is not printed
+or persisted by the runner:
 
 ```bash
 FROG2_VISUAL_FIREFOX_PROFILE=/path/to/development-only/firefox-profile \
@@ -53,8 +64,5 @@ failure disappear.
 
 ## Current status
 
-The route manifest and comparison runner are ready. Initial PNG files must be made
-only after the current source is built, deployed to the development Tomcat, and
-reviewed as the approved visual state. The current restricted execution environment
-does not provide a safe authenticated Firefox profile, so no fabricated baseline
-images are checked in.
+The route manifest and comparison runner cover 28 authenticated views. Baselines are
+stored outside Git and should be created only from a reviewed development deployment.

@@ -61,6 +61,8 @@ class CustomerPaginationViewContractTest {
                         + ".search-input[type=\"text\"]"));
         assertTrue(styles.contains("padding: var(--space-8) var(--space-40);"));
         assertTrue(styles.contains("max-width: 360px;"));
+        assertTrue(styles.contains("flex: none;"));
+        assertTrue(styles.contains("width: 100%;"));
         assertTrue(styles.contains("pointer-events: none;"));
         assertTrue(page.contains("class=\"fas fa-search search-icon\" aria-hidden=\"true\""));
         assertTrue(styles.contains("min-width: 840px;"));

@@ -65,15 +65,23 @@
 
     /* 반응형 디자인 */
 	@media (max-width: 768px) {
+        .maintenance-management .inspector-section {
+            flex-direction: column;
+            gap: var(--space-12);
+        }
+
         .maintenance-management .customer-grid {
             grid-template-columns: 1fr;
-            gap: var(--space-16);
-            padding: var(--space-16);
+            gap: var(--space-12);
+            padding: 0;
+            width: 100%;
         }
 
         .maintenance-management .inspector-header {
             font-size: var(--font-size-md);
-            padding: var(--space-16);
+            min-width: 0;
+            padding: 0 0 0 var(--space-12);
+            width: 100%;
         }
 
         .maintenance-management .customer-card {
@@ -87,7 +95,7 @@
 
     @media (max-width: 480px) {
         .maintenance-management .customer-grid {
-            padding: var(--space-12);
+            padding: 0;
         }
 
         .maintenance-management .customer-card {

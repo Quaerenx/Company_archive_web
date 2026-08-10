@@ -5,6 +5,8 @@ umask 077
 MODE="${1:-compare}"
 BASE_URL="${FROG2_VISUAL_BASE_URL:-http://127.0.0.1:18081/frog2}"
 FIREFOX_PROFILE="${FROG2_VISUAL_FIREFOX_PROFILE:-}"
+E2E_USER_ID="${FROG2_E2E_USER_ID:-}"
+E2E_PASSWORD="${FROG2_E2E_PASSWORD:-}"
 ROUTE_MANIFEST="${FROG2_VISUAL_ROUTE_MANIFEST:-src/tools/visual-regression-routes.tsv}"
 THRESHOLD_PERCENT="${FROG2_VISUAL_THRESHOLD_PERCENT:-1.0}"
 ASSET_VERSION="$(sed -n '/<param-name>frog2AssetVersion<\/param-name>/{n;s:.*<param-value>\([^<]*\)</param-value>.*:\1:p;}' src/main/webapp/WEB-INF/web.xml)"
@@ -26,9 +28,16 @@ case "$BASE_URL" in
         ;;
 esac
 
-if [ -z "$FIREFOX_PROFILE" ] || [ ! -d "$FIREFOX_PROFILE" ]; then
-    echo "Set FROG2_VISUAL_FIREFOX_PROFILE to an authenticated development Firefox profile." >&2
+if { [ -n "$E2E_USER_ID" ] && [ -z "$E2E_PASSWORD" ]; } \
+        || { [ -z "$E2E_USER_ID" ] && [ -n "$E2E_PASSWORD" ]; }; then
+    echo "Set both FROG2_E2E_USER_ID and FROG2_E2E_PASSWORD." >&2
     exit 2
+fi
+if [ -z "$E2E_USER_ID" ]; then
+    if [ -z "$FIREFOX_PROFILE" ] || [ ! -d "$FIREFOX_PROFILE" ]; then
+        echo "Set development E2E credentials or an authenticated Firefox profile." >&2
+        exit 2
+    fi
 fi
 
 if [ ! -f "$ROUTE_MANIFEST" ]; then
@@ -59,15 +68,16 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 mkdir -p "$CURRENT_ROOT" "$DIFF_ROOT"
-for cookie_file in cookies.sqlite cookies.sqlite-wal cookies.sqlite-shm; do
-    if [ -f "$FIREFOX_PROFILE/$cookie_file" ]; then
-        cp -p "$FIREFOX_PROFILE/$cookie_file" "$WORK_PROFILE/$cookie_file"
+if [ -n "$FIREFOX_PROFILE" ]; then
+    for cookie_file in cookies.sqlite cookies.sqlite-wal cookies.sqlite-shm; do
+        if [ -f "$FIREFOX_PROFILE/$cookie_file" ]; then
+            cp -p "$FIREFOX_PROFILE/$cookie_file" "$WORK_PROFILE/$cookie_file"
+        fi
+    done
+    if [ -z "$E2E_USER_ID" ] && [ ! -f "$WORK_PROFILE/cookies.sqlite" ]; then
+        echo "Firefox cookie database is unavailable in the selected profile." >&2
+        exit 2
     fi
-done
-
-if [ ! -f "$WORK_PROFILE/cookies.sqlite" ]; then
-    echo "Firefox cookie database is unavailable in the selected profile." >&2
-    exit 2
 fi
 
 # Deterministic captures: no animation and no disk cache mutation in the source profile.

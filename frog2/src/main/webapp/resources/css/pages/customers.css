@@ -511,8 +511,15 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
 
 @media (max-width: 480px) {
     .search-container {
+        flex: none;
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .search-input-wrapper {
+        flex: none;
+        max-width: none;
+        width: 100%;
     }
 
     .customer-search-result {
