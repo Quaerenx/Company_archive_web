@@ -137,6 +137,44 @@ class FileRepositoryServiceTest {
         assertEquals("invalid_metadata", error.getCode());
     }
 
+    @Test
+    void cursorPaginationKeepsStableFolderOrderAndBoundedPages()
+            throws Exception {
+        for (String name : List.of("Echo", "alpha", "delta", "Bravo", "charlie")) {
+            Files.createDirectory(root.resolve(name));
+        }
+
+        FileRepositoryListing first = service.list("", null, 2);
+        FileRepositoryListing second = service.list("", first.getNextCursor(), 2);
+        FileRepositoryListing third = service.list("", second.getNextCursor(), 2);
+
+        assertEquals(List.of("alpha", "Bravo"), names(first));
+        assertTrue(first.isHasNext());
+        assertEquals(List.of("charlie", "delta"), names(second));
+        assertTrue(second.isHasNext());
+        assertEquals(List.of("Echo"), names(third));
+        assertFalse(third.isHasNext());
+        assertEquals(5, first.getDirectoryCount());
+        assertEquals(5, second.getDirectoryCount());
+        assertEquals(5, third.getDirectoryCount());
+    }
+
+    @Test
+    void rejectsMalformedRepositoryCursor() {
+        FileRepositoryException error = assertThrows(
+                FileRepositoryException.class,
+                () -> service.list("", "not-a-valid-cursor", 2));
+
+        assertEquals(400, error.getHttpStatus());
+        assertEquals("invalid_cursor", error.getCode());
+    }
+
+    private static List<String> names(FileRepositoryListing listing) {
+        return listing.getEntries().stream()
+                .map(FileRepositoryEntry::getName)
+                .toList();
+    }
+
     private Path managedPath(String id, String suffix) {
         return root.resolve(".frog2-" + id + "." + suffix);
     }

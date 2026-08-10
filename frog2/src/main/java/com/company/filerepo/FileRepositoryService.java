@@ -12,13 +12,16 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -31,6 +34,8 @@ public final class FileRepositoryService {
     private static final String DATA_SUFFIX = ".data";
     private static final String META_SUFFIX = ".meta";
     private static final int MAX_METADATA_BYTES = 8 * 1024;
+    static final int DEFAULT_PAGE_SIZE = 50;
+    private static final int MAX_CURSOR_BYTES = 2048;
     private static final Pattern METADATA_FILE = Pattern.compile("^\\.frog2-([0-9a-f]{32})\\.meta$");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)
@@ -44,21 +49,66 @@ public final class FileRepositoryService {
     }
 
     public FileRepositoryListing list(String rawPath) throws FileRepositoryException {
+        return list(rawPath, null);
+    }
+
+    public FileRepositoryListing list(String rawPath, String rawCursor)
+            throws FileRepositoryException {
+        return list(rawPath, rawCursor, DEFAULT_PAGE_SIZE);
+    }
+
+    FileRepositoryListing list(String rawPath, String rawCursor, int pageSize)
+            throws FileRepositoryException {
+        if (pageSize <= 0 || pageSize > 100) {
+            throw new IllegalArgumentException("Page size must be between 1 and 100");
+        }
         ResolvedDirectory directory = paths.resolveExistingDirectory(rawPath);
-        List<FileRepositoryEntry> entries = new ArrayList<>();
+        SortKey cursor = decodeCursor(rawCursor);
+        Comparator<Candidate> candidateOrder = Comparator.comparing(Candidate::key);
+        PriorityQueue<Candidate> page = new PriorityQueue<>(
+                pageSize + 2, candidateOrder.reversed());
+        int directoryCount = 0;
+        int fileCount = 0;
+        long totalSize = 0;
         try (var children = Files.list(directory.path())) {
-            children.forEach(child -> addEntry(directory, child, entries));
+            var iterator = children.iterator();
+            while (iterator.hasNext()) {
+                Path child = iterator.next();
+                FileRepositoryEntry entry = entryFor(directory, child);
+                if (entry == null) {
+                    continue;
+                }
+                if (entry.isDirectory()) {
+                    directoryCount++;
+                } else {
+                    fileCount++;
+                    totalSize += entry.getSize();
+                }
+
+                Candidate candidate = new Candidate(sortKey(entry), entry);
+                if (cursor != null && candidate.key().compareTo(cursor) <= 0) {
+                    continue;
+                }
+                page.add(candidate);
+                if (page.size() > pageSize + 1) {
+                    page.poll();
+                }
+            }
         } catch (IOException e) {
             throw new FileRepositoryException(500, "repository_io_error", "Unable to list repository directory", e);
         }
 
-        entries.sort(Comparator.comparing(FileRepositoryEntry::isDirectory)
-                .reversed()
-                .thenComparing(FileRepositoryEntry::getName, String.CASE_INSENSITIVE_ORDER));
-        int directoryCount = (int) entries.stream().filter(FileRepositoryEntry::isDirectory).count();
-        int fileCount = entries.size() - directoryCount;
-        long totalSize = entries.stream().filter(entry -> !entry.isDirectory())
-                .mapToLong(FileRepositoryEntry::getSize).sum();
+        List<Candidate> candidates = page.stream().sorted(candidateOrder).toList();
+        boolean hasNext = candidates.size() > pageSize;
+        List<Candidate> visible = hasNext
+                ? candidates.subList(0, pageSize)
+                : candidates;
+        List<FileRepositoryEntry> entries = visible.stream()
+                .map(Candidate::entry)
+                .toList();
+        String nextCursor = hasNext
+                ? encodeCursor(visible.getLast().key())
+                : null;
         return new FileRepositoryListing(
                 directory.relativePath(),
                 parentPath(directory.relativePath()),
@@ -66,7 +116,10 @@ public final class FileRepositoryService {
                 entries,
                 directoryCount,
                 fileCount,
-                formatSize(totalSize));
+                formatSize(totalSize),
+                nextCursor,
+                hasNext,
+                pageSize);
     }
 
     public ValidatedFile validateUpload(String submittedName, String contentType, long size)
@@ -134,10 +187,11 @@ public final class FileRepositoryService {
         }
     }
 
-    private void addEntry(ResolvedDirectory directory, Path child, List<FileRepositoryEntry> entries) {
+    private FileRepositoryEntry entryFor(
+            ResolvedDirectory directory, Path child) {
         try {
             if (Files.isSymbolicLink(child)) {
-                return;
+                return null;
             }
             String serverName = child.getFileName().toString();
             if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS) && !serverName.startsWith(".")) {
@@ -145,22 +199,66 @@ public final class FileRepositoryService {
                         ? serverName
                         : directory.relativePath() + "/" + serverName;
                 childPath = FileRepositoryPathPolicy.normalizeRelativePath(childPath);
-                entries.add(new FileRepositoryEntry(
+                return new FileRepositoryEntry(
                         true, null, serverName, childPath,
                         DATE_FORMAT.format(Files.getLastModifiedTime(child).toInstant()),
-                        0, "-", "📁", "폴더"));
-                return;
+                        0, "-", "📁", "폴더");
             }
             Matcher matcher = METADATA_FILE.matcher(serverName);
             if (!matcher.matches()) {
-                return;
+                return null;
             }
             String storageId = matcher.group(1);
             Path dataPath = paths.resolveManagedFile(directory, storageId, DATA_SUFFIX);
             StoredMetadata metadata = readMetadata(child, dataPath, storageId);
-            entries.add(fileEntry(directory.relativePath(), storageId, dataPath, metadata));
+            return fileEntry(directory.relativePath(), storageId, dataPath, metadata);
         } catch (Exception e) {
             logger.warn("Skipping invalid repository entry {}", child.getFileName());
+            return null;
+        }
+    }
+
+    private static SortKey sortKey(FileRepositoryEntry entry) {
+        return new SortKey(
+                entry.isDirectory() ? 0 : 1,
+                entry.getName().toLowerCase(Locale.ROOT),
+                entry.getName(),
+                entry.isDirectory() ? entry.getPath() : entry.getId());
+    }
+
+    private static String encodeCursor(SortKey key) {
+        String value = key.kind() + "\u0000" + key.foldedName() + "\u0000"
+                + key.name() + "\u0000" + key.uniqueId();
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(
+                value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static SortKey decodeCursor(String rawCursor)
+            throws FileRepositoryException {
+        if (rawCursor == null || rawCursor.isBlank()) {
+            return null;
+        }
+        try {
+            byte[] decoded = Base64.getUrlDecoder().decode(rawCursor.trim());
+            if (decoded.length == 0 || decoded.length > MAX_CURSOR_BYTES) {
+                throw new IllegalArgumentException();
+            }
+            String[] parts = new String(decoded, StandardCharsets.UTF_8)
+                    .split("\u0000", -1);
+            if (parts.length != 4) {
+                throw new IllegalArgumentException();
+            }
+            int kind = Integer.parseInt(parts[0]);
+            if ((kind != 0 && kind != 1)
+                    || parts[1].isEmpty()
+                    || parts[2].isEmpty()
+                    || parts[3].isEmpty()) {
+                throw new IllegalArgumentException();
+            }
+            return new SortKey(kind, parts[1], parts[2], parts[3]);
+        } catch (IllegalArgumentException exception) {
+            throw new FileRepositoryException(
+                    400, "invalid_cursor", "Repository cursor is invalid");
         }
     }
 
@@ -334,6 +432,27 @@ public final class FileRepositoryService {
     }
 
     private record StoredMetadata(String originalName, String contentType, long size) {
+    }
+
+    private record Candidate(SortKey key, FileRepositoryEntry entry) {
+    }
+
+    private record SortKey(
+            int kind, String foldedName, String name, String uniqueId)
+            implements Comparable<SortKey> {
+        @Override
+        public int compareTo(SortKey other) {
+            int comparison = Integer.compare(kind, other.kind);
+            if (comparison == 0) {
+                comparison = foldedName.compareTo(other.foldedName);
+            }
+            if (comparison == 0) {
+                comparison = name.compareTo(other.name);
+            }
+            return comparison == 0
+                    ? uniqueId.compareTo(other.uniqueId)
+                    : comparison;
+        }
     }
 
     private static final class SetGroups {

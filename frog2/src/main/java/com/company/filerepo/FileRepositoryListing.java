@@ -10,9 +10,13 @@ public final class FileRepositoryListing {
     private final int directoryCount;
     private final int fileCount;
     private final String totalSizeText;
+    private final String nextCursor;
+    private final boolean hasNext;
+    private final int pageSize;
 
     public FileRepositoryListing(String currentPath, String parentPath, List<Breadcrumb> breadcrumbs,
-            List<FileRepositoryEntry> entries, int directoryCount, int fileCount, String totalSizeText) {
+            List<FileRepositoryEntry> entries, int directoryCount, int fileCount,
+            String totalSizeText, String nextCursor, boolean hasNext, int pageSize) {
         this.currentPath = currentPath;
         this.parentPath = parentPath;
         this.breadcrumbs = List.copyOf(breadcrumbs);
@@ -20,6 +24,9 @@ public final class FileRepositoryListing {
         this.directoryCount = directoryCount;
         this.fileCount = fileCount;
         this.totalSizeText = totalSizeText;
+        this.nextCursor = nextCursor;
+        this.hasNext = hasNext;
+        this.pageSize = pageSize;
     }
 
     public String getCurrentPath() { return currentPath; }
@@ -29,6 +36,9 @@ public final class FileRepositoryListing {
     public int getDirectoryCount() { return directoryCount; }
     public int getFileCount() { return fileCount; }
     public String getTotalSizeText() { return totalSizeText; }
+    public String getNextCursor() { return nextCursor; }
+    public boolean isHasNext() { return hasNext; }
+    public int getPageSize() { return pageSize; }
 
     public static final class Breadcrumb {
         private final String name;

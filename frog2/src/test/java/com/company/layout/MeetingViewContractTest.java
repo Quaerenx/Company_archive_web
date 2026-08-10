@@ -18,6 +18,9 @@ class MeetingViewContractTest {
         assertTrue(page.contains("id=\"commentForm\""));
         assertTrue(page.contains("id=\"commentContent\""));
         assertTrue(page.contains("data-comment-id="));
+        assertTrue(page.contains("commentPage.hasOlder"));
+        assertTrue(page.contains("commentBefore"));
+        assertTrue(page.contains("class=\"comments-section\" id=\"comments\""));
         assertTrue(page.contains("class=\"comment-btn edit ui-button"));
         assertTrue(page.contains("class=\"comment-btn delete ui-button"));
         assertTrue(page.contains("class=\"btn-save ui-button"));
@@ -38,6 +41,8 @@ class MeetingViewContractTest {
         assertTrue(behavior.contains("댓글 등록 중 오류가 발생했습니다."));
         assertTrue(behavior.contains("댓글 수정 중 오류가 발생했습니다."));
         assertTrue(behavior.contains("댓글 삭제 중 오류가 발생했습니다."));
+        assertTrue(behavior.contains("/meeting?view=view&id="));
+        assertTrue(behavior.contains("#comments"));
         assertTrue(behavior.contains("정말로 이 댓글을 삭제하시겠습니까?"));
     }
 

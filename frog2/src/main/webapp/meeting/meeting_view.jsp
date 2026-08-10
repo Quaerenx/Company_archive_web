@@ -83,13 +83,13 @@
     </div>
 
     <!-- 댓글 섹션 -->
-    <div class="comments-section">
+    <div class="comments-section" id="comments">
         <div class="comments-header">
             <h2 class="comments-title">
                 <i class="fas fa-comments"></i>
                 댓글
             </h2>
-            <span class="comment-count"><c:out value="${comments.size()}" />개</span>
+            <span class="comment-count"><c:out value="${comments.size()}" />개 표시</span>
         </div>
 
         <!-- 댓글 작성 폼 -->
@@ -170,6 +170,30 @@
                 </c:otherwise>
             </c:choose>
         </div>
+
+        <c:if test="${commentPage.hasOlder or not empty param.commentBefore}">
+            <nav class="comment-pagination" aria-label="댓글 페이지 이동">
+                <c:if test="${not empty param.commentBefore}">
+                    <c:url var="latestCommentsUrl" value="/meeting">
+                        <c:param name="view" value="view" />
+                        <c:param name="id" value="${meeting.meetingId}" />
+                        <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+                    </c:url>
+                    <a class="ui-button button--secondary button--sm"
+                       href="<c:out value='${latestCommentsUrl}' />#comments">최신 댓글</a>
+                </c:if>
+                <c:if test="${commentPage.hasOlder}">
+                    <c:url var="olderCommentsUrl" value="/meeting">
+                        <c:param name="view" value="view" />
+                        <c:param name="id" value="${meeting.meetingId}" />
+                        <c:param name="commentBefore" value="${commentPage.nextBeforeCommentId}" />
+                        <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+                    </c:url>
+                    <a class="ui-button button--secondary button--sm"
+                       href="<c:out value='${olderCommentsUrl}' />#comments">이전 댓글 <c:out value="${commentPage.pageSize}" />개</a>
+                </c:if>
+            </nav>
+        </c:if>
     </div>
 </div>
 

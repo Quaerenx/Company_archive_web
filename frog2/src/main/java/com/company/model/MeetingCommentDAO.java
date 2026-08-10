@@ -5,12 +5,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import com.company.util.DBConnection;
 
 public class MeetingCommentDAO {
+    public static final int PAGE_SIZE = 50;
     private final JdbcConnectionProvider connectionProvider;
 
     public MeetingCommentDAO() {
@@ -22,39 +24,69 @@ public class MeetingCommentDAO {
                 connectionProvider, "connectionProvider");
     }
     public List<MeetingCommentDTO> getCommentsByMeetingId(Long meetingId) {
-        List<MeetingCommentDTO> comments = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+        return getCommentPage(meetingId, null, PAGE_SIZE).getComments();
+    }
 
-        try {
-            conn = DBConnection.getConnection();
+    public MeetingCommentPage getCommentPage(
+            Long meetingId, Long beforeCommentId, int pageSize) {
+        if (meetingId == null || meetingId <= 0) {
+            throw new IllegalArgumentException("Meeting ID must be positive");
+        }
+        if (beforeCommentId != null && beforeCommentId <= 0) {
+            throw new IllegalArgumentException("Comment cursor must be positive");
+        }
+        if (pageSize <= 0 || pageSize > 100) {
+            throw new IllegalArgumentException(
+                    "Comment page size must be between 1 and 100");
+        }
+        List<MeetingCommentDTO> comments = new ArrayList<>();
+        try (Connection conn = connectionProvider.getConnection()) {
             String sql = "SELECT comment_id, meeting_id, content, author_id, author_name, "
                     + "created_at, updated_at FROM meeting_comments "
-                    + "WHERE meeting_id = ? ORDER BY created_at ASC";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setLong(1, meetingId);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                MeetingCommentDTO comment = new MeetingCommentDTO();
-                comment.setCommentId(rs.getLong("comment_id"));
-                comment.setMeetingId(rs.getLong("meeting_id"));
-                comment.setContent(rs.getString("content"));
-                comment.setAuthorId(rs.getString("author_id"));
-                comment.setAuthorName(rs.getString("author_name"));
-                comment.setCreatedAt(rs.getTimestamp("created_at"));
-                comment.setUpdatedAt(rs.getTimestamp("updated_at"));
-
-                comments.add(comment);
+                    + "WHERE meeting_id = ? "
+                    + (beforeCommentId == null ? "" : "AND comment_id < ? ")
+                    + "ORDER BY comment_id DESC LIMIT ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                int parameter = 1;
+                pstmt.setLong(parameter++, meetingId);
+                if (beforeCommentId != null) {
+                    pstmt.setLong(parameter++, beforeCommentId);
+                }
+                pstmt.setInt(parameter, pageSize + 1);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        comments.add(mapRow(rs));
+                    }
+                }
             }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
+        } catch (SQLException e) {
+            throw DataAccessException.from(
+                    "load meeting comment page", e);
         }
 
-        return comments;
+        boolean hasOlder = comments.size() > pageSize;
+        if (hasOlder) {
+            comments.removeLast();
+        }
+        Collections.reverse(comments);
+        Long nextBeforeCommentId = hasOlder && !comments.isEmpty()
+                ? comments.getFirst().getCommentId()
+                : null;
+        return new MeetingCommentPage(
+                comments, nextBeforeCommentId, hasOlder, pageSize);
+    }
+
+    private static MeetingCommentDTO mapRow(ResultSet rs)
+            throws SQLException {
+        MeetingCommentDTO comment = new MeetingCommentDTO();
+        comment.setCommentId(rs.getLong("comment_id"));
+        comment.setMeetingId(rs.getLong("meeting_id"));
+        comment.setContent(rs.getString("content"));
+        comment.setAuthorId(rs.getString("author_id"));
+        comment.setAuthorName(rs.getString("author_name"));
+        comment.setCreatedAt(rs.getTimestamp("created_at"));
+        comment.setUpdatedAt(rs.getTimestamp("updated_at"));
+        return comment;
     }
 
     public boolean addComment(MeetingCommentDTO comment) {

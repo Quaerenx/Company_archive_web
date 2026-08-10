@@ -29,7 +29,9 @@ public class FileRepositoryServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            FileRepositoryListing listing = service.list(request.getParameter("path"));
+            FileRepositoryListing listing = service.list(
+                    request.getParameter("path"),
+                    request.getParameter("cursor"));
             request.setAttribute("listing", listing);
             request.getRequestDispatcher("/WEB-INF/views/filerepo/list.jsp").forward(request, response);
         } catch (FileRepositoryException e) {

@@ -42,6 +42,23 @@ final class MeetingRequestMapper {
         }
     }
 
+    Long optionalPositiveLong(
+            HttpServletRequest request, String parameterName) {
+        String value = trimmed(request.getParameter(parameterName));
+        if (value == null) {
+            return null;
+        }
+        try {
+            long id = Long.parseLong(value);
+            if (id <= 0) {
+                throw invalid("댓글 페이지 커서가 올바르지 않습니다.");
+            }
+            return id;
+        } catch (NumberFormatException exception) {
+            throw invalid("댓글 페이지 커서가 올바르지 않습니다.");
+        }
+    }
+
     int requestedPage(HttpServletRequest request) {
         String value = trimmed(request.getParameter("page"));
         if (value == null) {

@@ -7,6 +7,7 @@ import java.util.Objects;
 import com.company.config.ApplicationEnvironment;
 import com.company.model.MeetingCommentDAO;
 import com.company.model.MeetingCommentDTO;
+import com.company.model.MeetingCommentPage;
 import com.company.model.MeetingRecordDAO;
 import com.company.model.MeetingRecordDTO;
 import com.company.model.UserDTO;
@@ -77,11 +78,22 @@ public class MeetingServlet extends HttpServlet {
 
             if (meeting != null) {
                 // 댓글 목록 조회
+                Long commentBefore;
+                try {
+                    commentBefore = requestMapper.optionalPositiveLong(
+                            request, "commentBefore");
+                } catch (IllegalArgumentException exception) {
+                    sendBadRequest(request, response, exception);
+                    return;
+                }
                 MeetingCommentDAO commentDAO = new MeetingCommentDAO();
-                List<MeetingCommentDTO> comments = commentDAO.getCommentsByMeetingId(meetingId);
+                MeetingCommentPage commentPage = commentDAO.getCommentPage(
+                        meetingId, commentBefore, MeetingCommentDAO.PAGE_SIZE);
+                List<MeetingCommentDTO> comments = commentPage.getComments();
 
                 request.setAttribute("meeting", meeting);
                 request.setAttribute("comments", comments);
+                request.setAttribute("commentPage", commentPage);
                 request.setAttribute("viewType", "view");
                 request.getRequestDispatcher("/meeting/meeting_view.jsp").forward(request, response);
             } else {

@@ -141,6 +141,14 @@
             })
             .then(function(data) {
                 if (data.success) {
+                    if (action === 'add') {
+                        window.location.assign(
+                            root.getAttribute('data-context-path')
+                                + '/meeting?view=view&id='
+                                + encodeURIComponent(meetingId)
+                                + '#comments');
+                        return;
+                    }
                     window.location.reload();
                     return;
                 }

@@ -68,6 +68,22 @@ class MeetingRequestMapperTest {
         assertEquals(3, MeetingRequestMapper.clampPage(Integer.MAX_VALUE, 3));
     }
 
+    @Test
+    void parsesOnlyPositiveOptionalCommentCursors() {
+        assertEquals(null, mapper.optionalPositiveLong(
+                request(Map.of()), "commentBefore"));
+        assertEquals(42L, mapper.optionalPositiveLong(
+                request(Map.of("commentBefore", "42")), "commentBefore"));
+        assertThrows(IllegalArgumentException.class,
+                () -> mapper.optionalPositiveLong(
+                        request(Map.of("commentBefore", "0")),
+                        "commentBefore"));
+        assertThrows(IllegalArgumentException.class,
+                () -> mapper.optionalPositiveLong(
+                        request(Map.of("commentBefore", "invalid")),
+                        "commentBefore"));
+    }
+
     private static Map<String, String> validParameters() {
         Map<String, String> parameters = new HashMap<>();
         parameters.put("title", "Weekly review");

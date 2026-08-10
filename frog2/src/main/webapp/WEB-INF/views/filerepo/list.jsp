@@ -103,6 +103,26 @@
             파일 <strong><c:out value="${listing.fileCount}" /></strong>개,
             합계 <strong><c:out value="${listing.totalSizeText}" /></strong>
         </div>
+
+        <c:if test="${listing.hasNext or not empty param.cursor}">
+            <nav class="file-pagination" aria-label="자료실 페이지 이동">
+                <c:if test="${not empty param.cursor}">
+                    <c:url var="firstPageUrl" value="/file-repository">
+                        <c:param name="path" value="${listing.currentPath}" />
+                    </c:url>
+                    <a class="ui-button button--secondary button--sm"
+                       href="<c:out value='${firstPageUrl}' />">처음으로</a>
+                </c:if>
+                <c:if test="${listing.hasNext}">
+                    <c:url var="nextPageUrl" value="/file-repository">
+                        <c:param name="path" value="${listing.currentPath}" />
+                        <c:param name="cursor" value="${listing.nextCursor}" />
+                    </c:url>
+                    <a class="ui-button button--secondary button--sm"
+                       href="<c:out value='${nextPageUrl}' />">다음 <c:out value="${listing.pageSize}" />개</a>
+                </c:if>
+            </nav>
+        </c:if>
     </section>
 </div>
 
