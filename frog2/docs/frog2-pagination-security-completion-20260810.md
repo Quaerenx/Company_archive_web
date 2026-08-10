@@ -15,8 +15,15 @@ Date: 2026-08-10
   executed.
 - The existing authentication and authorization baseline is recorded in
   `docs/frog2-authorization-policy-20260810.md`.
-- File repository listings now use a stable opaque cursor and retain at most 51
-  visible candidates in memory for a 50-row page.
+- Customer search now targets six operational summary fields instead of eight,
+  and troubleshooting search targets three summary fields by default instead
+  of scanning six large body fields. Body search remains available only through
+  the explicit `본문 포함` option.
+- Search terms are normalized consistently and bounded to 2-100 Unicode code
+  points before a DAO query runs.
+- File repository listings use a stable opaque cursor and a bounded, sorted
+  in-memory directory snapshot. Consecutive pages reuse the snapshot instead of
+  reopening every metadata file for each page.
 - Meeting details now load the newest 50 comments and use a stable
   `comment_id` cursor for older pages.
 - CSP no longer allows inline scripts or inline styles. The pool monitor's
@@ -30,7 +37,7 @@ Date: 2026-08-10
 ## Verification
 
 - Clean build: two consecutive successes.
-- Standard tests: 348 tests, 0 failures, 0 errors.
+- Standard tests: 355 tests, 0 failures, 0 errors.
 - Read-only schema audit: success.
 - JspC: 44 JSP/JSPF/tag inputs, 36 generated Java files, 61 generated classes,
   0 errors.
@@ -46,7 +53,7 @@ Date: 2026-08-10
 - HTTP development cookie: `HttpOnly` and `SameSite=Strict`; `Secure` is
   intentionally absent because the connector is not HTTPS.
 - Final source and deployed development WAR SHA-256:
-  `17b7967f8ad02cd918f686c0267771588e2df84b0b7cf4ed1d91005f8f4639e0`.
+  `73c8975ec1bb4cd3e4dcf5502f1cad8af4a832e6fc184b1c8f7937ef5ff16ec9`.
 
 ## Database migration audit
 
@@ -78,6 +85,8 @@ Development backups:
   `/opt/frog2-dev/backups/pagination-security-20260810-105116`
 - Intermediate deployment before the final comment UX correction:
   `/opt/frog2-dev/backups/pagination-security-final-20260810-110307`
+- Pre-search/cache performance deployment:
+  `/opt/frog2-dev/backups/search-repository-performance-20260810-152307`
 
 ## Full rollback to the pre-work development deployment
 
