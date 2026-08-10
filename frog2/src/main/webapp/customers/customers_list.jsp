@@ -66,7 +66,9 @@
                        name="q"
                        class="search-input"
                        value="<c:out value='${q}' />"
-                       placeholder="고객사명, 버전, OS, 담당자 등으로 검색..."
+                       placeholder="고객사명, 버전, 모드, OS, SAID, 담당자 검색..."
+                       minlength="2"
+                       maxlength="100"
                        autocomplete="off">
                 <button type="button" id="clear-search" class="clear-search ui-touch-target"
                         aria-label="검색어 지우기">

@@ -11,6 +11,7 @@
 <c:url var="troubleshootingListReturnUrl" value="/troubleshooting">
     <c:param name="view" value="list" />
     <c:if test="${not empty param.returnQ}"><c:param name="q" value="${param.returnQ}" /></c:if>
+    <c:if test="${param.returnScope eq 'content'}"><c:param name="scope" value="content" /></c:if>
     <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
     <c:if test="${not empty param.returnPageSize}"><c:param name="pageSize" value="${param.returnPageSize}" /></c:if>
 </c:url>
@@ -18,6 +19,7 @@
     <c:param name="view" value="view" />
     <c:param name="id" value="${troubleshooting.id}" />
     <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+    <c:if test="${param.returnScope eq 'content'}"><c:param name="returnScope" value="content" /></c:if>
     <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
     <c:if test="${not empty param.returnPageSize}"><c:param name="returnPageSize" value="${param.returnPageSize}" /></c:if>
 </c:url>

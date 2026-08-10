@@ -12,6 +12,7 @@ import java.util.Objects;
 
 import com.company.util.DBConnection;
 import com.company.util.Pagination;
+import com.company.util.SearchQueryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,11 +23,13 @@ public class TroubleshootingDAO {
     private static final String CREATOR_USER_ID_COLUMN = "creator_user_id";
     private static final String SUMMARY_COLUMNS =
             "id, title, customer_name, occurrence_date, creator, create_date";
-    private static final String SEARCH_PREDICATE =
+    private static final String SUMMARY_SEARCH_PREDICATE =
             "(title ILIKE ? "
                     + "OR customer_name ILIKE ? "
-                    + "OR creator ILIKE ? "
-                    + "OR CAST(SUBSTR(overview,1,65000) AS VARCHAR(65000)) "
+                    + "OR creator ILIKE ?)";
+    private static final String CONTENT_SEARCH_PREDICATE =
+            "(" + SUMMARY_SEARCH_PREDICATE
+                    + " OR CAST(SUBSTR(overview,1,65000) AS VARCHAR(65000)) "
                     + "ILIKE CAST(? AS VARCHAR(65000)) "
                     + "OR CAST(SUBSTR(cause_analysis,1,65000) AS VARCHAR(65000)) "
                     + "ILIKE CAST(? AS VARCHAR(65000)) "
@@ -62,13 +65,29 @@ public class TroubleshootingDAO {
 
     public PageResult<TroubleshootingDTO> getTroubleshootingPage(
             String query, int requestedPage, int pageSize) {
+        return getTroubleshootingPage(
+                query, false, requestedPage, pageSize);
+    }
+
+    public PageResult<TroubleshootingDTO> getTroubleshootingPage(
+            String query,
+            boolean includeContent,
+            int requestedPage,
+            int pageSize) {
         String normalizedQuery = normalizedQuery(query);
+        String searchPredicate = includeContent
+                ? CONTENT_SEARCH_PREDICATE
+                : SUMMARY_SEARCH_PREDICATE;
         String whereClause =
-                normalizedQuery == null ? "" : " WHERE " + SEARCH_PREDICATE;
+                normalizedQuery == null ? "" : " WHERE " + searchPredicate;
         StatementBinder binder = normalizedQuery == null
                 ? (statement, startIndex) -> startIndex
                 : (statement, startIndex) ->
-                        bindSearch(statement, startIndex, normalizedQuery);
+                        bindSearch(
+                                statement,
+                                startIndex,
+                                normalizedQuery,
+                                includeContent);
 
         try (Connection connection = connectionProvider.getConnection()) {
             return loadSummaryPage(
@@ -450,20 +469,19 @@ public class TroubleshootingDAO {
     private static int bindSearch(
             PreparedStatement statement,
             int startIndex,
-            String query) throws SQLException {
+            String query,
+            boolean includeContent) throws SQLException {
         String like = "%" + query + "%";
         int parameterIndex = startIndex;
-        for (int field = 0; field < 9; field++) {
+        int fieldCount = includeContent ? 9 : 3;
+        for (int field = 0; field < fieldCount; field++) {
             statement.setString(parameterIndex++, like);
         }
         return parameterIndex;
     }
 
     private static String normalizedQuery(String query) {
-        if (query == null || query.trim().isEmpty()) {
-            return null;
-        }
-        return query.trim();
+        return SearchQueryPolicy.normalize(query);
     }
 
     private static boolean isBlank(String value) {

@@ -13,6 +13,7 @@ import java.util.Objects;
 
 import com.company.util.DBConnection;
 import com.company.util.Pagination;
+import com.company.util.SearchQueryPolicy;
 
 public class CustomerDAO {
     private static final String MAINTENANCE_SCHEDULE_TABLE =
@@ -33,8 +34,6 @@ public class CustomerDAO {
                     + "OR CAST(d.vertica_version AS VARCHAR(65000)) ILIKE ? "
                     + "OR CAST(d.db_mode AS VARCHAR(65000)) ILIKE ? "
                     + "OR CAST(d.os_info AS VARCHAR(65000)) ILIKE ? "
-                    + "OR CAST(d.node_count AS VARCHAR(65000)) ILIKE ? "
-                    + "OR CAST(d.license_info AS VARCHAR(65000)) ILIKE ? "
                     + "OR CAST(d.said AS VARCHAR(65000)) ILIKE ? "
                     + "OR CAST(d.main_manager AS VARCHAR(65000)) ILIKE ?)";
 
@@ -574,16 +573,14 @@ public class CustomerDAO {
         }
         String like = "%" + query + "%";
         int parameterIndex = startIndex;
-        for (int field = 0; field < 8; field++) {
+        for (int field = 0; field < 6; field++) {
             statement.setString(parameterIndex++, like);
         }
         return parameterIndex;
     }
 
     private static String normalizeQuery(String query) {
-        return query == null || query.trim().isEmpty()
-                ? null
-                : query.trim();
+        return SearchQueryPolicy.normalize(query);
     }
 
     private static String sortColumn(String sortField) {

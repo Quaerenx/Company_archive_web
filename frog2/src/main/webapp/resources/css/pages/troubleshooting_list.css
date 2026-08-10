@@ -160,6 +160,18 @@
     border-radius: var(--radius-lg);
     font-size: var(--font-size-sm);
 }
+.troubleshooting-management .ts-search-scope {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: 44px;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+}
+.troubleshooting-management .ts-search-scope input {
+    margin: 0;
+}
 .troubleshooting-management .btn-search-simple {
     padding: var(--space-12) var(--space-16);
     border: 1px solid var(--color-border);
@@ -170,4 +182,14 @@
 }
 .troubleshooting-management .btn-search-simple:hover {
     background: var(--color-surface-subtle);
+}
+
+@media (max-width: 768px) {
+    .troubleshooting-management .ts-search-form {
+        flex-wrap: wrap;
+    }
+
+    .troubleshooting-management .ts-search-input {
+        flex-basis: 100%;
+    }
 }

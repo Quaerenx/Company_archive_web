@@ -33,17 +33,46 @@ class TroubleshootingDAOPaginationTest {
                         + "occurrence_date DESC, create_date DESC, "
                         + "id DESC LIMIT ? OFFSET ?"));
         assertFalse(jdbc.statements.get(0).sql.contains("NULLS LAST"));
+        assertFalse(jdbc.statements.get(0).sql.contains("SUBSTR(overview"));
         assertEquals("%needle%",
                 jdbc.statements.get(0).parameters.get(1));
         assertEquals("%needle%",
-                jdbc.statements.get(0).parameters.get(9));
-        assertEquals(20, jdbc.statements.get(0).parameters.get(10));
-        assertEquals(0, jdbc.statements.get(0).parameters.get(11));
+                jdbc.statements.get(0).parameters.get(3));
+        assertEquals(20, jdbc.statements.get(0).parameters.get(4));
+        assertEquals(0, jdbc.statements.get(0).parameters.get(5));
         assertEquals(1, result.page());
         assertEquals(41, result.totalCount());
         assertEquals(7, result.items().getFirst().getId());
         assertEquals(1, jdbc.openCount);
         assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void contentSearchIsExplicitAndKeepsTheLegacyBodyFields() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "id", 9,
+                "title", "Deep issue",
+                "customer_name", "Acme",
+                "occurrence_date", null,
+                "creator", "Tester",
+                "create_date", null,
+                "total_count", 1));
+        TroubleshootingDAO dao = new TroubleshootingDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<TroubleshootingDTO> result =
+                dao.getTroubleshootingPage(
+                        "needle", true, 1, 20);
+
+        assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(overview"));
+        assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(script_content"));
+        assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(note"));
+        assertEquals("%needle%",
+                jdbc.statements.get(0).parameters.get(9));
+        assertEquals(20, jdbc.statements.get(0).parameters.get(10));
+        assertEquals(0, jdbc.statements.get(0).parameters.get(11));
+        assertEquals(1, result.totalCount());
     }
 
     @Test

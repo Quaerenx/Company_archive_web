@@ -46,9 +46,11 @@ class CustomerDAOPaginationTest {
         assertEquals("%acme%",
                 jdbc.statements.get(1).parameters.get(1));
         assertEquals("%acme%",
-                jdbc.statements.get(1).parameters.get(8));
-        assertEquals(50, jdbc.statements.get(1).parameters.get(9));
-        assertEquals(0, jdbc.statements.get(1).parameters.get(10));
+                jdbc.statements.get(1).parameters.get(6));
+        assertEquals(50, jdbc.statements.get(1).parameters.get(7));
+        assertEquals(0, jdbc.statements.get(1).parameters.get(8));
+        assertTrue(!jdbc.statements.get(1).sql.contains("d.node_count AS VARCHAR"));
+        assertTrue(!jdbc.statements.get(1).sql.contains("d.license_info AS VARCHAR"));
         assertEquals(1, customerPage.result().page());
         assertEquals(51, customerPage.result().totalCount());
         assertEquals(120, customerPage.counts().total());
@@ -91,8 +93,8 @@ class CustomerDAOPaginationTest {
         assertEquals(4, jdbc.statements.size());
         assertTrue(jdbc.statements.get(2).sql.startsWith(
                 "SELECT COUNT(*) FROM vertica_customer_detail"));
-        assertEquals(100, jdbc.statements.get(1).parameters.get(10));
-        assertEquals(50, jdbc.statements.get(3).parameters.get(10));
+        assertEquals(100, jdbc.statements.get(1).parameters.get(8));
+        assertEquals(50, jdbc.statements.get(3).parameters.get(8));
         assertEquals(2, customerPage.result().page());
         assertEquals(51, customerPage.result().totalCount());
     }

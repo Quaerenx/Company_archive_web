@@ -54,7 +54,22 @@
             <input type="hidden" name="view" value="list" />
             <input type="hidden" name="pageSize" value="<c:out value='${pageSize}' />" />
             <label class="sr-only" for="troubleshooting-search">트러블 슈팅 검색</label>
-            <input type="text" id="troubleshooting-search" name="q" value="<c:out value="${q}" />" class="ts-search-input" placeholder="제목, 고객사, 작성자, 본문 전체에서 검색" autocomplete="off" />
+            <input type="text"
+                   id="troubleshooting-search"
+                   name="q"
+                   value="<c:out value='${q}' />"
+                   class="ts-search-input"
+                   placeholder="제목, 고객사, 작성자 검색"
+                   minlength="2"
+                   maxlength="100"
+                   autocomplete="off" />
+            <label class="ts-search-scope">
+                <input type="checkbox"
+                       name="scope"
+                       value="content"
+                       ${searchScope eq 'content' ? 'checked' : ''} />
+                본문 포함
+            </label>
             <button type="submit"
                     class="btn-search-simple ui-button button--secondary button--md"
                     data-busy-label="검색 중">검색</button>
@@ -77,6 +92,7 @@
                         <c:param name="view" value="view" />
                         <c:param name="id" value="${ts.id}" />
                         <c:param name="returnQ" value="${q}" />
+                        <c:if test="${searchScope eq 'content'}"><c:param name="returnScope" value="content" /></c:if>
                         <c:param name="returnPage" value="${currentPage}" />
                         <c:param name="returnPageSize" value="${pageSize}" />
                     </c:url>
@@ -134,12 +150,14 @@
                         <c:param name="page" value="1" />
                         <c:param name="pageSize" value="${pageSize}" />
                         <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
+                        <c:if test="${searchScope eq 'content'}"><c:param name="scope" value="content" /></c:if>
                     </c:url>
                     <c:url var="troubleshootingPreviousPageUrl" value="/troubleshooting">
                         <c:param name="view" value="list" />
                         <c:param name="page" value="${currentPage - 1}" />
                         <c:param name="pageSize" value="${pageSize}" />
                         <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
+                        <c:if test="${searchScope eq 'content'}"><c:param name="scope" value="content" /></c:if>
                     </c:url>
                     <li><a class="ui-pagination__link" href="<c:out value='${troubleshootingFirstPageUrl}' />" aria-label="첫 페이지">&laquo;</a></li>
                     <li><a class="ui-pagination__link" href="<c:out value='${troubleshootingPreviousPageUrl}' />" aria-label="이전 페이지">&lsaquo;</a></li>
@@ -155,6 +173,7 @@
                                 <c:param name="page" value="${pageNumber}" />
                                 <c:param name="pageSize" value="${pageSize}" />
                                 <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
+                                <c:if test="${searchScope eq 'content'}"><c:param name="scope" value="content" /></c:if>
                             </c:url>
                             <li><a class="ui-pagination__link" href="<c:out value='${troubleshootingPageUrl}' />"><c:out value="${pageNumber}" /></a></li>
                         </c:otherwise>
@@ -166,12 +185,14 @@
                         <c:param name="page" value="${currentPage + 1}" />
                         <c:param name="pageSize" value="${pageSize}" />
                         <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
+                        <c:if test="${searchScope eq 'content'}"><c:param name="scope" value="content" /></c:if>
                     </c:url>
                     <c:url var="troubleshootingLastPageUrl" value="/troubleshooting">
                         <c:param name="view" value="list" />
                         <c:param name="page" value="${totalPages}" />
                         <c:param name="pageSize" value="${pageSize}" />
                         <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
+                        <c:if test="${searchScope eq 'content'}"><c:param name="scope" value="content" /></c:if>
                     </c:url>
                     <li><a class="ui-pagination__link" href="<c:out value='${troubleshootingNextPageUrl}' />" aria-label="다음 페이지">&rsaquo;</a></li>
                     <li><a class="ui-pagination__link" href="<c:out value='${troubleshootingLastPageUrl}' />" aria-label="마지막 페이지">&raquo;</a></li>

@@ -69,7 +69,18 @@ final class CustomerQueryController {
         String sortField = defaultValue(request.getParameter("sortField"), "");
         String sortDirection = defaultValue(request.getParameter("sortDirection"), "ASC");
         String filter = defaultValue(request.getParameter("filter"), "maintenance");
-        String query = mapper.searchQuery(request);
+        String query;
+        try {
+            query = mapper.searchQuery(request);
+        } catch (IllegalArgumentException exception) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_search_query",
+                    exception.getMessage());
+            return;
+        }
         CustomerPage customerPage = customerDAO.getCustomerPage(
                 sortField,
                 sortDirection,

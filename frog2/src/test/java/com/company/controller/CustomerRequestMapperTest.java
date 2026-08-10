@@ -134,6 +134,13 @@ class CustomerRequestMapperTest {
         assertEquals(1, mapper.requestedPage(request(Map.of("page", "0"))));
         assertEquals(50, mapper.requestedPageSize(request(Map.of())));
         assertNull(mapper.searchQuery(request(Map.of("q", "  "))));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mapper.searchQuery(request(Map.of("q", "a"))));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mapper.searchQuery(
+                        request(Map.of("q", "가".repeat(101)))));
     }
 
     private static HttpServletRequest request(Map<String, String> parameters) {

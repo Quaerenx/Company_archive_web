@@ -34,12 +34,14 @@ class TroubleshootingServletAuthorizationTest {
                 new RequestFixture(user("owner-1", "Owner"), "GET");
         request.parameters.put("view", "list");
         request.parameters.put("q", "  connection  ");
+        request.parameters.put("scope", "content");
         request.parameters.put("page", "2");
         ResponseFixture response = new ResponseFixture();
 
         servlet.doGet(request.proxy(), response.proxy());
 
         assertEquals("connection", dao.lastQuery);
+        assertTrue(dao.lastIncludeContent);
         assertEquals(2, dao.lastPage);
         assertEquals(20, dao.lastPageSize);
         assertEquals(
@@ -48,6 +50,7 @@ class TroubleshootingServletAuthorizationTest {
         assertEquals(41, request.attributes.get("totalCount"));
         assertEquals(2, request.attributes.get("currentPage"));
         assertEquals(3, request.attributes.get("totalPages"));
+        assertEquals("content", request.attributes.get("searchScope"));
         assertEquals(dao.page.items(),
                 request.attributes.get("troubleshootingList"));
     }
@@ -185,6 +188,7 @@ class TroubleshootingServletAuthorizationTest {
         private String lastQuery;
         private int lastPage;
         private int lastPageSize;
+        private boolean lastIncludeContent;
         private String lastUpdateOwnerId;
         private String lastDeleteOwnerId;
         private boolean mutationSucceeds;
@@ -197,7 +201,18 @@ class TroubleshootingServletAuthorizationTest {
         @Override
         public PageResult<TroubleshootingDTO> getTroubleshootingPage(
                 String query, int requestedPage, int pageSize) {
+            return getTroubleshootingPage(
+                    query, false, requestedPage, pageSize);
+        }
+
+        @Override
+        public PageResult<TroubleshootingDTO> getTroubleshootingPage(
+                String query,
+                boolean includeContent,
+                int requestedPage,
+                int pageSize) {
             lastQuery = query;
+            lastIncludeContent = includeContent;
             lastPage = requestedPage;
             lastPageSize = pageSize;
             return page;

@@ -3,6 +3,7 @@ package com.company.controller;
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDTO;
 import com.company.util.Pagination;
+import com.company.util.SearchQueryPolicy;
 import com.company.util.StrictDateParser;
 import jakarta.servlet.http.HttpServletRequest;
 import java.text.ParseException;
@@ -115,7 +116,7 @@ final class CustomerRequestMapper {
     }
 
     String searchQuery(HttpServletRequest request) {
-        return trimmed(request, "q");
+        return SearchQueryPolicy.normalize(request.getParameter("q"));
     }
 
     private static String trimmed(HttpServletRequest request, String name) {

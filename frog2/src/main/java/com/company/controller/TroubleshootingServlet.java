@@ -11,6 +11,7 @@ import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
+import com.company.util.SearchQueryPolicy;
 import com.company.web.ApplicationError;
 
 import jakarta.servlet.ServletException;
@@ -52,17 +53,28 @@ public class TroubleshootingServlet extends HttpServlet {
 
         if ("list".equals(viewType)) {
             // 목록/검색 조회
-            String q = request.getParameter("q");
-            String normalizedQuery =
-                    q == null || q.trim().isEmpty() ? null : q.trim();
+            String normalizedQuery;
+            try {
+                normalizedQuery = SearchQueryPolicy.normalize(
+                        request.getParameter("q"));
+            } catch (IllegalArgumentException exception) {
+                sendBadRequest(request, response, exception);
+                return;
+            }
+            boolean includeContent = "content".equals(
+                    request.getParameter("scope"));
             PageResult<TroubleshootingDTO> page =
                     troubleshootingDAO.getTroubleshootingPage(
                             normalizedQuery,
+                            includeContent,
                             requestMapper.requestedPage(request),
                             requestMapper.requestedPageSize(request));
             if (normalizedQuery != null) {
                 request.setAttribute("q", normalizedQuery);
             }
+            request.setAttribute(
+                    "searchScope",
+                    includeContent ? "content" : "summary");
 
             request.setAttribute("troubleshootingList", page.items());
             request.setAttribute("currentPage", page.page());

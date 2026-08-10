@@ -64,6 +64,11 @@ class TroubleshootingViewContractTest {
         assertTrue(page.contains("method=\"get\""));
         assertTrue(page.contains("name=\"view\" value=\"list\""));
         assertTrue(page.contains("name=\"q\""));
+        assertTrue(page.contains("name=\"scope\""));
+        assertTrue(page.contains("본문 포함"));
+        assertTrue(page.contains("minlength=\"2\""));
+        assertTrue(page.contains("maxlength=\"100\""));
+        assertTrue(page.contains("returnScope"));
         assertTrue(page.contains("pageSize"));
         assertTrue(page.contains("ui-pagination"));
         assertTrue(page.contains("aria-current=\"page\""));
