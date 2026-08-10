@@ -10,6 +10,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -154,9 +155,50 @@ class FileRepositoryServiceTest {
         assertTrue(second.isHasNext());
         assertEquals(List.of("Echo"), names(third));
         assertFalse(third.isHasNext());
+        assertEquals(1, service.snapshotScanCount());
         assertEquals(5, first.getDirectoryCount());
         assertEquals(5, second.getDirectoryCount());
         assertEquals(5, third.getDirectoryCount());
+    }
+
+    @Test
+    void directorySnapshotRefreshesOnlyAfterTheDirectoryChanges()
+            throws Exception {
+        Files.createDirectory(root.resolve("alpha"));
+
+        assertEquals(List.of("alpha"), names(service.list("")));
+        assertEquals(List.of("alpha"), names(service.list("")));
+        assertEquals(1, service.snapshotScanCount());
+
+        Files.createDirectory(root.resolve("beta"));
+        Files.setLastModifiedTime(
+                root,
+                FileTime.fromMillis(System.currentTimeMillis() + 2_000));
+
+        assertEquals(List.of("alpha", "beta"), names(service.list("")));
+        assertEquals(2, service.snapshotScanCount());
+    }
+
+    @Test
+    void uploadInvalidatesSnapshotsSharedBySeparateServletServices()
+            throws Exception {
+        assertEquals(0, service.list("").getFileCount());
+        assertEquals(1, service.snapshotScanCount());
+
+        FileRepositoryService uploadService =
+                new FileRepositoryService(root);
+        byte[] content = "shared cache invalidation"
+                .getBytes(StandardCharsets.UTF_8);
+        var validated = uploadService.validateUpload(
+                "shared.txt", "text/plain", content.length);
+        uploadService.store(
+                "",
+                validated,
+                content.length,
+                new ByteArrayInputStream(content));
+
+        assertEquals(1, service.list("").getFileCount());
+        assertEquals(2, service.snapshotScanCount());
     }
 
     @Test

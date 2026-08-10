@@ -142,10 +142,14 @@ does not prove the future production TLS terminator or proxy configuration.
 
 ### File repository scan cost
 
-Cursor pagination bounds response and in-memory entry accumulation, but exact
-folder/file/size totals still require one directory scan. If a directory grows
-to tens of thousands of managed files, a versioned repository index should
-replace repeated filesystem scans.
+Cursor pagination bounds each response. The listing service now keeps a
+directory-mtime-validated, sorted in-memory snapshot, so moving through pages
+does not repeatedly scan metadata files or recalculate exact folder/file/size
+totals. The cache is limited to 32 directories and 50,000 entries in total and
+does not write index files into the repository. The first request after a
+restart or directory change still performs one full scan. If a single
+directory grows beyond 50,000 managed entries, a separately versioned external
+repository index should replace that first-scan cost.
 
 ## Operating rollout decision
 

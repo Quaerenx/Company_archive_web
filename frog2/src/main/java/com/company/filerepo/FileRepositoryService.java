@@ -13,17 +13,20 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.FileTime;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -36,6 +39,10 @@ public final class FileRepositoryService {
     private static final int MAX_METADATA_BYTES = 8 * 1024;
     static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_CURSOR_BYTES = 2048;
+    private static final int MAX_CACHED_DIRECTORIES = 32;
+    private static final int MAX_CACHED_ENTRIES = 50_000;
+    private static final long MAX_CACHE_AGE_NANOS =
+            Duration.ofSeconds(60).toNanos();
     private static final Pattern METADATA_FILE = Pattern.compile("^\\.frog2-([0-9a-f]{32})\\.meta$");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)
@@ -43,6 +50,12 @@ public final class FileRepositoryService {
 
     private final FileRepositoryPathPolicy paths;
     private final FileRepositoryFilePolicy files = new FileRepositoryFilePolicy();
+    private static final Object SNAPSHOT_CACHE_LOCK = new Object();
+    private static final LinkedHashMap<Path, CachedDirectorySnapshot>
+            SNAPSHOT_CACHE =
+            new LinkedHashMap<>(16, 0.75f, true);
+    private final AtomicLong snapshotScanCount = new AtomicLong();
+    private static int cachedEntryCount;
 
     public FileRepositoryService(Path repositoryRoot) throws IOException {
         paths = new FileRepositoryPathPolicy(repositoryRoot);
@@ -64,9 +77,56 @@ public final class FileRepositoryService {
         }
         ResolvedDirectory directory = paths.resolveExistingDirectory(rawPath);
         SortKey cursor = decodeCursor(rawCursor);
-        Comparator<Candidate> candidateOrder = Comparator.comparing(Candidate::key);
-        PriorityQueue<Candidate> page = new PriorityQueue<>(
-                pageSize + 2, candidateOrder.reversed());
+        DirectorySnapshot snapshot = directorySnapshot(directory);
+        List<Candidate> candidates = snapshot.candidates();
+        int startIndex = firstCandidateAfter(candidates, cursor);
+        int endIndex = Math.min(startIndex + pageSize, candidates.size());
+        List<Candidate> visible = candidates.subList(startIndex, endIndex);
+        boolean hasNext = endIndex < candidates.size();
+        List<FileRepositoryEntry> entries = visible.stream()
+                .map(Candidate::entry)
+                .toList();
+        String nextCursor = hasNext && !visible.isEmpty()
+                ? encodeCursor(visible.getLast().key())
+                : null;
+        return new FileRepositoryListing(
+                directory.relativePath(),
+                parentPath(directory.relativePath()),
+                breadcrumbs(directory.relativePath()),
+                entries,
+                snapshot.directoryCount(),
+                snapshot.fileCount(),
+                formatSize(snapshot.totalSize()),
+                nextCursor,
+                hasNext,
+                pageSize);
+    }
+
+    private DirectorySnapshot directorySnapshot(ResolvedDirectory directory)
+            throws FileRepositoryException {
+        Path path = directory.path();
+        FileTime modified = lastModified(path);
+        DirectorySnapshot cached = cachedSnapshot(path, modified);
+        if (cached != null) {
+            return cached;
+        }
+
+        for (int attempt = 0; attempt < 2; attempt++) {
+            FileTime before = lastModified(path);
+            DirectorySnapshot loaded = scanDirectory(directory);
+            FileTime after = lastModified(path);
+            if (before.equals(after)) {
+                cacheSnapshot(path, after, loaded);
+                return loaded;
+            }
+        }
+        return scanDirectory(directory);
+    }
+
+    private DirectorySnapshot scanDirectory(ResolvedDirectory directory)
+            throws FileRepositoryException {
+        snapshotScanCount.incrementAndGet();
+        List<Candidate> candidates = new ArrayList<>();
         int directoryCount = 0;
         int fileCount = 0;
         long totalSize = 0;
@@ -84,42 +144,101 @@ public final class FileRepositoryService {
                     fileCount++;
                     totalSize += entry.getSize();
                 }
-
-                Candidate candidate = new Candidate(sortKey(entry), entry);
-                if (cursor != null && candidate.key().compareTo(cursor) <= 0) {
-                    continue;
-                }
-                page.add(candidate);
-                if (page.size() > pageSize + 1) {
-                    page.poll();
-                }
+                candidates.add(new Candidate(sortKey(entry), entry));
             }
         } catch (IOException e) {
             throw new FileRepositoryException(500, "repository_io_error", "Unable to list repository directory", e);
         }
-
-        List<Candidate> candidates = page.stream().sorted(candidateOrder).toList();
-        boolean hasNext = candidates.size() > pageSize;
-        List<Candidate> visible = hasNext
-                ? candidates.subList(0, pageSize)
-                : candidates;
-        List<FileRepositoryEntry> entries = visible.stream()
-                .map(Candidate::entry)
-                .toList();
-        String nextCursor = hasNext
-                ? encodeCursor(visible.getLast().key())
-                : null;
-        return new FileRepositoryListing(
-                directory.relativePath(),
-                parentPath(directory.relativePath()),
-                breadcrumbs(directory.relativePath()),
-                entries,
+        candidates.sort(Comparator.comparing(Candidate::key));
+        return new DirectorySnapshot(
+                List.copyOf(candidates),
                 directoryCount,
                 fileCount,
-                formatSize(totalSize),
-                nextCursor,
-                hasNext,
-                pageSize);
+                totalSize);
+    }
+
+    private static int firstCandidateAfter(
+            List<Candidate> candidates, SortKey cursor) {
+        if (cursor == null) {
+            return 0;
+        }
+        int low = 0;
+        int high = candidates.size();
+        while (low < high) {
+            int middle = (low + high) >>> 1;
+            if (candidates.get(middle).key().compareTo(cursor) <= 0) {
+                low = middle + 1;
+            } else {
+                high = middle;
+            }
+        }
+        return low;
+    }
+
+    private static FileTime lastModified(Path path)
+            throws FileRepositoryException {
+        try {
+            return Files.getLastModifiedTime(
+                    path, LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException exception) {
+            throw new FileRepositoryException(
+                    500,
+                    "repository_io_error",
+                    "Unable to inspect repository directory",
+                    exception);
+        }
+    }
+
+    private DirectorySnapshot cachedSnapshot(Path path, FileTime modified) {
+        synchronized (SNAPSHOT_CACHE_LOCK) {
+            CachedDirectorySnapshot cached = SNAPSHOT_CACHE.get(path);
+            boolean fresh = cached != null
+                    && System.nanoTime() - cached.loadedAtNanos()
+                            <= MAX_CACHE_AGE_NANOS;
+            return fresh && cached.modified().equals(modified)
+                    ? cached.snapshot()
+                    : null;
+        }
+    }
+
+    private void cacheSnapshot(
+            Path path, FileTime modified, DirectorySnapshot snapshot) {
+        int entryCount = snapshot.candidates().size();
+        if (entryCount > MAX_CACHED_ENTRIES) {
+            return;
+        }
+        synchronized (SNAPSHOT_CACHE_LOCK) {
+            CachedDirectorySnapshot previous = SNAPSHOT_CACHE.remove(path);
+            if (previous != null) {
+                cachedEntryCount -= previous.snapshot().candidates().size();
+            }
+            while (!SNAPSHOT_CACHE.isEmpty()
+                    && (SNAPSHOT_CACHE.size() >= MAX_CACHED_DIRECTORIES
+                            || cachedEntryCount + entryCount
+                                    > MAX_CACHED_ENTRIES)) {
+                Path eldest = SNAPSHOT_CACHE.keySet().iterator().next();
+                CachedDirectorySnapshot removed = SNAPSHOT_CACHE.remove(eldest);
+                cachedEntryCount -= removed.snapshot().candidates().size();
+            }
+            SNAPSHOT_CACHE.put(
+                    path,
+                    new CachedDirectorySnapshot(
+                            modified, System.nanoTime(), snapshot));
+            cachedEntryCount += entryCount;
+        }
+    }
+
+    private static void invalidateSnapshot(Path path) {
+        synchronized (SNAPSHOT_CACHE_LOCK) {
+            CachedDirectorySnapshot removed = SNAPSHOT_CACHE.remove(path);
+            if (removed != null) {
+                cachedEntryCount -= removed.snapshot().candidates().size();
+            }
+        }
+    }
+
+    long snapshotScanCount() {
+        return snapshotScanCount.get();
     }
 
     public ValidatedFile validateUpload(String submittedName, String contentType, long size)
@@ -159,6 +278,7 @@ public final class FileRepositoryService {
             }
             atomicMove(metadataTemp, metadataPath);
             metadataTemp = null;
+            invalidateSnapshot(directory.path());
             return new StoredFile(directory.relativePath(), storageId, validated.originalName(), copied.size());
         } catch (FileRepositoryException e) {
             cleanup(uploadTemp, metadataTemp, dataMoved ? dataPath : null, metadataPath);
@@ -182,6 +302,7 @@ public final class FileRepositoryService {
             ResolvedDirectory directory = paths.resolveExistingDirectory(storedFile.relativePath());
             Files.deleteIfExists(paths.managedPathForWrite(directory, storedFile.id(), META_SUFFIX));
             Files.deleteIfExists(paths.managedPathForWrite(directory, storedFile.id(), DATA_SUFFIX));
+            invalidateSnapshot(directory.path());
         } catch (Exception e) {
             logger.warn("Unable to roll back newly stored repository file id={}", storedFile.id());
         }
@@ -435,6 +556,19 @@ public final class FileRepositoryService {
     }
 
     private record Candidate(SortKey key, FileRepositoryEntry entry) {
+    }
+
+    private record DirectorySnapshot(
+            List<Candidate> candidates,
+            int directoryCount,
+            int fileCount,
+            long totalSize) {
+    }
+
+    private record CachedDirectorySnapshot(
+            FileTime modified,
+            long loadedAtNanos,
+            DirectorySnapshot snapshot) {
     }
 
     private record SortKey(
