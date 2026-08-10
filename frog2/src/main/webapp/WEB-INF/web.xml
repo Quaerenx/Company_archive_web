@@ -8,7 +8,7 @@
 
     <context-param>
         <param-name>frog2AssetVersion</param-name>
-        <param-value>20260808-unified-login-bg-1</param-value>
+        <param-value>20260810-pagination-security-1</param-value>
     </context-param>
 
     <session-config>

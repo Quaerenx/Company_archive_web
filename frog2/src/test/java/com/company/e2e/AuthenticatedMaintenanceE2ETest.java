@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.util.PasswordUtils;
-import java.io.InputStream;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.URI;
@@ -43,6 +42,8 @@ class AuthenticatedMaintenanceE2ETest {
     private static final String ENABLE_ENV = "FROG2_E2E_WRITE_ENABLED";
     private static final String BASE_URL_ENV = "FROG2_E2E_BASE_URL";
     private static final String DB_CONFIG_ENV = "FROG2_E2E_DB_CONFIG";
+    private static final String SHARED_DB_CONFIG_ENV =
+            "FROG2_E2E_SHARED_DB_CONFIG";
     private static final Pattern CSRF_INPUT = Pattern.compile(
             "name=\\\"_csrf\\\"\\s+value=\\\"([^\\\"]+)\\\"");
     private static final List<String> LOAD_ROUTES = List.of(
@@ -56,7 +57,9 @@ class AuthenticatedMaintenanceE2ETest {
         requireExplicitEnablement();
         URI baseUri = configuredBaseUri();
         Path configPath = configuredDevelopmentDatabase();
-        Properties databaseProperties = loadDatabaseProperties(configPath);
+        Path sharedConfigPath = configuredDatabase(SHARED_DB_CONFIG_ENV);
+        Properties databaseProperties = IsolatedDatabaseConfig.load(
+                configPath, sharedConfigPath);
 
         String suffix = UUID.randomUUID().toString()
                 .replace("-", "")
@@ -187,7 +190,12 @@ class AuthenticatedMaintenanceE2ETest {
     }
 
     private static Path configuredDevelopmentDatabase() throws Exception {
-        Path path = Path.of(requiredEnvironment(DB_CONFIG_ENV))
+        return configuredDatabase(DB_CONFIG_ENV);
+    }
+
+    private static Path configuredDatabase(String environmentName)
+            throws Exception {
+        Path path = Path.of(requiredEnvironment(environmentName))
                 .toRealPath()
                 .normalize();
         Path allowedRoot = Path.of("/opt/frog2-dev").toRealPath();
@@ -204,23 +212,6 @@ class AuthenticatedMaintenanceE2ETest {
             throw new IllegalArgumentException(name + " is required");
         }
         return value.trim();
-    }
-
-    private static Properties loadDatabaseProperties(Path path)
-            throws Exception {
-        Properties properties = new Properties();
-        try (InputStream input = Files.newInputStream(path)) {
-            properties.load(input);
-        }
-        for (String key : List.of(
-                "db.url", "db.user", "db.password", "db.driver")) {
-            String value = properties.getProperty(key);
-            if (value == null || value.isBlank()) {
-                throw new IllegalArgumentException(
-                        "Missing database configuration key: " + key);
-            }
-        }
-        return properties;
     }
 
     private static Connection openDatabase(Properties properties)

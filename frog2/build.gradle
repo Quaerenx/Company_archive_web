@@ -62,7 +62,7 @@ tasks.withType(Test).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform {
-        excludeTags 'e2e', 'e2e-write'
+        excludeTags 'e2e', 'e2e-write', 'e2e-schema', 'e2e-https'
     }
 }
 
@@ -85,6 +85,28 @@ tasks.register('e2eWrite', Test) {
     outputs.upToDateWhen { false }
     useJUnitPlatform {
         includeTags 'e2e-write'
+    }
+}
+
+tasks.register('schemaAudit', Test) {
+    description = 'Runs a metadata-only audit of active database migrations.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    useJUnitPlatform {
+        includeTags 'e2e-schema'
+    }
+}
+
+tasks.register('httpsCookieAudit', Test) {
+    description = 'Verifies hardened Archive session cookies on an explicit HTTPS endpoint.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    useJUnitPlatform {
+        includeTags 'e2e-https'
     }
 }
 

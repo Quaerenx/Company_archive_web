@@ -33,6 +33,7 @@ class SecurityHeadersFilterTest {
 
         String csp = headers.get("Content-Security-Policy");
         assertFalse(csp.contains("code.jquery.com"));
+        assertFalse(csp.contains("'unsafe-inline'"));
         assertTrue(csp.contains("https://cdn.jsdelivr.net"));
         assertTrue(csp.contains("https://cdnjs.cloudflare.com"));
         assertTrue(chained.get());

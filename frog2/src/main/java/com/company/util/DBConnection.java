@@ -195,7 +195,15 @@ public class DBConnection {
             logger.info("Connection Pool 종료 시작...");
             logger.info("최종 통계: {}", getPoolStats());
             dataSource.close();
+            dataSource = null;
             logger.info("Connection Pool 종료 완료");
+        }
+        try {
+            int deregistered = JdbcDriverLifecycle.deregisterDrivers(
+                    DBConnection.class.getClassLoader());
+            logger.info("JDBC Driver 해제 완료 - Count: {}", deregistered);
+        } catch (SQLException exception) {
+            logger.warn("JDBC Driver 해제 중 오류가 발생했습니다.", exception);
         }
     }
 }

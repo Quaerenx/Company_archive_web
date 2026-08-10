@@ -55,15 +55,15 @@ public class PoolMonitorServlet extends HttpServlet {
         out.println("<html><head>");
         out.println("<meta charset='UTF-8'>");
         out.println("<title>Connection Pool Monitor</title>");
-        out.println("<style>");
-        out.println("body { font-family: Arial; margin: 20px; background: #f5f5f5; }");
-        out.println(".container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }");
-        out.println("h1 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }");
-        out.println(".test-result { padding: 10px; margin-top: 20px; border-radius: 4px; }");
-        out.println(".success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }");
-        out.println(".error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }");
-        out.println(".refresh-btn { background: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }");
-        out.println("</style>");
+        out.println("<link rel='stylesheet' href='"
+                + request.getContextPath()
+                + "/resources/css/tokens.css'>");
+        out.println("<link rel='stylesheet' href='"
+                + request.getContextPath()
+                + "/resources/css/base.css'>");
+        out.println("<link rel='stylesheet' href='"
+                + request.getContextPath()
+                + "/resources/css/pages/pool_monitor.css'>");
         out.println("</head><body>");
         out.println("<div class='container'>");
         out.println("<h1>🔧 HikariCP Connection Pool 모니터</h1>");
@@ -93,13 +93,15 @@ public class PoolMonitorServlet extends HttpServlet {
         }
         
         // 새로고침 버튼
-        out.println("<br><button class='refresh-btn' onclick='location.reload()'>🔄 새로고침</button>");
+        out.println("<br><button type='button' class='refresh-btn' id='pool-refresh'>🔄 새로고침</button>");
         
-        out.println("<p style='margin-top: 30px; color: #666; font-size: 12px;'>");
+        out.println("<p class='last-updated'>");
         out.println("마지막 갱신: " + new java.util.Date());
         out.println("</p>");
         
         out.println("</div>");
+        out.println("<script src='" + request.getContextPath()
+                + "/resources/js/pages/pool_monitor.js'></script>");
         out.println("</body></html>");
     }
 }
