@@ -3,6 +3,7 @@ package com.company.filerepo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,6 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -150,10 +153,23 @@ class FileRepositoryServiceTest {
         FileRepositoryListing third = service.list("", second.getNextCursor(), 2);
 
         assertEquals(List.of("alpha", "Bravo"), names(first));
+        assertEquals(1, first.getCurrentPage());
+        assertEquals(3, first.getTotalPages());
+        assertEquals(5, first.getTotalCount());
+        assertFalse(first.isHasPrevious());
+        assertNull(first.getPreviousCursor());
         assertTrue(first.isHasNext());
         assertEquals(List.of("charlie", "delta"), names(second));
+        assertEquals(2, second.getCurrentPage());
+        assertEquals(3, second.getTotalPages());
+        assertTrue(second.isHasPrevious());
+        assertNull(second.getPreviousCursor());
         assertTrue(second.isHasNext());
         assertEquals(List.of("Echo"), names(third));
+        assertEquals(3, third.getCurrentPage());
+        assertEquals(3, third.getTotalPages());
+        assertTrue(third.isHasPrevious());
+        assertEquals(first.getNextCursor(), third.getPreviousCursor());
         assertFalse(third.isHasNext());
         assertEquals(1, service.snapshotScanCount());
         assertEquals(5, first.getDirectoryCount());
@@ -202,6 +218,59 @@ class FileRepositoryServiceTest {
     }
 
     @Test
+    void nextUploadQuarantinesStaleFilesFromAnInterruptedPublish()
+            throws Exception {
+        String orphanId = "1".repeat(32);
+        Path orphanData = managedPath(orphanId, "data");
+        Path uploadTemp = root.resolve(".frog2-upload-stale.tmp");
+        Path metadataTemp = root.resolve(".frog2-meta-stale.tmp");
+        Files.writeString(orphanData, "orphaned data");
+        Files.writeString(uploadTemp, "partial upload");
+        Files.writeString(metadataTemp, "partial metadata");
+        FileTime stale = FileTime.from(
+                Instant.now().minus(Duration.ofHours(2)));
+        Files.setLastModifiedTime(orphanData, stale);
+        Files.setLastModifiedTime(uploadTemp, stale);
+        Files.setLastModifiedTime(metadataTemp, stale);
+
+        byte[] content = "new safe upload".getBytes(StandardCharsets.UTF_8);
+        var validated = service.validateUpload(
+                "new.txt", "text/plain", content.length);
+        service.store(
+                "", validated, content.length,
+                new ByteArrayInputStream(content));
+
+        assertFalse(Files.exists(orphanData));
+        assertFalse(Files.exists(uploadTemp));
+        assertFalse(Files.exists(metadataTemp));
+        Path quarantine = root.resolve(".frog2-quarantine");
+        assertTrue(Files.isDirectory(quarantine));
+        try (var files = Files.list(quarantine)) {
+            assertEquals(3, files.count());
+        }
+        assertEquals(1, service.list("").getFileCount());
+    }
+
+    @Test
+    void nextUploadDoesNotQuarantineAFreshUnpublishedDataFile()
+            throws Exception {
+        String activeId = "2".repeat(32);
+        Path activeData = managedPath(activeId, "data");
+        Files.writeString(activeData, "recent unpublished data");
+
+        byte[] content = "new safe upload".getBytes(StandardCharsets.UTF_8);
+        var validated = service.validateUpload(
+                "new.txt", "text/plain", content.length);
+        service.store(
+                "", validated, content.length,
+                new ByteArrayInputStream(content));
+
+        assertTrue(Files.exists(activeData));
+        assertFalse(Files.exists(root.resolve(".frog2-quarantine")));
+        assertEquals(1, service.list("").getFileCount());
+    }
+
+    @Test
     void rejectsMalformedRepositoryCursor() {
         FileRepositoryException error = assertThrows(
                 FileRepositoryException.class,
@@ -209,6 +278,27 @@ class FileRepositoryServiceTest {
 
         assertEquals(400, error.getHttpStatus());
         assertEquals("invalid_cursor", error.getCode());
+    }
+
+    @Test
+    void laterSortingEntryDoesNotDuplicateTheCursorBoundary()
+            throws Exception {
+        for (String name : List.of("alpha", "bravo", "charlie", "delta")) {
+            Files.createDirectory(root.resolve(name));
+        }
+        FileRepositoryListing first = service.list("", null, 2);
+
+        Files.createDirectory(root.resolve("zulu"));
+        Files.setLastModifiedTime(
+                root,
+                FileTime.fromMillis(System.currentTimeMillis() + 2_000));
+        FileRepositoryListing second = service.list(
+                "", first.getNextCursor(), 2);
+
+        assertEquals(List.of("alpha", "bravo"), names(first));
+        assertEquals(List.of("charlie", "delta"), names(second));
+        assertFalse(names(second).stream().anyMatch(names(first)::contains));
+        assertTrue(second.isHasNext());
     }
 
     private static List<String> names(FileRepositoryListing listing) {

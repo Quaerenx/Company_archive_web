@@ -477,6 +477,7 @@ body.ui-system .content-shell {
     inset-block-start: var(--space-16);
     inset-inline-end: var(--space-16);
     max-block-size: calc(100vh - var(--space-32));
+    max-block-size: calc(100dvh - var(--space-32));
     max-inline-size: min(380px, calc(100vw - var(--space-32)));
     overflow-y: auto;
     pointer-events: none;
@@ -554,6 +555,14 @@ body.ui-system .content-shell {
 .ui-system .ui-table-wrap {
     overflow-x: auto;
     overscroll-behavior-inline: contain;
+    scrollbar-color: var(--color-border-strong) var(--color-surface-subtle);
+    scrollbar-width: thin;
+}
+
+.ui-system .ui-table-wrap[tabindex="0"]:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 .ui-system .ui-table {
@@ -648,6 +657,81 @@ body.ui-dialog-open {
     border-color: var(--color-primary);
     color: var(--color-on-primary);
     font-weight: 600;
+}
+
+.ui-system .ui-table-footer {
+    align-items: center;
+    background: var(--color-surface);
+    border-block-start: 1px solid var(--color-border);
+    box-sizing: border-box;
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+    min-block-size: 48px;
+    padding: var(--space-8) var(--space-16);
+}
+
+.ui-system .ui-table-footer__count {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+}
+
+.ui-system .ui-table-footer__count strong {
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.ui-system .ui-table-pagination {
+    align-items: center;
+    display: flex;
+    gap: var(--space-4);
+}
+
+.ui-system .ui-table-pagination__control {
+    align-items: center;
+    background: transparent;
+    block-size: var(--control-height-md);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    display: inline-flex;
+    font-size: var(--font-size-lg);
+    inline-size: var(--control-height-md);
+    justify-content: center;
+    line-height: 1;
+    text-decoration: none;
+    transition:
+        background-color var(--motion-fast) var(--motion-ease),
+        border-color var(--motion-fast) var(--motion-ease),
+        color var(--motion-fast) var(--motion-ease);
+}
+
+.ui-system .ui-table-pagination__control:not(.is-disabled):hover {
+    background: var(--color-surface-subtle);
+    border-color: var(--color-border);
+    color: var(--color-text-strong);
+    text-decoration: none;
+}
+
+.ui-system .ui-table-pagination__control:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.ui-system .ui-table-pagination__control.is-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.ui-system .ui-table-pagination__position {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+    min-inline-size: 48px;
+    text-align: center;
 }
 
 @keyframes frog2-ui-spin {

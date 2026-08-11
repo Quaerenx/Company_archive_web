@@ -130,14 +130,13 @@
         outline-offset: 2px;
     }
 
-	.maintenance-history .history-meta {
-	    display: flex;
-	    align-items: center; /* 수직 중앙 정렬로 변경하여 안정감을 줍니다. */
-		    margin-bottom: var(--space-16);
-	    flex-wrap: wrap;
-		    gap: var(--space-16); /* 간격을 조금 더 확보합니다. */
-	}
-
+    .maintenance-history .history-meta {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-16);
+        margin-bottom: var(--space-16);
+    }
 
     .maintenance-history .inspection-date {
         font-size: var(--font-size-md);
@@ -152,42 +151,48 @@
         color: currentColor;
     }
 
-	.maintenance-history .inspector-info {
-	    margin-left: auto;
-	    text-align: right;
-	    color: var(--color-text-muted);
-		    font-size: var(--font-size-sm);
-	}
+    .maintenance-history .inspector-info {
+        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        margin-left: auto;
+        text-align: right;
+    }
 
     .maintenance-history .inspector-name {
         font-weight: 500;
         color: var(--color-text);
     }
 
-    .maintenance-history .history-details {
+    .maintenance-history .history-facts {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--space-16);
-        margin-bottom: var(--space-16);
+        gap: var(--space-8) var(--space-32);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: 0;
+        padding: 0;
     }
 
-    .maintenance-history .detail-group {
-        display: flex;
-        justify-content: space-between;
+    .maintenance-history .history-fact {
         align-items: center;
+        display: grid;
+        gap: var(--space-12);
+        grid-template-columns: max-content minmax(0, 1fr);
+        min-width: 0;
         padding: var(--space-8) 0;
-        border-bottom: 1px solid var(--color-surface-subtle);
     }
 
-    .maintenance-history .detail-label {
-        font-weight: 500;
+    .maintenance-history .history-fact dt {
         color: var(--color-text-muted);
         font-size: var(--font-size-sm);
+        font-weight: 500;
+        margin: 0;
     }
 
-    .maintenance-history .detail-value {
+    .maintenance-history .history-fact dd {
         color: var(--color-text);
         font-weight: 500;
+        margin: 0;
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 
     .maintenance-history .version-tag {
@@ -204,31 +209,25 @@
         background: var(--color-surface-muted);
         border: 0;
         border-radius: var(--radius-lg);
-        padding: var(--space-16);
+        display: grid;
+        gap: var(--space-8);
+        inline-size: 100%;
         margin-top: var(--space-16);
-        color: var(--color-text);
-        line-height: 1.6;
-        font-size: var(--font-size-sm);
-        max-inline-size: var(--measure-wide);
-        white-space: pre-wrap;
+        padding: var(--space-16);
     }
 
-	.maintenance-history .note-label {
-	    font-weight: 600;
-	    color: var(--color-text-muted);
-		    margin-bottom: var(--space-4);
-	    display: flex;
-	    align-items: center;
-		    gap: var(--space-8);
-	    white-space: pre-wrap;
-	}
+    .maintenance-history .note-label {
+        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+    }
 
-    .maintenance-history .history-actions {
-        display: flex;
-        gap: var(--space-8);
-        justify-content: flex-end;
-        margin-top: var(--space-16);
-        flex-wrap: wrap;
+    .maintenance-history .note-content {
+        color: var(--color-text);
+        font-size: var(--font-size-sm);
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
     }
 
     .maintenance-history .btn-edit {
@@ -332,20 +331,56 @@
         }
 
         .maintenance-history .inspector-info {
+            margin-left: 0;
             text-align: left;
         }
 
-        .maintenance-history .history-details {
+        .maintenance-history .history-facts {
             grid-template-columns: 1fr;
-        }
-
-        .maintenance-history .history-actions {
-            justify-content: center;
         }
     }
 
     /* 차트 카드 여백 보정 */
 .maintenance-history .usage-chart-wrap { padding: var(--space-16) var(--space-20) var(--space-20); }
+.maintenance-history .chart-summary {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    margin: 0 0 var(--space-12);
+}
+
+.maintenance-history .chart-data-details {
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-16);
+    padding-top: var(--space-12);
+}
+
+.maintenance-history .chart-data-details summary {
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    min-block-size: var(--control-height-md);
+    padding-block: var(--space-12);
+}
+
+.maintenance-history .chart-data-details summary:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.maintenance-history .chart-data-table-wrap {
+    margin-top: var(--space-8);
+}
+
+.maintenance-history .chart-data-table caption {
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    padding: var(--space-12);
+    text-align: left;
+}
 .maintenance-history .chart-note { color: var(--color-text-muted); font-size: var(--font-size-xs); margin: var(--space-4) 0 var(--space-8); }
 .maintenance-history .history-chart-container {
     margin-bottom: var(--space-16);

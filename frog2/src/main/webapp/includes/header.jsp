@@ -11,8 +11,8 @@
     <%@ include file="/WEB-INF/includes/favicon.jspf" %>
     <!-- 공통 스타일시트 -->
     <%@ include file="/WEB-INF/includes/core_styles.jspf" %>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Font Awesome Free 5.15.4 (self-hosted; see resources/vendor/THIRD_PARTY_NOTICES.md) -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/vendor/fontawesome-free/5.15.4/css/all.min.css?v=${frog2AssetVersion}">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/pages/header.css?v=${frog2AssetVersion}">
     <c:if test="${not empty pageCss}">
         <c:forTokens items="${pageCss}" delims="," var="stylesheet">

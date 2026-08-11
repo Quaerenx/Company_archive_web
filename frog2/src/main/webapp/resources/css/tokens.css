@@ -45,6 +45,9 @@
     --color-primary: var(--palette-brand);
     --color-primary-hover: var(--palette-brand-hover);
     --color-primary-subtle: var(--palette-brand-subtle);
+    --color-chart-usage: var(--palette-brand);
+    --color-chart-used: var(--palette-success);
+    --color-chart-capacity: var(--palette-warning);
     --color-secondary: var(--palette-text-muted);
     --color-secondary-hover: var(--palette-text);
     --color-link: var(--palette-brand);
@@ -97,6 +100,11 @@
     /* Login and authenticated pages share one quiet graphite mist. */
     --color-login-background: var(--color-ambient-background);
     --color-login-particle: var(--color-ambient-particle);
+    --color-login-card: rgba(248, 249, 250, 0.94);
+    --color-login-card-border: rgba(255, 255, 255, 0.72);
+    --color-login-halo: rgba(255, 255, 255, 0.48);
+    --color-login-action: var(--palette-brand-hover);
+    --color-login-action-hover: var(--palette-text-strong);
     --color-ambient-background: var(--palette-ambient);
     --color-ambient-channel: rgba(239, 242, 245, 0.90);
     --color-ambient-glow-light: rgba(255, 255, 255, 0.35);
@@ -192,7 +200,9 @@
     --shadow-sm: none;
     --shadow-md: 0 2px 6px rgba(32, 37, 43, 0.10);
     --shadow-lg: 0 12px 30px rgba(32, 37, 43, 0.16);
+    --shadow-login: 0 18px 50px rgba(32, 37, 43, 0.12);
     --shadow-header: none;
+    --login-card-blur: 12px;
 
     /* One root layer scale prevents local dialogs from falling behind navigation. */
     --z-background: -1;

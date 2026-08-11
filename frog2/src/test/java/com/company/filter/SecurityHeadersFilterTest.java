@@ -22,7 +22,7 @@ class SecurityHeadersFilterTest {
     private static final Pattern MAX_AGE = Pattern.compile("(?:^|,\\s*)max-age=(\\d+)(?:,|$)");
 
     @Test
-    void cspExcludesUnusedJqueryOriginAndKeepsRequiredOrigins() throws Exception {
+    void cspAllowsOnlySelfHostedScriptsStylesAndFonts() throws Exception {
         Map<String, String> headers = new HashMap<>();
         AtomicBoolean chained = new AtomicBoolean();
         HttpServletRequest request = request("/frog2/login", null);
@@ -34,8 +34,10 @@ class SecurityHeadersFilterTest {
         String csp = headers.get("Content-Security-Policy");
         assertFalse(csp.contains("code.jquery.com"));
         assertFalse(csp.contains("'unsafe-inline'"));
-        assertTrue(csp.contains("https://cdn.jsdelivr.net"));
-        assertTrue(csp.contains("https://cdnjs.cloudflare.com"));
+        assertFalse(csp.contains("https://"));
+        assertTrue(csp.contains("script-src 'self'"));
+        assertTrue(csp.contains("style-src 'self'"));
+        assertTrue(csp.contains("font-src 'self' data:"));
         assertTrue(chained.get());
     }
 

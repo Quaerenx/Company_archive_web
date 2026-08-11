@@ -7,11 +7,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
@@ -36,6 +38,7 @@ public final class FileRepositoryService {
     private static final Logger logger = LoggerFactory.getLogger(FileRepositoryService.class);
     private static final String DATA_SUFFIX = ".data";
     private static final String META_SUFFIX = ".meta";
+    private static final String QUARANTINE_DIRECTORY = ".frog2-quarantine";
     private static final int MAX_METADATA_BYTES = 8 * 1024;
     static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_CURSOR_BYTES = 2048;
@@ -43,7 +46,13 @@ public final class FileRepositoryService {
     private static final int MAX_CACHED_ENTRIES = 50_000;
     private static final long MAX_CACHE_AGE_NANOS =
             Duration.ofSeconds(60).toNanos();
+    private static final Duration INTERRUPTED_UPLOAD_GRACE =
+            Duration.ofHours(1);
     private static final Pattern METADATA_FILE = Pattern.compile("^\\.frog2-([0-9a-f]{32})\\.meta$");
+    private static final Pattern MANAGED_FILE = Pattern.compile(
+            "^\\.frog2-([0-9a-f]{32})\\.(data|meta)$");
+    private static final Pattern UPLOAD_TEMP_FILE = Pattern.compile(
+            "^\\.frog2-(?:upload|meta)-.+\\.tmp$");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)
             .withZone(ZoneId.systemDefault());
@@ -82,6 +91,7 @@ public final class FileRepositoryService {
         int startIndex = firstCandidateAfter(candidates, cursor);
         int endIndex = Math.min(startIndex + pageSize, candidates.size());
         List<Candidate> visible = candidates.subList(startIndex, endIndex);
+        boolean hasPrevious = startIndex > 0;
         boolean hasNext = endIndex < candidates.size();
         List<FileRepositoryEntry> entries = visible.stream()
                 .map(Candidate::entry)
@@ -89,6 +99,13 @@ public final class FileRepositoryService {
         String nextCursor = hasNext && !visible.isEmpty()
                 ? encodeCursor(visible.getLast().key())
                 : null;
+        int previousStartIndex = Math.max(0, startIndex - pageSize);
+        String previousCursor = hasPrevious && previousStartIndex > 0
+                ? encodeCursor(candidates.get(previousStartIndex - 1).key())
+                : null;
+        int totalCount = candidates.size();
+        int totalPages = Math.max(1, (totalCount + pageSize - 1) / pageSize);
+        int currentPage = Math.min(totalPages, (startIndex / pageSize) + 1);
         return new FileRepositoryListing(
                 directory.relativePath(),
                 parentPath(directory.relativePath()),
@@ -97,8 +114,13 @@ public final class FileRepositoryService {
                 snapshot.directoryCount(),
                 snapshot.fileCount(),
                 formatSize(snapshot.totalSize()),
+                previousCursor,
                 nextCursor,
+                hasPrevious,
                 hasNext,
+                currentPage,
+                totalPages,
+                totalCount,
                 pageSize);
     }
 
@@ -249,6 +271,7 @@ public final class FileRepositoryService {
     public StoredFile store(String rawPath, ValidatedFile validated, long declaredSize, InputStream input)
             throws FileRepositoryException {
         ResolvedDirectory directory = paths.resolveExistingDirectory(rawPath);
+        quarantineStaleInterruptedUploads(directory);
         String storageId = UUID.randomUUID().toString().replace("-", "");
         Path dataPath = paths.managedPathForWrite(directory, storageId, DATA_SUFFIX);
         Path metadataPath = paths.managedPathForWrite(directory, storageId, META_SUFFIX);
@@ -258,6 +281,7 @@ public final class FileRepositoryService {
         try {
             uploadTemp = Files.createTempFile(directory.path(), ".frog2-upload-", ".tmp");
             CopyResult copied = copyWithLimit(input, uploadTemp);
+            forceFile(uploadTemp);
             if (copied.size() != declaredSize) {
                 throw new FileRepositoryException(400, "size_mismatch", "Uploaded file size did not match request metadata");
             }
@@ -276,6 +300,7 @@ public final class FileRepositoryService {
             try (OutputStream output = Files.newOutputStream(metadataTemp)) {
                 metadata.store(output, "frog2 file metadata");
             }
+            forceFile(metadataTemp);
             atomicMove(metadataTemp, metadataPath);
             metadataTemp = null;
             invalidateSnapshot(directory.path());
@@ -286,6 +311,122 @@ public final class FileRepositoryService {
         } catch (IOException e) {
             cleanup(uploadTemp, metadataTemp, dataMoved ? dataPath : null, metadataPath);
             throw new FileRepositoryException(500, "repository_io_error", "Unable to store uploaded file", e);
+        }
+    }
+
+    private void quarantineStaleInterruptedUploads(
+            ResolvedDirectory directory) throws FileRepositoryException {
+        Instant cutoff = Instant.now().minus(INTERRUPTED_UPLOAD_GRACE);
+        List<Path> candidates = new ArrayList<>();
+        try (var children = Files.list(directory.path())) {
+            var iterator = children.iterator();
+            while (iterator.hasNext()) {
+                Path child = iterator.next();
+                if (Files.isSymbolicLink(child)
+                        || !Files.isRegularFile(
+                                child, LinkOption.NOFOLLOW_LINKS)
+                        || !isInterruptedUpload(directory, child)
+                        || !Files.getLastModifiedTime(
+                                child, LinkOption.NOFOLLOW_LINKS)
+                                .toInstant()
+                                .isBefore(cutoff)) {
+                    continue;
+                }
+                candidates.add(child);
+            }
+        } catch (IOException exception) {
+            throw new FileRepositoryException(
+                    500,
+                    "repository_recovery_failed",
+                    "Unable to inspect interrupted repository uploads",
+                    exception);
+        }
+        if (candidates.isEmpty()) {
+            return;
+        }
+
+        Path quarantine = ensureQuarantineDirectory(directory);
+        try {
+            for (Path candidate : candidates) {
+                if (!Files.exists(candidate, LinkOption.NOFOLLOW_LINKS)
+                        || !isInterruptedUpload(directory, candidate)
+                        || !Files.getLastModifiedTime(
+                                candidate, LinkOption.NOFOLLOW_LINKS)
+                                .toInstant()
+                                .isBefore(cutoff)) {
+                    continue;
+                }
+                String targetName = candidate.getFileName()
+                        + "."
+                        + UUID.randomUUID().toString().replace("-", "")
+                        + ".quarantine";
+                atomicMove(candidate, quarantine.resolve(targetName));
+                logger.warn(
+                        "Quarantined stale interrupted repository file {}",
+                        candidate.getFileName());
+            }
+        } catch (IOException exception) {
+            throw new FileRepositoryException(
+                    500,
+                    "repository_recovery_failed",
+                    "Unable to quarantine interrupted repository uploads",
+                    exception);
+        }
+    }
+
+    private boolean isInterruptedUpload(
+            ResolvedDirectory directory, Path candidate)
+            throws FileRepositoryException {
+        String name = candidate.getFileName().toString();
+        if (UPLOAD_TEMP_FILE.matcher(name).matches()) {
+            return true;
+        }
+        Matcher managed = MANAGED_FILE.matcher(name);
+        if (!managed.matches()) {
+            return false;
+        }
+        String otherSuffix = "data".equals(managed.group(2))
+                ? META_SUFFIX
+                : DATA_SUFFIX;
+        Path companion = paths.managedPathForWrite(
+                directory, managed.group(1), otherSuffix);
+        return Files.isSymbolicLink(companion)
+                || !Files.isRegularFile(
+                        companion, LinkOption.NOFOLLOW_LINKS);
+    }
+
+    private static Path ensureQuarantineDirectory(
+            ResolvedDirectory directory) throws FileRepositoryException {
+        Path quarantine = directory.path()
+                .resolve(QUARANTINE_DIRECTORY)
+                .normalize();
+        if (!directory.path().equals(quarantine.getParent())) {
+            throw new FileRepositoryException(
+                    500,
+                    "repository_recovery_failed",
+                    "Repository quarantine path is invalid");
+        }
+        try {
+            if (Files.notExists(quarantine, LinkOption.NOFOLLOW_LINKS)) {
+                Files.createDirectory(quarantine);
+            }
+            if (Files.isSymbolicLink(quarantine)
+                    || !Files.isDirectory(
+                            quarantine, LinkOption.NOFOLLOW_LINKS)) {
+                throw new FileRepositoryException(
+                        500,
+                        "repository_recovery_failed",
+                        "Repository quarantine path is unsafe");
+            }
+            return quarantine;
+        } catch (FileRepositoryException exception) {
+            throw exception;
+        } catch (IOException exception) {
+            throw new FileRepositoryException(
+                    500,
+                    "repository_recovery_failed",
+                    "Unable to create repository quarantine",
+                    exception);
         }
     }
 
@@ -497,6 +638,13 @@ public final class FileRepositoryService {
             Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException e) {
             Files.move(source, target);
+        }
+    }
+
+    private static void forceFile(Path path) throws IOException {
+        try (FileChannel channel = FileChannel.open(
+                path, StandardOpenOption.WRITE)) {
+            channel.force(true);
         }
     }
 

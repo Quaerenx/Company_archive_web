@@ -38,8 +38,11 @@
             </c:forEach>
         </nav>
 
-        <div class="table-wrapper ui-table-wrap">
+        <div class="table-wrapper ui-table-wrap"
+             data-ui-scroll-region
+             data-ui-scroll-label="자료실 파일 및 폴더 표">
             <table class="file-table ui-table">
+                <caption class="sr-only">자료실 파일 및 폴더 목록</caption>
                 <thead>
                     <tr>
                         <th scope="col">이름</th>
@@ -98,31 +101,34 @@
             </table>
         </div>
 
+        <c:if test="${listing.hasPrevious}">
+            <c:url var="filePreviousPageUrl" value="/file-repository">
+                <c:param name="path" value="${listing.currentPath}" />
+                <c:if test="${not empty listing.previousCursor}">
+                    <c:param name="cursor" value="${listing.previousCursor}" />
+                </c:if>
+            </c:url>
+        </c:if>
+        <c:if test="${listing.hasNext}">
+            <c:url var="fileNextPageUrl" value="/file-repository">
+                <c:param name="path" value="${listing.currentPath}" />
+                <c:param name="cursor" value="${listing.nextCursor}" />
+            </c:url>
+        </c:if>
+        <t:tableFooter totalCount="${listing.totalCount}"
+                       itemLabel="항목"
+                       currentPage="${listing.currentPage}"
+                       totalPages="${listing.totalPages}"
+                       previousUrl="${filePreviousPageUrl}"
+                       nextUrl="${fileNextPageUrl}"
+                       paginationLabel="자료실 페이지" />
+
         <div class="stats">
             폴더 <strong><c:out value="${listing.directoryCount}" /></strong>개,
             파일 <strong><c:out value="${listing.fileCount}" /></strong>개,
             합계 <strong><c:out value="${listing.totalSizeText}" /></strong>
         </div>
 
-        <c:if test="${listing.hasNext or not empty param.cursor}">
-            <nav class="file-pagination" aria-label="자료실 페이지 이동">
-                <c:if test="${not empty param.cursor}">
-                    <c:url var="firstPageUrl" value="/file-repository">
-                        <c:param name="path" value="${listing.currentPath}" />
-                    </c:url>
-                    <a class="ui-button button--secondary button--sm"
-                       href="<c:out value='${firstPageUrl}' />">처음으로</a>
-                </c:if>
-                <c:if test="${listing.hasNext}">
-                    <c:url var="nextPageUrl" value="/file-repository">
-                        <c:param name="path" value="${listing.currentPath}" />
-                        <c:param name="cursor" value="${listing.nextCursor}" />
-                    </c:url>
-                    <a class="ui-button button--secondary button--sm"
-                       href="<c:out value='${nextPageUrl}' />">다음 <c:out value="${listing.pageSize}" />개</a>
-                </c:if>
-            </nav>
-        </c:if>
     </section>
 </div>
 

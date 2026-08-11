@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 class MaintenanceFormAssetContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
     private static final Path PAGE_SCRIPTS = WEBAPP.resolve("resources/js/pages");
+    private static final Path PAGE_STYLES = WEBAPP.resolve("resources/css/pages");
 
     @Test
     void addAndEditPagesUseOneExplicitFormContract() throws Exception {
@@ -63,11 +64,60 @@ class MaintenanceFormAssetContractTest {
 
         assertTrue(history.contains("typeof window.Chart !== 'function'"));
         assertTrue(history.contains("new window.Chart("));
+        assertTrue(history.contains("usage: cssColor('--color-chart-usage')"));
+        assertTrue(history.contains("used: cssColor('--color-chart-used')"));
+        assertTrue(history.contains("capacity: cssColor('--color-chart-capacity')"));
+        assertEquals(4, countOccurrences(history, "chartColors.usage"));
+        assertEquals(4, countOccurrences(history, "chartColors.used"));
+        assertEquals(4, countOccurrences(history, "chartColors.capacity"));
+        assertTrue(history.contains("borderDash: [6, 4]"));
+        assertTrue(history.contains("pointStyle: 'circle'"));
+        assertTrue(history.contains("pointStyle: 'triangle'"));
+        assertTrue(history.contains("pointStyle: 'rectRot'"));
         assertTrue(history.contains("prefers-reduced-motion: reduce"));
         assertTrue(history.contains("typeof item.animate === 'function'"));
         assertFalse(history.contains("item.addEventListener('click'"));
         assertTrue(readWebapp("maintenance/maintenance_history.jsp")
                 .contains("<a class=\"history-item\""));
+    }
+
+    @Test
+    void historyRecordsUseAnAlwaysExpandedThreeStageHierarchy() throws Exception {
+        String page = readWebapp("maintenance/maintenance_history.jsp");
+        String styles = Files.readString(PAGE_STYLES.resolve("maintenance_history.css"));
+
+        int record = page.indexOf("<a class=\"history-item\"");
+        int meta = page.indexOf("class=\"history-meta\"", record);
+        int facts = page.indexOf("class=\"history-facts\"", meta);
+        int note = page.indexOf("class=\"history-note\"", facts);
+        assertTrue(record >= 0);
+        assertTrue(meta > record);
+        assertTrue(facts > meta);
+        assertTrue(note > facts);
+
+        assertTrue(page.contains("<dl class=\"history-facts\">"));
+        assertEquals(2, countOccurrences(page, "<div class=\"history-fact\">"));
+        assertEquals(2, countOccurrences(page, "<dt>"));
+        assertEquals(2, countOccurrences(page, "<dd>"));
+        assertTrue(page.contains("<div class=\"note-content\">"));
+        assertTrue(page.contains("<c:out value=\"${record.note}\" />"));
+        assertFalse(page.contains("history-details"));
+        assertFalse(page.contains("detail-group"));
+        assertFalse(page.contains("detail-label"));
+        assertFalse(page.contains("detail-value"));
+        assertFalse(page.contains("history-actions"));
+        assertFalse(page.contains("fa-sticky-note"));
+
+        assertTrue(styles.contains(".maintenance-history .history-facts"));
+        assertTrue(styles.contains(".maintenance-history .history-fact"));
+        assertTrue(styles.contains(".maintenance-history .note-content"));
+        assertTrue(styles.contains("inline-size: 100%;"));
+        assertTrue(styles.contains("overflow-wrap: anywhere;"));
+        assertFalse(styles.contains("max-inline-size: var(--measure-wide);"));
+        assertTrue(styles.matches(
+                "(?s).*@media \\(max-width: 768px\\).*"
+                        + "\\.maintenance-history \\.history-facts\\s*\\{[^}]*"
+                        + "grid-template-columns:\\s*1fr;.*"));
     }
 
     private static String readWebapp(String relativePath) throws Exception {

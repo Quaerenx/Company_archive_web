@@ -6,7 +6,7 @@
 <c:set var="pageTitle" value="정기점검 이력 - ${fn:escapeXml(customerName)}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
 <c:set var="pageCss" value="/resources/css/pages/maintenance_history.css" scope="request" />
-<c:set var="vendorScript" value="https://cdn.jsdelivr.net/npm/chart.js@4.4.4" scope="request" />
+<c:set var="vendorScript" value="${pageContext.request.contextPath}/resources/vendor/chart.js/4.4.4/chart.umd.min.js?v=${frog2AssetVersion}" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/maintenance_history.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
@@ -38,7 +38,7 @@
     <!-- 라이선스 사용률 추이 차트 -->
     <div class="history-container history-chart-container">
         <div class="history-header">
-            <div class="history-title"><i class="fas fa-chart-line"></i> 라이선스 사용률 추이</div>
+            <div class="history-title" id="licenseUsageChartTitle"><i class="fas fa-chart-line"></i> 라이선스 사용률 추이</div>
             <div class="record-count">
                 <c:choose>
                     <c:when test="${not empty usageSeries}">데이터: ${fn:length(usageSeries)}건</c:when>
@@ -47,6 +47,32 @@
             </div>
         </div>
         <div class="usage-chart-wrap">
+            <c:if test="${not empty usageSeries}">
+                <c:set var="usagePointCount" value="${fn:length(usageSeries)}" />
+                <c:set var="latestPoint" value="${usageSeries[usagePointCount - 1]}" />
+                <c:if test="${usagePointCount > 1}">
+                    <c:set var="previousPoint" value="${usageSeries[usagePointCount - 2]}" />
+                </c:if>
+                <p class="chart-summary" id="licenseUsageChartSummary">
+                    최근 점검 <c:out value="${latestPoint.date}" /> 기준
+                    <c:choose>
+                        <c:when test="${latestPoint.pct ne null}">
+                            사용률 <fmt:formatNumber value="${latestPoint.pct}" pattern="0.##" />%
+                        </c:when>
+                        <c:otherwise>사용률 정보 없음</c:otherwise>
+                    </c:choose>
+                    <c:if test="${latestPoint.usedTb ne null}">
+                        · 사용량 <fmt:formatNumber value="${latestPoint.usedTb}" pattern="0.##" />TB
+                    </c:if>
+                    <c:if test="${latestPoint.sizeTb ne null}">
+                        / 전체 <fmt:formatNumber value="${latestPoint.sizeTb}" pattern="0.##" />TB
+                    </c:if>
+                    <c:if test="${usagePointCount > 1 and latestPoint.pct ne null and previousPoint.pct ne null}">
+                        · 이전 점검 대비
+                        <fmt:formatNumber value="${latestPoint.pct - previousPoint.pct}" pattern="+0.##;-0.##" />%p
+                    </c:if>
+                </p>
+            </c:if>
             <div id="licenseUsageSeries" hidden aria-hidden="true">
                 <c:forEach var="pt" items="${usageSeries}">
                     <span data-usage-point
@@ -59,7 +85,13 @@
             </div>
             <c:choose>
                 <c:when test="${not empty usageSeries}">
-                    <canvas id="licenseUsageChart" height="120"></canvas>
+                    <canvas id="licenseUsageChart"
+                            height="120"
+                            role="img"
+                            aria-labelledby="licenseUsageChartTitle"
+                            aria-describedby="licenseUsageChartSummary">
+                        라이선스 사용률 추이를 날짜별로 표시한 선 그래프입니다.
+                    </canvas>
                 </c:when>
                 <c:otherwise>
                     <div class="empty-history usage-chart-empty">
@@ -69,6 +101,34 @@
                     </div>
                 </c:otherwise>
             </c:choose>
+            <c:if test="${not empty usageSeries}">
+                <details class="chart-data-details">
+                    <summary>차트 데이터 표로 보기</summary>
+                    <div class="chart-data-table-wrap ui-table-wrap">
+                        <table class="chart-data-table ui-table">
+                            <caption>라이선스 사용률 추이 상세 데이터</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">점검일</th>
+                                    <th scope="col">사용률(%)</th>
+                                    <th scope="col">사용량(TB)</th>
+                                    <th scope="col">전체 용량(TB)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <c:forEach var="pt" items="${usageSeries}">
+                                    <tr>
+                                        <th scope="row"><c:out value="${pt.date}" /></th>
+                                        <td><c:out value="${pt.pct}" default="-" /></td>
+                                        <td><c:out value="${pt.usedTb}" default="-" /></td>
+                                        <td><c:out value="${pt.sizeTb}" default="-" /></td>
+                                    </tr>
+                                </c:forEach>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            </c:if>
         </div>
     </div>
 
@@ -102,7 +162,7 @@
                 정기점검 이력
             </div>
             <div class="record-count">
-                총 ${records.size()}건의 점검 이력
+                총 <c:out value="${totalCount}" />건의 점검 이력
             </div>
         </div>
 
@@ -130,35 +190,36 @@
                                 </div>
                             </div>
 
-                            <div class="history-details">
-                                <div class="detail-group">
-                                    <span class="detail-label">Vertica 버전</span>
-                                    <span class="detail-value">
+                            <dl class="history-facts">
+                                <div class="history-fact">
+                                    <dt>Vertica 버전</dt>
+                                    <dd>
                                         <c:choose>
                                             <c:when test="${not empty record.verticaVersion}">
                                                 <span class="version-tag ui-badge"><c:out value="${record.verticaVersion}" /></span>
                                             </c:when>
                                             <c:otherwise>-</c:otherwise>
                                         </c:choose>
-                                    </span>
+                                    </dd>
                                 </div>
-                                <div class="detail-group">
-                                    <span class="detail-label">라이선스</span>
-                                    <span class="detail-value">
+                                <div class="history-fact">
+                                    <dt>라이선스</dt>
+                                    <dd>
                                         <c:choose>
                                             <c:when test="${not empty record.licenseSummary}">
                                                 <c:out value="${record.licenseSummary}" />
                                             </c:when>
                                             <c:otherwise>-</c:otherwise>
                                         </c:choose>
-                                    </span>
+                                    </dd>
                                 </div>
-                            </div>
+                            </dl>
                             <c:if test="${not empty record.note}">
-                                <div class="history-note"><div class="note-label"><i class="fas fa-sticky-note"> 점검 내용 및 비고</i>
-                                </div><c:out value="${record.note}" /></div>
+                                <div class="history-note">
+                                    <div class="note-label">점검 내용 및 비고</div>
+                                    <div class="note-content"><c:out value="${record.note}" /></div>
+                                </div>
                             </c:if>
-                            <div class="history-actions"></div>
                         </a>
                     </c:forEach>
                 </c:when>
@@ -176,6 +237,28 @@
                 </c:otherwise>
             </c:choose>
         </div>
+
+        <c:if test="${currentPage > 1}">
+            <c:url var="maintenanceHistoryPreviousUrl" value="/maintenance">
+                <c:param name="view" value="history" />
+                <c:param name="customerName" value="${customerName}" />
+                <c:param name="historyPage" value="${currentPage - 1}" />
+            </c:url>
+        </c:if>
+        <c:if test="${currentPage < totalPages}">
+            <c:url var="maintenanceHistoryNextUrl" value="/maintenance">
+                <c:param name="view" value="history" />
+                <c:param name="customerName" value="${customerName}" />
+                <c:param name="historyPage" value="${currentPage + 1}" />
+            </c:url>
+        </c:if>
+        <t:tableFooter totalCount="${totalCount}"
+                       itemLabel="점검 이력"
+                       currentPage="${currentPage}"
+                       totalPages="${totalPages}"
+                       previousUrl="${maintenanceHistoryPreviousUrl}"
+                       nextUrl="${maintenanceHistoryNextUrl}"
+                       paginationLabel="정기점검 이력 페이지" />
     </div>
 </div>
 
