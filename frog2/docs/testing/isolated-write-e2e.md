@@ -1,0 +1,44 @@
+# Archive isolated write E2E gate
+
+Date: 2026-08-10
+Status: preflight and executable maintenance scenario are prepared; not executed
+
+## Mandatory isolation inputs
+
+The `e2eWrite` task remains disabled unless all of these are explicit:
+
+- `FROG2_E2E_WRITE_ENABLED=true`
+- loopback-only `FROG2_E2E_BASE_URL`
+- a separate `FROG2_E2E_DB_CONFIG`
+- the shared reference `FROG2_E2E_SHARED_DB_CONFIG`
+- `frog2.e2e.isolated=true` in the isolated config
+- different `db.url` values
+- different non-secret `frog2.databaseIdentity` values
+
+Both config files must be distinct regular files below `/opt/frog2-dev`. The identity check prevents query-string or role-option changes from disguising the same database as a different target.
+
+## Prepared executable scenario
+
+`AuthenticatedMaintenanceE2ETest` is tagged `e2e-write` and excluded from normal builds. Once an isolated database and isolated Tomcat are supplied, it performs:
+
+1. temporary owner and attacker creation;
+2. login and CSRF acquisition;
+3. owner create and read;
+4. attacker edit/update/delete rejection;
+5. owner update and delete;
+6. bounded read checks;
+7. cleanup in `finally`.
+
+The runner command is `./gradlew e2eWrite`. It must never be pointed at the shared development/production database.
+
+## Remaining scenario gates
+
+| Scenario | State | Minimum prerequisite |
+| --- | --- | --- |
+| CRUD | prepared | isolated DB and isolated app |
+| unauthorized update/delete | prepared | two isolated test users |
+| transaction rollback | DAO mock contract passes; real E2E pending | isolated DB failure fixture |
+| duplicate submission | pending policy | decide idempotency key or allowed duplicate rule |
+| file metadata + DB recovery | not applicable today | repository is filesystem-only; reassess if DB metadata is introduced |
+
+No real write E2E ran during this work because no approved isolated database/snapshot was supplied.
