@@ -78,7 +78,8 @@ class CustomerPaginationViewContractTest {
         String tag = Files.readString(WEBAPP.resolve("WEB-INF/tags/tableFooter.tag"));
         String styles = Files.readString(WEBAPP.resolve("resources/css/ui-system.css"));
 
-        assertTrue(page.contains("<t:tableFooter totalCount=\"${currentCount}\""));
+        assertTrue(page.contains("<t:tableFooter"));
+        assertFalse(page.contains("totalCount="));
         assertTrue(page.contains("itemLabel=\"고객사\""));
         assertTrue(page.contains("totalPages=\"${totalPages}\""));
         assertFalse(page.contains("totalPages > 1"));
@@ -87,7 +88,11 @@ class CustomerPaginationViewContractTest {
 
         assertTrue(tag.contains("totalPages ge 1 ? totalPages : 1"));
         assertTrue(tag.contains("class=\"ui-table-pagination__position\""));
+        assertFalse(tag.contains("attribute name=\"totalCount\""));
+        assertFalse(tag.contains("ui-table-footer__count"));
         assertTrue(styles.contains(".ui-system .ui-table-footer {"));
+        assertTrue(styles.contains("justify-content: center;"));
+        assertFalse(styles.contains(".ui-system .ui-table-footer__count"));
         assertTrue(styles.contains("min-block-size: 48px;"));
         assertTrue(styles.contains(".ui-system .ui-table-pagination__control {"));
         assertTrue(styles.contains("inline-size: var(--control-height-md);"));

@@ -96,8 +96,7 @@
                             <c:param name="page" value="${currentPage + 1}" />
                         </c:url>
                     </c:if>
-                    <t:tableFooter totalCount="${totalCount}"
-                                   itemLabel="회의록"
+                    <t:tableFooter itemLabel="회의록"
                                    currentPage="${currentPage}"
                                    totalPages="${totalPages}"
                                    previousUrl="${meetingPreviousPageUrl}"

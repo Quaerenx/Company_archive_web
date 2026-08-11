@@ -145,8 +145,7 @@
                 </tbody>
             </table>
         </div>
-        <t:tableFooter totalCount="${monthlyResponses.size()}"
-                       itemLabel="응대 기록"
+        <t:tableFooter itemLabel="응대 기록"
                        currentPage="1"
                        totalPages="1"
                        paginationLabel="월별 고객 응대 페이지" />

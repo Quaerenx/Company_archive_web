@@ -665,22 +665,9 @@ body.ui-dialog-open {
     border-block-start: 1px solid var(--color-border);
     box-sizing: border-box;
     display: flex;
-    gap: var(--space-12);
-    justify-content: space-between;
+    justify-content: center;
     min-block-size: 48px;
     padding: var(--space-8) var(--space-16);
-}
-
-.ui-system .ui-table-footer__count {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-xs);
-    font-variant-numeric: tabular-nums;
-    margin: 0;
-}
-
-.ui-system .ui-table-footer__count strong {
-    color: var(--color-text);
-    font-weight: 500;
 }
 
 .ui-system .ui-table-pagination {

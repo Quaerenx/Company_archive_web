@@ -210,8 +210,7 @@
                     </tbody>
                 </table>
             </div>
-            <t:tableFooter totalCount="${empty vmHosts ? 0 : vmHosts.size()}"
-                           itemLabel="VM 호스트"
+            <t:tableFooter itemLabel="VM 호스트"
                            currentPage="1"
                            totalPages="1"
                            paginationLabel="개인 VM 호스트 페이지" />

@@ -252,8 +252,7 @@
                 <c:param name="historyPage" value="${currentPage + 1}" />
             </c:url>
         </c:if>
-        <t:tableFooter totalCount="${totalCount}"
-                       itemLabel="점검 이력"
+        <t:tableFooter itemLabel="점검 이력"
                        currentPage="${currentPage}"
                        totalPages="${totalPages}"
                        previousUrl="${maintenanceHistoryPreviousUrl}"

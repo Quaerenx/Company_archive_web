@@ -115,8 +115,7 @@
                 <c:param name="cursor" value="${listing.nextCursor}" />
             </c:url>
         </c:if>
-        <t:tableFooter totalCount="${listing.totalCount}"
-                       itemLabel="항목"
+        <t:tableFooter itemLabel="항목"
                        currentPage="${listing.currentPage}"
                        totalPages="${listing.totalPages}"
                        previousUrl="${filePreviousPageUrl}"

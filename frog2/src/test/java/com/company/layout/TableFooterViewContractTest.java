@@ -10,21 +10,23 @@ import org.junit.jupiter.api.Test;
 
 class TableFooterViewContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
-    private static final List<String> DATA_TABLE_PAGES = List.of(
+    private static final List<String> TABLE_FOOTER_PAGES = List.of(
             "customers/customers_list.jsp",
             "meeting/meeting_list.jsp",
             "troubleshooting/troubleshooting_list.jsp",
             "WEB-INF/views/filerepo/list.jsp",
             "mypage/monthly_customer_response.jsp",
             "mypage/mypage.jsp",
-            "vm_hosts/list.jsp");
+            "vm_hosts/list.jsp",
+            "maintenance/maintenance_history.jsp");
 
     @Test
-    void everyDataTableUsesTheSharedAlwaysVisibleFooter() throws Exception {
+    void everyDataTableUsesTheSharedCenteredCountFreeFooter() throws Exception {
         String tag = read("WEB-INF/tags/tableFooter.tag");
 
         assertTrue(tag.contains("class=\"ui-table-footer\""));
-        assertTrue(tag.contains("class=\"ui-table-footer__count\""));
+        assertFalse(tag.contains("class=\"ui-table-footer__count\""));
+        assertFalse(tag.contains("attribute name=\"totalCount\""));
         assertTrue(tag.contains("class=\"ui-table-pagination\""));
         assertTrue(tag.contains("class=\"ui-table-pagination__position\""));
         assertTrue(tag.contains("totalPages ge 1 ? totalPages : 1"));
@@ -32,10 +34,10 @@ class TableFooterViewContractTest {
         assertTrue(tag.contains("aria-label=\"${previousLabel}\""));
         assertTrue(tag.contains("aria-label=\"${nextLabel}\""));
 
-        for (String pagePath : DATA_TABLE_PAGES) {
+        for (String pagePath : TABLE_FOOTER_PAGES) {
             String page = read(pagePath);
-            assertTrue(page.contains("<table"), pagePath);
             assertTrue(page.contains("<t:tableFooter"), pagePath);
+            assertFalse(page.contains("totalCount="), pagePath);
         }
 
         assertFalse(read("meeting/meeting_list.jsp").contains("pagination-container"));
@@ -49,6 +51,8 @@ class TableFooterViewContractTest {
         String styles = read("resources/css/ui-system.css");
 
         assertTrue(styles.contains(".ui-system .ui-table-footer {"));
+        assertTrue(styles.contains("justify-content: center;"));
+        assertFalse(styles.contains(".ui-system .ui-table-footer__count"));
         assertTrue(styles.contains("min-block-size: 48px;"));
         assertTrue(styles.contains(".ui-system .ui-table-pagination__control {"));
         assertTrue(styles.contains("block-size: var(--control-height-md);"));

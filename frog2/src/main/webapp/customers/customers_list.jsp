@@ -235,8 +235,7 @@
                 <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
             </c:url>
         </c:if>
-        <t:tableFooter totalCount="${currentCount}"
-                       itemLabel="고객사"
+        <t:tableFooter itemLabel="고객사"
                        currentPage="${currentPage}"
                        totalPages="${totalPages}"
                        previousUrl="${customerPreviousPageUrl}"

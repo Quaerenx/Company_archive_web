@@ -154,8 +154,7 @@
             <c:if test="${searchScope eq 'content'}"><c:param name="scope" value="content" /></c:if>
         </c:url>
     </c:if>
-    <t:tableFooter totalCount="${totalCount}"
-                   itemLabel="트러블슈팅"
+    <t:tableFooter itemLabel="트러블슈팅"
                    currentPage="${currentPage}"
                    totalPages="${totalPages}"
                    previousUrl="${troubleshootingPreviousPageUrl}"
