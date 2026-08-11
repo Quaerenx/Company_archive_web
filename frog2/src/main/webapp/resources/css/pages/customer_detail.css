@@ -65,7 +65,7 @@
     border-bottom: 1px solid var(--color-divider);
     border-radius: 0;
     margin: 0;
-    padding: var(--space-24);
+    padding: var(--space-20) var(--space-24);
 }
 
 .ui-system .customer-detail--view .environment-detail .detail-section:last-child {
@@ -80,12 +80,15 @@
     border: 0;
     color: var(--color-text-strong);
     font-size: var(--font-size-md);
-    margin: 0 0 var(--space-12);
+    font-weight: 700;
+    line-height: var(--line-height-tight);
+    margin: 0 0 var(--space-16);
     padding: 0;
 }
 
 .customer-detail--view .detail-section-title i {
     color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
     inline-size: 16px;
     text-align: center;
 }
@@ -94,16 +97,16 @@
     column-gap: var(--space-32);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: 0;
+    row-gap: var(--space-4);
 }
 
 .ui-system .customer-detail--view .detail-item {
     align-items: baseline;
-    border-bottom: 1px solid var(--color-divider);
+    border-bottom: 0;
     display: grid;
     gap: var(--space-12);
-    grid-template-columns: minmax(104px, 120px) minmax(0, 1fr);
-    min-block-size: 42px;
+    grid-template-columns: minmax(152px, 160px) minmax(0, 1fr);
+    min-block-size: 40px;
     padding-block: var(--space-8);
 }
 
@@ -118,10 +121,11 @@
     font-weight: 500;
     margin: 0;
     min-inline-size: 0;
+    white-space: nowrap;
 }
 
 .ui-system .customer-detail--view .detail-value {
-    color: var(--color-text);
+    color: var(--color-text-strong);
     font-size: var(--font-size-sm);
     font-weight: 500;
     margin: 0;
@@ -137,16 +141,16 @@
 
 .customer-detail--view .note-content {
     background: var(--color-surface-subtle);
-    border: 1px solid var(--color-border);
+    border: 0;
     border-radius: var(--radius-md);
     inline-size: 100%;
     line-height: 1.6;
     min-block-size: 56px;
-    padding: var(--space-12);
+    padding: var(--space-12) var(--space-16);
     white-space: pre-wrap;
 }
 
-.ui-system .customer-detail--view details.detail-section {
+.ui-system .customer-detail--view .environment-detail > details.detail-section {
     padding: 0;
 }
 
@@ -154,8 +158,8 @@
     cursor: pointer;
     list-style: none;
     margin: 0;
-    min-block-size: 52px;
-    padding: var(--space-16) var(--space-24);
+    min-block-size: 48px;
+    padding: var(--space-12) var(--space-24);
     user-select: none;
 }
 
@@ -188,6 +192,25 @@
     padding: 0 var(--space-24) var(--space-20);
 }
 
+.customer-detail--view .detail-status {
+    align-items: center;
+    display: inline-flex;
+    gap: var(--space-8);
+}
+
+.customer-detail--view .detail-status--disabled {
+    color: var(--color-text-muted);
+    font-weight: 400;
+}
+
+.customer-detail--view .detail-status-dot {
+    background: var(--color-success);
+    block-size: 6px;
+    border-radius: var(--radius-pill);
+    flex: 0 0 6px;
+    inline-size: 6px;
+}
+
 .customer-detail--view .customer-eos-alert {
     margin-top: var(--space-8);
 }
@@ -205,17 +228,45 @@
 }
 
 @media (max-width: 768px) {
-    .ui-system .customer-detail--view .detail-grid {
-        grid-template-columns: 1fr;
+    .ui-system .customer-detail--view .environment-detail .detail-section {
+        padding: var(--space-16);
     }
 
-    .ui-system .customer-detail--view .detail-item {
-        grid-template-columns: minmax(96px, 112px) minmax(0, 1fr);
+    .ui-system .customer-detail--view .environment-detail > details.detail-section {
+        padding: 0;
+    }
+
+    .ui-system .customer-detail--view details > .detail-section-title {
+        padding-inline: var(--space-16);
+    }
+
+    .ui-system .customer-detail--view details > .detail-grid {
+        padding: 0 var(--space-16) var(--space-16);
+    }
+
+    .ui-system .customer-detail--view .detail-grid {
+        grid-template-columns: 1fr;
     }
 
     .customer-detail--view .header-actions {
         align-items: stretch;
         flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .ui-system .customer-detail--view .detail-item {
+        align-items: start;
+        gap: var(--space-4);
+        grid-template-columns: 1fr;
+    }
+
+    .ui-system .customer-detail--view .detail-value {
+        inline-size: 100%;
+    }
+
+    .ui-system .customer-detail--view .detail-status {
+        inline-size: auto;
     }
 }
 

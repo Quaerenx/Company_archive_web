@@ -50,13 +50,13 @@
         </summary>
         <div class="detail-grid">
             <t:detailField label="Vertica 관리자" value="${detail.verticaAdmin}" />
-            <t:detailField label="Subcluster 사용" value="${detail.subclusterYn}" />
-            <t:detailField label="MC 사용" value="${detail.mcYn}" />
+            <t:detailField label="Subcluster 사용" value="${detail.subclusterYn}" booleanState="${true}" />
+            <t:detailField label="MC 사용" value="${detail.mcYn}" booleanState="${true}" />
             <c:if test="${not empty detail.mcHost}"><t:detailField label="MC 호스트" value="${detail.mcHost}" /></c:if>
             <c:if test="${not empty detail.mcVersion}"><t:detailField label="MC 버전" value="${detail.mcVersion}" /></c:if>
             <c:if test="${not empty detail.mcAdmin}"><t:detailField label="MC 관리자" value="${detail.mcAdmin}" /></c:if>
-            <t:detailField label="백업 사용" value="${detail.backupYn}" />
-            <t:detailField label="사용자 정의 리소스 풀" value="${detail.customResourcePoolYn}" />
+            <t:detailField label="백업 사용" value="${detail.backupYn}" booleanState="${true}" />
+            <t:detailField label="사용자 정의 리소스 풀" value="${detail.customResourcePoolYn}" booleanState="${true}" />
             <c:if test="${not empty detail.backupNote}"><t:detailField label="백업 비고" value="${detail.backupNote}" fullWidth="${true}" multiline="${true}" /></c:if>
         </div>
     </details>
@@ -70,17 +70,17 @@
             <t:detailField label="메모리" value="${detail.memoryInfo}" />
             <t:detailField label="인프라 유형" value="${detail.infraType}" />
             <t:detailField label="CPU 소켓" value="${detail.cpuSocket}" />
-            <t:detailField label="하이퍼스레딩" value="${detail.hyperThreading}" />
+            <t:detailField label="하이퍼스레딩" value="${detail.hyperThreading}" booleanState="${true}" />
             <t:detailField label="CPU 코어" value="${detail.cpuCore}" />
             <t:detailField label="데이터 영역" value="${detail.dataArea}" />
             <t:detailField label="Depot 영역" value="${detail.depotArea}" />
             <t:detailField label="카탈로그 영역" value="${detail.catalogArea}" />
             <t:detailField label="Object 영역" value="${detail.objectArea}" />
-            <t:detailField label="Public 네트워크 사용" value="${detail.publicYn}" />
+            <t:detailField label="Public 네트워크 사용" value="${detail.publicYn}" booleanState="${true}" />
             <c:if test="${not empty detail.publicNetwork}"><t:detailField label="Public 네트워크 대역" value="${detail.publicNetwork}" /></c:if>
-            <t:detailField label="Private 네트워크 사용" value="${detail.privateYn}" />
+            <t:detailField label="Private 네트워크 사용" value="${detail.privateYn}" booleanState="${true}" />
             <c:if test="${not empty detail.privateNetwork}"><t:detailField label="Private 네트워크 대역" value="${detail.privateNetwork}" /></c:if>
-            <t:detailField label="스토리지 네트워크 사용" value="${detail.storageYn}" />
+            <t:detailField label="스토리지 네트워크 사용" value="${detail.storageYn}" booleanState="${true}" />
             <c:if test="${not empty detail.storageNetwork}"><t:detailField label="스토리지 네트워크 대역" value="${detail.storageNetwork}" /></c:if>
         </div>
     </details>
