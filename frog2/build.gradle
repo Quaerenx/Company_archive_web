@@ -194,3 +194,5 @@ tasks.named('war') {
     exclude '**/build/**', '**/db.properties', '**/db.properties.*'
     exclude 'WEB-INF/classes/db/**'
 }
+
+apply from: 'gradle/jspc-java22.gradle'
