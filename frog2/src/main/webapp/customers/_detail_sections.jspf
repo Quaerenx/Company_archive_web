@@ -1,264 +1,112 @@
 <%@ page pageEncoding="UTF-8" %>
-<div class="detail-container ui-detail">
-	<div class="detail-section">
-		<div class="detail-section-title">
-			<i class="fas fa-info-circle"></i>
-			메타정보
-		</div>
-		<div class="detail-grid">
-			<div class="detail-item">
-				<span class="detail-label">고객사</span>
-				<span class="detail-value"><c:out value="${not empty detail.customerName ? detail.customerName : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">시스템명</span>
-				<span class="detail-value"><c:out value="${not empty detail.systemName ? detail.systemName : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">고객사 담당자</span>
-				<span class="detail-value"><c:out value="${not empty detail.customerManager ? detail.customerManager : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">담당 SI</span>
-				<span class="detail-value"><c:out value="${not empty detail.siCompany ? detail.siCompany : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">SI 담당자</span>
-				<span class="detail-value"><c:out value="${not empty detail.siManager ? detail.siManager : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">작성자</span>
-				<span class="detail-value"><c:out value="${not empty detail.creator ? detail.creator : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">작성일자</span>
-				<span class="detail-value">
-					<c:choose>
-						<c:when test="${not empty detail.createDate}">
-							<fmt:formatDate value="${detail.createDate}" pattern="yyyy-MM-dd" />
-						</c:when>
-						<c:otherwise>-</c:otherwise>
-					</c:choose>
-				</span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">담당자 정</span>
-				<span class="detail-value"><c:out value="${not empty detail.mainManager ? detail.mainManager : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">담당자 부</span>
-				<span class="detail-value"><c:out value="${not empty detail.subManager ? detail.subManager : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">설치일자</span>
-				<span class="detail-value">
-					<c:choose>
-						<c:when test="${not empty detail.installDate}">
-							<fmt:formatDate value="${detail.installDate}" pattern="yyyy-MM-dd" />
-						</c:when>
-						<c:otherwise>-</c:otherwise>
-					</c:choose>
-				</span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">도입년도</span>
-				<span class="detail-value"><c:out value="${not empty detail.introductionYear ? detail.introductionYear : '-'}" /></span>
-			</div>
-		</div>
-	</div>
+<c:remove var="detailCreateDate" scope="page" />
+<c:remove var="detailInstallDate" scope="page" />
+<c:remove var="detailEosDate" scope="page" />
+<fmt:formatDate var="detailCreateDate" value="${detail.createDate}" pattern="yyyy-MM-dd" />
+<fmt:formatDate var="detailInstallDate" value="${detail.installDate}" pattern="yyyy-MM-dd" />
+<fmt:formatDate var="detailEosDate" value="${detail.eosDate}" pattern="yyyy-MM-dd" />
 
-	<div class="detail-section">
-		<div class="detail-section-title">
-			<i class="fas fa-database"></i>
-			Vertica 정보
-		</div>
-		<div class="detail-grid">
-			<div class="detail-item">
-				<span class="detail-label">DB명</span>
-				<span class="detail-value"><c:out value="${not empty detail.dbName ? detail.dbName : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">DB mode</span>
-				<span class="detail-value"><c:out value="${not empty detail.dbMode ? detail.dbMode : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Version</span>
-				<span class="detail-value"><c:out value="${not empty detail.verticaVersion ? detail.verticaVersion : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">라이센스</span>
-				<span class="detail-value"><c:out value="${not empty detail.licenseInfo ? detail.licenseInfo : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">SAID</span>
-				<span class="detail-value"><c:out value="${not empty detail.said ? detail.said : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">노드 수</span>
-				<span class="detail-value"><c:out value="${not empty detail.nodeCount ? detail.nodeCount : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Vertica admin</span>
-				<span class="detail-value"><c:out value="${not empty detail.verticaAdmin ? detail.verticaAdmin : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Subcluster 유무</span>
-				<span class="detail-value"><c:out value="${not empty detail.subclusterYn ? detail.subclusterYn : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">MC 여부</span>
-				<span class="detail-value"><c:out value="${not empty detail.mcYn ? detail.mcYn : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">MC host</span>
-				<span class="detail-value"><c:out value="${not empty detail.mcHost ? detail.mcHost : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">MC version</span>
-				<span class="detail-value"><c:out value="${not empty detail.mcVersion ? detail.mcVersion : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">MC admin</span>
-				<span class="detail-value"><c:out value="${not empty detail.mcAdmin ? detail.mcAdmin : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">백업 여부</span>
-				<span class="detail-value"><c:out value="${not empty detail.backupYn ? detail.backupYn : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">사용자 정의 리소스풀 여부</span>
-				<span class="detail-value"><c:out value="${not empty detail.customResourcePoolYn ? detail.customResourcePoolYn : '-'}" /></span>
-			</div>
-			<div class="detail-item full-width">
-				<span class="detail-label">백업비고</span>
-				<div class="detail-value note-content"><c:out value="${not empty detail.backupNote ? detail.backupNote : '-'}" /></div>
-			</div>
-		</div>
-	</div>
+<div class="environment-detail ui-detail">
+    <section class="detail-section detail-section--summary">
+        <div class="detail-section-title">
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+            핵심 정보
+        </div>
+        <div class="detail-grid detail-grid--summary">
+            <t:detailField label="DB명" value="${detail.dbName}" />
+            <t:detailField label="Vertica 버전" value="${detail.verticaVersion}" />
+            <t:detailField label="DB 모드" value="${detail.dbMode}" />
+            <t:detailField label="노드 수" value="${detail.nodeCount}" />
+            <t:detailField label="라이선스" value="${detail.licenseInfo}" />
+            <t:detailField label="OS" value="${detail.osInfo}" />
+            <t:detailField label="주 담당자" value="${detail.mainManager}" />
+            <t:detailField label="SAID" value="${detail.said}" />
+        </div>
+    </section>
 
-	<div class="detail-section">
-		<div class="detail-section-title">
-			<i class="fas fa-server"></i>
-			환경 정보
-		</div>
-		<div class="detail-grid">
-			<div class="detail-item">
-				<span class="detail-label">OS</span>
-				<span class="detail-value"><c:out value="${not empty detail.osInfo ? detail.osInfo : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">메모리</span>
-				<span class="detail-value"><c:out value="${not empty detail.memoryInfo ? detail.memoryInfo : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">인프라 구분</span>
-				<span class="detail-value"><c:out value="${not empty detail.infraType ? detail.infraType : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">CPU 소켓</span>
-				<span class="detail-value"><c:out value="${not empty detail.cpuSocket ? detail.cpuSocket : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">HyperThreading</span>
-				<span class="detail-value"><c:out value="${not empty detail.hyperThreading ? detail.hyperThreading : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">CPU 코어</span>
-				<span class="detail-value"><c:out value="${not empty detail.cpuCore ? detail.cpuCore : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">/data 영역</span>
-				<span class="detail-value"><c:out value="${not empty detail.dataArea ? detail.dataArea : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Depot 영역</span>
-				<span class="detail-value"><c:out value="${not empty detail.depotArea ? detail.depotArea : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">/catalog 영역</span>
-				<span class="detail-value"><c:out value="${not empty detail.catalogArea ? detail.catalogArea : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">object 영역</span>
-				<span class="detail-value"><c:out value="${not empty detail.objectArea ? detail.objectArea : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Public 여부</span>
-				<span class="detail-value"><c:out value="${not empty detail.publicYn ? detail.publicYn : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Public 대역</span>
-				<span class="detail-value"><c:out value="${not empty detail.publicNetwork ? detail.publicNetwork : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Private 여부</span>
-				<span class="detail-value"><c:out value="${not empty detail.privateYn ? detail.privateYn : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Private 대역</span>
-				<span class="detail-value"><c:out value="${not empty detail.privateNetwork ? detail.privateNetwork : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">storage 여부</span>
-				<span class="detail-value"><c:out value="${not empty detail.storageYn ? detail.storageYn : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">Storage 대역</span>
-				<span class="detail-value"><c:out value="${not empty detail.storageNetwork ? detail.storageNetwork : '-'}" /></span>
-			</div>
-		</div>
-	</div>
+    <section class="detail-section">
+        <div class="detail-section-title">
+            <i class="fas fa-address-card" aria-hidden="true"></i>
+            기본·담당자 정보
+        </div>
+        <div class="detail-grid">
+            <t:detailField label="고객사" value="${detail.customerName}" />
+            <t:detailField label="시스템명" value="${detail.systemName}" />
+            <t:detailField label="고객사 담당자" value="${detail.customerManager}" />
+            <t:detailField label="담당 SI" value="${detail.siCompany}" />
+            <t:detailField label="SI 담당자" value="${detail.siManager}" />
+            <t:detailField label="부 담당자" value="${detail.subManager}" />
+            <t:detailField label="도입 연도" value="${detail.introductionYear}" />
+            <t:detailField label="설치일" value="${detailInstallDate}" />
+            <t:detailField label="작성자" value="${detail.creator}" />
+            <t:detailField label="작성일" value="${detailCreateDate}" />
+        </div>
+    </section>
 
-	<div class="detail-section">
-		<div class="detail-section-title">
-			<i class="fas fa-puzzle-piece"></i>
-			외부 솔루션
-		</div>
-		<div class="detail-grid">
-			<div class="detail-item">
-				<span class="detail-label">ETL</span>
-				<span class="detail-value"><c:out value="${not empty detail.etlTool ? detail.etlTool : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">BI</span>
-				<span class="detail-value"><c:out value="${not empty detail.biTool ? detail.biTool : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">DB암호화</span>
-				<span class="detail-value"><c:out value="${not empty detail.dbEncryption ? detail.dbEncryption : '-'}" /></span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">CDC</span>
-				<span class="detail-value"><c:out value="${not empty detail.cdcTool ? detail.cdcTool : '-'}" /></span>
-			</div>
-		</div>
-	</div>
+    <details class="detail-section detail-section--collapsible">
+        <summary class="detail-section-title">
+            <i class="fas fa-database" aria-hidden="true"></i>
+            Vertica 운영 설정
+        </summary>
+        <div class="detail-grid">
+            <t:detailField label="Vertica 관리자" value="${detail.verticaAdmin}" />
+            <t:detailField label="Subcluster 사용" value="${detail.subclusterYn}" />
+            <t:detailField label="MC 사용" value="${detail.mcYn}" />
+            <c:if test="${not empty detail.mcHost}"><t:detailField label="MC 호스트" value="${detail.mcHost}" /></c:if>
+            <c:if test="${not empty detail.mcVersion}"><t:detailField label="MC 버전" value="${detail.mcVersion}" /></c:if>
+            <c:if test="${not empty detail.mcAdmin}"><t:detailField label="MC 관리자" value="${detail.mcAdmin}" /></c:if>
+            <t:detailField label="백업 사용" value="${detail.backupYn}" />
+            <t:detailField label="사용자 정의 리소스 풀" value="${detail.customResourcePoolYn}" />
+            <c:if test="${not empty detail.backupNote}"><t:detailField label="백업 비고" value="${detail.backupNote}" fullWidth="${true}" multiline="${true}" /></c:if>
+        </div>
+    </details>
 
-	<div class="detail-section">
-		<div class="detail-section-title">
-			<i class="fas fa-sticky-note"></i>
-			기타 정보
-		</div>
-		<div class="detail-grid">
-			<div class="detail-item">
-				<span class="detail-label">EOS 일자</span>
-				<span class="detail-value">
-					<c:choose>
-						<c:when test="${not empty detail.eosDate}">
-							<fmt:formatDate value="${detail.eosDate}" pattern="yyyy-MM-dd" />
-						</c:when>
-						<c:otherwise>-</c:otherwise>
-					</c:choose>
-				</span>
-			</div>
-			<div class="detail-item">
-				<span class="detail-label">고객 유형</span>
-				<span class="detail-value"><c:out value="${not empty detail.customerType ? detail.customerType : '-'}" /></span>
-			</div>
-			<div class="detail-item full-width">
-				<span class="detail-label">비고</span>
-				<div class="detail-value note-content"><c:out value="${not empty detail.note ? detail.note : '-'}" /></div>
-			</div>
-		</div>
-	</div>
+    <details class="detail-section detail-section--collapsible">
+        <summary class="detail-section-title">
+            <i class="fas fa-server" aria-hidden="true"></i>
+            인프라·네트워크
+        </summary>
+        <div class="detail-grid">
+            <t:detailField label="메모리" value="${detail.memoryInfo}" />
+            <t:detailField label="인프라 유형" value="${detail.infraType}" />
+            <t:detailField label="CPU 소켓" value="${detail.cpuSocket}" />
+            <t:detailField label="하이퍼스레딩" value="${detail.hyperThreading}" />
+            <t:detailField label="CPU 코어" value="${detail.cpuCore}" />
+            <t:detailField label="데이터 영역" value="${detail.dataArea}" />
+            <t:detailField label="Depot 영역" value="${detail.depotArea}" />
+            <t:detailField label="카탈로그 영역" value="${detail.catalogArea}" />
+            <t:detailField label="Object 영역" value="${detail.objectArea}" />
+            <t:detailField label="Public 네트워크 사용" value="${detail.publicYn}" />
+            <c:if test="${not empty detail.publicNetwork}"><t:detailField label="Public 네트워크 대역" value="${detail.publicNetwork}" /></c:if>
+            <t:detailField label="Private 네트워크 사용" value="${detail.privateYn}" />
+            <c:if test="${not empty detail.privateNetwork}"><t:detailField label="Private 네트워크 대역" value="${detail.privateNetwork}" /></c:if>
+            <t:detailField label="스토리지 네트워크 사용" value="${detail.storageYn}" />
+            <c:if test="${not empty detail.storageNetwork}"><t:detailField label="스토리지 네트워크 대역" value="${detail.storageNetwork}" /></c:if>
+        </div>
+    </details>
+
+    <details class="detail-section detail-section--collapsible">
+        <summary class="detail-section-title">
+            <i class="fas fa-puzzle-piece" aria-hidden="true"></i>
+            연계 솔루션
+        </summary>
+        <div class="detail-grid">
+            <t:detailField label="ETL" value="${detail.etlTool}" />
+            <t:detailField label="BI" value="${detail.biTool}" />
+            <t:detailField label="DB 암호화" value="${detail.dbEncryption}" />
+            <t:detailField label="CDC" value="${detail.cdcTool}" />
+        </div>
+    </details>
+
+    <details class="detail-section detail-section--collapsible">
+        <summary class="detail-section-title">
+            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+            기타 정보
+        </summary>
+        <div class="detail-grid">
+            <t:detailField label="EOS 일자" value="${detailEosDate}" />
+            <t:detailField label="고객 유형" value="${detail.customerType}" />
+            <t:detailField label="비고" value="${detail.note}" fullWidth="${true}" multiline="${true}" />
+        </div>
+    </details>
 </div>

@@ -1,97 +1,226 @@
-.customer-detail .header-actions { display: flex; gap: var(--space-8); align-items: center; flex-wrap: wrap; }
+.customer-detail--view .header-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
 
-	/* --- [변경/추가된 CSS] 가독성 개선 스타일 --- */
+.customer-detail--view .env-tabs {
+    margin-top: var(--space-16);
+}
 
-	/* 1. 카드 UI 적용 */
-	.detail-section {
-	    background-color: var(--color-surface);
-	    border: 1px solid var(--color-border);
-		    border-radius: var(--radius-lg);
-		    padding: var(--space-24);
-		    margin-bottom: var(--space-24);
-		    box-shadow: none;
-	}
+.customer-detail--view .tab-nav {
+    align-items: end;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    gap: var(--space-4);
+    margin: 0;
+    overflow-x: auto;
+    padding-inline: var(--space-8);
+}
 
-	/* 2. 타이포그래피 계층 구조 강화 */
-	.detail-section-title {
-		    font-size: var(--font-size-lg);
-	    font-weight: 600;
-		    color: var(--color-text-strong);
-		    margin-bottom: var(--space-20);
-		    padding-bottom: var(--space-12);
-	    border-bottom: 1px solid var(--color-border);
-	}
+.customer-detail--view .tab-btn {
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    flex: 0 0 auto;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    min-block-size: var(--control-height-md);
+    padding: var(--space-12) var(--space-16) var(--space-8);
+}
 
-	.detail-section-title i {
-	    color: currentColor;
-		    margin-right: var(--space-8);
-	}
+.customer-detail--view .tab-btn:hover {
+    color: var(--color-text-strong);
+}
 
-	.detail-label {
-	    display: block;
-		    font-size: var(--font-size-sm);
-	    font-weight: 500;
-	    color: var(--color-text-muted);
-		    margin-bottom: var(--space-4);
-	}
+.customer-detail--view .tab-btn.active {
+    border-bottom-color: var(--color-primary);
+    color: var(--color-primary);
+}
 
-	.detail-value {
-		    font-size: var(--font-size-md);
-	    font-weight: 500;
-	    color: var(--color-text);
-	}
+.customer-detail--view .tab-btn:focus-visible {
+    border-radius: var(--radius-sm);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
 
-	.note-content {
-		    padding: var(--space-12);
-	    background-color: var(--color-surface-subtle);
-		    border-radius: var(--radius-md);
-		    font-size: var(--font-size-sm);
-	    line-height: 1.6;
-	    color: var(--color-text);
-	    white-space: pre-wrap;
-	}
+.customer-detail--view .tab-panel {
+    display: none;
+}
 
-	/* 3. 여백 및 정렬 개선 */
-	.detail-grid {
-	    display: grid;
-	    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-		    gap: var(--space-24);
-	}
+.customer-detail--view .tab-panel.active {
+    display: block;
+}
 
-	.detail-item.full-width {
-	    grid-column: 1 / -1;
-	}
+.customer-detail--view .environment-detail {
+    background: var(--color-surface);
+}
 
-	/* 탭 UI */
-		.env-tabs { margin-top: var(--space-16); }
-		.tab-nav { display: flex; gap: var(--space-8); border-bottom: 1px solid var(--color-border); margin: 0; padding-left: var(--space-8); }
-		.tab-btn { padding: var(--space-12) var(--space-16); border: 1px solid var(--color-border); border-bottom: none; background: var(--color-surface-subtle); color: var(--color-text); border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg); cursor: pointer; }
-		.tab-btn.active { background: var(--color-surface); color: var(--color-text-strong); font-weight: 600; border-color: var(--color-border-strong); }
-	.tab-btn.disabled { opacity: 0.5; cursor: not-allowed; }
-	.tab-panel { display: none; }
-	.tab-panel.active { display: block; }
-	/* 탭과 첫 섹션 사이 간격 최소화 */
-	.env-tabs .tab-panel { margin-top: 0; padding-top: 0; }
-	.env-tabs .tab-panel > .detail-section:first-child { margin-top: 0; }
+.ui-system .customer-detail--view .environment-detail .detail-section {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-divider);
+    border-radius: 0;
+    margin: 0;
+    padding: var(--space-24);
+}
 
-	/* 탭 버튼이 카드 상단에 자연스럽게 붙도록 보더 겹침 처리 */
-	.env-tabs .tab-nav { margin-bottom: 0; }
-	 /*.env-tabs .tab-btn { border-bottom: 1px solid var(--color-border); }*/
-	.env-tabs .tab-btn.active { border-bottom-color: var(--color-surface); margin-bottom: -1px; }
-	.env-tabs .tab-panel > .detail-section:first-child { border-top-left-radius: 0; border-top-right-radius: 0; }
+.ui-system .customer-detail--view .environment-detail .detail-section:last-child {
+    border-bottom: 0;
+}
 
-.customer-detail .customer-eos-alert {
+.ui-system .customer-detail--view .detail-section--summary {
+    background: var(--color-surface-subtle);
+}
+
+.ui-system .customer-detail--view .detail-section-title {
+    border: 0;
+    color: var(--color-text-strong);
+    font-size: var(--font-size-md);
+    margin: 0 0 var(--space-12);
+    padding: 0;
+}
+
+.customer-detail--view .detail-section-title i {
+    color: var(--color-text-muted);
+    inline-size: 16px;
+    text-align: center;
+}
+
+.ui-system .customer-detail--view .detail-grid {
+    column-gap: var(--space-32);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 0;
+}
+
+.ui-system .customer-detail--view .detail-item {
+    align-items: baseline;
+    border-bottom: 1px solid var(--color-divider);
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: minmax(104px, 120px) minmax(0, 1fr);
+    min-block-size: 42px;
+    padding-block: var(--space-8);
+}
+
+.ui-system .customer-detail--view .detail-item.full-width {
+    align-items: start;
+    grid-column: 1 / -1;
+}
+
+.ui-system .customer-detail--view .detail-label {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    margin: 0;
+    min-inline-size: 0;
+}
+
+.ui-system .customer-detail--view .detail-value {
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    margin: 0;
+    min-inline-size: 0;
+    text-align: start;
+    word-break: break-word;
+}
+
+.ui-system .customer-detail--view .detail-value--empty {
+    color: var(--color-text-disabled);
+    font-weight: 400;
+}
+
+.customer-detail--view .note-content {
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    inline-size: 100%;
+    line-height: 1.6;
+    min-block-size: 56px;
+    padding: var(--space-12);
+    white-space: pre-wrap;
+}
+
+.ui-system .customer-detail--view details.detail-section {
+    padding: 0;
+}
+
+.ui-system .customer-detail--view details > .detail-section-title {
+    cursor: pointer;
+    list-style: none;
+    margin: 0;
+    min-block-size: 52px;
+    padding: var(--space-16) var(--space-24);
+    user-select: none;
+}
+
+.customer-detail--view details > .detail-section-title::-webkit-details-marker {
+    display: none;
+}
+
+.customer-detail--view details > .detail-section-title::after {
+    border-bottom: 1.5px solid currentColor;
+    border-right: 1.5px solid currentColor;
+    block-size: 7px;
+    content: '';
+    inline-size: 7px;
+    margin-inline-start: auto;
+    transform: rotate(45deg);
+    transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.customer-detail--view details[open] > .detail-section-title::after {
+    transform: rotate(225deg);
+}
+
+.customer-detail--view details > .detail-section-title:focus-visible {
+    border-radius: var(--radius-sm);
+    outline: 2px solid var(--color-focus);
+    outline-offset: -4px;
+}
+
+.ui-system .customer-detail--view details > .detail-grid {
+    padding: 0 var(--space-24) var(--space-20);
+}
+
+.customer-detail--view .customer-eos-alert {
     margin-top: var(--space-8);
 }
 
-.customer-detail .customer-empty-icon {
-	font-size: var(--illustration-icon-size-md);
+.customer-detail--view .customer-empty-icon {
+    font-size: var(--illustration-icon-size-md);
     margin-bottom: var(--space-16);
 }
 
-.customer-detail .detail-actions {
+.customer-detail--view .detail-actions {
     display: flex;
-    justify-content: flex-end;
     gap: var(--space-8);
+    justify-content: flex-end;
     margin: var(--space-12) 0 0;
+}
+
+@media (max-width: 768px) {
+    .ui-system .customer-detail--view .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ui-system .customer-detail--view .detail-item {
+        grid-template-columns: minmax(96px, 112px) minmax(0, 1fr);
+    }
+
+    .customer-detail--view .header-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .customer-detail--view details > .detail-section-title::after {
+        transition: none;
+    }
 }

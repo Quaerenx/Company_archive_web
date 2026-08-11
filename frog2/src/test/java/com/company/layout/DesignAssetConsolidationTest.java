@@ -63,7 +63,8 @@ class DesignAssetConsolidationTest {
     void headerLoadsOrderedPageStylesAfterHeaderCss() throws Exception {
         String header = readWebapp("includes/header.jsp");
         int coreStyles = header.indexOf("include file=\"/WEB-INF/includes/core_styles.jspf\"");
-        int vendorCss = header.indexOf("cdnjs.cloudflare.com/ajax/libs/font-awesome");
+        int vendorCss = header.indexOf(
+                "/resources/vendor/fontawesome-free/5.15.4/css/all.min.css");
         int headerCss = header.indexOf("/resources/css/pages/header.css");
         int pageCss = header.indexOf("not empty pageCss");
         int headEnd = header.indexOf("</head>");
@@ -280,7 +281,9 @@ class DesignAssetConsolidationTest {
         }
 
         String history = readWebapp("maintenance/maintenance_history.jsp");
-        assertEquals("https://cdn.jsdelivr.net/npm/chart.js@4.4.4",
+        assertEquals("${pageContext.request.contextPath}"
+                        + "/resources/vendor/chart.js/4.4.4/chart.umd.min.js"
+                        + "?v=${frog2AssetVersion}",
                 declaredValue(history, "vendorScript"));
     }
 

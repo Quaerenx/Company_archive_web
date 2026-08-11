@@ -326,6 +326,45 @@
         });
     }
 
+    function updateScrollableTableRegions() {
+        document.querySelectorAll('[data-ui-scroll-region]').forEach(function (region) {
+            var scrollable = region.scrollWidth > region.clientWidth + 1;
+            region.dataset.uiScrollable = String(scrollable);
+            if (scrollable) {
+                region.setAttribute('tabindex', '0');
+                region.setAttribute('role', 'region');
+                var label = region.dataset.uiScrollLabel;
+                if (label) {
+                    region.setAttribute('aria-label', label);
+                }
+                return;
+            }
+            region.removeAttribute('tabindex');
+            region.removeAttribute('role');
+            region.removeAttribute('aria-label');
+        });
+    }
+
+    var scrollRegionFrame = 0;
+    function scheduleScrollableTableRegionUpdate() {
+        if (scrollRegionFrame) {
+            return;
+        }
+        scrollRegionFrame = window.requestAnimationFrame(function () {
+            scrollRegionFrame = 0;
+            updateScrollableTableRegions();
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded', updateScrollableTableRegions, { once: true });
+    } else {
+        updateScrollableTableRegions();
+    }
+    window.addEventListener('load', updateScrollableTableRegions, { once: true });
+    window.addEventListener('resize', scheduleScrollableTableRegionUpdate);
+
     document.addEventListener('input', function (event) {
         if (event.target.matches('[data-ui-error-id]')) {
             clearFieldError(event.target);

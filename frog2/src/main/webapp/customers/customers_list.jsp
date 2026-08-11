@@ -103,53 +103,56 @@
     <c:url var="saidSortUrl" value="/customers"><c:param name="view" value="list"/><c:param name="filter" value="${filter}"/><c:param name="sortField" value="said"/><c:param name="sortDirection" value="${nextSaidDirection}"/><c:param name="q" value="${q}"/><c:param name="pageSize" value="${pageSize}"/></c:url>
     <c:url var="managerSortUrl" value="/customers"><c:param name="view" value="list"/><c:param name="filter" value="${filter}"/><c:param name="sortField" value="manager_name"/><c:param name="sortDirection" value="${nextManagerDirection}"/><c:param name="q" value="${q}"/><c:param name="pageSize" value="${pageSize}"/></c:url>
 
-        <div class="table-wrapper ui-table-wrap">
+        <div class="table-wrapper ui-table-wrap"
+             data-ui-scroll-region
+             data-ui-scroll-label="고객사 정보 표">
             <table class="customer-table ui-table">
+                <caption class="sr-only">고객사 정보 목록</caption>
                 <thead>
                     <tr>
-                        <th aria-sort="${sortField eq 'customer_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'customer_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${customerNameSortUrl}' />" class="js-customer-sort" data-sort-field="customer_name">
                                 고객사
                                 <i class="fas fa-sort sort-icon ${sortField == 'customer_name' ? 'active' : ''}"></i>
                             </a>
                         </th>
-                        <th aria-sort="${sortField eq 'vertica_version' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'vertica_version' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${versionSortUrl}' />" class="js-customer-sort" data-sort-field="vertica_version">
                                 버전
                                 <i class="fas fa-sort sort-icon ${sortField == 'vertica_version' ? 'active' : ''}"></i>
                             </a>
                         </th>
-                        <th aria-sort="${sortField eq 'mode' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'mode' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${modeSortUrl}' />" class="js-customer-sort" data-sort-field="mode">
                                 모드
                                 <i class="fas fa-sort sort-icon ${sortField == 'mode' ? 'active' : ''}"></i>
                             </a>
                         </th>
-                        <th aria-sort="${sortField eq 'os' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'os' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${osSortUrl}' />" class="js-customer-sort" data-sort-field="os">
                                 OS
                                 <i class="fas fa-sort sort-icon ${sortField == 'os' ? 'active' : ''}"></i>
                             </a>
                         </th>
-                        <th aria-sort="${sortField eq 'nodes' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'nodes' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${nodesSortUrl}' />" class="js-customer-sort" data-sort-field="nodes">
                                 노드수
                                 <i class="fas fa-sort sort-icon ${sortField == 'nodes' ? 'active' : ''}"></i>
                             </a>
                         </th>
-                        <th aria-sort="${sortField eq 'license_size' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'license_size' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${licenseSortUrl}' />" class="js-customer-sort" data-sort-field="license_size">
                                 라이선스
                                 <i class="fas fa-sort sort-icon ${sortField == 'license_size' ? 'active' : ''}"></i>
                             </a>
                         </th>
-                        <th aria-sort="${sortField eq 'said' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'said' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${saidSortUrl}' />" class="js-customer-sort" data-sort-field="said">
                                 SAID
                                 <i class="fas fa-sort sort-icon ${sortField == 'said' ? 'active' : ''}"></i>
                             </a>
                         </th>
-                        <th aria-sort="${sortField eq 'manager_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" aria-sort="${sortField eq 'manager_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${managerSortUrl}' />" class="js-customer-sort" data-sort-field="manager_name">
                                 담당자
                                 <i class="fas fa-sort sort-icon ${sortField == 'manager_name' ? 'active' : ''}"></i>
@@ -210,63 +213,35 @@
             </table>
 
         </div>
-        <c:if test="${totalPages > 0}">
-            <nav class="ui-pagination" aria-label="고객사 페이지">
-                <div class="ui-pagination__summary">
-                    <c:out value="${currentPage}" /> / <c:out value="${totalPages}" /> 페이지
-                    (총 <c:out value="${currentCount}" />건)
-                </div>
-                <c:set var="startPage" value="${currentPage - 2}" />
-                <c:set var="endPage" value="${currentPage + 2}" />
-                <c:if test="${startPage < 1}"><c:set var="startPage" value="1" /></c:if>
-                <c:if test="${endPage > totalPages}"><c:set var="endPage" value="${totalPages}" /></c:if>
-                <ul class="ui-pagination__links">
-                    <c:if test="${currentPage > 1}">
-                        <c:url var="customerPreviousPageUrl" value="/customers">
-                            <c:param name="view" value="list" />
-                            <c:param name="filter" value="${filter}" />
-                            <c:param name="sortField" value="${sortField}" />
-                            <c:param name="sortDirection" value="${sortDirection}" />
-                            <c:param name="page" value="${currentPage - 1}" />
-                            <c:param name="pageSize" value="${pageSize}" />
-                            <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
-                        </c:url>
-                        <li><a class="ui-pagination__link" href="<c:out value='${customerPreviousPageUrl}' />" aria-label="이전 페이지">&lsaquo;</a></li>
-                    </c:if>
-                    <c:forEach begin="${startPage}" end="${endPage}" var="pageNumber">
-                        <c:choose>
-                            <c:when test="${pageNumber == currentPage}">
-                                <li><span class="ui-pagination__link" aria-current="page"><c:out value="${pageNumber}" /></span></li>
-                            </c:when>
-                            <c:otherwise>
-                                <c:url var="customerPageUrl" value="/customers">
-                                    <c:param name="view" value="list" />
-                                    <c:param name="filter" value="${filter}" />
-                                    <c:param name="sortField" value="${sortField}" />
-                                    <c:param name="sortDirection" value="${sortDirection}" />
-                                    <c:param name="page" value="${pageNumber}" />
-                                    <c:param name="pageSize" value="${pageSize}" />
-                                    <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
-                                </c:url>
-                                <li><a class="ui-pagination__link" href="<c:out value='${customerPageUrl}' />"><c:out value="${pageNumber}" /></a></li>
-                            </c:otherwise>
-                        </c:choose>
-                    </c:forEach>
-                    <c:if test="${currentPage < totalPages}">
-                        <c:url var="customerNextPageUrl" value="/customers">
-                            <c:param name="view" value="list" />
-                            <c:param name="filter" value="${filter}" />
-                            <c:param name="sortField" value="${sortField}" />
-                            <c:param name="sortDirection" value="${sortDirection}" />
-                            <c:param name="page" value="${currentPage + 1}" />
-                            <c:param name="pageSize" value="${pageSize}" />
-                            <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
-                        </c:url>
-                        <li><a class="ui-pagination__link" href="<c:out value='${customerNextPageUrl}' />" aria-label="다음 페이지">&rsaquo;</a></li>
-                    </c:if>
-                </ul>
-            </nav>
+        <c:if test="${currentPage > 1}">
+            <c:url var="customerPreviousPageUrl" value="/customers">
+                <c:param name="view" value="list" />
+                <c:param name="filter" value="${filter}" />
+                <c:param name="sortField" value="${sortField}" />
+                <c:param name="sortDirection" value="${sortDirection}" />
+                <c:param name="page" value="${currentPage - 1}" />
+                <c:param name="pageSize" value="${pageSize}" />
+                <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
+            </c:url>
         </c:if>
+        <c:if test="${currentPage < totalPages}">
+            <c:url var="customerNextPageUrl" value="/customers">
+                <c:param name="view" value="list" />
+                <c:param name="filter" value="${filter}" />
+                <c:param name="sortField" value="${sortField}" />
+                <c:param name="sortDirection" value="${sortDirection}" />
+                <c:param name="page" value="${currentPage + 1}" />
+                <c:param name="pageSize" value="${pageSize}" />
+                <c:if test="${not empty q}"><c:param name="q" value="${q}" /></c:if>
+            </c:url>
+        </c:if>
+        <t:tableFooter totalCount="${currentCount}"
+                       itemLabel="고객사"
+                       currentPage="${currentPage}"
+                       totalPages="${totalPages}"
+                       previousUrl="${customerPreviousPageUrl}"
+                       nextUrl="${customerNextPageUrl}"
+                       paginationLabel="고객사 페이지" />
     </div>
     <div class="customer-secondary-action">
         <a href="${pageContext.request.contextPath}/customers?view=add"

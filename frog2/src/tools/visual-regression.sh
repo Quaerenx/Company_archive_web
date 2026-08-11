@@ -54,6 +54,7 @@ done
 
 WORK_ROOT="$(mktemp -d /tmp/frog2-visual-regression.XXXXXX)"
 WORK_PROFILE="$(mktemp -d /root/snap/firefox/common/frog2-visual-profile.XXXXXX)"
+PUBLIC_PROFILE="$(mktemp -d /root/snap/firefox/common/frog2-visual-public.XXXXXX)"
 CURRENT_ROOT="$WORK_ROOT/current"
 DIFF_ROOT="$WORK_ROOT/diff"
 
@@ -63,6 +64,9 @@ cleanup() {
     esac
     case "$WORK_PROFILE" in
         /root/snap/firefox/common/frog2-visual-profile.*) rm -rf -- "$WORK_PROFILE" ;;
+    esac
+    case "$PUBLIC_PROFILE" in
+        /root/snap/firefox/common/frog2-visual-public.*) rm -rf -- "$PUBLIC_PROFILE" ;;
     esac
 }
 trap cleanup EXIT INT TERM
@@ -86,15 +90,28 @@ printf '%s\n' \
     'user_pref("browser.cache.disk.enable", false);' \
     'user_pref("browser.sessionstore.resume_from_crash", false);' \
     >> "$WORK_PROFILE/user.js"
+printf '%s\n' \
+    'user_pref("ui.prefersReducedMotion", 1);' \
+    'user_pref("browser.cache.disk.enable", false);' \
+    'user_pref("browser.sessionstore.resume_from_crash", false);' \
+    >> "$PUBLIC_PROFILE/user.js"
 
 capture_all() {
     destination="$1"
     mkdir -p "$destination"
+    rm -f "$destination/capture-metrics.json"
+    node src/tools/capture-visual-regression.mjs \
+        "$BASE_URL" \
+        "$PUBLIC_PROFILE" \
+        "$ROUTE_MANIFEST" \
+        "$destination" \
+        public
     node src/tools/capture-visual-regression.mjs \
         "$BASE_URL" \
         "$WORK_PROFILE" \
         "$ROUTE_MANIFEST" \
-        "$destination"
+        "$destination" \
+        authenticated
     identify "$destination"/*.png >/dev/null
 }
 

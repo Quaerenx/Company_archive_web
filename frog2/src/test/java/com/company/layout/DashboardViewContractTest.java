@@ -105,6 +105,13 @@ class DashboardViewContractTest {
         assertTrue(completedPoint.contains("block-size: 6px;"));
         assertTrue(styles.contains(".maintenance-assignee-customer:hover"));
         assertTrue(styles.contains("background: var(--color-surface-hover);"));
+        String frequency = cssRule(
+                styles,
+                ".dashboard-page .maintenance-assignee-frequency");
+        assertTrue(frequency.contains("margin-inline-start: auto;"));
+        assertTrue(frequency.contains("background: var(--color-surface);"));
+        assertTrue(frequency.contains("border: 1px solid var(--color-border);"));
+        assertTrue(frequency.contains("white-space: nowrap;"));
         String monthHeader = cssRule(
                 styles,
                 ".dashboard-page .maintenance-month-header");

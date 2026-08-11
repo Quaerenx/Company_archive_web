@@ -33,6 +33,7 @@ class CarbonIconUsageContractTest {
         String tokens = read("resources/css/tokens.css");
         String uiSystem = read("resources/css/ui-system.css");
         String meetings = read("meeting/meeting_list.jsp");
+        String tableFooter = read("WEB-INF/tags/tableFooter.tag");
 
         assertTrue(tokens.contains("--control-height-md: 44px;"));
         assertTrue(uiSystem.contains(".ui-system .ui-touch-target"));
@@ -41,12 +42,13 @@ class CarbonIconUsageContractTest {
         assertTrue(uiSystem.contains(".ui-system .ui-pagination__link"));
         assertFalse(uiSystem.contains("min-block-size: 40px;"));
         assertFalse(uiSystem.contains("min-inline-size: 40px;"));
-        for (String label : List.of("첫 페이지", "이전 페이지", "다음 페이지", "마지막 페이지")) {
-            assertTrue(meetings.contains(
-                    "class=\"page-link ui-touch-target\" aria-label=\"" + label + "\""));
-        }
-        assertTrue(meetings.contains("fa-angle-double-left\" aria-hidden=\"true\""));
-        assertTrue(meetings.contains("fa-angle-double-right\" aria-hidden=\"true\""));
+        assertTrue(meetings.contains("<t:tableFooter"));
+        assertTrue(tableFooter.contains("aria-label=\"${previousLabel}\""));
+        assertTrue(tableFooter.contains("aria-label=\"${nextLabel}\""));
+        assertTrue(tableFooter.contains("aria-hidden=\"true\">&lsaquo;</span>"));
+        assertTrue(tableFooter.contains("aria-hidden=\"true\">&rsaquo;</span>"));
+        assertFalse(meetings.contains("fa-angle-double-left"));
+        assertFalse(meetings.contains("fa-angle-double-right"));
     }
 
     @Test

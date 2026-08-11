@@ -30,10 +30,19 @@ import org.junit.jupiter.api.TestMethodOrder;
 class DevelopmentServerSmokeTest {
     private static final Pattern CSRF_INPUT = Pattern.compile(
             "name=\\\"_csrf\\\"\\s+value=\\\"([^\\\"]+)\\\"");
+    private static final Pattern CUSTOMER_DETAIL_LINK = Pattern.compile(
+            "<a class=\\\"customer-detail-link\\\"\\s+href=\\\"([^\\\"]+)\\\"");
     private static final List<String> PROTECTED_ROUTES = List.of(
             "dashboard",
             "customers",
             "maintenance",
+            "meeting",
+            "troubleshooting",
+            "mypage",
+            "vm-hosts",
+            "file-repository");
+    private static final List<String> TABLE_ROUTES = List.of(
+            "customers",
             "meeting",
             "troubleshooting",
             "mypage",
@@ -70,6 +79,9 @@ class DevelopmentServerSmokeTest {
         assertEquals(200, login.statusCode());
         assertTrue(header(login, "Content-Type").startsWith("text/html"));
         assertTrue(login.body().contains("id=\"loginForm\""));
+        assertTrue(login.body().contains("autocomplete=\"off\""));
+        assertFalse(login.body().contains("autocomplete=\"on\""));
+        assertFalse(login.body().contains("autocomplete=\"username\""));
         assertTrue(CSRF_INPUT.matcher(login.body()).find());
         assertEquals("nosniff", header(login, "X-Content-Type-Options"));
         assertTrue(header(login, "Cache-Control").contains("no-store"));
@@ -135,6 +147,35 @@ class DevelopmentServerSmokeTest {
             assertTrue(response.body().toLowerCase(Locale.ROOT).contains("<html"));
             assertFalse(response.body().contains("id=\"loginForm\""));
         }
+
+        for (String route : TABLE_ROUTES) {
+            HttpResponse<String> response = get(route, "text/html");
+            assertEquals(200, response.statusCode(), "Table page failed: /" + route);
+            assertTrue(
+                    response.body().contains("class=\"ui-table-footer\""),
+                    "Shared table footer missing: /" + route);
+            assertTrue(
+                    response.body().contains("class=\"ui-table-pagination\""),
+                    "Always-visible table pagination missing: /" + route);
+        }
+
+        HttpResponse<String> customers = get("customers", "text/html");
+        Matcher detailLink = CUSTOMER_DETAIL_LINK.matcher(customers.body());
+        assertTrue(detailLink.find(), "Customer list did not expose a detail link");
+        URI detailUri = baseUri.resolve(
+                detailLink.group(1).replace("&amp;", "&"));
+        HttpResponse<String> detail = client.send(
+                HttpRequest.newBuilder(detailUri)
+                        .timeout(Duration.ofSeconds(20))
+                        .header("Accept", "text/html")
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        assertEquals(200, detail.statusCode());
+        assertTrue(detail.body().contains("detail-section--summary"));
+        assertTrue(detail.body().contains("detail-section--collapsible"));
+        assertTrue(detail.body().contains("environment-detail ui-detail"));
+        assertFalse(detail.body().contains("id=\"loginForm\""));
     }
 
     private static HttpResponse<String> get(String relativePath, String accept) throws Exception {

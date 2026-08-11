@@ -43,6 +43,9 @@ class MinimalPaletteContractTest {
         assertTrue(tokens.contains("--color-icon-strong: var(--palette-text);"));
         assertTrue(tokens.contains("--color-icon: var(--palette-text-muted);"));
         assertTrue(tokens.contains("--color-icon-active: var(--palette-brand);"));
+        assertTrue(tokens.contains("--color-chart-usage: var(--palette-brand);"));
+        assertTrue(tokens.contains("--color-chart-used: var(--palette-success);"));
+        assertTrue(tokens.contains("--color-chart-capacity: var(--palette-warning);"));
     }
 
     @Test
@@ -77,6 +80,8 @@ class MinimalPaletteContractTest {
             for (Path path : paths.filter(Files::isRegularFile)
                     .filter(file -> file.toString().endsWith(".css")
                             || file.toString().endsWith(".js"))
+                    .filter(file -> !file.startsWith(
+                            WEBAPP.resolve("resources/vendor")))
                     .filter(file -> !file.equals(WEBAPP.resolve("resources/css/tokens.css")))
                     .toList()) {
                 String source = Files.readString(path);

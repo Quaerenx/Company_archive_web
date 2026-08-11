@@ -3,8 +3,9 @@
 ## Purpose
 
 Detect unintended changes to the authenticated Archive layout after shared CSS edits.
-The baseline covers dashboard, customers, maintenance, meetings, troubleshooting,
-file repository, and my page at 360, 768, 1024, and 1440 pixel widths.
+The baseline covers login, dashboard, customer list and detail, maintenance history,
+meetings, troubleshooting, file repository, and my page at 360, 390, 768, 1024,
+and 1440 pixel widths.
 
 ## Safety contract
 
@@ -18,6 +19,10 @@ file repository, and my page at 360, 768, 1024, and 1440 pixel widths.
 - Credentials are accepted only through process environment variables and are never
   written to the profile, command line, screenshots, logs, or baseline manifest.
 - Reduced motion is forced so the decorative canvas cannot create random pixel diffs.
+- Public login capture uses a separate empty Firefox profile. Authenticated routes use
+  only the temporary credential or cookie profile.
+- Detail URLs are discovered at runtime. Customer identifiers are never written to
+  route manifests, screenshot names, or capture metrics.
 
 ## Create the first baseline
 
@@ -64,5 +69,7 @@ failure disappear.
 
 ## Current status
 
-The route manifest and comparison runner cover 28 authenticated views. Baselines are
-stored outside Git and should be created only from a reviewed development deployment.
+The route manifest and comparison runner cover 45 views: nine release screens at five
+widths. `capture-metrics.json` records only route aliases, viewport dimensions,
+document scroll width, and console error counts. Baselines are stored outside Git and
+should be created only from a reviewed development deployment.

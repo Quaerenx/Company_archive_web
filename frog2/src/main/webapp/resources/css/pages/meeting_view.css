@@ -19,7 +19,7 @@
 }
 
 /* 회의록 헤더 */
-.meeting-header {
+:where(.meeting-view) .meeting-header {
     background: var(--color-surface);
     padding: var(--space-32);
     border-radius: var(--radius-lg);
@@ -28,7 +28,7 @@
     border: 1px solid var(--color-border);
 }
 
-.meeting-title {
+:where(.meeting-view) .meeting-title {
     font-size: var(--font-size-2xl);
     font-weight: 600;
     color: var(--color-text-strong);
@@ -68,7 +68,7 @@
     color: var(--color-text);
 }
 
-.meeting-actions {
+:where(.meeting-view) .meeting-actions {
     display: flex;
     gap: var(--space-12);
     flex-wrap: wrap;
@@ -113,7 +113,7 @@
 }
 
 /* 댓글 섹션 */
-.comments-section {
+:where(.meeting-view) .comments-section {
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     box-shadow: none;
@@ -219,7 +219,7 @@
     margin-top: var(--space-16);
 }
 
-.comment-item {
+:where(.meeting-view) .comment-item {
     background: transparent;
     border-radius: 0;
     border-bottom: 1px solid var(--color-surface-subtle);
@@ -228,30 +228,30 @@
     position: relative;
 }
 
-.comment-item:last-child {
+:where(.meeting-view) .comment-item:last-child {
     border-bottom: none;
     padding-bottom: 0;
 }
 
-.comment-header {
+:where(.meeting-view) .comment-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: var(--space-12);
 }
 
-.comment-author {
+:where(.meeting-view) .comment-author {
     font-weight: 600;
     color: var(--color-text);
     margin-bottom: var(--space-4);
 }
 
-.comment-date {
+:where(.meeting-view) .comment-date {
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
 }
 
-.comment-actions {
+:where(.meeting-view) .comment-actions {
     display: flex;
     gap: var(--space-8);
     margin-top: 0;
@@ -283,7 +283,7 @@
     color: var(--color-danger);
 }
 
-.comment-content {
+:where(.meeting-view) .comment-content {
     color: var(--color-text);
     line-height: 1.6;
     white-space: pre-wrap;
@@ -368,11 +368,11 @@
         max-width: 100%;
     }
 
-    .meeting-header {
+    :where(.meeting-view) .meeting-header {
         padding: var(--space-24);
     }
 
-    .meeting-title {
+    :where(.meeting-view) .meeting-title {
         font-size: var(--font-size-xl);
     }
 
@@ -381,11 +381,11 @@
         gap: var(--space-12);
     }
 
-    .meeting-actions {
+    :where(.meeting-view) .meeting-actions {
         flex-direction: column;
     }
 
-    .meeting-actions .btn {
+    :where(.meeting-view) .meeting-actions .btn {
         justify-content: center;
     }
 
@@ -393,13 +393,13 @@
         padding: var(--space-24);
     }
 
-    .comment-header {
+    :where(.meeting-view) .comment-header {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--space-8);
     }
 
-    .comment-actions {
+    :where(.meeting-view) .comment-actions {
         order: -1;
     }
 }

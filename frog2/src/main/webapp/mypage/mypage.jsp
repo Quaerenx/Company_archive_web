@@ -158,7 +158,9 @@
             </c:if>
             <p class="vm-board-note">개인 개발·검증용 VM 연결 정보를 관리합니다.</p>
 
-            <div class="vm-table-wrap ui-table-wrap">
+            <div class="vm-table-wrap ui-table-wrap"
+                 data-ui-scroll-region
+                 data-ui-scroll-label="개인 VM 호스트 표">
                 <table class="vm-table ui-table">
                     <caption class="sr-only">개인 VM 호스트 목록</caption>
                     <thead>
@@ -208,6 +210,11 @@
                     </tbody>
                 </table>
             </div>
+            <t:tableFooter totalCount="${empty vmHosts ? 0 : vmHosts.size()}"
+                           itemLabel="VM 호스트"
+                           currentPage="1"
+                           totalPages="1"
+                           paginationLabel="개인 VM 호스트 페이지" />
         </div>
     </section>
 

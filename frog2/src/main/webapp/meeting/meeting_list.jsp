@@ -47,15 +47,18 @@
     <!-- 회의록 목록 (troubleshooting_list 테이블 디자인 적용) -->
 
     <div class="table-container">
-        <div class="table-wrapper ui-table-wrap">
+        <div class="table-wrapper ui-table-wrap"
+             data-ui-scroll-region
+             data-ui-scroll-label="회의록 표">
             <c:choose>
                 <c:when test="${not empty meetingList}">
                     <table class="meeting-list-table ui-table">
+                        <caption class="sr-only">회의록 목록</caption>
                         <thead>
                             <tr>
-                                <th>제목</th>
-                                <th width="120">글쓴이</th>
-                                <th width="160">회의 일시</th>
+                                <th scope="col">제목</th>
+                                <th scope="col" width="120">글쓴이</th>
+                                <th scope="col" width="160">회의 일시</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -81,32 +84,25 @@
                         </tbody>
                     </table>
 
-                    <!-- 페이징 -->
-                    <div class="pagination-container">
-                        <div class="page-info">
-                            ${currentPage} / ${totalPages} 페이지 (총 ${totalCount}건)
-                        </div>
-                        <div class="pagination">
-                            <c:if test="${currentPage > 1}">
-                                <a href="?view=list&page=1" class="page-link ui-touch-target" aria-label="첫 페이지"><i class="fas fa-angle-double-left" aria-hidden="true"></i></a>
-                                <a href="?view=list&page=${currentPage - 1}" class="page-link ui-touch-target" aria-label="이전 페이지"><i class="fas fa-angle-left" aria-hidden="true"></i></a>
-                            </c:if>
-                            <c:set var="startPage" value="${currentPage - 2}" />
-                            <c:set var="endPage" value="${currentPage + 2}" />
-                            <c:if test="${startPage < 1}"><c:set var="startPage" value="1" /></c:if>
-                            <c:if test="${endPage > totalPages}"><c:set var="endPage" value="${totalPages}" /></c:if>
-                            <c:forEach var="i" begin="${startPage}" end="${endPage}">
-                                <c:choose>
-                                    <c:when test="${i == currentPage}"><span class="page-link active">${i}</span></c:when>
-                                    <c:otherwise><a href="?view=list&page=${i}" class="page-link">${i}</a></c:otherwise>
-                                </c:choose>
-                            </c:forEach>
-                            <c:if test="${currentPage < totalPages}">
-                                <a href="?view=list&page=${currentPage + 1}" class="page-link ui-touch-target" aria-label="다음 페이지"><i class="fas fa-angle-right" aria-hidden="true"></i></a>
-                                <a href="?view=list&page=${totalPages}" class="page-link ui-touch-target" aria-label="마지막 페이지"><i class="fas fa-angle-double-right" aria-hidden="true"></i></a>
-                            </c:if>
-                        </div>
-                    </div>
+                    <c:if test="${currentPage > 1}">
+                        <c:url var="meetingPreviousPageUrl" value="/meeting">
+                            <c:param name="view" value="list" />
+                            <c:param name="page" value="${currentPage - 1}" />
+                        </c:url>
+                    </c:if>
+                    <c:if test="${currentPage < totalPages}">
+                        <c:url var="meetingNextPageUrl" value="/meeting">
+                            <c:param name="view" value="list" />
+                            <c:param name="page" value="${currentPage + 1}" />
+                        </c:url>
+                    </c:if>
+                    <t:tableFooter totalCount="${totalCount}"
+                                   itemLabel="회의록"
+                                   currentPage="${currentPage}"
+                                   totalPages="${totalPages}"
+                                   previousUrl="${meetingPreviousPageUrl}"
+                                   nextUrl="${meetingNextPageUrl}"
+                                   paginationLabel="회의록 페이지" />
                 </c:when>
                 <c:otherwise>
                     <div class="empty-state">

@@ -34,7 +34,7 @@
                   method="post"
                   id="loginForm"
                   class="login-form ui-form"
-                  autocomplete="on"
+                  autocomplete="off"
                   data-ui-submit-lock="auto">
                 <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
 
@@ -49,31 +49,33 @@
                 </c:if>
 
                 <div class="form-group">
-                    <label class="login-field-label" for="userId">아이디</label>
                     <input type="text"
                            id="userId"
                            name="userId"
-                           placeholder="아이디"
+                           placeholder=" "
                            required
-                           autocomplete="username"
+                           autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
                            spellcheck="false"
-                           aria-invalid="${not empty errorMessage}">
+                           aria-invalid="${not empty errorMessage}"
+                           aria-describedby="${not empty errorMessage ? 'login-error' : ''}">
+                    <label class="login-field-label" for="userId">아이디</label>
                 </div>
 
                 <div class="form-group">
-                    <label class="login-field-label" for="password">비밀번호</label>
                     <input type="password"
                            id="password"
                            name="password"
-                           placeholder="비밀번호"
+                           placeholder=" "
                            required
                            autocomplete="current-password"
                            autocapitalize="off"
                            autocorrect="off"
                            spellcheck="false"
-                           aria-invalid="${not empty errorMessage}">
+                           aria-invalid="${not empty errorMessage}"
+                           aria-describedby="${not empty errorMessage ? 'login-error' : ''}">
+                    <label class="login-field-label" for="password">비밀번호</label>
                 </div>
 
                 <button type="submit"

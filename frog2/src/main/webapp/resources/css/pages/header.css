@@ -519,6 +519,7 @@
         right: 0;
         left: 0;
         max-height: calc(100vh - 88px);
+        max-height: calc(100dvh - 88px);
         margin-top: var(--space-8);
         overflow-y: auto;
         overscroll-behavior: contain;

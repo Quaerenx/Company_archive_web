@@ -18,20 +18,6 @@
     box-shadow: none;
 }
 
-.meeting-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--space-16);
-}
-
-.meeting-title {
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    color: var(--color-text);
-    margin: 0;
-}
-
 .meeting-date {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
@@ -45,21 +31,6 @@
     margin: var(--space-4) 0;
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
-}
-
-.meeting-actions {
-    display: flex;
-    gap: var(--space-12);
-    flex-wrap: wrap;
-}
-
-.meeting-actions .btn {
-    padding: var(--space-8) var(--space-16);
-    font-size: var(--font-size-sm);
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-    font-weight: 500;
-    transition: background-color var(--motion-fast) var(--motion-ease);
 }
 
 .meeting-actions .btn-primary {
@@ -201,68 +172,6 @@
 .meeting-detail-value {
     color: var(--color-text-muted);
     flex: 1;
-}
-
-/* 댓글 섹션 */
-.comments-section {
-    margin-top: var(--space-32);
-    padding-top: var(--space-20);
-    border-top: 1px solid var(--color-border);
-}
-
-.comment-item {
-    background: var(--color-surface-subtle);
-    border-radius: var(--radius-md);
-    padding: var(--space-16);
-    margin-bottom: var(--space-16);
-}
-
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-12);
-}
-
-.comment-author {
-    font-weight: 500;
-    color: var(--color-text);
-}
-
-.comment-date {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-xs);
-}
-
-.comment-content {
-    color: var(--color-text);
-    max-inline-size: var(--measure-wide);
-    line-height: 1.5;
-}
-
-.comment-actions {
-    margin-top: var(--space-12);
-    display: flex;
-    gap: var(--space-12);
-}
-
-.comment-actions .btn {
-    padding: var(--space-4) var(--space-8);
-    font-size: var(--font-size-xs);
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-    font-weight: 500;
-    transition: background-color var(--motion-fast) var(--motion-ease);
-}
-
-.comment-actions .btn-primary {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-}
-
-.comment-actions .btn-danger {
-    background: var(--color-danger);
-    color: var(--color-on-danger);
 }
 
 /* 버튼 스타일 */

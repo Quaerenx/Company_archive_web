@@ -97,16 +97,19 @@
                 <i class="fas fa-plus"></i> 추가
             </button>
         </div>
-        <div class="table-responsive ui-table-wrap">
+        <div class="table-responsive ui-table-wrap"
+             data-ui-scroll-region
+             data-ui-scroll-label="월별 고객 응대 표">
             <table class="data-table ui-table">
+                <caption class="sr-only">월별 고객 응대 기록</caption>
                 <thead>
                     <tr>
-                        <th>날짜</th>
-                        <th>고객명</th>
-                        <th>사유</th>
-                        <th>조치 내용</th>
-                        <th>비고</th>
-                        <th class="monthly-response-actions-column">액션</th>
+                        <th scope="col">날짜</th>
+                        <th scope="col">고객명</th>
+                        <th scope="col">사유</th>
+                        <th scope="col">조치 내용</th>
+                        <th scope="col">비고</th>
+                        <th scope="col" class="monthly-response-actions-column">액션</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -142,6 +145,11 @@
                 </tbody>
             </table>
         </div>
+        <t:tableFooter totalCount="${monthlyResponses.size()}"
+                       itemLabel="응대 기록"
+                       currentPage="1"
+                       totalPages="1"
+                       paginationLabel="월별 고객 응대 페이지" />
     </div>
     </c:if>
 

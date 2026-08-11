@@ -92,6 +92,39 @@ class MeetingCssSplitContractTest {
         }
     }
 
+    @Test
+    void sharedMeetingCssDoesNotRedefineViewAndCommentSelectors()
+            throws Exception {
+        String shared = readCss("meeting.css");
+        String view = readCss("meeting_view.css");
+
+        for (String selector : List.of(
+                ".meeting-header {",
+                ".meeting-title {",
+                ".meeting-actions {",
+                ".meeting-actions .btn {",
+                ".comments-section {",
+                ".comment-item {",
+                ".comment-header {",
+                ".comment-author {",
+                ".comment-date {",
+                ".comment-content {",
+                ".comment-actions {")) {
+            assertFalse(shared.contains(selector), selector);
+        }
+
+        for (String selector : List.of(
+                ":where(.meeting-view) .comments-section {",
+                ":where(.meeting-view) .comment-item {",
+                ":where(.meeting-view) .comment-header {",
+                ":where(.meeting-view) .comment-content {",
+                ":where(.meeting-view) .comment-actions {")) {
+            assertTrue(view.contains(selector), selector);
+        }
+        assertFalse(shared.contains("!important"));
+        assertFalse(view.contains("!important"));
+    }
+
     private static String readCss(String fileName) throws Exception {
         Path file = CSS.resolve(fileName);
         assertTrue(Files.isRegularFile(file), file.toString());

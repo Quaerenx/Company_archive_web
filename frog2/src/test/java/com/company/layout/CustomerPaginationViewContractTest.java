@@ -20,8 +20,9 @@ class CustomerPaginationViewContractTest {
 
         assertTrue(page.contains("name=\"q\""));
         assertTrue(page.contains("name=\"pageSize\""));
-        assertTrue(page.contains("ui-pagination"));
-        assertTrue(page.contains("aria-current=\"page\""));
+        assertTrue(page.contains("<t:tableFooter"));
+        assertTrue(page.contains("customerPreviousPageUrl"));
+        assertTrue(page.contains("customerNextPageUrl"));
         assertTrue(page.contains(
                 "<c:param name=\"filter\" value=\"${filter}\" />"));
         assertTrue(page.contains(
@@ -69,5 +70,32 @@ class CustomerPaginationViewContractTest {
         assertTrue(styles.contains("flex: 0 0 auto;"));
         assertTrue(styles.contains("min-inline-size: var(--indicator-icon-size);"));
         assertTrue(baseStyles.contains("scrollbar-gutter: stable;"));
+    }
+
+    @Test
+    void keepsTableFooterMinimalAndVisibleForEveryPageCount() throws Exception {
+        String page = Files.readString(WEBAPP.resolve("customers/customers_list.jsp"));
+        String tag = Files.readString(WEBAPP.resolve("WEB-INF/tags/tableFooter.tag"));
+        String styles = Files.readString(WEBAPP.resolve("resources/css/ui-system.css"));
+
+        assertTrue(page.contains("<t:tableFooter totalCount=\"${currentCount}\""));
+        assertTrue(page.contains("itemLabel=\"고객사\""));
+        assertTrue(page.contains("totalPages=\"${totalPages}\""));
+        assertFalse(page.contains("totalPages > 1"));
+        assertFalse(page.contains("<c:forEach begin=\"${startPage}\""));
+        assertFalse(page.contains("aria-current=\"page\""));
+
+        assertTrue(tag.contains("totalPages ge 1 ? totalPages : 1"));
+        assertTrue(tag.contains("class=\"ui-table-pagination__position\""));
+        assertTrue(styles.contains(".ui-system .ui-table-footer {"));
+        assertTrue(styles.contains("min-block-size: 48px;"));
+        assertTrue(styles.contains(".ui-system .ui-table-pagination__control {"));
+        assertTrue(styles.contains("inline-size: var(--control-height-md);"));
+        assertTrue(styles.contains("block-size: var(--control-height-md);"));
+        assertTrue(styles.contains("background: transparent;"));
+        assertTrue(styles.contains(".ui-system .ui-table-pagination__control.is-disabled {\n"
+                + "    opacity: 0.35;\n"
+                + "    pointer-events: none;\n"
+                + "}"));
     }
 }

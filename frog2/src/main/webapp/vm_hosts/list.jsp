@@ -112,18 +112,21 @@
         <section class="vm-panel">
           <div class="vm-panel-header"><i class="fas fa-list"></i> 등록된 호스트 목록</div>
           <div class="vm-panel-body">
-            <div class="vm-table-wrap ui-table-wrap">
+            <div class="vm-table-wrap ui-table-wrap"
+                 data-ui-scroll-region
+                 data-ui-scroll-label="개인 호스트 표">
               <table class="vm-table ui-table">
+                <caption class="sr-only">개인 호스트 목록</caption>
                 <thead>
                   <tr>
-                    <th>IP</th>
-                    <th>목적</th>
-                    <th>OS</th>
-                    <th>VERTICA-ver</th>
-                    <th>원격지</th>
-                    <th>비고</th>
-                    <th>수정일</th>
-                    <th>작업</th>
+                    <th scope="col">IP</th>
+                    <th scope="col">목적</th>
+                    <th scope="col">OS</th>
+                    <th scope="col">VERTICA-ver</th>
+                    <th scope="col">원격지</th>
+                    <th scope="col">비고</th>
+                    <th scope="col">수정일</th>
+                    <th scope="col">작업</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -172,6 +175,11 @@
                 </tbody>
               </table>
             </div>
+            <t:tableFooter totalCount="${empty vmHosts ? 0 : vmHosts.size()}"
+                           itemLabel="VM 호스트"
+                           currentPage="1"
+                           totalPages="1"
+                           paginationLabel="VM 호스트 페이지" />
           </div>
         </section>
       </div>

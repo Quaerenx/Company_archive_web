@@ -1,7 +1,9 @@
-dashboard	dashboard
-customers	customers
-maintenance	maintenance
-meeting	meeting?view=list
-troubleshooting	troubleshooting?view=list
-file-repository	file-repository
-mypage	mypage
+login	login	public
+dashboard	dashboard	authenticated
+customers	customers	authenticated
+customer-detail	@customer-detail	authenticated
+maintenance-history	@maintenance-history	authenticated
+meeting	meeting?view=list	authenticated
+troubleshooting	troubleshooting?view=list	authenticated
+file-repository	file-repository	authenticated
+mypage	mypage	authenticated

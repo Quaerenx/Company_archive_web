@@ -3,10 +3,21 @@ import { createServer } from 'node:http';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const [baseUrlArgument, profileArgument, manifestArgument, destinationArgument] = process.argv.slice(2);
+const [
+    baseUrlArgument,
+    profileArgument,
+    manifestArgument,
+    destinationArgument,
+    accessArgument = 'all'
+] = process.argv.slice(2);
 
 if (!baseUrlArgument || !profileArgument || !manifestArgument || !destinationArgument) {
-    throw new Error('Usage: capture-visual-regression.mjs BASE_URL PROFILE MANIFEST DESTINATION');
+    throw new Error(
+        'Usage: capture-visual-regression.mjs BASE_URL PROFILE MANIFEST DESTINATION [public|authenticated|all]'
+    );
+}
+if (!['public', 'authenticated', 'all'].includes(accessArgument)) {
+    throw new Error(`Unsupported visual regression access scope: ${accessArgument}`);
 }
 
 const baseUrl = new URL(baseUrlArgument);
@@ -18,7 +29,8 @@ const basePath = `${baseUrl.pathname.replace(/\/$/, '')}/`;
 
 const profilePath = resolve(profileArgument);
 const destinationPath = resolve(destinationArgument);
-const routes = readRoutes(resolve(manifestArgument));
+const routes = readRoutes(resolve(manifestArgument))
+    .filter((route) => accessArgument === 'all' || route.access === accessArgument);
 const e2eUserId = process.env.FROG2_E2E_USER_ID || '';
 const e2ePassword = process.env.FROG2_E2E_PASSWORD || '';
 if (Boolean(e2eUserId) !== Boolean(e2ePassword)) {
@@ -26,6 +38,7 @@ if (Boolean(e2eUserId) !== Boolean(e2ePassword)) {
 }
 const viewports = [
     [360, 900],
+    [390, 900],
     [768, 1024],
     [1024, 900],
     [1440, 1000]
@@ -40,6 +53,7 @@ let sessionId;
 let bidiClient;
 let browsingContextId;
 const consoleErrors = [];
+const captureMetrics = [];
 
 driver.stdout.on('data', () => {});
 driver.stderr.on('data', (chunk) => {
@@ -86,7 +100,7 @@ try {
         events: ['log.entryAdded']
     });
 
-    if (e2eUserId) {
+    if (accessArgument !== 'public' && e2eUserId) {
         const errorStart = consoleErrors.length;
         await loginWithCredentials(e2eUserId, e2ePassword);
         assertNoConsoleErrors('login', errorStart);
@@ -96,10 +110,7 @@ try {
         for (const [width, height] of viewports) {
             await setViewport(width, height);
             const errorStart = consoleErrors.length;
-            const targetUrl = new URL(route.path, `${baseUrl.href.replace(/\/$/, '')}/`);
-            if (targetUrl.origin !== baseUrl.origin || !targetUrl.pathname.startsWith(basePath)) {
-                throw new Error(`Route is outside the approved development application: ${route.name}`);
-            }
+            const targetUrl = await resolveRouteUrl(route);
             await request('POST', `/session/${sessionId}/url`, { url: targetUrl.href });
             await delay(350);
 
@@ -107,23 +118,66 @@ try {
             if (
                 currentUrl.origin !== baseUrl.origin
                 || !currentUrl.pathname.startsWith(basePath)
-                || currentUrl.pathname === `${basePath}login`
+                || (route.access === 'authenticated'
+                    && currentUrl.pathname === `${basePath}login`)
             ) {
                 throw new Error(`Authenticated session is unavailable for route: ${route.name}`);
             }
             assertNoConsoleErrors(`${route.name}-${width}x${height}`, errorStart);
+            const metrics = await assertPageViewport(width, height);
+            captureMetrics.push({
+                consoleErrorCount: consoleErrors.length - errorStart,
+                height,
+                route: route.name,
+                scrollWidth: metrics.scrollWidth,
+                width
+            });
 
             const screenshot = await request('GET', `/session/${sessionId}/screenshot`);
             const output = resolve(destinationPath, `${route.name}-${width}x${height}.png`);
             writeFileSync(output, Buffer.from(screenshot, 'base64'), { mode: 0o600 });
         }
     }
+    writeCaptureMetrics();
 } finally {
     bidiClient?.close();
     if (sessionId) {
         await request('DELETE', `/session/${sessionId}`).catch(() => {});
     }
     driver.kill('SIGTERM');
+}
+
+async function resolveRouteUrl(route) {
+    if (route.path === '@customer-detail') {
+        return discoverRouteUrl('customers', '.customer-detail-link', route.name);
+    }
+    if (route.path === '@maintenance-history') {
+        return discoverRouteUrl('maintenance', '.customer-card', route.name);
+    }
+    return approvedApplicationUrl(route.path, route.name);
+}
+
+async function discoverRouteUrl(indexPath, selector, routeName) {
+    const indexUrl = approvedApplicationUrl(indexPath, routeName);
+    await request('POST', `/session/${sessionId}/url`, { url: indexUrl.href });
+    await delay(350);
+    const element = await findElement(selector);
+    const href = await request(
+        'GET',
+        `/session/${sessionId}/element/${element}/attribute/href`
+    );
+    if (!href) {
+        throw new Error(`Discovery link is unavailable for route: ${routeName}`);
+    }
+    return approvedApplicationUrl(href, routeName);
+}
+
+function approvedApplicationUrl(path, routeName) {
+    const targetUrl = new URL(path, `${baseUrl.href.replace(/\/$/, '')}/`);
+    if (targetUrl.origin !== baseUrl.origin || !targetUrl.pathname.startsWith(basePath)) {
+        throw new Error(`Route is outside the approved development application: ${routeName}`);
+    }
+    return targetUrl;
 }
 
 async function loginWithCredentials(userId, password) {
@@ -177,11 +231,12 @@ function readRoutes(manifestPath) {
         .split(/\r?\n/)
         .filter((line) => line.trim())
         .map((line) => {
-            const [name, path] = line.split('\t');
-            if (!name || !path || !/^[a-z0-9-]+$/.test(name)) {
+            const [name, path, access] = line.split('\t');
+            if (!name || !path || !/^[a-z0-9-]+$/.test(name)
+                    || !['public', 'authenticated'].includes(access)) {
                 throw new Error(`Invalid visual regression route: ${line}`);
             }
-            return { name, path };
+            return { access, name, path };
         });
 }
 
@@ -198,12 +253,43 @@ async function setViewport(width, height) {
             + `${metrics.width}x${metrics.height}`
         );
     }
+}
+
+async function assertPageViewport(width, height) {
+    const metrics = await viewportMetrics();
+    if (metrics.width !== width || metrics.height !== height) {
+        throw new Error(
+            `Route viewport changed from ${width}x${height} to `
+            + `${metrics.width}x${metrics.height}`
+        );
+    }
     if (metrics.scrollWidth > metrics.width) {
         throw new Error(
             `Horizontal overflow at ${width}x${height}: `
             + `${metrics.scrollWidth}px content in ${metrics.width}px viewport`
         );
     }
+    return metrics;
+}
+
+function writeCaptureMetrics() {
+    const output = resolve(destinationPath, 'capture-metrics.json');
+    let existing = [];
+    try {
+        const parsed = JSON.parse(readFileSync(output, 'utf8'));
+        if (Array.isArray(parsed)) {
+            existing = parsed;
+        }
+    } catch (error) {
+        if (error && error.code !== 'ENOENT') {
+            throw error;
+        }
+    }
+    writeFileSync(
+        output,
+        `${JSON.stringify(existing.concat(captureMetrics), null, 2)}\n`,
+        { mode: 0o600 }
+    );
 }
 
 function viewportMetrics() {

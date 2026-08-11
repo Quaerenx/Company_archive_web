@@ -67,9 +67,63 @@ class LoginViewContractTest {
                 "(?s).*\\.login-page \\.login-form\\s*\\{[^}]*"
                         + "gap:\\s*var\\(--space-12\\);.*"));
         assertTrue(styles.matches(
+                "(?s).*body\\.login-page\\s*\\{[^}]*"
+                        + "min-height:\\s*100vh;[^}]*"
+                        + "min-height:\\s*100dvh;.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-shell\\s*\\{[^}]*"
+                        + "inline-size:\\s*min\\(100%, 408px\\);.*"));
+        assertTrue(styles.matches(
+                "(?s).*body\\.login-page::after\\s*\\{[^}]*"
+                        + "background:\\s*radial-gradient\\([^}]*"
+                        + "var\\(--color-login-halo\\)[^}]*"
+                        + "inset:\\s*0;.*"));
+        assertFalse(styles.contains(".login-shell::before"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-card\\s*\\{[^}]*"
+                        + "background:\\s*var\\(--color-login-card\\);[^}]*"
+                        + "border:\\s*1px solid var\\(--color-login-card-border\\);[^}]*"
+                        + "border-radius:\\s*var\\(--radius-xl\\);[^}]*"
+                        + "box-shadow:\\s*var\\(--shadow-login\\);[^}]*"
+                        + "backdrop-filter:\\s*blur\\(var\\(--login-card-blur\\)\\);[^}]*"
+                        + "padding:\\s*clamp\\(var\\(--space-24\\), 6vw, var\\(--space-40\\)\\);.*"));
+        assertFalse(styles.contains("box-shadow: none;"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-header\\s*\\{[^}]*"
+                        + "margin-block-end:\\s*var\\(--space-24\\);.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-brand-logo\\s*\\{[^}]*"
+                        + "inline-size:\\s*min\\(100%, 208px\\);.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-form \\.form-group\\s*\\{[^}]*"
+                        + "position:\\s*relative;.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page #loginForm \\.login-field-label\\s*\\{[^}]*"
+                        + "line-height:\\s*var\\(--line-height-tight\\);.*"));
+        assertTrue(styles.matches(
+                "(?s).*#loginForm input:not\\(:placeholder-shown\\) "
+                        + "\\+ \\.login-field-label\\s*\\{[^}]*"
+                        + "top:\\s*var\\(--space-4\\);.*"));
+        assertTrue(styles.contains(".login-page #loginForm input {"));
+        assertTrue(styles.contains("#loginForm input:focus + .login-field-label"));
+        assertTrue(styles.contains(
+                "#loginForm input:not(:placeholder-shown) + .login-field-label {"));
+        assertTrue(styles.contains(
+                "#loginForm input:-webkit-autofill + .login-field-label {"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page #loginForm input\\s*\\{[^}]*"
+                        + "background:\\s*var\\(--color-surface\\);[^}]*"
+                        + "border-color:\\s*var\\(--color-border\\);[^}]*"
+                        + "border-radius:\\s*var\\(--radius-lg\\);.*"));
+        assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-submit\\s*\\{[^}]*"
-                        + "background:\\s*var\\(--color-surface-inverse\\);.*"));
-        assertTrue(styles.contains(".login-page .login-form input::placeholder"));
+                        + "background:\\s*var\\(--color-login-action\\);[^}]*"
+                        + "border-color:\\s*var\\(--color-login-action\\);[^}]*"
+                        + "border-radius:\\s*var\\(--radius-lg\\);.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-submit:hover\\s*\\{[^}]*"
+                        + "background:\\s*var\\(--color-login-action-hover\\);.*"));
+        assertTrue(styles.contains(".login-page #loginForm input::placeholder"));
         assertHasClasses(firstTag(page, "body"), "ui-system", "login-page");
         assertHasClasses(loginForm(page), "ui-form", "login-form");
         assertTrue(Pattern.compile(
@@ -80,7 +134,8 @@ class LoginViewContractTest {
     }
 
     @Test
-    void loginPreservesItsPostContractAndPasswordManagerHints() throws Exception {
+    void loginPreservesItsPostContractWhileSuppressingStoredUserIdSuggestions()
+            throws Exception {
         String page = read("login.jsp");
         String form = loginForm(page);
         String userId = tagById(page, "userId");
@@ -88,15 +143,26 @@ class LoginViewContractTest {
 
         assertTrue(form.contains("action=\"login\""));
         assertTrue(form.contains("method=\"post\""));
+        assertTrue(form.contains("autocomplete=\"off\""));
+        assertFalse(form.contains("autocomplete=\"on\""));
         assertTrue(page.contains("csrf_input.jspf"));
         assertTrue(userId.contains("name=\"userId\""));
-        assertTrue(userId.contains("autocomplete=\"username\""));
+        assertTrue(userId.contains("autocomplete=\"off\""));
+        assertFalse(userId.contains("autocomplete=\"username\""));
         assertTrue(password.contains("name=\"password\""));
         assertTrue(password.contains("autocomplete=\"current-password\""));
-        assertTrue(userId.contains("placeholder=\"아이디\""));
-        assertTrue(password.contains("placeholder=\"비밀번호\""));
+        assertTrue(userId.contains("placeholder=\" \""));
+        assertTrue(password.contains("placeholder=\" \""));
+        assertTrue(userId.contains(
+                "aria-describedby=\"${not empty errorMessage ? 'login-error' : ''}\""));
+        assertTrue(password.contains(
+                "aria-describedby=\"${not empty errorMessage ? 'login-error' : ''}\""));
         assertTrue(page.contains("class=\"login-field-label\" for=\"userId\""));
         assertTrue(page.contains("class=\"login-field-label\" for=\"password\""));
+        assertTrue(page.indexOf(userId)
+                < page.indexOf("class=\"login-field-label\" for=\"userId\""));
+        assertTrue(page.indexOf(password)
+                < page.indexOf("class=\"login-field-label\" for=\"password\""));
         assertFalse(page.contains("rememberId"));
         assertFalse(page.contains("autocomplete=\"new-password\""));
     }

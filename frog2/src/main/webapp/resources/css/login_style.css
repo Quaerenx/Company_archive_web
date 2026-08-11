@@ -13,6 +13,7 @@ body.login-page {
     justify-content: center;
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     padding: var(--space-24);
     position: relative;
@@ -23,21 +24,36 @@ body.login-page {
 }
 
 .login-page .login-shell {
-    inline-size: min(100%, 440px);
+    inline-size: min(100%, 408px);
     position: relative;
     z-index: 1;
 }
 
+body.login-page::after {
+    background: radial-gradient(
+        circle at center,
+        var(--color-login-halo) 0,
+        transparent 42%
+    );
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: fixed;
+    z-index: 0;
+}
+
 .login-page .login-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: none;
-    padding: clamp(var(--space-24), 6vw, var(--space-48));
+    -webkit-backdrop-filter: blur(var(--login-card-blur));
+    background: var(--color-login-card);
+    border: 1px solid var(--color-login-card-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-login);
+    backdrop-filter: blur(var(--login-card-blur));
+    padding: clamp(var(--space-24), 6vw, var(--space-40));
 }
 
 .login-page .login-header {
-    margin-block-end: var(--space-32);
+    margin-block-end: var(--space-24);
 }
 
 .login-page .login-brand {
@@ -48,7 +64,7 @@ body.login-page {
 .login-page .login-brand-logo {
     block-size: auto;
     display: block;
-    inline-size: min(100%, 240px);
+    inline-size: min(100%, 208px);
 }
 
 .login-page .login-form {
@@ -58,24 +74,55 @@ body.login-page {
 
 .login-page .login-form .form-group {
     margin: 0;
+    position: relative;
 }
 
-.login-page .login-form .login-field-label {
-    border: 0;
-    clip: rect(0, 0, 0, 0);
-    clip-path: inset(50%);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
-    position: absolute;
-    white-space: nowrap;
-    width: 1px;
-}
-
-.login-page .login-form input::placeholder {
+.login-page #loginForm .login-field-label {
     color: var(--color-text-muted);
-    opacity: 0.72;
+    font-size: var(--font-size-sm);
+    font-weight: 400;
+    inset-inline-start: var(--space-12);
+    line-height: var(--line-height-tight);
+    margin: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition:
+        color var(--motion-fast) var(--motion-ease),
+        font-size var(--motion-fast) var(--motion-ease),
+        top var(--motion-fast) var(--motion-ease),
+        transform var(--motion-fast) var(--motion-ease);
+}
+
+.login-page #loginForm input {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    border-radius: var(--radius-lg);
+    min-block-size: 52px;
+    padding-block: var(--space-20) var(--space-4);
+}
+
+.login-page #loginForm input::placeholder {
+    color: transparent;
+    opacity: 0;
+}
+
+.login-page #loginForm input:focus + .login-field-label,
+.login-page #loginForm input:not(:placeholder-shown) + .login-field-label {
+    font-size: var(--font-size-xs);
+    top: var(--space-4);
+    transform: none;
+}
+
+.login-page #loginForm input:-webkit-autofill + .login-field-label {
+    font-size: var(--font-size-xs);
+    top: var(--space-4);
+    transform: none;
+}
+
+.login-page #loginForm input:focus + .login-field-label {
+    color: var(--color-focus);
 }
 
 .login-page .login-error {
@@ -83,16 +130,17 @@ body.login-page {
 }
 
 .login-page .login-submit {
-    background: var(--color-surface-inverse);
-    border-color: var(--color-surface-inverse);
+    background: var(--color-login-action);
+    border-color: var(--color-login-action);
+    border-radius: var(--radius-lg);
     color: var(--color-text-inverse);
     inline-size: 100%;
     margin-block-start: var(--space-4);
 }
 
 .login-page .login-submit:hover {
-    background: var(--color-primary-hover);
-    border-color: var(--color-primary-hover);
+    background: var(--color-login-action-hover);
+    border-color: var(--color-login-action-hover);
     color: var(--color-text-inverse);
 }
 
@@ -106,7 +154,6 @@ body.login-page {
     }
 
     .login-page .login-card {
-        box-shadow: none;
         padding: var(--space-32) var(--space-20);
     }
 }

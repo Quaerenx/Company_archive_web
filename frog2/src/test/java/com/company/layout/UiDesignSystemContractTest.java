@@ -217,7 +217,7 @@ class UiDesignSystemContractTest {
         String customerView = read("customers/_detail_sections.jspf");
         String customerEdit = read("customers/customers_detail_edit.jsp");
         String troubleshooting = read("troubleshooting/troubleshooting_view.jsp");
-        assertTrue(customerView.contains("class=\"detail-container ui-detail\""));
+        assertTrue(customerView.contains("class=\"environment-detail ui-detail\""));
         assertTrue(customerEdit.contains("class=\"detail-container ui-detail\""));
         assertTrue(troubleshooting.contains("class=\"detail-container ui-detail\""));
 

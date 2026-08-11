@@ -33,7 +33,7 @@
 </c:url>
 
 
-<div class="customer-detail customer-management content-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />">
+<div class="customer-detail customer-detail--view customer-management content-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />">
     <t:pageHeader>
         <jsp:attribute name="title">
             <i class="fas fa-building"></i>

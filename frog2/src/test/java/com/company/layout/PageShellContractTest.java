@@ -105,9 +105,9 @@ class PageShellContractTest {
         assertTrue(header.contains("var=\"frog2AssetVersion\""));
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
-        assertEquals(1, occurrences(webXml, "20260810-search-cache-1"));
+        assertEquals(1, occurrences(webXml, "20260811-frontend-accessibility-1"));
         assertEquals(6, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
-        assertEquals(2, occurrences(header, "?v=${frog2AssetVersion}"));
+        assertEquals(3, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("ui-system.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("ambient-background.js?v=${frog2AssetVersion}"));

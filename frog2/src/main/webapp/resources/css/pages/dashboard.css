@@ -220,10 +220,18 @@
 }
 
 .dashboard-page .maintenance-assignee-frequency {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
+  flex: 0 0 auto;
   font-size: var(--font-size-xs);
   font-weight: 500;
   letter-spacing: 0.01em;
+  line-height: var(--line-height-ui);
+  margin-inline-start: auto;
+  padding-inline: var(--space-8);
+  white-space: nowrap;
 }
 
 .dashboard-page .maintenance-assignee-customer--due a {
