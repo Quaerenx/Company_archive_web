@@ -4,23 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.company.config.ApplicationEnvironment;
-import org.junit.jupiter.api.AfterEach;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class MeetingRecordDAOReadOnlyTest {
-    @AfterEach
-    void clearProperties() {
-        System.clearProperty(ApplicationEnvironment.ENV_PROPERTY);
-        System.clearProperty(ApplicationEnvironment.READ_ONLY_PROPERTY);
-    }
-
     @Test
-    void viewCountIncrementDoesNotInitializeDatabaseInDevelopment() {
-        System.setProperty(ApplicationEnvironment.ENV_PROPERTY, "dev");
-        System.setProperty(ApplicationEnvironment.READ_ONLY_PROPERTY, "false");
+    void meetingGetPathContainsNoViewCountMutation() throws Exception {
+        String servlet = Files.readString(Path.of(
+                "src/main/java/com/company/controller/MeetingServlet.java"));
+        String dao = Files.readString(Path.of(
+                "src/main/java/com/company/model/MeetingRecordDAO.java"));
 
-        assertFalse(new MeetingRecordDAO().incrementViewCount(1L));
+        assertFalse(servlet.contains("incrementViewCount"));
+        assertFalse(dao.contains("view_count = view_count + 1"));
     }
 
     @Test

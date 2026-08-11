@@ -111,7 +111,6 @@ public class MyPageServlet extends HttpServlet {
         PageResult<MaintenanceRecordDTO> maintenancePage =
                 maintenanceDAO.getMaintenanceRecordsByOwner(
                         user.getUserId(),
-                        user.getUserName(),
                         Pagination.requestedPage(
                                 request.getParameter("maintenancePage")),
                         ACTIVITY_PAGE_SIZE);
@@ -121,7 +120,6 @@ public class MyPageServlet extends HttpServlet {
         PageResult<TroubleshootingDTO> troubleshootingPage =
                 troubleshootingDAO.getTroubleshootingPageByOwner(
                         user.getUserId(),
-                        user.getUserName(),
                         Pagination.requestedPage(
                                 request.getParameter(
                                         "troubleshootingPage")),
@@ -271,7 +269,7 @@ public class MyPageServlet extends HttpServlet {
         MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
         List<MonthlyCustomerResponseDTO> monthlyResponses = 
             dao.getMonthlyResponses(
-                    user.getUserId(), user.getUserName(), year, month);
+                    user.getUserId(), year, month);
         FlashMessage.expose(request);
         
         request.setAttribute("currentYear", currentYear);

@@ -37,7 +37,7 @@ final class CustomerQueryController {
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
         this.detailDAO = Objects.requireNonNull(detailDAO, "detailDAO");
         this.detailQueryService = new CustomerDetailQueryService(
-                customerDAO, detailDAO, Objects.requireNonNull(eosDAO, "eosDAO"));
+                detailDAO, Objects.requireNonNull(eosDAO, "eosDAO"));
         this.mapper = Objects.requireNonNull(mapper, "mapper");
     }
 

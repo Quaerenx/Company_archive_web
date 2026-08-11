@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-import com.company.config.ApplicationEnvironment;
 import com.company.model.MeetingCommentDAO;
 import com.company.model.MeetingCommentDTO;
 import com.company.model.MeetingCommentPage;
@@ -71,9 +70,6 @@ public class MeetingServlet extends HttpServlet {
             }
 
             MeetingRecordDAO meetingDAO = new MeetingRecordDAO();
-            if (ApplicationEnvironment.isDatabaseWriteAllowed()) {
-                meetingDAO.incrementViewCount(meetingId);
-            }
             MeetingRecordDTO meeting = meetingDAO.getMeetingRecord(meetingId);
 
             if (meeting != null) {

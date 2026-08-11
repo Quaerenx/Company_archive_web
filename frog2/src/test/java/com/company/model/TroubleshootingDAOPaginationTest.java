@@ -94,7 +94,7 @@ class TroubleshootingDAOPaginationTest {
 
         PageResult<TroubleshootingDTO> result =
                 dao.getTroubleshootingPageByOwner(
-                        "owner-1", "Old Name", 2, 10);
+                        "owner-1", 2, 10);
 
         assertEquals(1, jdbc.statements.size());
         assertTrue(jdbc.statements.get(0).sql.contains(
@@ -105,6 +105,21 @@ class TroubleshootingDAOPaginationTest {
         assertEquals(10, jdbc.statements.get(0).parameters.get(3));
         assertEquals("owner-1",
                 result.items().getFirst().getCreatorUserId());
+    }
+
+    @Test
+    void ownerPageFailsClosedWhenStableOwnershipColumnIsMissing() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        TroubleshootingDAO dao = new TroubleshootingDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<TroubleshootingDTO> result =
+                dao.getTroubleshootingPageByOwner(
+                        "owner-1", 1, 10);
+
+        assertTrue(result.items().isEmpty());
+        assertEquals(0, result.totalCount());
+        assertTrue(jdbc.statements.isEmpty());
     }
 
     @Test

@@ -10,41 +10,84 @@ import org.junit.jupiter.api.Test;
 
 class MaintenanceRecordDAOPaginationTest {
     @Test
-    void inspectorHistoryUsesOneCountAndOneBoundedStableItemQuery() {
+    void customerHistoryUsesOneBoundedQueryWithStableOrder() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
-        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
         jdbc.enqueue(PaginationJdbcFixture.row(
-                "maintenance_id", 7L,
+                "maintenance_id", 41L,
                 "customer_name", "Acme",
                 "inspector_name", "Tester",
-                "inspection_date", Date.valueOf("2026-07-30"),
-                "vertica_version", "12",
+                "inspection_date", Date.valueOf("2026-08-10"),
+                "vertica_version", "12.0",
                 "note", null,
                 "created_at", null,
-                "updated_at", null));
+                "updated_at", null,
+                "total_count", 41));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<MaintenanceRecordDTO> result =
+                dao.getMaintenanceRecordsByCustomer("Acme", 1, 20);
+
+        assertEquals(1, jdbc.statements.size());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "COUNT(*) OVER () AS total_count"));
+        assertTrue(statement.sql.contains(
+                "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
+                        + "inspection_date DESC, maintenance_id DESC LIMIT ? OFFSET ?"));
+        assertEquals("Acme", statement.parameters.get(1));
+        assertEquals(20, statement.parameters.get(2));
+        assertEquals(0, statement.parameters.get(3));
+        assertEquals(41, result.totalCount());
+        assertEquals(1, result.page());
+        assertEquals(41L, result.items().getFirst().getMaintenanceId());
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void emptyOutOfRangeCustomerHistoryFallsBackToTheLastPage() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 41));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 1L,
+                "customer_name", "Acme",
+                "inspector_name", "Tester",
+                "inspection_date", Date.valueOf("2024-01-10"),
+                "vertica_version", "11.0",
+                "note", null,
+                "created_at", null,
+                "updated_at", null,
+                "total_count", 41));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<MaintenanceRecordDTO> result =
+                dao.getMaintenanceRecordsByCustomer("Acme", 999, 20);
+
+        assertEquals(3, jdbc.statements.size());
+        assertTrue(jdbc.statements.get(1).sql.startsWith(
+                "SELECT COUNT(*) FROM maintenance_records WHERE customer_name = ?"));
+        assertEquals(3, result.page());
+        assertEquals(41, result.totalCount());
+        assertEquals(40, jdbc.statements.get(2).parameters.get(3));
+    }
+
+    @Test
+    void ownerHistoryFailsClosedWhenStableOwnershipColumnIsMissing() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
                 jdbc::open, new SchemaCapabilityCache());
 
         PageResult<MaintenanceRecordDTO> result =
                 dao.getMaintenanceRecordsByOwner(
-                        "owner-1", " Tester ", 999, 10);
+                        "owner-1", 999, 10);
 
-        assertEquals(2, jdbc.statements.size());
-        assertTrue(jdbc.statements.get(0).sql.contains(
-                "WHERE inspector_name = ?"));
-        assertTrue(jdbc.statements.get(1).sql.contains(
-                "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
-                        + "inspection_date DESC, maintenance_id DESC "
-                        + "LIMIT ? OFFSET ?"));
-        assertFalse(jdbc.statements.get(1).sql.contains("NULLS LAST"));
-        assertEquals("Tester",
-                jdbc.statements.get(0).parameters.get(1));
-        assertEquals(10, jdbc.statements.get(1).parameters.get(2));
-        assertEquals(20, jdbc.statements.get(1).parameters.get(3));
-        assertEquals(3, result.page());
-        assertEquals(21, result.totalCount());
-        assertEquals(7L,
-                result.items().getFirst().getMaintenanceId());
+        assertTrue(result.items().isEmpty());
+        assertEquals(0, result.totalCount());
+        assertTrue(jdbc.statements.isEmpty());
         assertEquals(1, jdbc.openCount);
         assertEquals(1, jdbc.closeCount);
     }
@@ -70,7 +113,7 @@ class MaintenanceRecordDAOPaginationTest {
 
         PageResult<MaintenanceRecordDTO> result =
                 dao.getMaintenanceRecordsByOwner(
-                        " owner-1 ", "Old Name", 1, 10);
+                        " owner-1 ", 1, 10);
 
         assertTrue(jdbc.statements.get(0).sql.contains(
                 "WHERE created_by_user_id = ?"));

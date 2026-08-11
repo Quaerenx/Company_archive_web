@@ -105,27 +105,25 @@ public class TroubleshootingDAO {
 
     public PageResult<TroubleshootingDTO> getTroubleshootingPageByOwner(
             String creatorUserId,
-            String legacyCreatorName,
             int requestedPage,
             int pageSize) {
+        if (isBlank(creatorUserId)) {
+            return new PageResult<>(List.of(), 0, 1, pageSize);
+        }
         try (Connection connection = connectionProvider.getConnection()) {
             boolean hasCreatorUserId = hasCreatorUserId(connection);
-            String ownerValue =
-                    hasCreatorUserId ? creatorUserId : legacyCreatorName;
-            if (isBlank(ownerValue)) {
+            if (!hasCreatorUserId) {
                 return new PageResult<>(List.of(), 0, 1, pageSize);
             }
-            String ownerColumn =
-                    hasCreatorUserId ? CREATOR_USER_ID_COLUMN : "creator";
             StatementBinder binder = (statement, startIndex) -> {
-                statement.setString(startIndex, ownerValue.trim());
+                statement.setString(startIndex, creatorUserId.trim());
                 return startIndex + 1;
             };
             return loadSummaryPage(
                     connection,
-                    " WHERE " + ownerColumn + " = ?",
+                    " WHERE " + CREATOR_USER_ID_COLUMN + " = ?",
                     binder,
-                    hasCreatorUserId,
+                    true,
                     requestedPage,
                     pageSize);
         } catch (SQLException exception) {

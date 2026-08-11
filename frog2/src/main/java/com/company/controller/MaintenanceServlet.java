@@ -16,8 +16,10 @@ import com.company.model.CustomerDTO;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
+import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
+import com.company.web.ApplicationError;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -28,15 +30,25 @@ import jakarta.servlet.http.HttpSession;
 // @WebServlet("/maintenance") - web.xml에서 매핑하므로 주석 처리
 public class MaintenanceServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final int HISTORY_PAGE_SIZE = 20;
     private final MaintenanceRecordDAO maintenanceDAO;
+    private final CustomerDAO customerDAO;
 
     public MaintenanceServlet() {
-        this(new MaintenanceRecordDAO());
+        this(new MaintenanceRecordDAO(), new CustomerDAO());
     }
 
     MaintenanceServlet(MaintenanceRecordDAO maintenanceDAO) {
+        this(maintenanceDAO, new CustomerDAO());
+    }
+
+    MaintenanceServlet(
+            MaintenanceRecordDAO maintenanceDAO,
+            CustomerDAO customerDAO) {
         this.maintenanceDAO = Objects.requireNonNull(
                 maintenanceDAO, "maintenanceDAO");
+        this.customerDAO = Objects.requireNonNull(
+                customerDAO, "customerDAO");
     }
 
     @Override
@@ -55,8 +67,6 @@ public class MaintenanceServlet extends HttpServlet {
             viewType = "cards";
         }
 
-        CustomerDAO customerDAO = new CustomerDAO();
-
         if ("cards".equals(viewType)) {
             // 담당자별 고객사 카드 목록 표시 (라이선스 요약 제거)
             Map<String, List<CustomerDTO>> inspectorCustomers = getInspectorCustomersMap();
@@ -71,17 +81,33 @@ public class MaintenanceServlet extends HttpServlet {
             // 특정 고객사의 정기점검 이력 목록
             String customerName = request.getParameter("customerName");
             if (customerName != null && !customerName.isEmpty()) {
-                // 해당 고객사의 정기점검 이력 조회
-                List<MaintenanceRecordDTO> records = maintenanceDAO.getMaintenanceRecordsByCustomer(customerName);
+                int historyPage;
+                try {
+                    historyPage = parseHistoryPage(
+                            request.getParameter("historyPage"));
+                } catch (IllegalArgumentException exception) {
+                    ApplicationError.send(
+                            request,
+                            response,
+                            HttpServletResponse.SC_BAD_REQUEST,
+                            "invalid_history_page",
+                            "점검 이력 페이지가 올바르지 않습니다.");
+                    return;
+                }
+                PageResult<MaintenanceRecordDTO> page =
+                        maintenanceDAO.getMaintenanceRecordsByCustomer(
+                                customerName,
+                                historyPage,
+                                HISTORY_PAGE_SIZE);
+                List<MaintenanceRecordDTO> records = page.items();
                 // 라이선스 사용률 시리즈
                 List<Map<String, Object>> usageSeries = LicenseUsageSeriesBuilder.build(records);
 
                 // 각 이력에 대한 라이선스 요약(TB) 문자열 생성
-                Map<Long, String> licenseSummaries = new LinkedHashMap<>();
                 for (MaintenanceRecordDTO rec : records) {
                     String summary = LicenseSummaryFormatter.format(rec);
                     if (summary != null) {
-                        licenseSummaries.put(rec.getMaintenanceId(), summary);
+                        rec.setLicenseSummary(summary);
                     }
                 }
 
@@ -90,9 +116,12 @@ public class MaintenanceServlet extends HttpServlet {
 
                 request.setAttribute("records", records);
                 request.setAttribute("usageSeries", usageSeries);
-                request.setAttribute("licenseSummaries", licenseSummaries);
                 request.setAttribute("customer", customer);
                 request.setAttribute("customerName", customerName);
+                request.setAttribute("currentPage", page.page());
+                request.setAttribute("pageSize", page.pageSize());
+                request.setAttribute("totalPages", page.totalPages());
+                request.setAttribute("totalCount", page.totalCount());
                 request.setAttribute("viewType", "history");
                 request.getRequestDispatcher("/maintenance/maintenance_history.jsp").forward(request, response);
             } else {
@@ -143,7 +172,6 @@ public class MaintenanceServlet extends HttpServlet {
  // 담당자별 고객사 목록을 Map으로 구성 (정기점검 계약 고객사이면서 활성 상태인 것만)
     private Map<String, List<CustomerDTO>> getInspectorCustomersMap() {
         Map<String, List<CustomerDTO>> inspectorCustomers = new LinkedHashMap<>();
-        CustomerDAO customerDAO = new CustomerDAO();
 
         // getAllCustomers already filters inactive customers.
         List<CustomerDTO> allCustomers = customerDAO.getAllCustomers("manager_name", "ASC", "maintenance");
@@ -292,6 +320,23 @@ public class MaintenanceServlet extends HttpServlet {
                 && user != null
                 && Objects.equals(
                         record.getCreatorUserId(), user.getUserId());
+    }
+
+    private static int parseHistoryPage(String value) {
+        if (value == null || value.isBlank()) {
+            return 1;
+        }
+        try {
+            long page = Long.parseLong(value.trim());
+            if (page < 1 || page > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException(
+                        "History page must be a positive integer");
+            }
+            return (int) page;
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    "History page must be a positive integer", exception);
+        }
     }
 
 }

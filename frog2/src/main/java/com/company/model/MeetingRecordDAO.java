@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import com.company.config.ApplicationEnvironment;
 import com.company.util.DBConnection;
 
 public class MeetingRecordDAO {
@@ -119,26 +118,6 @@ public class MeetingRecordDAO {
         }
 
         return record;
-    }
-
-    public boolean incrementViewCount(Long meetingId) {
-        if (!ApplicationEnvironment.isDatabaseWriteAllowed()) {
-            return false;
-        }
-
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "UPDATE meeting_records SET view_count = view_count + 1 WHERE meeting_id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setLong(1, meetingId);
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
-        }
     }
 
     public boolean addMeetingRecord(MeetingRecordDTO record) {

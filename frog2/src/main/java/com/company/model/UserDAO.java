@@ -14,25 +14,33 @@ public class UserDAO {
         boolean matches(String plainTextPassword, String hashedPassword);
     }
 
+    @FunctionalInterface
+    interface PasswordHasher {
+        String hash(String plainTextPassword);
+    }
+
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
             new SchemaCapabilityCache();
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
     private final PasswordVerifier passwordVerifier;
+    private final PasswordHasher passwordHasher;
 
     public UserDAO() {
         this(
                 DBConnection::getConnection,
                 APPLICATION_SCHEMA_CAPABILITIES,
-                PasswordUtils::checkPassword);
+                PasswordUtils::checkPassword,
+                PasswordUtils::hashPassword);
     }
 
     UserDAO(JdbcConnectionProvider connectionProvider) {
         this(
                 connectionProvider,
                 new SchemaCapabilityCache(),
-                PasswordUtils::checkPassword);
+                PasswordUtils::checkPassword,
+                PasswordUtils::hashPassword);
     }
 
     UserDAO(
@@ -41,17 +49,32 @@ public class UserDAO {
         this(
                 connectionProvider,
                 schemaCapabilities,
-                PasswordUtils::checkPassword);
+                PasswordUtils::checkPassword,
+                PasswordUtils::hashPassword);
     }
 
     UserDAO(
             JdbcConnectionProvider connectionProvider,
             SchemaCapabilityCache schemaCapabilities,
             PasswordVerifier passwordVerifier) {
+        this(
+                connectionProvider,
+                schemaCapabilities,
+                passwordVerifier,
+                PasswordUtils::hashPassword);
+    }
+
+    UserDAO(
+            JdbcConnectionProvider connectionProvider,
+            SchemaCapabilityCache schemaCapabilities,
+            PasswordVerifier passwordVerifier,
+            PasswordHasher passwordHasher) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider");
         this.schemaCapabilities = Objects.requireNonNull(schemaCapabilities, "schemaCapabilities");
         this.passwordVerifier = Objects.requireNonNull(
                 passwordVerifier, "passwordVerifier");
+        this.passwordHasher = Objects.requireNonNull(
+                passwordHasher, "passwordHasher");
     }
 
     public UserDTO authenticateUser(String userId, String password) {
@@ -85,9 +108,10 @@ public class UserDAO {
 
     public boolean updatePassword(String userId, String newPassword) {
         String sql = "UPDATE company_users SET password = ? WHERE userId = ?";
+        String passwordHash = passwordHasher.hash(newPassword);
         try (Connection connection = connectionProvider.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, PasswordUtils.hashPassword(newPassword));
+            statement.setString(1, passwordHash);
             statement.setString(2, userId);
             return statement.executeUpdate() > 0;
         } catch (SQLException exception) {

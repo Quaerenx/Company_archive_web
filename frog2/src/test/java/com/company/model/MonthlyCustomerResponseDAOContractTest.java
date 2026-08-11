@@ -14,12 +14,14 @@ class MonthlyCustomerResponseDAOContractTest {
     @Test
     void monthlyLookupUsesHalfOpenDateRange() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns =
+                Set.of("monthly_customer_response.created_by_user_id");
         jdbc.enqueue();
         MonthlyCustomerResponseDAO dao =
                 new MonthlyCustomerResponseDAO(jdbc::open);
 
         assertTrue(dao.getMonthlyResponses(
-                "user-1", "tester", 2026, 7).isEmpty());
+                "user-1", 2026, 7).isEmpty());
 
         assertEquals(1, jdbc.statements.size());
         PaginationJdbcFixture.StatementRecord statement =
@@ -28,7 +30,7 @@ class MonthlyCustomerResponseDAOContractTest {
                 "response_date >= ? AND response_date < ?"));
         assertFalse(statement.sql.contains("YEAR("));
         assertFalse(statement.sql.contains("MONTH("));
-        assertEquals("tester", statement.parameters.get(1));
+        assertEquals("user-1", statement.parameters.get(1));
         assertEquals(Date.valueOf("2026-07-01"),
                 statement.parameters.get(2));
         assertEquals(Date.valueOf("2026-08-01"),
@@ -38,13 +40,15 @@ class MonthlyCustomerResponseDAOContractTest {
     @Test
     void monthlyLookupHandlesLeapYearAndYearBoundary() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns =
+                Set.of("monthly_customer_response.created_by_user_id");
         jdbc.enqueue();
         jdbc.enqueue();
         MonthlyCustomerResponseDAO dao =
                 new MonthlyCustomerResponseDAO(jdbc::open);
 
-        dao.getMonthlyResponses("user-1", "tester", 2024, 2);
-        dao.getMonthlyResponses("user-1", "tester", 2026, 12);
+        dao.getMonthlyResponses("user-1", 2024, 2);
+        dao.getMonthlyResponses("user-1", 2026, 12);
 
         assertEquals(Date.valueOf("2024-02-01"),
                 jdbc.statements.get(0).parameters.get(2));
@@ -63,10 +67,21 @@ class MonthlyCustomerResponseDAOContractTest {
                 new MonthlyCustomerResponseDAO(jdbc::open);
 
         assertTrue(dao.getMonthlyResponses(
-                "user-1", "tester", 2026, 13).isEmpty());
+                "user-1", 2026, 13).isEmpty());
         assertTrue(dao.getMonthlyResponses(
-                "user-1", "tester", 999_999_999, 12).isEmpty());
+                "user-1", 999_999_999, 12).isEmpty());
         assertEquals(0, jdbc.openCount);
+    }
+
+    @Test
+    void ownerLookupFailsClosedWhenStableOwnershipColumnIsMissing() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        assertTrue(dao.getMonthlyResponses(
+                "user-1", 2026, 7).isEmpty());
+        assertTrue(jdbc.statements.isEmpty());
     }
 
     @Test
@@ -79,13 +94,32 @@ class MonthlyCustomerResponseDAOContractTest {
                 jdbc::open, new SchemaCapabilityCache());
 
         assertTrue(dao.getMonthlyResponses(
-                " user-1 ", "Old Name", 2026, 7).isEmpty());
+                " user-1 ", 2026, 7).isEmpty());
 
         PaginationJdbcFixture.StatementRecord statement =
                 jdbc.statements.getFirst();
         assertTrue(statement.sql.contains(
                 "WHERE created_by_user_id = ?"));
         assertEquals("user-1", statement.parameters.get(1));
+    }
+
+    @Test
+    void equalDisplayNamesCannotMergeDifferentStableOwnerQueries() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns =
+                Set.of("monthly_customer_response.created_by_user_id");
+        jdbc.enqueue();
+        jdbc.enqueue();
+        MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        dao.getMonthlyResponses("user-1", 2026, 8);
+        dao.getMonthlyResponses("user-2", 2026, 8);
+
+        assertEquals("user-1", jdbc.statements.get(0).parameters.get(1));
+        assertEquals("user-2", jdbc.statements.get(1).parameters.get(1));
+        assertTrue(jdbc.statements.stream().allMatch(statement ->
+                statement.sql.contains("WHERE created_by_user_id = ?")));
     }
 
     @Test

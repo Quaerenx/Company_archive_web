@@ -8,6 +8,7 @@ import java.util.Properties;
 
 final class IsolatedDatabaseConfig {
     private static final String ISOLATED_MARKER = "frog2.e2e.isolated";
+    private static final String DATABASE_IDENTITY = "frog2.databaseIdentity";
     private static final List<String> REQUIRED_KEYS = List.of(
             "db.url", "db.user", "db.password", "db.driver");
 
@@ -35,6 +36,12 @@ final class IsolatedDatabaseConfig {
             throw new IllegalArgumentException(
                     "Write E2E database URL must differ from the shared DB URL");
         }
+        String isolatedIdentity = requiredIdentity(isolatedProperties);
+        String sharedIdentity = requiredIdentity(sharedProperties);
+        if (isolatedIdentity.equalsIgnoreCase(sharedIdentity)) {
+            throw new IllegalArgumentException(
+                    "Write E2E database identity must differ from the shared DB identity");
+        }
         return isolatedProperties;
     }
 
@@ -59,5 +66,14 @@ final class IsolatedDatabaseConfig {
 
     private static String normalizedUrl(Properties properties) {
         return properties.getProperty("db.url").trim();
+    }
+
+    private static String requiredIdentity(Properties properties) {
+        String identity = properties.getProperty(DATABASE_IDENTITY);
+        if (identity == null || identity.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Missing database configuration key: " + DATABASE_IDENTITY);
+        }
+        return identity.trim();
     }
 }

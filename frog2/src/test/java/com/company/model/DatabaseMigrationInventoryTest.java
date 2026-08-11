@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -38,6 +42,40 @@ class DatabaseMigrationInventoryTest {
         String readme = Files.readString(legacy.resolve("README.md"));
         assertTrue(readme.contains("`HostDAO`/`HostDTO` implementation"));
         assertTrue(readme.contains("must not be executed as active migrations"));
+    }
+
+    @Test
+    void activeAndLegacyMigrationChecksumsMatchTheirManifests()
+            throws Exception {
+        verifyManifest(DATABASE_ROOT.resolve("migration"));
+        verifyManifest(DATABASE_ROOT.resolve("legacy"));
+    }
+
+    private static void verifyManifest(Path directory) throws Exception {
+        Path manifest = directory.resolve("manifest.sha256");
+        Map<String, String> expected = new HashMap<>();
+        for (String line : Files.readAllLines(manifest)) {
+            if (line.isBlank() || line.startsWith("#")) {
+                continue;
+            }
+            String[] parts = line.trim().split("\\s+", 2);
+            assertEquals(2, parts.length, "invalid manifest line: " + line);
+            assertTrue(
+                    parts[0].matches("[0-9a-f]{64}"),
+                    "invalid SHA-256: " + line);
+            assertTrue(
+                    expected.put(parts[1], parts[0]) == null,
+                    "duplicate manifest entry: " + parts[1]);
+        }
+
+        Set<String> migrations = sqlFileNames(directory);
+        assertEquals(migrations, expected.keySet());
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        for (String migration : migrations) {
+            String actual = HexFormat.of().formatHex(
+                    digest.digest(Files.readAllBytes(directory.resolve(migration))));
+            assertEquals(expected.get(migration), actual, migration);
+        }
     }
 
     private static Set<String> sqlFileNames(Path directory)

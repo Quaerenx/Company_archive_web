@@ -46,6 +46,30 @@ class MeetingCommentDAOPaginationTest {
         assertFalse(jdbc.statements.getFirst().sql.contains("comment_id < ?"));
     }
 
+    @Test
+    void aConcurrentNewCommentCannotShiftOrDuplicateTheOlderCursorPage() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(comment(105), comment(104), comment(103));
+        jdbc.enqueue(comment(103), comment(102), comment(101));
+        MeetingCommentDAO dao = new MeetingCommentDAO(jdbc::open);
+
+        MeetingCommentPage newest = dao.getCommentPage(3L, null, 2);
+        MeetingCommentPage older = dao.getCommentPage(
+                3L, newest.getNextBeforeCommentId(), 2);
+
+        assertEquals(List.of(104L, 105L), newest.getComments().stream()
+                .map(MeetingCommentDTO::getCommentId)
+                .toList());
+        assertEquals(104L, newest.getNextBeforeCommentId());
+        assertEquals(List.of(102L, 103L), older.getComments().stream()
+                .map(MeetingCommentDTO::getCommentId)
+                .toList());
+        assertFalse(older.getComments().stream()
+                .map(MeetingCommentDTO::getCommentId)
+                .anyMatch(id -> id >= newest.getNextBeforeCommentId()));
+        assertEquals(104L, jdbc.statements.get(1).parameters.get(2));
+    }
+
     private static java.util.Map<String, Object> comment(long id) {
         Timestamp timestamp = Timestamp.valueOf("2026-08-10 10:00:00");
         return PaginationJdbcFixture.row(

@@ -2,6 +2,7 @@ package com.company.controller;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import com.company.model.UserDTO;
 import com.company.model.UserVmHostDAO;
@@ -16,7 +17,16 @@ import jakarta.servlet.http.HttpServletResponse;
 public class UserVmHostServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private final UserVmHostDAO userVmHostDAO = new UserVmHostDAO();
+    private final UserVmHostDAO userVmHostDAO;
+
+    public UserVmHostServlet() {
+        this(new UserVmHostDAO());
+    }
+
+    UserVmHostServlet(UserVmHostDAO userVmHostDAO) {
+        this.userVmHostDAO = Objects.requireNonNull(
+                userVmHostDAO, "userVmHostDAO");
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)

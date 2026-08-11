@@ -2,6 +2,12 @@
 
 These SQL files are version-controlled migration artifacts only. The application does not discover or execute them at startup or during HTTP requests.
 
+Approved SQL content is pinned by `manifest.sha256`. The unit-test inventory
+must pass before a migration review. Application source excludes `db/**` from
+the WAR, so neither SQL nor the manifest is a runtime executor input. Record
+actual application/baseline decisions in the external ledger described at
+`docs/database/migration-ledger.md`.
+
 Do not run these migrations against the shared database without a separate approval, a schema baseline review, and a maintenance-window rollback plan. Existing installations must be baselined so migrations for already-present tables or columns are marked as applied rather than executed again.
 
 Active schema contracts:
@@ -34,6 +40,10 @@ stores a drifting `next_due_month` value.
 Migration 06 only backfills rows whose historical display name maps to exactly
 one user. Ambiguous or unmatched legacy rows remain unchanged and must be
 reviewed before a later `NOT NULL` constraint is considered.
+
+Migration 05 already contains its `NOT NULL` step. Treat zero ambiguous and
+zero unmatched troubleshooting rows as a hard precondition; otherwise stop
+before executing the artifact and create a reviewed follow-up migration plan.
 
 Versions 02 and 03 belonged to the retired `HostDAO`/`HostDTO` feature. Their SQL
 is preserved unchanged under `db/legacy` for historical review and must not be

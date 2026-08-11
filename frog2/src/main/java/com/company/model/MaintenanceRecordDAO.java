@@ -194,39 +194,124 @@ public class MaintenanceRecordDAO {
         return record;
     }
 
-    public List<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(String customerName) {
-        List<MaintenanceRecordDTO> records = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
-            boolean hasCreatorUserId = columnExists(
-                    conn, TABLE_NAME, CREATOR_USER_ID_COLUMN);
-
-            String sql = "SELECT " + selectColumns(
-                    hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId)
-                    + " FROM maintenance_records WHERE customer_name = ? ORDER BY inspection_date DESC";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, customerName);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                MaintenanceRecordDTO record = mapRowToDto(
-                        rs, hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId);
-                records.add(record);
-            }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
+    public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
+            String customerName,
+            int requestedPage,
+            int pageSize) {
+        Pagination.totalPages(0, pageSize);
+        if (isBlank(customerName)) {
+            return new PageResult<>(List.of(), 0, 1, pageSize);
         }
 
-        return records;
+        try (Connection connection = connectionProvider.getConnection()) {
+            boolean hasSize = columnExists(
+                    connection, TABLE_NAME, "license_size_gb");
+            boolean hasUsagePct = columnExists(
+                    connection, TABLE_NAME, "license_usage_pct");
+            boolean hasUsageSize = columnExists(
+                    connection, TABLE_NAME, "license_usage_size");
+            boolean hasCreatorUserId = columnExists(
+                    connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
+            int page = Math.max(1, requestedPage);
+            CustomerHistoryRows rows;
+            try {
+                rows = loadCustomerHistoryRows(
+                        connection,
+                        customerName,
+                        page,
+                        pageSize,
+                        hasSize,
+                        hasUsagePct,
+                        hasUsageSize,
+                        hasCreatorUserId);
+            } catch (ArithmeticException exception) {
+                rows = new CustomerHistoryRows(List.of(), 0);
+            }
+
+            if (!rows.items().isEmpty() || page == 1) {
+                return new PageResult<>(
+                        rows.items(), rows.totalCount(), page, pageSize);
+            }
+
+            int totalCount = countCustomerHistory(connection, customerName);
+            int correctedPage = Pagination.clampPage(
+                    page, Pagination.totalPages(totalCount, pageSize));
+            if (totalCount == 0) {
+                return new PageResult<>(
+                        List.of(), 0, correctedPage, pageSize);
+            }
+            CustomerHistoryRows correctedRows = loadCustomerHistoryRows(
+                    connection,
+                    customerName,
+                    correctedPage,
+                    pageSize,
+                    hasSize,
+                    hasUsagePct,
+                    hasUsageSize,
+                    hasCreatorUserId);
+            return new PageResult<>(
+                    correctedRows.items(),
+                    correctedRows.totalCount(),
+                    correctedPage,
+                    pageSize);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load maintenance page by customer", exception);
+        }
+    }
+
+    private CustomerHistoryRows loadCustomerHistoryRows(
+            Connection connection,
+            String customerName,
+            int page,
+            int pageSize,
+            boolean hasSize,
+            boolean hasUsagePct,
+            boolean hasUsageSize,
+            boolean hasCreatorUserId) throws SQLException {
+        String sql = "SELECT "
+                + selectColumns(
+                        hasSize,
+                        hasUsagePct,
+                        hasUsageSize,
+                        hasCreatorUserId)
+                + ", COUNT(*) OVER () AS total_count "
+                + "FROM maintenance_records WHERE customer_name = ? "
+                + "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
+                + "inspection_date DESC, maintenance_id DESC LIMIT ? OFFSET ?";
+        List<MaintenanceRecordDTO> records = new ArrayList<>();
+        int totalCount = 0;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, customerName);
+            statement.setInt(2, pageSize);
+            statement.setInt(3, Pagination.offset(page, pageSize));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    if (records.isEmpty()) {
+                        totalCount = resultSet.getInt("total_count");
+                    }
+                    records.add(mapRowToDto(
+                            resultSet,
+                            hasSize,
+                            hasUsagePct,
+                            hasUsageSize,
+                            hasCreatorUserId));
+                }
+            }
+        }
+        return new CustomerHistoryRows(records, totalCount);
+    }
+
+    private static int countCustomerHistory(
+            Connection connection, String customerName) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM maintenance_records "
+                + "WHERE customer_name = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, customerName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getInt(1) : 0;
+            }
+        }
     }
 
     public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
@@ -339,21 +424,17 @@ public class MaintenanceRecordDAO {
 
     public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByOwner(
             String creatorUserId,
-            String legacyInspectorName,
             int requestedPage,
             int pageSize) {
         Pagination.totalPages(0, pageSize);
-        if (isBlank(creatorUserId) && isBlank(legacyInspectorName)) {
+        if (isBlank(creatorUserId)) {
             return new PageResult<>(List.of(), 0, 1, pageSize);
         }
 
         try (Connection connection = connectionProvider.getConnection()) {
             boolean hasCreatorUserId = columnExists(
                     connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
-            if (hasCreatorUserId && isBlank(creatorUserId)) {
-                return new PageResult<>(List.of(), 0, 1, pageSize);
-            }
-            if (!hasCreatorUserId && isBlank(legacyInspectorName)) {
+            if (!hasCreatorUserId) {
                 return new PageResult<>(List.of(), 0, 1, pageSize);
             }
             boolean hasSize = columnExists(
@@ -363,12 +444,8 @@ public class MaintenanceRecordDAO {
             boolean hasUsageSize = columnExists(
                     connection, "maintenance_records", "license_usage_size");
 
-            String ownerColumn = hasCreatorUserId
-                    ? CREATOR_USER_ID_COLUMN
-                    : "inspector_name";
-            String ownerValue = hasCreatorUserId
-                    ? creatorUserId.trim()
-                    : legacyInspectorName.trim();
+            String ownerColumn = CREATOR_USER_ID_COLUMN;
+            String ownerValue = creatorUserId.trim();
             int totalCount;
             String countSql = "SELECT COUNT(*) FROM maintenance_records "
                     + "WHERE " + ownerColumn + " = ?";
@@ -425,6 +502,10 @@ public class MaintenanceRecordDAO {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private record CustomerHistoryRows(
+            List<MaintenanceRecordDTO> items, int totalCount) {
     }
 
 }

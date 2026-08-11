@@ -31,14 +31,19 @@ class ApplicationEnvironmentTest {
     void missingOrIncompleteSettingsFailClosed() {
         assertTrue(ApplicationEnvironment.resolveReadOnly(null, null));
         assertTrue(ApplicationEnvironment.resolveReadOnly("", ""));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("   ", "   "));
         assertTrue(ApplicationEnvironment.resolveReadOnly("prod", null));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("prod", ""));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("prod", "   "));
         assertTrue(ApplicationEnvironment.resolveReadOnly(null, "false"));
         assertTrue(ApplicationEnvironment.resolveReadOnly("test", "false"));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("development", "false"));
     }
 
     @Test
     void invalidReadOnlySettingFailsClosed() {
         assertTrue(ApplicationEnvironment.resolveReadOnly("prod", "yes"));
+        assertTrue(ApplicationEnvironment.resolveReadOnly("staging", "0"));
     }
 
     @Test

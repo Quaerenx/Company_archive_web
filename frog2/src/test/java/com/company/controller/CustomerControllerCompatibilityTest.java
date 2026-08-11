@@ -64,11 +64,12 @@ class CustomerControllerCompatibilityTest {
     @Test
     void detailKeepsCustomerNameParameterAndLoadsAllEnvironments() throws Exception {
         StubCustomerDAO customerDAO = new StubCustomerDAO();
-        CustomerDTO customer = new CustomerDTO();
-        customer.setCustomerName("Acme Corp");
-        customerDAO.customer = customer;
         StubDetailDAO detailDAO = new StubDetailDAO();
+        detailDAO.production.setCustomerName("Acme Corp");
+        detailDAO.production.setDbName("archive");
         detailDAO.production.setVerticaVersion("12.0");
+        detailDAO.production.setDbMode("ENT");
+        detailDAO.production.setMainManager("Owner");
         CustomersServlet servlet = servlet(customerDAO, detailDAO);
 
         RequestFixture request = new RequestFixture();
@@ -77,7 +78,7 @@ class CustomerControllerCompatibilityTest {
         ResponseFixture response = new ResponseFixture();
         servlet.doGet(request.proxy(), response.proxy());
 
-        assertEquals("Acme Corp", customerDAO.lastCustomerName);
+        assertEquals(null, customerDAO.lastCustomerName);
         assertEquals(List.of("prod:Acme Corp", "stg:Acme Corp", "dev:Acme Corp"),
                 detailDAO.reads);
         assertEquals("/customers/customers_detail.jsp", request.forwardedPath);
@@ -85,6 +86,12 @@ class CustomerControllerCompatibilityTest {
         assertSame(detailDAO.production, request.attributes.get("customerDetail"));
         assertSame(detailDAO.staging, request.attributes.get("customerDetailStg"));
         assertSame(detailDAO.development, request.attributes.get("customerDetailDev"));
+        CustomerDTO customer = (CustomerDTO) request.attributes.get("customer");
+        assertEquals("Acme Corp", customer.getCustomerName());
+        assertEquals("archive", customer.getDbName());
+        assertEquals("12.0", customer.getVerticaVersion());
+        assertEquals("ENT", customer.getMode());
+        assertEquals("Owner", customer.getManagerName());
     }
 
     @Test
@@ -190,6 +197,7 @@ class CustomerControllerCompatibilityTest {
     void inactiveCustomerCannotExposeOrChangeEnvironmentDetails() throws Exception {
         StubCustomerDAO customerDAO = new StubCustomerDAO();
         StubDetailDAO detailDAO = new StubDetailDAO();
+        detailDAO.production = null;
         StubEosDAO eosDAO = new StubEosDAO();
         CustomersServlet servlet = servlet(customerDAO, detailDAO, eosDAO);
 
@@ -226,7 +234,10 @@ class CustomerControllerCompatibilityTest {
                 "customers?view=detail&customerName=Retired&env=dev",
                 saveResponse.redirect);
         assertTrue(save.sessionAttributes.containsKey("error"));
-        assertTrue(detailDAO.reads.isEmpty());
+        assertEquals(null, detail.attributes.get("customer"));
+        assertEquals(null, detail.attributes.get("customerDetail"));
+        assertEquals(null, detail.attributes.get("customerDetailStg"));
+        assertEquals(null, detail.attributes.get("customerDetailDev"));
         assertTrue(detailDAO.writes.isEmpty());
         assertEquals(0, eosDAO.reads);
     }
@@ -311,7 +322,7 @@ class CustomerControllerCompatibilityTest {
     }
 
     private static final class StubDetailDAO extends CustomerDetailDAO {
-        private final CustomerDetailDTO production = new CustomerDetailDTO();
+        private CustomerDetailDTO production = new CustomerDetailDTO();
         private final CustomerDetailDTO staging = new CustomerDetailDTO();
         private final CustomerDetailDTO development = new CustomerDetailDTO();
         private final List<String> reads = new ArrayList<>();

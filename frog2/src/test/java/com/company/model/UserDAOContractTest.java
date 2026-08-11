@@ -97,6 +97,30 @@ class UserDAOContractTest {
         assertEquals(Map.of(1, "Updated User", 2, "tester"), bindings);
     }
 
+    @Test
+    void passwordHashingRunsBeforeTheJdbcConnectionIsAcquired() {
+        AtomicBoolean connectionAcquired = new AtomicBoolean();
+        AtomicReference<String> preparedSql = new AtomicReference<>();
+        Map<Integer, String> bindings = new HashMap<>();
+        UserDAO dao = new UserDAO(
+                () -> {
+                    connectionAcquired.set(true);
+                    return updateConnection(preparedSql, bindings);
+                },
+                new SchemaCapabilityCache(),
+                (plainText, passwordHash) -> false,
+                plainText -> {
+                    assertTrue(!connectionAcquired.get());
+                    assertEquals("new-password", plainText);
+                    return "new-hash";
+                });
+
+        assertTrue(dao.updatePassword("tester", "new-password"));
+
+        assertTrue(connectionAcquired.get());
+        assertEquals(Map.of(1, "new-hash", 2, "tester"), bindings);
+    }
+
     private static Connection connection(
             ResultSet resultSet, AtomicReference<String> boundUserId) {
         return connection(

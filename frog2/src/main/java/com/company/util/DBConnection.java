@@ -137,11 +137,10 @@ public class DBConnection {
             throw new SQLException("DataSource가 초기화되지 않았습니다.");
         }
         
-        Connection conn = dataSource.getConnection();
-        conn = JdbcTiming.wrap(conn, queryTimeoutSeconds);
-        if (ApplicationEnvironment.isReadOnly()) {
-            conn = ReadOnlyJdbcGuard.wrap(conn);
-        }
+        Connection conn = JdbcConnectionDecorator.decorate(
+                dataSource.getConnection(),
+                queryTimeoutSeconds,
+                ApplicationEnvironment.isReadOnly());
         if (logger.isDebugEnabled()) {
             HikariPoolMXBean pool = dataSource.getHikariPoolMXBean();
             logger.debug("Connection 획득 - Active: {}, Idle: {}, Total: {}",

@@ -11,7 +11,47 @@ public final class DatabaseSchemaReadiness {
             new Requirement(
                     "V20260720_01",
                     "user_vm_hosts",
+                    "ip"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
                     "owner_user_id"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "owner_user_name"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "purpose"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "os_info"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "vertica_version"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "remote_host"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "note"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "status"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "created_at"),
+            new Requirement(
+                    "V20260720_01",
+                    "user_vm_hosts",
+                    "updated_at"),
             new Requirement(
                     "V20260720_04",
                     "maintenance_records",
@@ -31,7 +71,31 @@ public final class DatabaseSchemaReadiness {
             new Requirement(
                     "V20260804_07",
                     "customer_maintenance_schedule",
-                    "interval_months"));
+                    "interval_months"),
+            new Requirement(
+                    "V20260804_07",
+                    "customer_maintenance_schedule",
+                    "anchor_month"),
+            new Requirement(
+                    "V20260804_07",
+                    "customer_maintenance_schedule",
+                    "enabled"),
+            new Requirement(
+                    "V20260804_07",
+                    "customer_maintenance_schedule",
+                    "effective_from"),
+            new Requirement(
+                    "V20260804_07",
+                    "customer_maintenance_schedule",
+                    "effective_to"),
+            new Requirement(
+                    "V20260804_07",
+                    "customer_maintenance_schedule",
+                    "updated_by"),
+            new Requirement(
+                    "V20260804_07",
+                    "customer_maintenance_schedule",
+                    "updated_at"));
 
     private DatabaseSchemaReadiness() {
     }

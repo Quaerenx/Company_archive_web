@@ -68,4 +68,35 @@ class MaintenanceScheduleTest {
         assertFalse(disabled.isDue(YearMonth.of(2026, 8)));
         assertFalse(expired.isDue(YearMonth.of(2026, 8)));
     }
+
+    @Test
+    void decemberQuarterlyAnchorContinuesAcrossTheYearBoundary() {
+        MaintenanceSchedule decemberAnchor = new MaintenanceSchedule(
+                3,
+                YearMonth.of(2025, 12),
+                LocalDate.of(2025, 12, 1),
+                null,
+                true);
+
+        assertTrue(decemberAnchor.isDue(YearMonth.of(2025, 12)));
+        assertFalse(decemberAnchor.isDue(YearMonth.of(2026, 1)));
+        assertFalse(decemberAnchor.isDue(YearMonth.of(2026, 2)));
+        assertTrue(decemberAnchor.isDue(YearMonth.of(2026, 3)));
+        assertTrue(decemberAnchor.isDue(YearMonth.of(2026, 12)));
+    }
+
+    @Test
+    void leapYearFebruaryUsesMonthResidueRatherThanDayCount() {
+        MaintenanceSchedule februaryAnchor = new MaintenanceSchedule(
+                3,
+                YearMonth.of(2024, 2),
+                LocalDate.of(2024, 2, 29),
+                null,
+                true);
+
+        assertTrue(februaryAnchor.isDue(YearMonth.of(2024, 2)));
+        assertFalse(februaryAnchor.isDue(YearMonth.of(2024, 3)));
+        assertTrue(februaryAnchor.isDue(YearMonth.of(2024, 5)));
+        assertTrue(februaryAnchor.isDue(YearMonth.of(2025, 2)));
+    }
 }

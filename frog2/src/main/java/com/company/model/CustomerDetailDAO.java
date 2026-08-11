@@ -56,10 +56,34 @@ public class CustomerDetailDAO {
 
     public CustomerDetailSet getCustomerDetails(String customerName) {
         try (Connection connection = connectionProvider.getConnection()) {
-            return new CustomerDetailSet(
-                    find(connection, CustomerDetailEnvironment.PROD, customerName),
-                    find(connection, CustomerDetailEnvironment.STAGING, customerName),
-                    find(connection, CustomerDetailEnvironment.DEVELOPMENT, customerName));
+            String sql = "SELECT 'prod' AS detail_environment, " + COLUMNS
+                    + " FROM vertica_customer_detail "
+                    + "WHERE customer_name = ? AND is_deleted = 1 "
+                    + "UNION ALL SELECT 'stg' AS detail_environment, " + COLUMNS
+                    + " FROM vertica_customer_detail_stg WHERE customer_name = ? "
+                    + "UNION ALL SELECT 'dev' AS detail_environment, " + COLUMNS
+                    + " FROM vertica_customer_detail_dev WHERE customer_name = ?";
+            CustomerDetailDTO production = null;
+            CustomerDetailDTO staging = null;
+            CustomerDetailDTO development = null;
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, customerName);
+                statement.setString(2, customerName);
+                statement.setString(3, customerName);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        CustomerDetailDTO detail = mapRowToDetail(resultSet);
+                        switch (resultSet.getString("detail_environment")) {
+                            case "prod" -> production = detail;
+                            case "stg" -> staging = detail;
+                            case "dev" -> development = detail;
+                            default -> throw new SQLException(
+                                    "Unexpected customer detail environment");
+                        }
+                    }
+                }
+            }
+            return new CustomerDetailSet(production, staging, development);
         } catch (SQLException exception) {
             throw DataAccessException.from("load customer details", exception);
         }
@@ -116,15 +140,11 @@ public class CustomerDetailDAO {
                 boolean changed = exists
                         ? update(connection, environment, detail)
                         : insert(connection, environment, detail);
-                if (originalAutoCommit) {
-                    connection.commit();
-                }
+                connection.commit();
                 return changed;
             } catch (SQLException | RuntimeException exception) {
                 primaryFailure = exception;
-                if (originalAutoCommit) {
-                    rollback(connection, exception);
-                }
+                rollback(connection, exception);
                 throw exception;
             } finally {
                 if (originalAutoCommit) {

@@ -37,9 +37,9 @@ public class MonthlyCustomerResponseDAO {
     }
 
     public List<MonthlyCustomerResponseDTO> getMonthlyResponses(
-            String userId, String legacyUserName, int year, int month) {
+            String userId, int year, int month) {
         List<MonthlyCustomerResponseDTO> responses = new ArrayList<>();
-        if (isBlank(userId) && isBlank(legacyUserName)) {
+        if (isBlank(userId)) {
             return responses;
         }
         java.sql.Date startDate;
@@ -54,32 +54,23 @@ public class MonthlyCustomerResponseDAO {
         }
         try (Connection connection = connectionProvider.getConnection()) {
             boolean hasCreatorUserId = hasCreatorUserId(connection);
-            if (hasCreatorUserId && isBlank(userId)) {
+            if (!hasCreatorUserId) {
                 return responses;
             }
-            if (!hasCreatorUserId && isBlank(legacyUserName)) {
-                return responses;
-            }
-            String ownerColumn = hasCreatorUserId
-                    ? CREATOR_USER_ID_COLUMN
-                    : "created_by";
-            String sql = "SELECT id, created_by"
-                    + (hasCreatorUserId ? ", " + CREATOR_USER_ID_COLUMN : "")
+            String sql = "SELECT id, created_by, " + CREATOR_USER_ID_COLUMN
                     + ", response_date, customer_name, reason, "
                     + "action_content, note, created_at, updated_at "
                     + "FROM " + TABLE_NAME + " "
-                    + "WHERE " + ownerColumn
+                    + "WHERE " + CREATOR_USER_ID_COLUMN
                     + " = ? AND response_date >= ? AND response_date < ? "
                     + "ORDER BY response_date DESC";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(
-                        1,
-                        hasCreatorUserId ? userId.trim() : legacyUserName.trim());
+                statement.setString(1, userId.trim());
                 statement.setDate(2, startDate);
                 statement.setDate(3, endDate);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
-                        responses.add(mapRow(resultSet, hasCreatorUserId));
+                        responses.add(mapRow(resultSet));
                     }
                 }
             }
@@ -165,13 +156,11 @@ public class MonthlyCustomerResponseDAO {
     }
 
 
-    private static MonthlyCustomerResponseDTO mapRow(
-            ResultSet resultSet, boolean hasCreatorUserId) throws SQLException {
+    private static MonthlyCustomerResponseDTO mapRow(ResultSet resultSet)
+            throws SQLException {
         MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
         dto.setId(resultSet.getInt("id"));
-        if (hasCreatorUserId) {
-            dto.setUserId(resultSet.getString(CREATOR_USER_ID_COLUMN));
-        }
+        dto.setUserId(resultSet.getString(CREATOR_USER_ID_COLUMN));
         dto.setUserName(resultSet.getString("created_by"));
         dto.setResponseDate(resultSet.getDate("response_date"));
         dto.setCustomerName(resultSet.getString("customer_name"));

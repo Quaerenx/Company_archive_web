@@ -31,6 +31,7 @@ class CustomerDAOMaintenanceAssignmentTest {
         assertTrue(sql.startsWith(
                 "SELECT d.customer_name, d.main_manager "));
         assertTrue(sql.contains("d.customer_type = ?"));
+        assertTrue(sql.contains("d.is_deleted = 1"));
         assertTrue(sql.contains("d.main_manager ASC, d.customer_name ASC"));
         assertFalse(sql.contains("vertica_version"));
         assertFalse(sql.contains("license_info"));
@@ -43,6 +44,8 @@ class CustomerDAOMaintenanceAssignmentTest {
         assertEquals(
                 new MaintenanceCustomerAssignment("Beta", null),
                 assignments.get(1));
+        assertTrue(assignments.stream()
+                .allMatch(assignment -> !assignment.schedule().isQuarterly()));
     }
 
     @Test

@@ -19,26 +19,45 @@ import org.junit.jupiter.api.Test;
 
 class CustomerDetailDAOJdbcContractTest {
     @Test
-    void groupedReadUsesOneConnectionAndThreeExplicitEnvironmentQueries() {
-        FakeJdbc jdbc = new FakeJdbc(false);
+    void groupedReadUsesOneConnectionAndOneBoundedEnvironmentQuery() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(
+                PaginationJdbcFixture.row(
+                        "detail_environment", "prod",
+                        "customer_name", "Acme",
+                        "vertica_version", "12.0"),
+                PaginationJdbcFixture.row(
+                        "detail_environment", "stg",
+                        "customer_name", "Acme",
+                        "vertica_version", "11.1"),
+                PaginationJdbcFixture.row(
+                        "detail_environment", "dev",
+                        "customer_name", "Acme",
+                        "vertica_version", "10.0"));
         CustomerDetailDAO dao = new CustomerDetailDAO(jdbc::open);
 
         CustomerDetailSet details = dao.getCustomerDetails("Acme");
 
-        assertEquals(null, details.production());
-        assertEquals(null, details.staging());
-        assertEquals(null, details.development());
+        assertEquals("12.0", details.production().getVerticaVersion());
+        assertEquals("11.1", details.staging().getVerticaVersion());
+        assertEquals("10.0", details.development().getVerticaVersion());
         assertEquals(1, jdbc.openCount);
         assertEquals(1, jdbc.closeCount);
-        assertEquals(3, jdbc.statements.size());
-        assertTrue(jdbc.statements.get(0).sql.contains(
-                " FROM vertica_customer_detail WHERE customer_name = ?"));
-        assertTrue(jdbc.statements.get(1).sql.contains(
-                " FROM vertica_customer_detail_stg WHERE customer_name = ?"));
-        assertTrue(jdbc.statements.get(2).sql.contains(
-                " FROM vertica_customer_detail_dev WHERE customer_name = ?"));
-        assertTrue(jdbc.statements.stream()
-                .noneMatch(statement -> statement.sql.contains("SELECT *")));
+        assertEquals(1, jdbc.statements.size());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "'prod' AS detail_environment"));
+        assertTrue(statement.sql.contains(
+                "FROM vertica_customer_detail WHERE customer_name = ? AND is_deleted = 1"));
+        assertTrue(statement.sql.contains(
+                "UNION ALL SELECT 'stg' AS detail_environment"));
+        assertTrue(statement.sql.contains(
+                "UNION ALL SELECT 'dev' AS detail_environment"));
+        assertEquals("Acme", statement.parameters.get(1));
+        assertEquals("Acme", statement.parameters.get(2));
+        assertEquals("Acme", statement.parameters.get(3));
+        assertTrue(!statement.sql.contains("SELECT *"));
     }
 
     @Test
@@ -87,6 +106,30 @@ class CustomerDetailDAOJdbcContractTest {
 
         assertTrue(exception.isReadOnlyViolation());
         assertTransaction(jdbc, 0, 1);
+    }
+
+    @Test
+    void daoCommitsAndRollsBackEvenWhenProviderStartsWithAutoCommitDisabled() {
+        FakeJdbc successful = new FakeJdbc(false, false);
+        CustomerDetailDAO successfulDao = new CustomerDetailDAO(successful::open);
+
+        assertTrue(successfulDao.saveOrUpdateCustomerDetailDev(detail()));
+        assertEquals(1, successful.commitCount);
+        assertEquals(0, successful.rollbackCount);
+        assertTrue(successful.autoCommitValues.isEmpty());
+        assertEquals(1, successful.closeCount);
+
+        FakeJdbc failing = new FakeJdbc(false, false);
+        failing.writeFailure = new SQLNonTransientException("blocked", "25006");
+        CustomerDetailDAO failingDao = new CustomerDetailDAO(failing::open);
+
+        assertThrows(
+                DataAccessException.class,
+                () -> failingDao.saveOrUpdateCustomerDetailDev(detail()));
+        assertEquals(0, failing.commitCount);
+        assertEquals(1, failing.rollbackCount);
+        assertTrue(failing.autoCommitValues.isEmpty());
+        assertEquals(1, failing.closeCount);
     }
 
     private static void assertTransaction(FakeJdbc jdbc, int commits, int rollbacks) {
@@ -234,7 +277,12 @@ class CustomerDetailDAOJdbcContractTest {
         private boolean autoCommit = true;
 
         private FakeJdbc(boolean existing) {
+            this(existing, true);
+        }
+
+        private FakeJdbc(boolean existing, boolean initialAutoCommit) {
             this.existing = existing;
+            this.autoCommit = initialAutoCommit;
         }
 
         private Connection open() {
