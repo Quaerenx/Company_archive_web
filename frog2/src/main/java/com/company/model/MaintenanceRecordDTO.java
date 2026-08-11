@@ -17,7 +17,6 @@ public class MaintenanceRecordDTO {
     private String licenseSizeGb; // 예: "100"
     private String licenseUsageSize; // 예: "75"
     private String licenseUsagePct; // 예: "75"
-    private String licenseSummary;
 
     // 기본 생성자
     public MaintenanceRecordDTO() {}
@@ -119,11 +118,4 @@ public class MaintenanceRecordDTO {
         this.licenseUsageSize = licenseUsageSize;
     }
 
-    public String getLicenseSummary() {
-        return licenseSummary;
-    }
-
-    public void setLicenseSummary(String licenseSummary) {
-        this.licenseSummary = licenseSummary;
-    }
 }

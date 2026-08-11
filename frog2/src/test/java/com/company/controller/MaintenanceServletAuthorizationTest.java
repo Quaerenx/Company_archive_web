@@ -30,8 +30,8 @@ class MaintenanceServletAuthorizationTest {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
         MaintenanceRecordDTO history = record("owner-1");
         history.setInspectionDate(Date.valueOf("2026-08-10"));
-        history.setLicenseSizeGb("1000");
-        history.setLicenseUsageSize("500");
+        history.setLicenseSizeGb("4TB");
+        history.setLicenseUsageSize("2TB");
         history.setLicenseUsagePct("50");
         dao.historyPage = new PageResult<>(
                 List.of(history), 41, 1, 20);
@@ -57,8 +57,16 @@ class MaintenanceServletAuthorizationTest {
         assertEquals(1, request.attributes.get("currentPage"));
         assertEquals(3, request.attributes.get("totalPages"));
         assertEquals(20, request.attributes.get("pageSize"));
-        assertTrue(history.getLicenseSummary() != null
-                && !history.getLicenseSummary().isBlank());
+        List<?> historyRows =
+                (List<?>) request.attributes.get("historyRows");
+        assertEquals(1, historyRows.size());
+        MaintenanceHistoryRowView row =
+                (MaintenanceHistoryRowView) historyRows.get(0);
+        assertEquals(history, row.getRecord());
+        assertEquals("2", row.getUsedTerabytes());
+        assertEquals("4", row.getCapacityTerabytes());
+        assertEquals(50, row.getUsagePercentage());
+        assertEquals("—", row.getDeltaLabel());
         assertEquals(1,
                 ((List<?>) request.attributes.get("usageSeries")).size());
     }

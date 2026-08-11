@@ -162,16 +162,19 @@ class CssLayoutStructureTest {
         String historyCss = Files.readString(
                 CSS.resolve("pages/maintenance_history.css"));
         assertFalse(historyCss.contains(".maintenance-history .alert"));
-        assertTrue(historyCss.contains(".maintenance-history .history-item"));
+        assertTrue(historyCss.contains(
+                ".maintenance-history .history-comparison-table"));
         assertFalse(historyCss.lines().map(String::stripLeading)
                 .anyMatch(line -> line.startsWith(".alert")
                         || line.startsWith(".history-item")
+                        || line.startsWith(".history-comparison-table")
                         || line.startsWith(".empty-history")));
 
         String historyScript = Files.readString(
                 WEBAPP.resolve("resources/js/pages/maintenance_history.js"));
         assertTrue(historyScript.contains("readOptionalNumber"));
-        assertTrue(historyScript.contains("item.animate"));
+        assertFalse(historyScript.contains("item.animate"));
+        assertFalse(historyScript.contains(".history-item"));
         assertFalse(historyScript.contains(".style."));
         assertFalse(historyScript.contains("deleteForms"));
     }

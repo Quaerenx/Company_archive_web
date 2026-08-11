@@ -75,49 +75,106 @@ class MaintenanceFormAssetContractTest {
         assertTrue(history.contains("pointStyle: 'triangle'"));
         assertTrue(history.contains("pointStyle: 'rectRot'"));
         assertTrue(history.contains("prefers-reduced-motion: reduce"));
-        assertTrue(history.contains("typeof item.animate === 'function'"));
+        assertTrue(history.contains(
+                "animation: reduceMotion ? false : undefined"));
+        assertFalse(history.contains(".history-item"));
+        assertFalse(history.contains("item.animate"));
         assertFalse(history.contains("item.addEventListener('click'"));
         assertTrue(readWebapp("maintenance/maintenance_history.jsp")
-                .contains("<a class=\"history-item\""));
+                .contains("<table class=\"history-comparison-table\""));
     }
 
     @Test
-    void historyRecordsUseAnAlwaysExpandedThreeStageHierarchy() throws Exception {
+    void historyRecordsUseAccessibleTwoRowComparisonGroups() throws Exception {
         String page = readWebapp("maintenance/maintenance_history.jsp");
-        String styles = Files.readString(PAGE_STYLES.resolve("maintenance_history.css"));
+        int tableStart = page.indexOf(
+                "<table class=\"history-comparison-table\"");
+        int tableEnd = page.indexOf("</table>", tableStart);
+        assertTrue(tableStart >= 0);
+        assertTrue(tableEnd > tableStart);
+        String comparisonTable = page.substring(tableStart, tableEnd);
 
-        int record = page.indexOf("<a class=\"history-item\"");
-        int meta = page.indexOf("class=\"history-meta\"", record);
-        int facts = page.indexOf("class=\"history-facts\"", meta);
-        int note = page.indexOf("class=\"history-note\"", facts);
-        assertTrue(record >= 0);
-        assertTrue(meta > record);
-        assertTrue(facts > meta);
-        assertTrue(note > facts);
+        assertTrue(comparisonTable.contains(
+                "<caption class=\"sr-only\">"));
+        assertEquals(7, countOccurrences(
+                comparisonTable, "<th scope=\"col\""));
+        assertTrue(comparisonTable.contains("점검월"));
+        assertTrue(comparisonTable.contains("이전 대비"));
+        assertTrue(comparisonTable.contains(
+                "<c:forEach var=\"row\" items=\"${historyRows}\">"));
+        assertTrue(comparisonTable.contains(
+                "<tbody class=\"history-record-group\">"));
+        assertTrue(comparisonTable.contains(
+                "scope=\"rowgroup\" rowspan=\"2\""));
+        assertTrue(comparisonTable.contains(
+                "<tr class=\"history-metric-row\">"));
+        assertTrue(comparisonTable.contains(
+                "<tr class=\"history-note-row\">"));
+        assertTrue(comparisonTable.contains(
+                "<td class=\"history-note-cell\" colspan=\"6\">"));
+        assertTrue(comparisonTable.contains(
+                "<div class=\"history-note-layout\">"));
+        assertTrue(comparisonTable.contains(
+                "<c:out value=\"${row.record.note}\" />"));
+        assertTrue(comparisonTable.contains("기록 없음"));
+        assertTrue(page.contains("class=\"history-table-scroll\""));
+        assertTrue(page.contains("tabindex=\"0\""));
+        assertTrue(page.contains("class=\"history-scroll-hint\""));
+        assertFalse(page.contains("<a class=\"history-item\""));
+    }
 
-        assertTrue(page.contains("<dl class=\"history-facts\">"));
-        assertEquals(2, countOccurrences(page, "<div class=\"history-fact\">"));
-        assertEquals(2, countOccurrences(page, "<dt>"));
-        assertEquals(2, countOccurrences(page, "<dd>"));
-        assertTrue(page.contains("<div class=\"note-content\">"));
-        assertTrue(page.contains("<c:out value=\"${record.note}\" />"));
-        assertFalse(page.contains("history-details"));
-        assertFalse(page.contains("detail-group"));
-        assertFalse(page.contains("detail-label"));
-        assertFalse(page.contains("detail-value"));
-        assertFalse(page.contains("history-actions"));
-        assertFalse(page.contains("fa-sticky-note"));
+    @Test
+    void historyLicenseUsageUsesCompactTextWithADecorativeProgressRing()
+            throws Exception {
+        String page = readWebapp("maintenance/maintenance_history.jsp");
+        String styles = Files.readString(
+                PAGE_STYLES.resolve("maintenance_history.css"));
 
-        assertTrue(styles.contains(".maintenance-history .history-facts"));
-        assertTrue(styles.contains(".maintenance-history .history-fact"));
-        assertTrue(styles.contains(".maintenance-history .note-content"));
-        assertTrue(styles.contains("inline-size: 100%;"));
-        assertTrue(styles.contains("overflow-wrap: anywhere;"));
-        assertFalse(styles.contains("max-inline-size: var(--measure-wide);"));
-        assertTrue(styles.matches(
-                "(?s).*@media \\(max-width: 768px\\).*"
-                        + "\\.maintenance-history \\.history-facts\\s*\\{[^}]*"
-                        + "grid-template-columns:\\s*1fr;.*"));
+        assertTrue(page.contains("class=\"history-usage-value\""));
+        assertTrue(page.contains(
+                "test=\"${not empty row.usagePercentage}\""));
+        assertTrue(page.contains(
+                "class=\"license-usage-icon\" aria-hidden=\"true\""));
+        assertTrue(page.contains("focusable=\"false\""));
+        assertTrue(page.contains("pathLength=\"100\""));
+        assertTrue(page.contains("license-usage-icon__track"));
+        assertTrue(page.contains("license-usage-icon__value"));
+        assertTrue(page.contains("${row.usageProgressPercentage}"));
+        assertTrue(page.contains("${row.usagePercentage}"));
+        assertTrue(page.contains("${row.usedTerabytes}"));
+        assertTrue(page.contains("${row.capacityTerabytes}"));
+        assertTrue(page.contains("${row.deltaLabel}"));
+        assertTrue(page.contains("history-delta--${row.deltaTone}"));
+
+        assertTrue(styles.contains(
+                ".maintenance-history .license-usage-icon"));
+        assertTrue(styles.contains("inline-size: 14px;"));
+        assertTrue(styles.contains("block-size: 14px;"));
+        assertTrue(styles.contains("var(--color-chart-usage)"));
+    }
+
+    @Test
+    void historyComparisonTableIsDenseScopedAndScrollsOnlyInsideItsWrapper()
+            throws Exception {
+        String styles = Files.readString(
+                PAGE_STYLES.resolve("maintenance_history.css"));
+
+        assertTrue(styles.contains(
+                ".maintenance-history .history-table-scroll"));
+        assertTrue(styles.contains("overflow-x: auto;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-comparison-table"));
+        assertTrue(styles.contains("min-width: 760px;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-record-group"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-note-cell"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-note-layout"));
+        assertTrue(styles.contains("white-space: pre-wrap;"));
+        assertTrue(styles.contains("font-variant-numeric: tabular-nums;"));
+        assertFalse(styles.contains(".maintenance-history .history-item"));
+        assertFalse(styles.contains("!important"));
     }
 
     private static String readWebapp(String relativePath) throws Exception {

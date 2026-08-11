@@ -72,7 +72,10 @@ class CarbonIconUsageContractTest {
         assertTrue(dashboard.contains(".maintenance-assignee-customer::before"));
         assertFalse(myPage.contains("vm-board-title\">\n                <i"));
         assertTrue(maintenanceCards.contains(".maintenance-management .customer-name i { color: currentColor;"));
-        assertTrue(maintenanceHistory.contains(".maintenance-history .inspection-date i"));
+        assertFalse(maintenanceHistory.contains(
+                ".maintenance-history .inspection-date i"));
+        assertTrue(maintenanceHistory.contains(
+                ".maintenance-history .license-usage-icon"));
     }
 
     private static String read(String relativePath) throws Exception {

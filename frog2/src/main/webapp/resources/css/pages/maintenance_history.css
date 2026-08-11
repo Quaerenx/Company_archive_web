@@ -66,7 +66,7 @@
 
     .maintenance-history .history-header {
         background: var(--color-surface-subtle);
-        padding: var(--space-24);
+        padding: var(--space-16) var(--space-20);
         border-bottom: 1px solid var(--color-border);
         display: flex;
         justify-content: space-between;
@@ -83,116 +83,136 @@
     }
 
     .maintenance-history .record-count {
-        background: var(--color-surface-muted);
         color: var(--color-text-muted);
-        padding: var(--space-4) var(--space-12);
-        border-radius: var(--radius-pill);
         font-size: var(--font-size-sm);
         font-weight: 500;
     }
 
-    .maintenance-history .history-grid {
-        padding: 0;
-        display: grid;
-        gap: 0;
+    .maintenance-history .history-scroll-hint {
+        color: var(--color-text-muted);
+        display: none;
+        font-size: var(--font-size-xs);
+        margin: 0;
+        padding: var(--space-8) var(--space-16) 0;
     }
 
-    .maintenance-history .history-item {
+    .maintenance-history .history-table-scroll {
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+    }
+
+    .maintenance-history .history-table-scroll:focus-visible {
+        box-shadow: inset 0 0 0 2px var(--color-focus);
+        outline: 2px solid var(--color-focus);
+        outline-offset: -2px;
+    }
+
+    .maintenance-history .history-comparison-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        color: var(--color-text);
+        font-size: var(--font-size-sm);
+        min-width: 760px;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .maintenance-history .history-comparison-table thead th {
+        background: var(--color-surface-subtle);
+        border-bottom: 1px solid var(--color-border-strong);
+        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        padding: var(--space-8) var(--space-12);
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .maintenance-history .history-comparison-table thead th:nth-child(1) {
+        width: 112px;
+    }
+
+    .maintenance-history .history-comparison-table thead th:nth-child(2) {
+        width: 108px;
+    }
+
+    .maintenance-history .history-comparison-table thead th:nth-child(3),
+    .maintenance-history .history-comparison-table thead th:nth-child(4),
+    .maintenance-history .history-comparison-table thead th:nth-child(5),
+    .maintenance-history .history-comparison-table thead th:nth-child(6) {
+        width: 104px;
+    }
+
+    .maintenance-history .history-comparison-table thead th:nth-child(7) {
+        width: 124px;
+    }
+
+    .maintenance-history .history-numeric-column {
+        text-align: right;
+    }
+
+    .maintenance-history .history-record-group {
         background: var(--color-surface);
-        border: 0;
+    }
+
+    .maintenance-history .history-record-group .history-metric-row > td {
         border-bottom: 1px solid var(--color-border);
-        border-radius: 0;
-        box-shadow: none;
-        color: inherit;
-        display: block;
-        padding: var(--space-24);
+    }
+
+    .maintenance-history .history-record-group .history-month-cell,
+    .maintenance-history .history-record-group .history-note-cell {
+        border-bottom: 1px solid var(--color-border-strong);
+    }
+
+    .maintenance-history .history-metric-row > th,
+    .maintenance-history .history-metric-row > td {
+        padding: var(--space-12);
+        vertical-align: middle;
+    }
+
+    .maintenance-history .history-month-cell {
+        background: var(--color-surface);
+        font-weight: 400;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .maintenance-history .history-date-link {
+        align-items: flex-start;
+        color: var(--color-text);
+        display: inline-flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        justify-content: center;
+        min-block-size: var(--control-height-md);
         text-decoration: none;
-        transition:
-            background-color var(--motion-fast) var(--motion-ease),
-            border-color var(--motion-fast) var(--motion-ease);
-        position: relative;
     }
 
-    .maintenance-history .history-item:hover {
-        background: var(--color-surface-hover);
-        border-bottom-color: var(--color-border-strong);
-        box-shadow: none;
+    .maintenance-history .history-date-link:hover .history-month {
+        text-decoration: underline;
+        text-underline-offset: 3px;
     }
 
-    .maintenance-history .history-item:last-child {
-        border-bottom: 0;
-    }
-
-    .maintenance-history .history-item:focus-visible {
-        border-color: var(--color-focus);
+    .maintenance-history .history-date-link:focus-visible {
+        border-radius: var(--radius-sm);
         box-shadow: 0 0 0 3px var(--color-focus-ring);
         outline: 2px solid var(--color-focus);
         outline-offset: 2px;
     }
 
-    .maintenance-history .history-meta {
-        align-items: flex-start;
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-16);
-        margin-bottom: var(--space-16);
-    }
-
-    .maintenance-history .inspection-date {
-        font-size: var(--font-size-md);
+    .maintenance-history .history-month {
+        font-size: var(--font-size-sm);
+        font-variant-numeric: tabular-nums;
         font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: var(--space-8);
     }
 
-    .maintenance-history .inspection-date i {
-        color: currentColor;
-    }
-
-    .maintenance-history .inspector-info {
+    .maintenance-history .history-exact-date {
         color: var(--color-text-muted);
-        font-size: var(--font-size-sm);
-        margin-left: auto;
-        text-align: right;
-    }
-
-    .maintenance-history .inspector-name {
-        font-weight: 500;
-        color: var(--color-text);
-    }
-
-    .maintenance-history .history-facts {
-        display: grid;
-        gap: var(--space-8) var(--space-32);
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        margin: 0;
-        padding: 0;
-    }
-
-    .maintenance-history .history-fact {
-        align-items: center;
-        display: grid;
-        gap: var(--space-12);
-        grid-template-columns: max-content minmax(0, 1fr);
-        min-width: 0;
-        padding: var(--space-8) 0;
-    }
-
-    .maintenance-history .history-fact dt {
-        color: var(--color-text-muted);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        margin: 0;
-    }
-
-    .maintenance-history .history-fact dd {
-        color: var(--color-text);
-        font-weight: 500;
-        margin: 0;
-        min-width: 0;
-        overflow-wrap: anywhere;
+        font-size: var(--font-size-xs);
+        font-variant-numeric: tabular-nums;
+        font-weight: 400;
     }
 
     .maintenance-history .version-tag {
@@ -205,60 +225,105 @@
         font-weight: 500;
     }
 
-    .maintenance-history .history-note {
-        background: var(--color-surface-muted);
-        border: 0;
-        border-radius: var(--radius-lg);
-        display: grid;
-        gap: var(--space-8);
+    .maintenance-history .history-number-cell {
+        color: var(--color-text);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .maintenance-history .history-number {
+        font-weight: 600;
+    }
+
+    .maintenance-history .history-unit {
+        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        margin-left: var(--space-2);
+    }
+
+    .maintenance-history .history-usage-value {
+        align-items: center;
+        display: inline-flex;
+        font-variant-numeric: tabular-nums;
+        gap: var(--space-4);
+        justify-content: flex-end;
+    }
+
+    .maintenance-history .license-usage-icon {
+        block-size: 14px;
+        color: var(--color-chart-usage);
+        display: inline-flex;
+        flex: 0 0 14px;
+        inline-size: 14px;
+    }
+
+    .maintenance-history .license-usage-icon svg {
+        block-size: 100%;
+        display: block;
         inline-size: 100%;
-        margin-top: var(--space-16);
-        padding: var(--space-16);
+    }
+
+    .maintenance-history .license-usage-icon__track {
+        stroke: var(--color-border-strong);
+    }
+
+    .maintenance-history .license-usage-icon__value {
+        stroke: var(--color-chart-usage);
+    }
+
+    .maintenance-history .history-delta {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+
+    .maintenance-history .history-delta--up {
+        color: var(--color-danger);
+    }
+
+    .maintenance-history .history-delta--down {
+        color: var(--color-success);
+    }
+
+    .maintenance-history .history-delta--flat,
+    .maintenance-history .history-delta--unavailable {
+        color: var(--color-text-muted);
+    }
+
+    .maintenance-history .history-inspector-cell {
+        min-width: 0;
+    }
+
+    .maintenance-history .inspector-name {
+        color: var(--color-text);
+        font-weight: 500;
+        overflow-wrap: anywhere;
+    }
+
+    .maintenance-history .history-note-cell {
+        background: var(--color-surface-subtle);
+        padding: var(--space-8) var(--space-12) var(--space-12);
+    }
+
+    .maintenance-history .history-note-layout {
+        align-items: baseline;
+        display: grid;
+        gap: var(--space-12);
+        grid-template-columns: 68px minmax(0, 1fr);
     }
 
     .maintenance-history .note-label {
         color: var(--color-text-muted);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-xs);
         font-weight: 600;
     }
 
     .maintenance-history .note-content {
         color: var(--color-text);
         font-size: var(--font-size-sm);
-        line-height: 1.7;
+        line-height: 1.6;
         overflow-wrap: anywhere;
         white-space: pre-wrap;
-    }
-
-    .maintenance-history .btn-edit {
-        background: var(--color-warning);
-        color: var(--color-on-warning);
-        padding: var(--space-8) var(--space-16);
-        border-radius: var(--radius-md);
-        text-decoration: none;
-        font-size: var(--font-size-xs);
-        font-weight: 500;
-    }
-
-    .maintenance-history .btn-edit:hover {
-        background: var(--color-warning-strong-hover);
-        color: var(--color-on-warning);
-        text-decoration: none;
-    }
-
-    .maintenance-history .btn-delete {
-        background: var(--color-danger);
-        color: var(--color-on-danger);
-        padding: var(--space-8) var(--space-16);
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-xs);
-        font-weight: 500;
-        border: none;
-        cursor: pointer;
-    }
-
-    .maintenance-history .btn-delete:hover {
-        background: var(--color-danger-hover);
     }
 
     .maintenance-history .empty-history {
@@ -288,7 +353,8 @@
     .maintenance-history .timestamp-info {
         font-size: var(--font-size-xs);
         color: var(--color-text-muted);
-        margin-top: var(--space-8);
+        font-variant-numeric: tabular-nums;
+        margin-top: var(--space-2);
     }
 
   /* 반응형 디자인 */
@@ -317,26 +383,8 @@
             justify-content: center;
         }
 
-        .maintenance-history .history-grid {
-            padding: 0;
-        }
-
-        .maintenance-history .history-item {
-            padding: var(--space-16);
-        }
-
-        .maintenance-history .history-meta {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .maintenance-history .inspector-info {
-            margin-left: 0;
-            text-align: left;
-        }
-
-        .maintenance-history .history-facts {
-            grid-template-columns: 1fr;
+        .maintenance-history .history-scroll-hint {
+            display: block;
         }
     }
 
@@ -388,8 +436,4 @@
 
 .maintenance-history .usage-chart-empty {
     padding: var(--space-32) var(--space-16);
-}
-
-.maintenance-history .history-item[data-detail-url] {
-    cursor: pointer;
 }

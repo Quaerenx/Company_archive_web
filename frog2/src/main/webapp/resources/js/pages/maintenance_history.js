@@ -39,6 +39,8 @@
 
     const ctx = document.getElementById('licenseUsageChart');
     if (!ctx || typeof window.Chart !== 'function') return;
+    const reduceMotion = typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const rootStyles = window.getComputedStyle(document.documentElement);
     function cssColor(tokenName) {
@@ -115,6 +117,7 @@
             ]
         },
         options: {
+            animation: reduceMotion ? false : undefined,
             responsive: true,
             interaction: { mode: 'index', intersect: false },
             plugins: {
@@ -195,27 +198,3 @@
         }
     });
 })();
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 히스토리 아이템 애니메이션
-    const historyItems = document.querySelectorAll('.history-item');
-    const staggerStep = historyItems.length > 20 ? 15 : 40;
-    const maxDelay = 240;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    historyItems.forEach((item, index) => {
-        if (!reduceMotion && typeof item.animate === 'function') {
-            item.animate(
-                [
-                    { opacity: 0, transform: 'translateY(20px)' },
-                    { opacity: 1, transform: 'translateY(0)' }
-                ],
-                {
-                    duration: 500,
-                    delay: Math.min(index * staggerStep, maxDelay),
-                    easing: 'ease',
-                    fill: 'both'
-                });
-        }
-    });
-});

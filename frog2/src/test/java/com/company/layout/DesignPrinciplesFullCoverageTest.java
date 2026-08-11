@@ -170,7 +170,9 @@ class DesignPrinciplesFullCoverageTest {
         assertTrue(dashboardStyles.contains("container-type: inline-size"));
         assertTrue(dashboardStyles.contains("@container dashboard-maintenance"));
         assertTrue(historyScript.contains("prefers-reduced-motion: reduce"));
-        assertTrue(historyScript.contains("typeof item.animate === 'function'"));
+        assertTrue(historyScript.contains(
+                "animation: reduceMotion ? false : undefined"));
+        assertFalse(historyScript.contains("item.animate"));
         assertTrue(meetingView.contains("hidden"));
         assertTrue(meetingView.contains("aria-expanded"));
     }

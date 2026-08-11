@@ -23,6 +23,15 @@ class LicenseSummaryFormatterTest {
         assertEquals(
                 "2.00TB 중 0.50TB 총 25% 사용 중",
                 LicenseSummaryFormatter.format(record));
+        assertEquals(
+                "0.5",
+                LicenseSummaryFormatter.formatUsageTerabytes(record));
+        assertEquals(
+                "2",
+                LicenseSummaryFormatter.formatCapacityTerabytes(record));
+        assertEquals(
+                25,
+                LicenseSummaryFormatter.resolveRoundedUsagePercentage(record));
         assertEquals(25.0, LicenseSummaryFormatter.resolveUsagePercentage(record));
     }
 
@@ -36,9 +45,28 @@ class LicenseSummaryFormatterTest {
     }
 
     @Test
+    void progressPercentageIsRoundedAndBoundedForVisualDisplay() {
+        assertEquals(25, LicenseSummaryFormatter
+                .resolveUsageProgressPercentage(
+                        record("12", "3", "24.6")));
+        assertEquals(0, LicenseSummaryFormatter
+                .resolveUsageProgressPercentage(
+                        record("12", "3", "-7")));
+        assertEquals(100, LicenseSummaryFormatter
+                .resolveUsageProgressPercentage(
+                        record("12", "13", "108")));
+        assertNull(LicenseSummaryFormatter
+                .resolveUsageProgressPercentage(
+                        new MaintenanceRecordDTO()));
+    }
+
+    @Test
     void returnsNullWhenNoLicenseValueExists() {
         assertNull(LicenseSummaryFormatter.format(new MaintenanceRecordDTO()));
         assertNull(LicenseSummaryFormatter.format(null));
+        assertNull(LicenseSummaryFormatter.formatUsageTerabytes(null));
+        assertNull(LicenseSummaryFormatter.formatCapacityTerabytes(null));
+        assertNull(LicenseSummaryFormatter.resolveRoundedUsagePercentage(null));
         assertNull(LicenseSummaryFormatter.resolveUsagePercentage(new MaintenanceRecordDTO()));
         assertNull(LicenseSummaryFormatter.resolveUsagePercentage(null));
         assertNull(LicenseSummaryFormatter.parseNumber("not-a-number"));
@@ -52,4 +80,5 @@ class LicenseSummaryFormatterTest {
         record.setLicenseUsagePct(percentage);
         return record;
     }
+
 }

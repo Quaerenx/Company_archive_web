@@ -1,6 +1,5 @@
 package com.company.controller;
 
-import com.company.util.LicenseSummaryFormatter;
 import com.company.util.LicenseUsageSeriesBuilder;
 import com.company.util.StrictDateParser;
 import java.io.IOException;
@@ -102,19 +101,14 @@ public class MaintenanceServlet extends HttpServlet {
                 List<MaintenanceRecordDTO> records = page.items();
                 // 라이선스 사용률 시리즈
                 List<Map<String, Object>> usageSeries = LicenseUsageSeriesBuilder.build(records);
-
-                // 각 이력에 대한 라이선스 요약(TB) 문자열 생성
-                for (MaintenanceRecordDTO rec : records) {
-                    String summary = LicenseSummaryFormatter.format(rec);
-                    if (summary != null) {
-                        rec.setLicenseSummary(summary);
-                    }
-                }
+                List<MaintenanceHistoryRowView> historyRows =
+                        MaintenanceHistoryRowView.fromRecords(records);
 
                 // 고객사 기본 정보 조회
                 CustomerDTO customer = customerDAO.getCustomerByName(customerName);
 
                 request.setAttribute("records", records);
+                request.setAttribute("historyRows", historyRows);
                 request.setAttribute("usageSeries", usageSeries);
                 request.setAttribute("customer", customer);
                 request.setAttribute("customerName", customerName);

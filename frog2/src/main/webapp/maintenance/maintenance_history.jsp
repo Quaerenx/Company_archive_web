@@ -162,81 +162,163 @@
                 정기점검 이력
             </div>
             <div class="record-count">
-                총 <c:out value="${totalCount}" />건의 점검 이력
+                <c:out value="${totalCount}" />건
             </div>
         </div>
 
-        <div class="history-grid">
-            <c:choose>
-                <c:when test="${not empty records}">
-                    <c:forEach var="record" items="${records}">
-                        <c:url var="maintenanceEditUrl" value="/maintenance">
-                            <c:param name="view" value="edit" />
-                            <c:param name="id" value="${record.maintenanceId}" />
-                        </c:url>
-                        <a class="history-item"
-                           href="<c:out value='${maintenanceEditUrl}' />"
-                           data-detail-url="<c:out value='${maintenanceEditUrl}' />">
-                            <div class="history-meta">
-                                <div class="inspection-date">
-                                    <i class="fas fa-calendar-check"></i>
-                                    <fmt:formatDate value="${record.inspectionDate}" pattern="yyyy년 MM월 dd일"/>
-                                </div>
-                                <div class="inspector-info">
-                                    <div class="inspector-name"><c:out value="${record.inspectorName}" /></div>
-                                    <div class="timestamp-info">
-                                        등록: <fmt:formatDate value="${record.createdAt}" pattern="MM/dd HH:mm"/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <dl class="history-facts">
-                                <div class="history-fact">
-                                    <dt>Vertica 버전</dt>
-                                    <dd>
+        <c:choose>
+            <c:when test="${not empty historyRows}">
+                <p class="history-scroll-hint" id="historyScrollHint">
+                    표를 좌우로 스크롤해 전체 항목을 확인할 수 있습니다.
+                </p>
+                <div class="history-table-scroll"
+                     role="region"
+                     aria-label="정기점검 이력 비교표"
+                     aria-describedby="historyScrollHint"
+                     tabindex="0">
+                    <table class="history-comparison-table">
+                        <caption class="sr-only">
+                            <c:out value="${customerName}" /> 정기점검 이력 비교표
+                        </caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">점검월</th>
+                                <th scope="col">버전</th>
+                                <th scope="col" class="history-numeric-column">사용량</th>
+                                <th scope="col" class="history-numeric-column">전체 용량</th>
+                                <th scope="col" class="history-numeric-column">사용률</th>
+                                <th scope="col" class="history-numeric-column">이전 대비</th>
+                                <th scope="col">점검자</th>
+                            </tr>
+                        </thead>
+                        <c:forEach var="row" items="${historyRows}">
+                            <c:url var="maintenanceEditUrl" value="/maintenance">
+                                <c:param name="view" value="edit" />
+                                <c:param name="id" value="${row.record.maintenanceId}" />
+                            </c:url>
+                            <tbody class="history-record-group">
+                                <tr class="history-metric-row">
+                                    <th class="history-month-cell" scope="rowgroup" rowspan="2">
+                                        <a class="history-date-link"
+                                           href="<c:out value='${maintenanceEditUrl}' />">
+                                            <c:choose>
+                                                <c:when test="${not empty row.record.inspectionDate}">
+                                                    <span class="history-month">
+                                                        <fmt:formatDate value="${row.record.inspectionDate}" pattern="yyyy.MM" />
+                                                    </span>
+                                                    <span class="history-exact-date">
+                                                        <fmt:formatDate value="${row.record.inspectionDate}" pattern="dd일" />
+                                                    </span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="history-month">—</span>
+                                                    <span class="history-exact-date">날짜 미등록</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                            <span class="sr-only">정기점검 이력 수정</span>
+                                        </a>
+                                    </th>
+                                    <td class="history-version-cell">
                                         <c:choose>
-                                            <c:when test="${not empty record.verticaVersion}">
-                                                <span class="version-tag ui-badge"><c:out value="${record.verticaVersion}" /></span>
+                                            <c:when test="${not empty row.record.verticaVersion}">
+                                                <span class="version-tag ui-badge"><c:out value="${row.record.verticaVersion}" /></span>
                                             </c:when>
-                                            <c:otherwise>-</c:otherwise>
+                                            <c:otherwise>—</c:otherwise>
                                         </c:choose>
-                                    </dd>
-                                </div>
-                                <div class="history-fact">
-                                    <dt>라이선스</dt>
-                                    <dd>
+                                    </td>
+                                    <td class="history-number-cell">
                                         <c:choose>
-                                            <c:when test="${not empty record.licenseSummary}">
-                                                <c:out value="${record.licenseSummary}" />
+                                            <c:when test="${not empty row.usedTerabytes}">
+                                                <span class="history-number"><c:out value="${row.usedTerabytes}" /></span>
+                                                <span class="history-unit">TB</span>
                                             </c:when>
-                                            <c:otherwise>-</c:otherwise>
+                                            <c:otherwise>—</c:otherwise>
                                         </c:choose>
-                                    </dd>
-                                </div>
-                            </dl>
-                            <c:if test="${not empty record.note}">
-                                <div class="history-note">
-                                    <div class="note-label">점검 내용 및 비고</div>
-                                    <div class="note-content"><c:out value="${record.note}" /></div>
-                                </div>
-                            </c:if>
-                        </a>
-                    </c:forEach>
-                </c:when>
-                <c:otherwise>
-                    <div class="empty-history">
-                        <i class="fas fa-clipboard"></i>
-                        <h3>정기점검 이력이 없습니다</h3>
-                        <p><c:out value="${customerName}" />의 정기점검 이력이 아직 등록되지 않았습니다.</p>
-                        <a href="${addHistoryUrl}"
-                           class="btn btn-secondary ui-button button--secondary button--md">
-                            <i class="fas fa-plus"></i>
-                            첫 번째 점검 이력 추가하기
-                        </a>
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>
+                                    </td>
+                                    <td class="history-number-cell">
+                                        <c:choose>
+                                            <c:when test="${not empty row.capacityTerabytes}">
+                                                <span class="history-number"><c:out value="${row.capacityTerabytes}" /></span>
+                                                <span class="history-unit">TB</span>
+                                            </c:when>
+                                            <c:otherwise>—</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="history-number-cell">
+                                        <c:choose>
+                                            <c:when test="${not empty row.usagePercentage}">
+                                                <span class="history-usage-value">
+                                                    <c:if test="${not empty row.usageProgressPercentage}">
+                                                        <span class="license-usage-icon" aria-hidden="true">
+                                                            <svg viewBox="0 0 16 16" focusable="false">
+                                                                <circle class="license-usage-icon__track"
+                                                                        cx="8" cy="8" r="5.5"
+                                                                        fill="none" stroke-width="1.7" />
+                                                                <circle class="license-usage-icon__value"
+                                                                        cx="8" cy="8" r="5.5"
+                                                                        fill="none" stroke-width="1.7"
+                                                                        stroke-linecap="round"
+                                                                        pathLength="100"
+                                                                        stroke-dasharray="${row.usageProgressPercentage} 100"
+                                                                        transform="rotate(-90 8 8)" />
+                                                            </svg>
+                                                        </span>
+                                                    </c:if>
+                                                    <span class="history-number"><c:out value="${row.usagePercentage}" />%</span>
+                                                </span>
+                                            </c:when>
+                                            <c:otherwise>—</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="history-number-cell">
+                                        <span class="history-delta history-delta--${row.deltaTone}">
+                                            <c:out value="${row.deltaLabel}" />
+                                        </span>
+                                    </td>
+                                    <td class="history-inspector-cell">
+                                        <div class="inspector-name">
+                                            <c:out value="${row.record.inspectorName}" default="—" />
+                                        </div>
+                                        <c:if test="${not empty row.record.createdAt}">
+                                            <div class="timestamp-info">
+                                                등록 <fmt:formatDate value="${row.record.createdAt}" pattern="MM.dd HH:mm" />
+                                            </div>
+                                        </c:if>
+                                    </td>
+                                </tr>
+                                <tr class="history-note-row">
+                                    <td class="history-note-cell" colspan="6">
+                                        <div class="history-note-layout">
+                                            <span class="note-label">점검 메모</span>
+                                            <span class="note-content">
+                                                <c:choose>
+                                                    <c:when test="${not empty row.record.note}">
+                                                        <c:out value="${row.record.note}" />
+                                                    </c:when>
+                                                    <c:otherwise>기록 없음</c:otherwise>
+                                                </c:choose>
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </c:forEach>
+                    </table>
+                </div>
+            </c:when>
+            <c:otherwise>
+                <div class="empty-history">
+                    <i class="fas fa-clipboard"></i>
+                    <h3>정기점검 이력이 없습니다</h3>
+                    <p><c:out value="${customerName}" />의 정기점검 이력이 아직 등록되지 않았습니다.</p>
+                    <a href="${addHistoryUrl}"
+                       class="btn btn-secondary ui-button button--secondary button--md">
+                        <i class="fas fa-plus"></i>
+                        첫 번째 점검 이력 추가하기
+                    </a>
+                </div>
+            </c:otherwise>
+        </c:choose>
 
         <c:if test="${currentPage > 1}">
             <c:url var="maintenanceHistoryPreviousUrl" value="/maintenance">

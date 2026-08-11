@@ -41,7 +41,13 @@ class MaintenanceHistoryViewContractTest {
         assertTrue(page.contains("<table class=\"chart-data-table ui-table\""));
         assertTrue(page.contains(
                 "<caption>라이선스 사용률 추이 상세 데이터</caption>"));
-        assertEquals(4, occurrences(page, "<th scope=\"col\""));
+        int chartTableStart = page.indexOf(
+                "<table class=\"chart-data-table ui-table\"");
+        int chartTableEnd = page.indexOf("</table>", chartTableStart);
+        assertTrue(chartTableStart >= 0);
+        assertTrue(chartTableEnd > chartTableStart);
+        String chartTable = page.substring(chartTableStart, chartTableEnd);
+        assertEquals(4, occurrences(chartTable, "<th scope=\"col\""));
         assertTrue(page.contains("<c:forEach var=\"pt\" items=\"${usageSeries}\">"));
         assertTrue(page.contains("<c:out value=\"${pt.date}\" />"));
         assertTrue(page.contains(
