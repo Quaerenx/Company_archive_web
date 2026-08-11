@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class FaviconServlet extends HttpServlet {
-    private static final String VERSION = "20260804-archive-arc-svg-1";
+    private static final String VERSION = "20260811-favicon-vector-1";
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
