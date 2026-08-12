@@ -52,6 +52,24 @@ class UserVmHostServletOwnershipTest {
                 response.redirect);
     }
 
+    @Test
+    void myPageDeleteReturnsToTheDedicatedHostSection()
+            throws Exception {
+        StubUserVmHostDAO dao = new StubUserVmHostDAO();
+        UserVmHostServlet servlet = new UserVmHostServlet(dao);
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("action", "delete");
+        request.parameters.put("returnTo", "mypage");
+        request.parameters.put("ip", "192.168.40.10");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertEquals(
+                "/frog2/mypage?section=hosts&vmHostResult=deleted",
+                response.redirect);
+    }
+
     private static final class StubUserVmHostDAO extends UserVmHostDAO {
         private String lastEditOwnerId;
         private String lastListOwnerId;

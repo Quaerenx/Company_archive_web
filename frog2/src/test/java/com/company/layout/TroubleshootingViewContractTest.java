@@ -113,10 +113,31 @@ class TroubleshootingViewContractTest {
         assertTrue(page.contains("troubleshooting.actionTaken"));
         assertTrue(page.contains("troubleshooting.scriptContent"));
         assertTrue(page.contains("troubleshooting.note"));
+        assertEquals(1, occurrences(page, "${troubleshooting.title}"));
+        assertTrue(page.contains("class=\"troubleshooting-meta-grid\""));
+        assertTrue(page.contains("<dl class=\"troubleshooting-meta-grid\">"));
+        assertTrue(page.contains("class=\"troubleshooting-report-text\""));
+        assertTrue(page.contains("class=\"troubleshooting-code-block\""));
+        assertTrue(page.contains("data-copy-target=\"troubleshooting-script-content\""));
+        assertTrue(page.contains("tabindex=\"0\" aria-labelledby=\"troubleshooting-script-title\""));
+        assertTrue(page.indexOf("troubleshooting-overview-title")
+                < page.indexOf("troubleshooting-error-title"));
+        assertTrue(page.indexOf("troubleshooting-error-title")
+                < page.indexOf("troubleshooting-cause-title"));
+        assertTrue(page.indexOf("troubleshooting-cause-title")
+                < page.indexOf("troubleshooting-action-title"));
+        assertTrue(page.indexOf("troubleshooting-action-title")
+                < page.indexOf("troubleshooting-script-title"));
+        assertTrue(page.indexOf("troubleshooting-script-title")
+                < page.indexOf("troubleshooting-note-title"));
+        assertFalse(page.contains("작성된 내용이 없습니다."));
 
         String behavior = behavior(
                 page, "resources/js/pages/troubleshooting_view.js");
         assertTrue(behavior.contains("정말로 이 트러블 슈팅을 삭제하시겠습니까?"));
+        assertTrue(behavior.contains("navigator.clipboard.writeText(text)"));
+        assertTrue(behavior.contains("document.execCommand('copy')"));
+        assertTrue(behavior.contains("스크립트를 복사했습니다."));
         assertTrue(page.contains("csrf_input.jspf")
                 || behavior.contains("Frog2Csrf.appendTo(form)"));
         assertTrue(page.contains("value=\"delete\"")
@@ -127,7 +148,13 @@ class TroubleshootingViewContractTest {
         String sharedStyles = read("resources/css/ui-system.css");
         assertTrue(sharedStyles.contains("max-width: var(--page-content-max-width)"));
         assertFalse(styles.contains("max-width: var(--page-content-max-width)"));
-        assertTrue(styles.contains("grid-template-columns: 1fr 1fr"));
+        assertTrue(styles.contains(
+                "grid-template-columns: repeat(3, minmax(0, 1fr))"));
+        assertTrue(styles.contains("font-family: inherit"));
+        assertTrue(styles.contains("font-family: var(--font-mono)"));
+        assertTrue(styles.contains("white-space: pre-wrap"));
+        assertTrue(styles.contains("white-space: pre"));
+        assertFalse(styles.contains(".detail-item.full-width"));
         assertTrue(styles.contains("min-width: 120px"));
         assertTrue(styles.contains("@media (max-width: 768px)"));
     }

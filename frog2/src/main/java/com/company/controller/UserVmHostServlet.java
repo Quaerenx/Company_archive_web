@@ -115,6 +115,7 @@ public class UserVmHostServlet extends HttpServlet {
     private void renderMyPage(HttpServletRequest request, HttpServletResponse response, UserDTO user,
             UserVmHostDTO formData, String originalIp, String errorMessage)
             throws ServletException, IOException {
+        request.setAttribute("myPageSection", "hosts");
         request.setAttribute("vmHostForm", formData);
         request.setAttribute("vmHostOriginalIp", originalIp);
         request.setAttribute("vmHostErrorMessage", errorMessage);
@@ -122,7 +123,8 @@ public class UserVmHostServlet extends HttpServlet {
     }
 
     private String buildMyPageRedirect(HttpServletRequest request, String result) {
-        return request.getContextPath() + "/mypage?vmHostResult=" + result;
+        return request.getContextPath()
+                + "/mypage?section=hosts&vmHostResult=" + result;
     }
 
     private String trim(String value) {

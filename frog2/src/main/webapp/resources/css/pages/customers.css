@@ -419,7 +419,7 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
 }
 
 .action-btn.warning {
-    color: var(--color-warning);
+    color: var(--color-warning-text);
 }
 
 .action-btn.warning:hover {

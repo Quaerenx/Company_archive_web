@@ -27,7 +27,9 @@ class DataTableAccessibilityContractTest {
                 "mypage/monthly_customer_response.jsp", "월별 고객 응대 기록");
         expectedCaptions.put(
                 "WEB-INF/views/filerepo/list.jsp", "자료실 파일 및 폴더 목록");
-        expectedCaptions.put("mypage/mypage.jsp", "개인 VM 호스트 목록");
+        expectedCaptions.put(
+                "WEB-INF/includes/mypage/host_manager.jspf",
+                "개인 VM 호스트 목록");
         expectedCaptions.put("vm_hosts/list.jsp", "개인 호스트 목록");
 
         for (Map.Entry<String, String> entry : expectedCaptions.entrySet()) {
@@ -62,7 +64,8 @@ class DataTableAccessibilityContractTest {
         assertTrue(read("troubleshooting/troubleshooting_list.jsp")
                 .contains("colspan=\"4\""));
         assertTrue(read("WEB-INF/views/filerepo/list.jsp").contains("colspan=\"4\""));
-        assertTrue(read("mypage/mypage.jsp").contains("colspan=\"7\""));
+        assertTrue(read("WEB-INF/includes/mypage/host_manager.jspf")
+                .contains("colspan=\"7\""));
         assertTrue(read("vm_hosts/list.jsp").contains("colspan=\"8\""));
     }
 

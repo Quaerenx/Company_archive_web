@@ -1,0 +1,100 @@
+<%@ page pageEncoding="UTF-8" %>
+<section class="mypage-section mypage-work" aria-labelledby="myWorkTitle">
+    <div class="mypage-section__header">
+        <div>
+            <h2 id="myWorkTitle">내 업무</h2>
+            <p class="mypage-work__totals">
+                정기점검 <strong><c:out value="${empty maintenanceCount ? 0 : maintenanceCount}" />건</strong>
+                <span aria-hidden="true">·</span>
+                트러블슈팅 <strong><c:out value="${empty troubleshootingCount ? 0 : troubleshootingCount}" />건</strong>
+            </p>
+        </div>
+        <a href="${pageContext.request.contextPath}/mypage?action=monthlyResponse"
+           class="mypage-text-link">
+            월별 고객 응대 현황
+            <span aria-hidden="true">→</span>
+        </a>
+    </div>
+
+    <div class="recent-activity-grid" aria-label="최근 업무">
+        <section class="recent-activity" aria-labelledby="recentMaintenanceTitle">
+            <div class="recent-activity__header">
+                <h3 id="recentMaintenanceTitle">최근 정기점검</h3>
+                <a href="${pageContext.request.contextPath}/maintenance">전체 보기</a>
+            </div>
+            <c:choose>
+                <c:when test="${not empty recentMaintenanceRecords}">
+                    <ul class="recent-activity__list">
+                        <c:forEach var="record" items="${recentMaintenanceRecords}">
+                            <c:url var="maintenanceRecordUrl" value="/maintenance">
+                                <c:param name="view" value="history" />
+                                <c:param name="customerName" value="${record.customerName}" />
+                            </c:url>
+                            <li>
+                                <a href="<c:out value='${maintenanceRecordUrl}' />"
+                                   class="recent-activity__title">
+                                    <c:out value="${record.customerName}" />
+                                </a>
+                                <p class="recent-activity__meta">
+                                    <span>
+                                        <c:choose>
+                                            <c:when test="${not empty record.inspectionDate}">
+                                                <fmt:formatDate value="${record.inspectionDate}" pattern="yyyy.MM.dd" />
+                                            </c:when>
+                                            <c:otherwise>날짜 없음</c:otherwise>
+                                        </c:choose>
+                                    </span>
+                                    <span aria-hidden="true">·</span>
+                                    <span>Vertica <c:out value="${not empty record.verticaVersion ? record.verticaVersion : '미기재'}" /></span>
+                                </p>
+                            </li>
+                        </c:forEach>
+                    </ul>
+                </c:when>
+                <c:otherwise>
+                    <p class="mypage-empty-state">최근 정기점검 기록이 없습니다.</p>
+                </c:otherwise>
+            </c:choose>
+        </section>
+
+        <section class="recent-activity" aria-labelledby="recentTroubleshootingTitle">
+            <div class="recent-activity__header">
+                <h3 id="recentTroubleshootingTitle">최근 트러블슈팅</h3>
+                <a href="${pageContext.request.contextPath}/troubleshooting">전체 보기</a>
+            </div>
+            <c:choose>
+                <c:when test="${not empty recentTroubleshootings}">
+                    <ul class="recent-activity__list">
+                        <c:forEach var="ts" items="${recentTroubleshootings}">
+                            <c:url var="troubleshootingUrl" value="/troubleshooting">
+                                <c:param name="view" value="view" />
+                                <c:param name="id" value="${ts.id}" />
+                            </c:url>
+                            <li>
+                                <a href="<c:out value='${troubleshootingUrl}' />"
+                                   class="recent-activity__title">
+                                    <c:out value="${ts.title}" />
+                                </a>
+                                <p class="recent-activity__meta">
+                                    <span><c:out value="${not empty ts.customerName ? ts.customerName : '고객사 미기재'}" /></span>
+                                    <span aria-hidden="true">·</span>
+                                    <span>
+                                        <c:choose>
+                                            <c:when test="${not empty ts.occurrenceDate}">
+                                                <fmt:formatDate value="${ts.occurrenceDate}" pattern="yyyy.MM.dd" />
+                                            </c:when>
+                                            <c:otherwise>발생일 미기재</c:otherwise>
+                                        </c:choose>
+                                    </span>
+                                </p>
+                            </li>
+                        </c:forEach>
+                    </ul>
+                </c:when>
+                <c:otherwise>
+                    <p class="mypage-empty-state">최근 트러블슈팅 기록이 없습니다.</p>
+                </c:otherwise>
+            </c:choose>
+        </section>
+    </div>
+</section>

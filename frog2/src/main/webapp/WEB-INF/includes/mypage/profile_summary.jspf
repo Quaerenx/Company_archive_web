@@ -1,0 +1,28 @@
+<%@ page pageEncoding="UTF-8" %>
+<section class="mypage-section profile-summary" aria-labelledby="profileSummaryTitle">
+    <div class="profile-summary__identity">
+        <h2 id="profileSummaryTitle"><c:out value="${userInfo.userName}" /></h2>
+        <p class="profile-summary__meta">
+            <span><c:out value="${userInfo.userId}" /></span>
+            <span aria-hidden="true">·</span>
+            <span>
+                <c:choose>
+                    <c:when test="${not empty userInfo.department}">
+                        <c:out value="${userInfo.department}" />
+                    </c:when>
+                    <c:otherwise>소속 미등록</c:otherwise>
+                </c:choose>
+            </span>
+        </p>
+    </div>
+    <div class="profile-summary__actions">
+        <a href="${pageContext.request.contextPath}/mypage?action=editProfile"
+           class="ui-button button--secondary button--sm">
+            프로필 수정
+        </a>
+        <a href="${pageContext.request.contextPath}/mypage?action=changePassword"
+           class="ui-button button--secondary button--sm">
+            비밀번호 변경
+        </a>
+    </div>
+</section>

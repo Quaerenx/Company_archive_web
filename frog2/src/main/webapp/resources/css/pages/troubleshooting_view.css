@@ -1,135 +1,199 @@
-/* Troubleshooting detail page */
+/* Troubleshooting detail page: a compact read-only incident report. */
 .troubleshooting-detail {
     min-width: 0;
 }
 
-/* 액션 바: 제목과 구분되는 별도 행 */
-.troubleshooting-detail .action-bar {
-    display: flex;
-    gap: var(--space-12);
-    justify-content: flex-end;
-    margin-top: var(--space-12);
-    padding-top: var(--space-12);
-    border-top: 1px solid var(--color-border);
-}
-/* 액션 버튼 고정 크기/톤 통일 */
-.troubleshooting-detail .action-bar .btn {
-    padding: var(--space-12) var(--space-16);
-    font-size: var(--font-size-sm);
-    border-radius: var(--radius-md);
-    min-width: 120px;
-    justify-content: center;
-}
-.troubleshooting-detail .action-bar .btn i {
-    font-size: var(--font-size-sm);
-}
-/* 상세 섹션 하단 액션 영역 */
-.troubleshooting-detail .section-actions {
-    display: flex;
-    gap: var(--space-12);
-    justify-content: flex-end;
-    margin-top: var(--space-16);
-    padding-top: var(--space-12);
-    border-top: 1px solid var(--color-border);
-}
-.troubleshooting-detail .section-actions .btn {
-    padding: var(--space-12) var(--space-16);
-    font-size: var(--font-size-sm);
-    border-radius: var(--radius-md);
-    min-width: 120px;
-    justify-content: center;
-}
-/* 더 미니멀한 텍스트형 버튼 */
-.troubleshooting-detail .section-actions .btn-ghost {
-    background: transparent;
-    border: none;
-    color: var(--color-text);
-    padding: var(--space-4) var(--space-8);
-    min-width: auto;
-    border-radius: 0;
-}
-.troubleshooting-detail .section-actions .btn-ghost:hover {
-    color: var(--color-primary);
-    text-decoration: underline;
-    background: transparent;
-}
-.troubleshooting-detail .section-actions .btn-ghost-danger {
-    color: var(--color-danger-text);
-}
-.troubleshooting-detail .section-actions .btn-ghost-danger:hover {
-    color: var(--color-danger-text);
-    text-decoration: underline;
-}
-@media (max-width: 768px) {
-    .troubleshooting-detail .section-actions { flex-direction: column; align-items: stretch; }
-    .troubleshooting-detail .section-actions .btn { width: 100%; }
-}
-@media (max-width: 768px) {
-    .troubleshooting-detail .action-bar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--space-8);
-    }
-    .troubleshooting-detail .action-bar .btn { width: 100%; }
-}
-
 .troubleshooting-detail .detail-container {
     background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: none;
     overflow: hidden;
-    border: 1px solid var(--color-border);
 }
 
-.troubleshooting-detail .detail-grid {
-    grid-template-columns: 1fr 1fr;
+.troubleshooting-detail .troubleshooting-meta-grid {
+    display: grid;
+    gap: 0 var(--space-24);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
 }
 
-.troubleshooting-detail .detail-item {
-    align-items: flex-start;
+.troubleshooting-detail .troubleshooting-meta-item {
+    border-block-end: 1px solid var(--color-divider);
+    min-width: 0;
+    padding-block: var(--space-12);
 }
 
-.troubleshooting-detail .detail-item:nth-last-child(1),
-.troubleshooting-detail .detail-item:nth-last-child(2) {
-    border-bottom: none;
+.troubleshooting-detail .troubleshooting-meta-item dt {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    margin: 0 0 var(--space-4);
 }
 
-.troubleshooting-detail .detail-item.full-width {
-    grid-column: 1 / -1;
+.troubleshooting-detail .troubleshooting-meta-item dd {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    line-height: var(--line-height-base);
+    margin: 0;
+    overflow-wrap: anywhere;
 }
 
-.troubleshooting-detail .detail-item.full-width .detail-value {
+.troubleshooting-detail .troubleshooting-report-sections {
+    display: grid;
+}
+
+.troubleshooting-detail .troubleshooting-report-section {
+    border-block-start: 1px solid var(--color-divider);
+    min-width: 0;
+    padding-block: var(--space-20);
+}
+
+.troubleshooting-detail .troubleshooting-report-section:first-child {
+    border-block-start: 0;
+    padding-block-start: 0;
+}
+
+.troubleshooting-detail .troubleshooting-report-section:last-child {
+    padding-block-end: 0;
+}
+
+.troubleshooting-detail .troubleshooting-report-section h3 {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    line-height: var(--line-height-heading);
+    margin: 0 0 var(--space-8);
+}
+
+.troubleshooting-detail .troubleshooting-report-section-header {
+    align-items: center;
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+    margin-block-end: var(--space-8);
+}
+
+.troubleshooting-detail .troubleshooting-report-section-header h3 {
+    margin: 0;
+}
+
+.troubleshooting-detail .troubleshooting-report-text {
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--font-size-md);
+    font-weight: 400;
+    inline-size: 100%;
+    line-height: 1.75;
+    max-inline-size: var(--measure-wide);
+    overflow-wrap: anywhere;
+    text-align: start;
+    white-space: pre-wrap;
+}
+
+.troubleshooting-detail .troubleshooting-report-empty {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 400;
+    margin: 0;
+}
+
+.troubleshooting-detail .troubleshooting-code-block {
     background: var(--color-surface-subtle);
-    padding: var(--space-12);
-    border-radius: var(--radius-md);
     border: 1px solid var(--color-border);
-    min-height: 60px;
-    white-space: pre-line;
+    border-radius: var(--radius-md);
+    color: var(--color-text-strong);
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
-    line-height: 1.4;
-    max-inline-size: var(--measure-wide);
+    inline-size: 100%;
+    line-height: 1.65;
+    margin: 0;
+    max-block-size: 420px;
+    overflow: auto;
+    padding: var(--space-16);
+    tab-size: 4;
+    white-space: pre;
 }
 
-.troubleshooting-detail .empty-value {
-    color: var(--color-text-muted);
-    font-style: italic;
+.troubleshooting-detail .troubleshooting-code-block:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-    .troubleshooting-detail {
-        max-width: 100%;
-        padding: var(--space-16);
-    }
-
-    .troubleshooting-detail .header-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
+.troubleshooting-detail .troubleshooting-copy-button {
+    min-block-size: var(--control-height-md);
+    min-inline-size: var(--control-height-md);
 }
 
 .troubleshooting-detail .troubleshooting-updated-at {
+    border-block-start: 1px solid var(--color-divider);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    margin-block-start: var(--space-20);
+    padding-block-start: var(--space-12);
+    text-align: end;
+}
+
+.troubleshooting-detail .section-actions {
+    border-block-start: 1px solid var(--color-border);
+    display: flex;
+    gap: var(--space-12);
+    justify-content: flex-end;
+    margin-block-start: var(--space-16);
+    padding-block-start: var(--space-12);
+}
+
+.troubleshooting-detail .section-actions .btn {
+    border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
+    justify-content: center;
+    min-width: 120px;
+    padding: var(--space-12) var(--space-16);
+}
+
+.troubleshooting-detail .section-actions .btn-ghost {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--color-text);
+    min-width: auto;
+    padding: var(--space-4) var(--space-8);
+}
+
+.troubleshooting-detail .section-actions .btn-ghost:hover {
+    background: transparent;
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.troubleshooting-detail .section-actions .btn-ghost-danger,
+.troubleshooting-detail .section-actions .btn-ghost-danger:hover {
+    color: var(--color-danger-text);
+}
+
+@media (max-width: 768px) {
+    .troubleshooting-detail .troubleshooting-meta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .troubleshooting-detail .troubleshooting-report-section {
+        padding-block: var(--space-16);
+    }
+
+    .troubleshooting-detail .troubleshooting-report-section-header {
+        align-items: flex-start;
+    }
+
+    .troubleshooting-detail .section-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .troubleshooting-detail .section-actions .btn {
+        min-block-size: var(--control-height-md);
+        width: 100%;
+    }
 }

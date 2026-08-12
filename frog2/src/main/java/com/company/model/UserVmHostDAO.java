@@ -39,6 +39,18 @@ public class UserVmHostDAO {
         return hosts;
     }
 
+    public int getActiveHostCountByOwner(String ownerUserId) {
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            return countActiveHostsByOwner(ownerUserId, conn);
+        } catch (SQLException e) {
+            throw DataAccessException.from(e);
+        } finally {
+            DBConnection.close(conn);
+        }
+    }
+
     public UserVmHostDTO getHostByIpAndOwner(String ip, String ownerUserId) {
         Connection conn = null;
         try {

@@ -510,7 +510,7 @@ body.ui-system .content-shell {
 }
 
 .ui-toast[data-tone="warning"] {
-    border-inline-start-color: var(--color-warning);
+    border-inline-start-color: var(--color-warning-accent);
 }
 
 .ui-toast__close {

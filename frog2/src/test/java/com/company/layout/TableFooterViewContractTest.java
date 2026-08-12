@@ -16,7 +16,7 @@ class TableFooterViewContractTest {
             "troubleshooting/troubleshooting_list.jsp",
             "WEB-INF/views/filerepo/list.jsp",
             "mypage/monthly_customer_response.jsp",
-            "mypage/mypage.jsp",
+            "WEB-INF/includes/mypage/host_manager.jspf",
             "vm_hosts/list.jsp",
             "maintenance/maintenance_history.jsp");
 

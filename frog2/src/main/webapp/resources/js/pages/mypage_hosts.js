@@ -3,8 +3,6 @@
 
   const backdrop = document.getElementById('vmHostModalBackdrop');
   const modal = document.getElementById('vmHostModal');
-  const boardBody = document.getElementById('vmHostBoardBody');
-  const toggleBoardBtn = document.getElementById('toggleVmHostBoardBtn');
   const modalTitle = document.getElementById('vmHostModalTitle');
   const openAddBtn = document.getElementById('openVmHostAddBtn');
   const closeBtn = document.getElementById('closeVmHostModalBtn');
@@ -18,39 +16,9 @@
   const remoteHostInput = document.getElementById('vmHostRemoteHost');
   const noteInput = document.getElementById('vmHostNote');
   const deleteIpInput = document.getElementById('vmHostDeleteIp');
-  const collapseStorageKey = 'archive.mypage.personal-hosts.collapsed';
   const modalDialog = modal && window.Frog2UI
       ? window.Frog2UI.createDialogController(modal)
       : null;
-
-  function writeCollapsePreference(collapsed) {
-    try {
-      window.localStorage.setItem(
-          collapseStorageKey,
-          collapsed ? 'true' : 'false');
-    } catch (ignore) {
-      // The page remains usable when browser storage is unavailable.
-    }
-  }
-
-  function readCollapsePreference(defaultValue) {
-    try {
-      const stored = window.localStorage.getItem(collapseStorageKey);
-      return stored === null ? defaultValue : stored === 'true';
-    } catch (ignore) {
-      return defaultValue;
-    }
-  }
-
-  function setBoardCollapsed(collapsed) {
-    if (!boardBody || !toggleBoardBtn) {
-      return;
-    }
-    boardBody.classList.toggle('is-collapsed', collapsed);
-    toggleBoardBtn.textContent = collapsed ? '펼치기' : '접기';
-    toggleBoardBtn.setAttribute('aria-expanded', String(!collapsed));
-    writeCollapsePreference(collapsed);
-  }
 
   function openModal(trigger) {
     if (!backdrop || !modalDialog) {
@@ -92,12 +60,6 @@
   if (openAddBtn) {
     openAddBtn.addEventListener('click', function () {
       populateModal({}, false, openAddBtn);
-    });
-  }
-
-  if (toggleBoardBtn && boardBody) {
-    toggleBoardBtn.addEventListener('click', function () {
-      setBoardCollapsed(!boardBody.classList.contains('is-collapsed'));
     });
   }
 
@@ -147,11 +109,8 @@
     });
   }
 
-  setBoardCollapsed(readCollapsePreference(false));
-
   const formSeed = document.getElementById('vmHostFormSeed');
   if (formSeed) {
-    setBoardCollapsed(false);
     populateModal({
       ip: formSeed.dataset.ip || '',
       originalIp: formSeed.dataset.originalIp || '',
@@ -161,7 +120,5 @@
       remoteHost: formSeed.dataset.remoteHost || '',
       note: formSeed.dataset.note || ''
     }, Boolean(formSeed.dataset.originalIp), openAddBtn);
-  } else if (document.querySelector('.vm-message, .vm-error')) {
-    setBoardCollapsed(false);
   }
 }());

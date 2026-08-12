@@ -21,7 +21,6 @@ import com.company.model.UserVmHostDAO;
 import com.company.model.UserVmHostDTO;
 import com.company.security.PasswordPolicy;
 import com.company.security.SessionPrincipal;
-import com.company.util.Pagination;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -31,7 +30,8 @@ import jakarta.servlet.http.HttpSession;
 
 public class MyPageServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private static final int ACTIVITY_PAGE_SIZE = 10;
+    private static final int RECENT_ACTIVITY_LIMIT = 5;
+    private static final String HOSTS_SECTION = "hosts";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
@@ -102,61 +102,63 @@ public class MyPageServlet extends HttpServlet {
     // 마이페이지 메인 화면
     static void renderMainPage(HttpServletRequest request, HttpServletResponse response, UserDTO user)
             throws ServletException, IOException {
-        
         UserDAO userDAO = new UserDAO();
         UserDTO userInfo = userDAO.getUserById(user.getUserId());
-        
-        // 내가 작성한 Maintenance 기록 조회
-        MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
-        PageResult<MaintenanceRecordDTO> maintenancePage =
-                maintenanceDAO.getMaintenanceRecordsByOwner(
-                        user.getUserId(),
-                        Pagination.requestedPage(
-                                request.getParameter("maintenancePage")),
-                        ACTIVITY_PAGE_SIZE);
-        
-        // 내가 작성한 Troubleshooting 조회
-        TroubleshootingDAO troubleshootingDAO = new TroubleshootingDAO();
-        PageResult<TroubleshootingDTO> troubleshootingPage =
-                troubleshootingDAO.getTroubleshootingPageByOwner(
-                        user.getUserId(),
-                        Pagination.requestedPage(
-                                request.getParameter(
-                                        "troubleshootingPage")),
-                        ACTIVITY_PAGE_SIZE);
-
         UserVmHostDAO userVmHostDAO = new UserVmHostDAO();
-        List<UserVmHostDTO> vmHosts =
-                userVmHostDAO.getActiveHostsByOwner(user.getUserId());
         int vmHostLimit = userVmHostDAO.getMaxHostsPerUser();
-        int vmHostCount = vmHosts.size();
-        
+        String section = resolveSection(request);
+
         request.setAttribute("userInfo", userInfo);
-        request.setAttribute(
-                "myMaintenanceRecords", maintenancePage.items());
-        request.setAttribute(
-                "myTroubleshootings", troubleshootingPage.items());
-        request.setAttribute(
-                "maintenanceCount", maintenancePage.totalCount());
-        request.setAttribute(
-                "troubleshootingCount",
-                troubleshootingPage.totalCount());
-        request.setAttribute(
-                "maintenancePage", maintenancePage.page());
-        request.setAttribute(
-                "maintenanceTotalPages", maintenancePage.totalPages());
-        request.setAttribute(
-                "troubleshootingPage", troubleshootingPage.page());
-        request.setAttribute(
-                "troubleshootingTotalPages",
-                troubleshootingPage.totalPages());
-        request.setAttribute("vmHosts", vmHosts);
-        request.setAttribute("vmHostCount", vmHostCount);
+        request.setAttribute("myPageSection", section);
         request.setAttribute("vmHostLimit", vmHostLimit);
+
+        if (HOSTS_SECTION.equals(section)) {
+            List<UserVmHostDTO> vmHosts =
+                    userVmHostDAO.getActiveHostsByOwner(user.getUserId());
+            exposeHostSummary(request, vmHostLimit, vmHosts.size());
+            request.setAttribute("vmHosts", vmHosts);
+        } else {
+            MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
+            PageResult<MaintenanceRecordDTO> maintenancePage =
+                    maintenanceDAO.getMaintenanceRecordsByOwner(
+                            user.getUserId(), 1, RECENT_ACTIVITY_LIMIT);
+
+            TroubleshootingDAO troubleshootingDAO = new TroubleshootingDAO();
+            PageResult<TroubleshootingDTO> troubleshootingPage =
+                    troubleshootingDAO.getTroubleshootingPageByOwner(
+                            user.getUserId(), 1, RECENT_ACTIVITY_LIMIT);
+
+            request.setAttribute(
+                    "recentMaintenanceRecords", maintenancePage.items());
+            request.setAttribute(
+                    "recentTroubleshootings", troubleshootingPage.items());
+            request.setAttribute(
+                    "maintenanceCount", maintenancePage.totalCount());
+            request.setAttribute(
+                    "troubleshootingCount",
+                    troubleshootingPage.totalCount());
+
+            int vmHostCount =
+                    userVmHostDAO.getActiveHostCountByOwner(user.getUserId());
+            exposeHostSummary(request, vmHostLimit, vmHostCount);
+        }
+
+        request.getRequestDispatcher("/mypage/mypage.jsp").forward(request, response);
+    }
+
+    private static String resolveSection(HttpServletRequest request) {
+        Object forwardedSection = request.getAttribute("myPageSection");
+        String section = forwardedSection instanceof String
+                ? (String) forwardedSection
+                : request.getParameter("section");
+        return HOSTS_SECTION.equals(section) ? HOSTS_SECTION : "overview";
+    }
+
+    private static void exposeHostSummary(
+            HttpServletRequest request, int vmHostLimit, int vmHostCount) {
+        request.setAttribute("vmHostCount", vmHostCount);
         request.setAttribute(
                 "vmHostRemaining", Math.max(0, vmHostLimit - vmHostCount));
-        
-        request.getRequestDispatcher("/mypage/mypage.jsp").forward(request, response);
     }
 
     // 프로필 수정 화면

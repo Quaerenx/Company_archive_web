@@ -1,0 +1,238 @@
+.page-mypage .mypage-host-back-link {
+    align-items: center;
+    color: var(--color-link);
+    display: inline-flex;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    gap: var(--space-8);
+    text-decoration: none;
+}
+
+.page-mypage .mypage-host-back-link:hover {
+    text-decoration: underline;
+}
+
+.page-mypage .mypage-host-manager {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.page-mypage .vm-board-header {
+    align-items: center;
+    background: var(--color-surface-subtle);
+    border-block-end: 1px solid var(--color-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-16);
+    justify-content: space-between;
+    padding: var(--space-20) var(--space-24);
+}
+
+.page-mypage .vm-board-header h2 {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-lg);
+    margin: 0;
+}
+
+.page-mypage .vm-board-header p {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin: var(--space-4) 0 0;
+}
+
+.page-mypage .vm-board-body {
+    padding: var(--space-20) var(--space-24) var(--space-12);
+}
+
+.page-mypage .vm-message,
+.page-mypage .vm-error {
+    margin-block-end: var(--space-16);
+}
+
+.page-mypage .vm-table-wrap {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+}
+
+.page-mypage .vm-table {
+    border-collapse: collapse;
+    min-width: 900px;
+    width: 100%;
+}
+
+.page-mypage .vm-table th,
+.page-mypage .vm-table td {
+    border-block-end: 1px solid var(--color-border);
+    padding: var(--space-12);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.page-mypage .vm-table th {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.page-mypage .vm-table td {
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+}
+
+.page-mypage .vm-table tbody tr:last-child td {
+    border-block-end: 0;
+}
+
+.page-mypage .vm-modal-backdrop {
+    align-items: center;
+    background: var(--color-overlay);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: var(--space-24);
+    position: fixed;
+    z-index: var(--z-dialog);
+}
+
+.page-mypage .vm-modal {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    overflow: auto;
+    width: min(720px, 100%);
+}
+
+.page-mypage .vm-modal-header,
+.page-mypage .vm-modal-footer {
+    align-items: center;
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+    padding: var(--space-16) var(--space-20);
+}
+
+.page-mypage .vm-modal-header {
+    border-block-end: 1px solid var(--color-border);
+}
+
+.page-mypage .vm-modal-header h2 {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-lg);
+    margin: 0;
+}
+
+.page-mypage .vm-modal-header p {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin: var(--space-4) 0 0;
+}
+
+.page-mypage .vm-modal-close {
+    color: var(--color-text);
+    flex: 0 0 auto;
+    font-size: var(--font-size-lg);
+    min-block-size: var(--control-height-md);
+    min-inline-size: var(--control-height-md);
+}
+
+.page-mypage .vm-modal-body {
+    padding: var(--space-20);
+}
+
+.page-mypage .vm-form {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.page-mypage .vm-form-grid {
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: 1fr 1fr;
+}
+
+.page-mypage .vm-form .ui-field {
+    display: grid;
+    gap: var(--space-8);
+}
+
+.page-mypage .vm-form .ui-field > label {
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.page-mypage .vm-form textarea {
+    min-block-size: 112px;
+}
+
+.page-mypage .vm-modal-footer {
+    border-block-start: 1px solid var(--color-border);
+    flex-wrap: wrap;
+}
+
+.page-mypage .vm-modal-footer-left,
+.page-mypage .vm-modal-footer-right {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+body.page-mypage.vm-modal-open {
+    overflow: hidden;
+}
+
+.page-mypage :where(input, textarea):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+    .page-mypage .vm-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-mypage .vm-modal-backdrop {
+        padding: var(--space-12);
+    }
+}
+
+@media (max-width: 480px) {
+    .page-mypage .vm-board-body {
+        padding: var(--space-16) var(--space-12) var(--space-8);
+    }
+
+    .page-mypage .vm-board-header {
+        align-items: stretch;
+        flex-direction: column;
+        padding: var(--space-16);
+    }
+
+    .page-mypage .vm-board-header .ui-button {
+        width: 100%;
+    }
+
+    .page-mypage .vm-modal {
+        border-radius: var(--radius-lg);
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+    }
+
+    .page-mypage .vm-modal-footer-left,
+    .page-mypage .vm-modal-footer-right,
+    .page-mypage .vm-modal-footer .ui-button {
+        width: 100%;
+    }
+}
+
+.page-mypage [hidden] {
+    display: none;
+}

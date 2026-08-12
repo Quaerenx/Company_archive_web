@@ -15,66 +15,99 @@ class MyPageViewContractTest {
             Path.of("src/main/java/com/company/controller/UserVmHostServlet.java");
 
     @Test
-    void linksPersonalHostsAndVisualConstantsRemainStable() throws Exception {
+    void everyMyPageFragmentDeclaresUtf8Encoding() throws Exception {
+        for (String fragment : new String[] {
+                "profile_summary.jspf",
+                "recent_activity.jspf",
+                "host_summary.jspf",
+                "host_manager.jspf"
+        }) {
+            String source = read("WEB-INF/includes/mypage/" + fragment);
+            assertTrue(source.startsWith(
+                    "<%@ page pageEncoding=\"UTF-8\" %>"), fragment);
+        }
+    }
+
+    @Test
+    void overviewKeepsOnlyProfileRecentWorkAndHostSummary() throws Exception {
         String page = read("mypage/mypage.jsp");
-        assertTrue(page.contains("mypage?action=editProfile"));
-        assertTrue(page.contains("mypage?action=changePassword"));
-        assertTrue(page.contains("mypage?action=monthlyResponse"));
-        assertTrue(page.contains("maintenanceCount"));
-        assertTrue(page.contains("troubleshootingCount"));
-        assertTrue(page.contains("myMaintenanceRecords"));
-        assertTrue(page.contains("myTroubleshootings"));
-        assertTrue(page.contains("maintenancePage"));
-        assertTrue(page.contains("troubleshootingPage"));
-        assertTrue(page.contains("ui-pagination"));
-        assertFalse(page.contains("end=\"9\""));
-        assertTrue(page.contains("<c:param name=\"view\" value=\"history\" />"));
-        assertTrue(page.contains("<c:param name=\"customerName\" value=\"${record.customerName}\" />"));
-        assertTrue(page.contains("/resources/css/pages/mypage.css"));
+        String profile = read(
+                "WEB-INF/includes/mypage/profile_summary.jspf");
+        String activity = read(
+                "WEB-INF/includes/mypage/recent_activity.jspf");
+        String hostSummary = read(
+                "WEB-INF/includes/mypage/host_summary.jspf");
+
+        assertTrue(page.contains("page-1050 page-mypage"));
+        assertFalse(page.contains("page-customers"));
+        assertTrue(page.contains("hostManagementMode"));
+        assertTrue(page.contains("/resources/css/pages/mypage_hosts.css"));
         assertTrue(page.contains("/resources/js/pages/mypage_hosts.js"));
-        assertTrue(page.contains("id=\"vmHostBoardBody\""));
-        assertTrue(page.contains("id=\"toggleVmHostBoardBtn\""));
-        assertTrue(page.contains("aria-controls=\"vmHostBoardBody\""));
-        assertTrue(page.contains("id=\"openVmHostAddBtn\""));
-        assertTrue(page.contains("id=\"vmHostModalBackdrop\""));
-        assertTrue(page.contains("id=\"vmHostSaveForm\""));
-        assertTrue(page.contains("id=\"vmHostDeleteForm\" method=\"post\""));
-        assertTrue(page.contains("data-original-ip=\"<c:out value='${vmHostOriginalIp}'/>\""));
-        assertFalse(page.contains("data-original-ip=\"<c:out value='${vmHostForm.ip}'/>\""));
-        assertTrue(page.contains("<c:out value=\"${host.ip}\" />"));
-        assertTrue(page.contains("csrf_input.jspf"));
-        assertTrue(page.contains("name=\"action\" value=\"save\""));
-        assertTrue(page.contains("name=\"action\" value=\"delete\""));
-        assertTrue(page.indexOf("name=\"returnTo\" value=\"mypage\"")
-                != page.lastIndexOf("name=\"returnTo\" value=\"mypage\""));
-        assertFalse(page.contains("name=\"returnTo\" value=\"dashboard\""));
+        assertTrue(page.contains("profile_summary.jspf"));
+        assertTrue(page.contains("recent_activity.jspf"));
+        assertTrue(page.contains("host_summary.jspf"));
+
+        assertTrue(profile.contains("${userInfo.userName}"));
+        assertTrue(profile.contains("${userInfo.userId}"));
+        assertTrue(profile.contains("${userInfo.department}"));
+        assertTrue(profile.contains("mypage?action=editProfile"));
+        assertTrue(profile.contains("mypage?action=changePassword"));
+
+        assertTrue(activity.contains("mypage?action=monthlyResponse"));
+        assertTrue(activity.contains("recentMaintenanceRecords"));
+        assertTrue(activity.contains("recentTroubleshootings"));
+        assertTrue(activity.contains("maintenanceCount"));
+        assertTrue(activity.contains("troubleshootingCount"));
+        assertTrue(activity.contains(
+                "<c:param name=\"view\" value=\"history\" />"));
+        assertTrue(activity.contains(
+                "<c:param name=\"customerName\" value=\"${record.customerName}\" />"));
+        assertFalse(activity.contains("ui-pagination"));
+        assertFalse(activity.contains("maintenancePage"));
+        assertFalse(activity.contains("troubleshootingPage"));
+        assertFalse(activity.contains("자주 사용하는 바로가기"));
+        assertFalse(activity.contains("quick-link-item"));
+
+        assertTrue(hostSummary.contains("/mypage?section=hosts"));
+        assertTrue(hostSummary.contains("vmHostCount"));
+        assertTrue(hostSummary.contains("vmHostLimit"));
+    }
+
+    @Test
+    void hostManagerKeepsExistingOwnershipFormAndDialogContracts()
+            throws Exception {
+        String hosts = read("WEB-INF/includes/mypage/host_manager.jspf");
+        String styles = read("resources/css/pages/mypage_hosts.css");
+        String behavior = read("resources/js/pages/mypage_hosts.js");
+
+        assertTrue(hosts.contains("id=\"openVmHostAddBtn\""));
+        assertTrue(hosts.contains("id=\"vmHostModalBackdrop\""));
+        assertTrue(hosts.contains("id=\"vmHostSaveForm\""));
+        assertTrue(hosts.contains(
+                "id=\"vmHostDeleteForm\" method=\"post\""));
+        assertTrue(hosts.contains(
+                "data-original-ip=\"<c:out value='${vmHostOriginalIp}'/>\""));
+        assertFalse(hosts.contains(
+                "data-original-ip=\"<c:out value='${vmHostForm.ip}'/>\""));
+        assertTrue(hosts.contains("csrf_input.jspf"));
+        assertTrue(hosts.contains("name=\"action\" value=\"save\""));
+        assertTrue(hosts.contains("name=\"action\" value=\"delete\""));
+        assertTrue(hosts.indexOf("name=\"returnTo\" value=\"mypage\"")
+                != hosts.lastIndexOf("name=\"returnTo\" value=\"mypage\""));
         for (String field : new String[] {
                 "ip", "purpose", "osInfo", "verticaVersion", "remoteHost", "note"
         }) {
-            assertTrue(page.contains("name=\"" + field + "\""), field);
+            assertTrue(hosts.contains("name=\"" + field + "\""), field);
         }
-        assertFalse(page.contains("<style>"));
-        assertFalse(page.contains("style=\""));
+        assertFalse(hosts.contains("<style>"));
+        assertFalse(hosts.contains("style=\""));
 
-        String styles = page.contains("/resources/css/pages/mypage.css")
-                ? read("resources/css/pages/mypage.css")
-                : page;
-        String sharedStyles = read("resources/css/ui-system.css");
-        assertTrue(sharedStyles.contains("max-width: var(--page-content-max-width)"));
-        assertTrue(sharedStyles.contains("padding-block: var(--space-32)"));
-        assertFalse(styles.contains("max-width: var(--page-content-max-width)"));
-        assertTrue(styles.contains("border: 1px solid var(--color-border)"));
-        assertTrue(styles.contains("box-shadow: none"));
-        assertFalse(styles.contains("translateY("));
-        assertTrue(styles.contains("max-height: 400px"));
-        assertTrue(styles.contains(".page-mypage .mypage-host-card"));
+        assertTrue(styles.contains(".page-mypage .mypage-host-manager"));
         assertTrue(styles.contains(".page-mypage .vm-modal-backdrop"));
         assertTrue(styles.contains("body.page-mypage.vm-modal-open"));
         assertTrue(styles.contains("width: min(720px, 100%)"));
         assertTrue(styles.contains("z-index: var(--z-dialog)"));
 
-        String behavior = read("resources/js/pages/mypage_hosts.js");
-        assertTrue(behavior.contains("archive.mypage.personal-hosts.collapsed"));
         assertTrue(behavior.contains("populateModal"));
         assertTrue(behavior.contains("querySelectorAll('.vm-edit-btn')"));
         assertTrue(behavior.contains("Frog2UI.createDialogController"));
@@ -82,42 +115,45 @@ class MyPageViewContractTest {
         assertTrue(behavior.contains("modalDialog.close()"));
         assertTrue(behavior.contains("event.key === 'Escape'"));
         assertTrue(behavior.contains("해당 호스트를 삭제하시겠습니까?"));
-
-        String sharedBehavior = read("resources/js/ui-system.js");
-        assertTrue(sharedBehavior.contains("event.key !== 'Tab'"));
-        assertTrue(sharedBehavior.contains("document.activeElement"));
-        assertTrue(sharedBehavior.contains("focusableElements(dialog)"));
-        assertTrue(sharedBehavior.contains("focusTarget.focus()"));
+        assertFalse(behavior.contains(
+                "archive.mypage.personal-hosts.collapsed"));
     }
 
     @Test
-    void controllerProvidesCalendarValuesPreviouslyCalculatedByTheJsp() throws Exception {
+    void controllerLoadsFiveRecentItemsAndDefersTheHostList()
+            throws Exception {
         String controller = Files.readString(MY_PAGE_SERVLET);
-        assertTrue(controller.contains(
-                "request.setAttribute(\"currentYear\", currentYear);"));
-        assertTrue(controller.contains(
-                "request.setAttribute(\"currentMonth\", currentMonth);"));
-        assertTrue(controller.contains(
-                "getMaintenanceRecordsByOwner("));
-        assertTrue(controller.contains(
-                "getTroubleshootingPageByOwner("));
-        assertTrue(controller.contains(
-                "Pagination.requestedPage("));
+
+        assertTrue(controller.contains("RECENT_ACTIVITY_LIMIT = 5"));
+        assertTrue(controller.contains("HOSTS_SECTION.equals(section)"));
         assertTrue(controller.contains(
                 "userVmHostDAO.getActiveHostsByOwner(user.getUserId())"));
         assertTrue(controller.contains(
-                "request.setAttribute(\"vmHosts\", vmHosts);"));
+                "userVmHostDAO.getActiveHostCountByOwner(user.getUserId())"));
+        assertTrue(controller.contains("recentMaintenanceRecords"));
+        assertTrue(controller.contains("recentTroubleshootings"));
+        assertTrue(controller.contains(
+                "user.getUserId(), 1, RECENT_ACTIVITY_LIMIT"));
+        assertFalse(controller.contains("Pagination.requestedPage("));
+        assertFalse(controller.contains(
+                "request.getParameter(\"maintenancePage\")"));
+        assertFalse(controller.contains(
+                "request.getParameter(\"troubleshootingPage\")"));
     }
 
     @Test
-    void personalHostPostReturnsToMyPageWithoutDashboardCoupling() throws Exception {
+    void personalHostPostReturnsToTheHostManagementSection()
+            throws Exception {
         String controller = Files.readString(VM_HOST_SERVLET);
+
         assertTrue(controller.contains("\"mypage\".equals(returnTo)"));
-        assertTrue(controller.contains("/mypage?vmHostResult="));
+        assertTrue(controller.contains(
+                "/mypage?section=hosts&vmHostResult="));
+        assertTrue(controller.contains(
+                "request.setAttribute(\"myPageSection\", \"hosts\")"));
         assertTrue(controller.contains("MyPageServlet.renderMainPage("));
         assertFalse(controller.contains("renderDashboard("));
         assertFalse(controller.contains("/dashboard?vmHostResult="));
-        assertFalse(controller.contains("DashboardMenuProvider"));
     }
 
     private static String read(String path) throws Exception {

@@ -24,7 +24,9 @@ class DialogAccessibilityContractTest {
         dialogs.put("meeting/meeting_write.jsp", "previewModal");
         dialogs.put("meeting/meeting_edit.jsp", "previewModal");
         dialogs.put("mypage/monthly_customer_response.jsp", "responseModal");
-        dialogs.put("mypage/mypage.jsp", "vmHostModal");
+        dialogs.put(
+                "WEB-INF/includes/mypage/host_manager.jspf",
+                "vmHostModal");
 
         for (Map.Entry<String, String> entry : dialogs.entrySet()) {
             String page = read(entry.getKey());

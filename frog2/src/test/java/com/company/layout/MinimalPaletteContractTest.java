@@ -43,6 +43,14 @@ class MinimalPaletteContractTest {
         assertTrue(tokens.contains("--color-icon-strong: var(--palette-text);"));
         assertTrue(tokens.contains("--color-icon: var(--palette-text-muted);"));
         assertTrue(tokens.contains("--color-icon-active: var(--palette-brand);"));
+        assertTrue(tokens.contains(
+                "--color-on-warning: var(--palette-surface);"));
+        assertTrue(tokens.contains(
+                "--color-on-warning-accent: var(--palette-text-strong);"));
+        assertTrue(tokens.contains(
+                "--color-warning-accent: var(--palette-warning);"));
+        assertTrue(tokens.contains(
+                "--color-warning-text: var(--color-warning);"));
         assertTrue(tokens.contains("--color-chart-usage: var(--palette-brand);"));
         assertTrue(tokens.contains("--color-chart-used: var(--palette-success);"));
         assertTrue(tokens.contains(
@@ -101,7 +109,12 @@ class MinimalPaletteContractTest {
         assertEquals(1, occurrences(read("troubleshooting/troubleshooting_list.jsp"), "button--primary"));
         assertEquals(1, occurrences(read("meeting/meeting_list.jsp"), "button--primary"));
         assertEquals(1, occurrences(read("maintenance/maintenance_history.jsp"), "button--primary"));
-        assertEquals(1, occurrences(read("mypage/mypage.jsp"), "button--primary"));
+        assertEquals(0, occurrences(read("mypage/mypage.jsp"), "button--primary"));
+        String hostManager = read(
+                "WEB-INF/includes/mypage/host_manager.jspf");
+        String visibleHostManager = hostManager.substring(
+                0, hostManager.indexOf("id=\"vmHostModalBackdrop\""));
+        assertEquals(1, occurrences(visibleHostManager, "button--primary"));
         assertEquals(0, occurrences(read("customers/customers_detail.jsp"), "button--primary"));
 
         String monthly = read("mypage/monthly_customer_response.jsp");
@@ -117,7 +130,7 @@ class MinimalPaletteContractTest {
     void normalDashboardSurfacesAreFlatWhileOverlaysKeepElevation() throws Exception {
         String page = read("dashboard.jsp");
         String styles = read("resources/css/pages/dashboard.css");
-        String myPageStyles = read("resources/css/pages/mypage.css");
+        String myPageStyles = read("resources/css/pages/mypage_hosts.css");
 
         assertTrue(page.contains("pageBodyClass\" value=\"page-1050 dashboard-page\""));
         assertTrue(styles.contains("/* Dashboard refinements under the shared global Light palette. */"));
@@ -173,7 +186,7 @@ class MinimalPaletteContractTest {
         return expected(
                 "#EFF2F5", "#D9DEE4", "#F8F9FA", "#EEF1F4", "#D5DAE0", "#87919B",
                 "#20252B", "#47535F", "#646F7A", "#E7EDF2", "#455F7A",
-                "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#B54708",
+                "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#D4A900",
                 "#FFF1F1", "#B64B4B");
     }
 
@@ -196,7 +209,7 @@ class MinimalPaletteContractTest {
         assertContrast(colors, "text-muted", "canvas", 4.5);
         assertContrast(colors, "brand", "brand-subtle", 4.5);
         assertContrast(colors, "success", "success-subtle", 4.5);
-        assertContrast(colors, "warning", "warning-subtle", 4.5);
+        assertContrast(colors, "text-strong", "warning-subtle", 4.5);
         assertContrast(colors, "danger", "danger-subtle", 4.5);
         assertContrast(colors, "border-strong", "surface", 3.0);
     }

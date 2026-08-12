@@ -86,7 +86,7 @@ class DarkCanvasVisualRegressionContractTest {
         String components = read("resources/css/components.css");
         String header = read("resources/css/pages/header.css");
         String ui = read("resources/css/ui-system.css");
-        String myPage = read("resources/css/pages/mypage.css");
+        String myPage = read("resources/css/pages/mypage_hosts.css");
 
         assertTrue(tokens.contains("--z-background: -1;"));
         assertTrue(tokens.contains("--z-dialog: 1000;"));

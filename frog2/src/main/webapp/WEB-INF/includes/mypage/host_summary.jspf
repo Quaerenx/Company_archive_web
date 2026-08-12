@@ -1,0 +1,14 @@
+<%@ page pageEncoding="UTF-8" %>
+<section class="mypage-section host-summary" aria-labelledby="hostSummaryTitle">
+    <div>
+        <div class="host-summary__heading">
+            <h2 id="hostSummaryTitle">개인 호스트</h2>
+            <span><c:out value="${vmHostCount}" default="0" /> / <c:out value="${vmHostLimit}" default="20" /></span>
+        </div>
+        <p>개인 개발·검증용 호스트를 별도 화면에서 관리합니다.</p>
+    </div>
+    <a href="${pageContext.request.contextPath}/mypage?section=hosts"
+       class="ui-button button--secondary button--sm">
+        관리하기
+    </a>
+</section>

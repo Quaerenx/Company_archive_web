@@ -295,14 +295,18 @@ class CssLayoutStructureTest {
                 "mypage/mypage.jsp",
                 "resources/js/pages/mypage_hosts.js",
                 true);
-        String myPage = Files.readString(WEBAPP.resolve("mypage/mypage.jsp"));
-        assertTrue(myPage.contains("id=\"vmHostDeleteForm\" method=\"post\""));
-        assertTrue(myPage.contains("vmHostDeleteForm") && myPage.contains("hidden"));
+        String hostManager = Files.readString(WEBAPP.resolve(
+                "WEB-INF/includes/mypage/host_manager.jspf"));
+        assertTrue(hostManager.contains(
+                "id=\"vmHostDeleteForm\" method=\"post\""));
+        assertTrue(hostManager.contains("vmHostDeleteForm")
+                && hostManager.contains("hidden"));
         String myPageScript = Files.readString(
                 WEBAPP.resolve("resources/js/pages/mypage_hosts.js"));
         assertTrue(myPageScript.contains("deleteForm.hidden = !isEdit"));
         assertTrue(myPageScript.contains("deleteForm.addEventListener('submit'"));
-        String myPageStyles = Files.readString(CSS.resolve("pages/mypage.css"));
+        String myPageStyles = Files.readString(
+                CSS.resolve("pages/mypage_hosts.css"));
         assertTrue(myPageStyles.contains(".page-mypage .vm-modal-backdrop"));
         assertTrue(myPageStyles.contains("body.page-mypage.vm-modal-open"));
 
@@ -396,7 +400,8 @@ class CssLayoutStructureTest {
                 CSS.resolve("pages/troubleshooting_view.css"));
         assertTrue(listCss.contains(
                 ".troubleshooting-management .troubleshooting-table"));
-        assertTrue(viewCss.contains(".troubleshooting-detail .detail-grid"));
+        assertTrue(viewCss.contains(
+                ".troubleshooting-detail .troubleshooting-meta-grid"));
         assertFalse(listCss.lines().map(String::stripLeading)
                 .anyMatch(line -> line.startsWith(".alert")
                         || line.startsWith(".troubleshooting-table")));

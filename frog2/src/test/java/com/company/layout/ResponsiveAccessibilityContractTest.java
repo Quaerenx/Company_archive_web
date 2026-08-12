@@ -15,7 +15,7 @@ class ResponsiveAccessibilityContractTest {
         String base = read("resources/css/base.css");
         String ui = read("resources/css/ui-system.css");
         String header = read("resources/css/pages/header.css");
-        String myPage = read("resources/css/pages/mypage.css");
+        String myPage = read("resources/css/pages/mypage_hosts.css");
 
         assertTrue(base.indexOf("min-height: 100vh;")
                 < base.indexOf("min-height: 100dvh;"));
@@ -51,7 +51,7 @@ class ResponsiveAccessibilityContractTest {
                 "troubleshooting/troubleshooting_list.jsp",
                 "mypage/monthly_customer_response.jsp",
                 "WEB-INF/views/filerepo/list.jsp",
-                "mypage/mypage.jsp",
+                "WEB-INF/includes/mypage/host_manager.jspf",
                 "vm_hosts/list.jsp")) {
             String page = read(pagePath);
             assertTrue(page.contains("data-ui-scroll-region"), pagePath);

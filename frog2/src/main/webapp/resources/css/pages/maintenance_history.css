@@ -284,11 +284,11 @@
 }
 
 .maintenance-history .history-license-progress--warning::-webkit-progress-value {
-    background: var(--color-warning);
+    background: var(--color-warning-accent);
 }
 
 .maintenance-history .history-license-progress--warning::-moz-progress-bar {
-    background: var(--color-warning);
+    background: var(--color-warning-accent);
 }
 
 .maintenance-history .history-license-progress--risk::-webkit-progress-value {

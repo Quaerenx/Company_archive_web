@@ -24,11 +24,27 @@
     <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
     <c:if test="${not empty param.returnPageSize}"><c:param name="returnPageSize" value="${param.returnPageSize}" /></c:if>
 </c:url>
+<c:set var="troubleshootingOccurrenceDateLabel" value="발생일 미등록" />
+<c:if test="${not empty troubleshooting.occurrenceDate}">
+    <fmt:formatDate var="troubleshootingOccurrenceDateLabel"
+                    value="${troubleshooting.occurrenceDate}"
+                    pattern="yyyy.MM.dd" />
+</c:if>
+<c:set var="troubleshootingCustomerLabel"
+       value="${not empty troubleshooting.customerName ? troubleshooting.customerName : '고객사 미등록'}" />
+<c:set var="troubleshootingSupportLabel"
+       value="${not empty troubleshooting.supportType ? troubleshooting.supportType : '지원 형태 미등록'}" />
 
 <div class="troubleshooting-detail content-shell">
     <t:pageHeader>
         <jsp:attribute name="title"><i class="fas fa-tools" aria-hidden="true"></i> <c:out value="${troubleshooting.title}" /></jsp:attribute>
-        <jsp:attribute name="subtitle">트러블 슈팅 상세정보</jsp:attribute>
+        <jsp:attribute name="subtitle">
+            <span><c:out value="${troubleshootingCustomerLabel}" /></span>
+            <span aria-hidden="true">·</span>
+            <span><c:out value="${troubleshootingOccurrenceDateLabel}" /></span>
+            <span aria-hidden="true">·</span>
+            <span><c:out value="${troubleshootingSupportLabel}" /></span>
+        </jsp:attribute>
         <jsp:attribute name="actions">
             <a href="<c:out value='${troubleshootingListReturnUrl}' />"
                class="btn btn-secondary ui-button button--secondary button--md">
@@ -60,167 +76,141 @@
         <c:remove var="error" scope="session" />
     </c:if>
     
-    <div class="detail-container ui-detail">
-        <!-- 기본작성 항목 섹션 -->
-        <div class="detail-section">
-            <div class="detail-section-title">
-                <i class="fas fa-info-circle"></i>
-                기본작성 항목
-            </div>
-            <div class="detail-grid">
-                <div class="detail-item">
-                    <span class="detail-label">제목</span>
-                    <span class="detail-value"><c:out value="${troubleshooting.title}" /></span>
+    <article class="detail-container ui-detail troubleshooting-report">
+        <section class="detail-section troubleshooting-meta-section"
+                 aria-labelledby="troubleshooting-meta-title">
+            <h2 id="troubleshooting-meta-title" class="detail-section-title">
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                기본 정보
+            </h2>
+            <dl class="troubleshooting-meta-grid">
+                <div class="troubleshooting-meta-item">
+                    <dt>고객사</dt>
+                    <dd><c:out value="${troubleshootingCustomerLabel}" /></dd>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">고객사</span>
-                    <span class="detail-value"><c:out value="${troubleshooting.customerName}" /></span>
+                <div class="troubleshooting-meta-item">
+                    <dt>고객사 담당자</dt>
+                    <dd><c:out value="${not empty troubleshooting.customerManager ? troubleshooting.customerManager : '-'}" /></dd>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">고객사 담당자</span>
-                    <span class="detail-value"><c:out value="${not empty troubleshooting.customerManager ? troubleshooting.customerManager : '-'}" /></span>
+                <div class="troubleshooting-meta-item">
+                    <dt>발생일</dt>
+                    <dd><c:out value="${troubleshootingOccurrenceDateLabel}" /></dd>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">발생일자</span>
-                    <span class="detail-value">
-                        <c:choose>
-                            <c:when test="${not empty troubleshooting.occurrenceDate}">
-                                <fmt:formatDate value="${troubleshooting.occurrenceDate}" pattern="yyyy-MM-dd" />
-                            </c:when>
-                            <c:otherwise>-</c:otherwise>
-                        </c:choose>
-                    </span>
+                <div class="troubleshooting-meta-item">
+                    <dt>지원 형태</dt>
+                    <dd><c:out value="${troubleshootingSupportLabel}" /></dd>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">작업인원</span>
-                    <span class="detail-value"><c:out value="${not empty troubleshooting.workPersonnel ? troubleshooting.workPersonnel : '-'}" /></span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">작업기간</span>
-                    <span class="detail-value"><c:out value="${not empty troubleshooting.workPeriod ? troubleshooting.workPeriod : '-'}" /></span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">작성자</span>
-                    <span class="detail-value"><c:out value="${troubleshooting.creator}" /></span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">작성일자</span>
-                    <span class="detail-value">
-                        <fmt:formatDate value="${troubleshooting.createDate}" pattern="yyyy-MM-dd HH:mm" />
-                    </span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">지원형태</span>
-                    <span class="detail-value"><c:out value="${not empty troubleshooting.supportType ? troubleshooting.supportType : '-'}" /></span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">케이스오픈 여부</span>
-                    <span class="detail-value">
+                <div class="troubleshooting-meta-item">
+                    <dt>케이스 오픈</dt>
+                    <dd>
                         <c:choose>
                             <c:when test="${troubleshooting.caseOpenYn == 'Y'}">예</c:when>
                             <c:when test="${troubleshooting.caseOpenYn == 'N'}">아니오</c:when>
                             <c:otherwise>-</c:otherwise>
                         </c:choose>
-                    </span>
+                    </dd>
                 </div>
-            </div>
-        </div>
-        
-        <!-- 세부작성 항목 섹션 -->
-        <div class="detail-section">
-            <div class="detail-section-title">
-                <i class="fas fa-list-alt"></i>
-                세부작성 항목
-            </div>
-            <div class="detail-grid">
-                <div class="detail-item full-width">
-                    <span class="detail-label">개요</span>
-                    <div class="detail-value">
-                        <c:choose>
-                            <c:when test="${not empty troubleshooting.overview}">
-                                <c:out value="${troubleshooting.overview}" />
-                            </c:when>
-                            <c:otherwise>
-                                <span class="empty-value">작성된 내용이 없습니다.</span>
-                            </c:otherwise>
-                        </c:choose>
+                <div class="troubleshooting-meta-item">
+                    <dt>작업 인원</dt>
+                    <dd><c:out value="${not empty troubleshooting.workPersonnel ? troubleshooting.workPersonnel : '-'}" /></dd>
+                </div>
+                <div class="troubleshooting-meta-item">
+                    <dt>작업 기간</dt>
+                    <dd><c:out value="${not empty troubleshooting.workPeriod ? troubleshooting.workPeriod : '-'}" /></dd>
+                </div>
+                <div class="troubleshooting-meta-item">
+                    <dt>작성자</dt>
+                    <dd><c:out value="${troubleshooting.creator}" default="-" /></dd>
+                </div>
+                <div class="troubleshooting-meta-item">
+                    <dt>작성 일시</dt>
+                    <dd><fmt:formatDate value="${troubleshooting.createDate}" pattern="yyyy.MM.dd HH:mm" /></dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="detail-section troubleshooting-report-body"
+                 aria-labelledby="troubleshooting-report-title">
+            <h2 id="troubleshooting-report-title" class="detail-section-title">
+                <i class="fas fa-list-alt" aria-hidden="true"></i>
+                문제 해결 기록
+            </h2>
+            <div class="troubleshooting-report-sections">
+                <section class="troubleshooting-report-section" aria-labelledby="troubleshooting-overview-title">
+                    <h3 id="troubleshooting-overview-title">개요</h3>
+                    <c:choose>
+                        <c:when test="${not empty troubleshooting.overview}">
+                            <div class="troubleshooting-report-text"><c:out value="${troubleshooting.overview}" /></div>
+                        </c:when>
+                        <c:otherwise><p class="troubleshooting-report-empty">기록 없음</p></c:otherwise>
+                    </c:choose>
+                </section>
+
+                <section class="troubleshooting-report-section" aria-labelledby="troubleshooting-error-title">
+                    <h3 id="troubleshooting-error-title">에러 및 증상</h3>
+                    <c:choose>
+                        <c:when test="${not empty troubleshooting.errorContent}">
+                            <div class="troubleshooting-report-text"><c:out value="${troubleshooting.errorContent}" /></div>
+                        </c:when>
+                        <c:otherwise><p class="troubleshooting-report-empty">기록 없음</p></c:otherwise>
+                    </c:choose>
+                </section>
+
+                <section class="troubleshooting-report-section" aria-labelledby="troubleshooting-cause-title">
+                    <h3 id="troubleshooting-cause-title">원인</h3>
+                    <c:choose>
+                        <c:when test="${not empty troubleshooting.causeAnalysis}">
+                            <div class="troubleshooting-report-text"><c:out value="${troubleshooting.causeAnalysis}" /></div>
+                        </c:when>
+                        <c:otherwise><p class="troubleshooting-report-empty">기록 없음</p></c:otherwise>
+                    </c:choose>
+                </section>
+
+                <section class="troubleshooting-report-section" aria-labelledby="troubleshooting-action-title">
+                    <h3 id="troubleshooting-action-title">조치 내용</h3>
+                    <c:choose>
+                        <c:when test="${not empty troubleshooting.actionTaken}">
+                            <div class="troubleshooting-report-text"><c:out value="${troubleshooting.actionTaken}" /></div>
+                        </c:when>
+                        <c:otherwise><p class="troubleshooting-report-empty">기록 없음</p></c:otherwise>
+                    </c:choose>
+                </section>
+
+                <section class="troubleshooting-report-section troubleshooting-report-section--script"
+                         aria-labelledby="troubleshooting-script-title">
+                    <div class="troubleshooting-report-section-header">
+                        <h3 id="troubleshooting-script-title">스크립트</h3>
+                        <c:if test="${not empty troubleshooting.scriptContent}">
+                            <button type="button"
+                                    class="ui-button button--secondary button--sm troubleshooting-copy-button"
+                                    data-copy-target="troubleshooting-script-content">
+                                <i class="far fa-copy" aria-hidden="true"></i>
+                                <span data-copy-label>복사</span>
+                            </button>
+                        </c:if>
                     </div>
-                </div>
-                
-                <div class="detail-item full-width">
-                    <span class="detail-label">원인</span>
-                    <div class="detail-value">
-                        <c:choose>
-                            <c:when test="${not empty troubleshooting.causeAnalysis}">
-                                <c:out value="${troubleshooting.causeAnalysis}" />
-                            </c:when>
-                            <c:otherwise>
-                                <span class="empty-value">작성된 내용이 없습니다.</span>
-                            </c:otherwise>
-                        </c:choose>
-                    </div>
-                </div>
-                
-                <div class="detail-item full-width">
-                    <span class="detail-label">에러내용</span>
-                    <div class="detail-value">
-                        <c:choose>
-                            <c:when test="${not empty troubleshooting.errorContent}">
-                                <c:out value="${troubleshooting.errorContent}" />
-                            </c:when>
-                            <c:otherwise>
-                                <span class="empty-value">작성된 내용이 없습니다.</span>
-                            </c:otherwise>
-                        </c:choose>
-                    </div>
-                </div>
-                
-                <div class="detail-item full-width">
-                    <span class="detail-label">조치내용</span>
-                    <div class="detail-value">
-                        <c:choose>
-                            <c:when test="${not empty troubleshooting.actionTaken}">
-                                <c:out value="${troubleshooting.actionTaken}" />
-                            </c:when>
-                            <c:otherwise>
-                                <span class="empty-value">작성된 내용이 없습니다.</span>
-                            </c:otherwise>
-                        </c:choose>
-                    </div>
-                </div>
-                
-                <div class="detail-item full-width">
-                    <span class="detail-label">스크립트</span>
-                    <div class="detail-value">
-                        <c:choose>
-                            <c:when test="${not empty troubleshooting.scriptContent}">
-                                <c:out value="${troubleshooting.scriptContent}" />
-                            </c:when>
-                            <c:otherwise>
-                                <span class="empty-value">작성된 내용이 없습니다.</span>
-                            </c:otherwise>
-                        </c:choose>
-                    </div>
-                </div>
-                
-                <div class="detail-item full-width">
-                    <span class="detail-label">비고</span>
-                    <div class="detail-value">
-                        <c:choose>
-                            <c:when test="${not empty troubleshooting.note}">
-                                <c:out value="${troubleshooting.note}" />
-                            </c:when>
-                            <c:otherwise>
-                                <span class="empty-value">작성된 내용이 없습니다.</span>
-                            </c:otherwise>
-                        </c:choose>
-                    </div>
-                </div>
+                    <c:choose>
+                        <c:when test="${not empty troubleshooting.scriptContent}">
+                            <pre class="troubleshooting-code-block" tabindex="0" aria-labelledby="troubleshooting-script-title"><code id="troubleshooting-script-content"><c:out value="${troubleshooting.scriptContent}" /></code></pre>
+                        </c:when>
+                        <c:otherwise><p class="troubleshooting-report-empty">기록 없음</p></c:otherwise>
+                    </c:choose>
+                </section>
+
+                <section class="troubleshooting-report-section" aria-labelledby="troubleshooting-note-title">
+                    <h3 id="troubleshooting-note-title">비고</h3>
+                    <c:choose>
+                        <c:when test="${not empty troubleshooting.note}">
+                            <div class="troubleshooting-report-text"><c:out value="${troubleshooting.note}" /></div>
+                        </c:when>
+                        <c:otherwise><p class="troubleshooting-report-empty">기록 없음</p></c:otherwise>
+                    </c:choose>
+                </section>
             </div>
             
             <c:if test="${not empty troubleshooting.updatedDate}">
-                <div class="mt-4 pt-3 border-top text-right text-muted troubleshooting-updated-at">
-                    최종 수정: <fmt:formatDate value="${troubleshooting.updatedDate}" pattern="yyyy-MM-dd HH:mm" />
+                <div class="troubleshooting-updated-at">
+                    최종 수정 <fmt:formatDate value="${troubleshooting.updatedDate}" pattern="yyyy.MM.dd HH:mm" />
                 </div>
             </c:if>
             <c:if test="${canManageTroubleshooting}">
@@ -244,8 +234,8 @@
                     <input type="hidden" name="id" value="<c:out value='${troubleshooting.id}' />">
                 </form>
             </c:if>
-        </div>
-    </div>
+        </section>
+    </article>
 </div>
 
 

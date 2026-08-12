@@ -115,6 +115,7 @@ class UiDesignSystemContractTest {
                 "resources/css/pages/maintenance_history.css",
                 "resources/css/pages/monthly_customer_response.css",
                 "resources/css/pages/mypage.css",
+                "resources/css/pages/mypage_hosts.css",
                 "resources/css/pages/troubleshooting_form.css",
                 "resources/css/pages/troubleshooting_list.css",
                 "resources/css/pages/troubleshooting_view.css",
@@ -181,9 +182,15 @@ class UiDesignSystemContractTest {
     @Test
     void remainingOperationalSurfacesUseCanonicalControls() throws Exception {
         String myPage = read("mypage/mypage.jsp");
-        assertTrue(myPage.contains("ui-button button--primary button--md"));
-        assertTrue(myPage.contains(
-                "btn btn-secondary btn-sm ui-button button--secondary button--sm"));
+        String myPageProfile = read(
+                "WEB-INF/includes/mypage/profile_summary.jspf");
+        String myPageHosts = read(
+                "WEB-INF/includes/mypage/host_manager.jspf");
+        assertTrue(myPageHosts.contains(
+                "ui-button button--primary button--md"));
+        assertTrue(myPageProfile.contains(
+                "ui-button button--secondary button--sm"));
+        assertFalse(myPageProfile.contains("btn btn-secondary"));
 
         String password = read("mypage/change_password.jsp");
         String profile = read("mypage/edit_profile.jsp");
@@ -208,8 +215,9 @@ class UiDesignSystemContractTest {
         assertTrue(vmHosts.contains("class=\"vm-table ui-table\""));
         assertTrue(vmHosts.contains("class=\"js-vm-host-delete ui-form\""));
 
-        assertTrue(myPage.contains("class=\"vm-table-wrap ui-table-wrap\""));
-        assertTrue(myPage.contains("class=\"vm-table ui-table\""));
+        assertTrue(myPageHosts.contains(
+                "class=\"vm-table-wrap ui-table-wrap\""));
+        assertTrue(myPageHosts.contains("class=\"vm-table ui-table\""));
     }
 
     @Test
@@ -219,7 +227,8 @@ class UiDesignSystemContractTest {
         String troubleshooting = read("troubleshooting/troubleshooting_view.jsp");
         assertTrue(customerView.contains("class=\"environment-detail ui-detail\""));
         assertTrue(customerEdit.contains("class=\"detail-container ui-detail\""));
-        assertTrue(troubleshooting.contains("class=\"detail-container ui-detail\""));
+        assertTrue(troubleshooting.contains(
+                "class=\"detail-container ui-detail troubleshooting-report\""));
 
         String troubleshootingStyles = read(
                 "resources/css/pages/troubleshooting_view.css");

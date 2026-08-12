@@ -17,7 +17,7 @@
     --palette-success-subtle: #EEF6F1;
     --palette-success: #347A58;
     --palette-warning-subtle: #FFF6E5;
-    --palette-warning: #B54708;
+    --palette-warning: #D4A900;
     --palette-danger-subtle: #FFF1F1;
     --palette-danger: #B64B4B;
 
@@ -58,7 +58,8 @@
     --color-success-hover: var(--palette-success);
     --color-danger: var(--palette-danger);
     --color-danger-hover: var(--palette-danger);
-    --color-warning: var(--palette-warning);
+    --color-warning: var(--palette-text-strong);
+    --color-warning-accent: var(--palette-warning);
     --color-warning-hover: var(--palette-warning);
     --color-info: var(--palette-brand);
     --color-info-hover: var(--palette-brand-hover);
@@ -68,7 +69,7 @@
     --color-success-strong-hover: var(--color-success-hover);
     --color-danger-strong: var(--color-danger);
     --color-danger-strong-hover: var(--color-danger-hover);
-    --color-warning-strong: var(--color-warning);
+    --color-warning-strong: var(--color-warning-accent);
     --color-warning-strong-hover: var(--color-warning-hover);
     --color-info-strong: var(--color-info);
 
@@ -94,6 +95,7 @@
     --color-on-success: var(--palette-surface);
     --color-on-danger: var(--palette-surface);
     --color-on-warning: var(--palette-surface);
+    --color-on-warning-accent: var(--palette-text-strong);
     --color-on-info: var(--palette-surface);
     --color-on-strong: var(--palette-surface);
     --color-on-strong-muted: rgba(255, 255, 255, 0.15);
@@ -116,8 +118,8 @@
     --color-success-border: var(--palette-success);
     --color-success-text: var(--palette-success);
     --color-warning-bg: var(--palette-warning-subtle);
-    --color-warning-border: var(--palette-warning);
-    --color-warning-text: var(--palette-warning);
+    --color-warning-border: var(--color-warning-accent);
+    --color-warning-text: var(--color-warning);
     --color-danger-bg: var(--palette-danger-subtle);
     --color-danger-border: var(--palette-danger);
     --color-danger-text: var(--palette-danger);

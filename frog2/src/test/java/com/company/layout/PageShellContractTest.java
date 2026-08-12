@@ -106,7 +106,7 @@ class PageShellContractTest {
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
         assertEquals(1, occurrences(
-                webXml, "20260812-maintenance-inline-calendar-only-1"));
+                webXml, "20260812-mypage-workspace-1"));
         assertEquals(6, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
         assertEquals(3, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));
@@ -215,7 +215,7 @@ class PageShellContractTest {
                 "/resources/css/pages/upload.css",
                 "/resources/js/pages/file_repository_upload.js"));
         expected.put("mypage/mypage.jsp", new PageAssets(
-                "page-1050 page-customers page-mypage",
+                "page-1050 page-mypage",
                 "/resources/css/pages/mypage.css",
                 "/resources/js/pages/mypage_hosts.js"));
         expected.put("mypage/edit_profile.jsp", new PageAssets(
