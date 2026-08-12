@@ -15,6 +15,9 @@
         <jsp:attribute name="title">
             고객사 정보
         </jsp:attribute>
+        <jsp:attribute name="subtitle">
+            고객사별 시스템 환경과 담당 정보를 확인하고 관리합니다.
+        </jsp:attribute>
     </t:pageHeader>
 
 	<!-- 성공/에러 메시지 표시 -->

@@ -22,7 +22,18 @@ class MaintenanceHistoryViewContractTest {
         assertTrue(page.contains("maintenanceHistoryPreviousUrl"));
         assertTrue(page.contains("maintenanceHistoryNextUrl"));
         assertTrue(page.contains("name=\"historyPage\""));
-        assertTrue(page.contains("name=\"customerName\" value=\"${customerName}\""));
+        assertTrue(page.contains(
+                "name=\"customerName\" value=\"${fn:escapeXml(customerName)}\""));
+        assertTrue(page.contains("class=\"history-filter-form\""));
+        assertTrue(page.contains("name=\"historyYear\""));
+        assertTrue(page.contains("name=\"historyVersion\""));
+        assertTrue(page.contains("name=\"historyQuery\""));
+        assertTrue(page.contains(
+                "<c:param name=\"historyYear\" value=\"${historyYear}\" />"));
+        assertTrue(page.contains(
+                "<c:param name=\"historyVersion\" value=\"${historyVersion}\" />"));
+        assertTrue(page.contains(
+                "<c:param name=\"historyQuery\" value=\"${historyQuery}\" />"));
         assertTrue(page.contains("<t:tableFooter"));
         assertTrue(page.contains("paginationLabel=\"정기점검 이력 페이지\""));
     }

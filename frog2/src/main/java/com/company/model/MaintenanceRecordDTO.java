@@ -16,7 +16,7 @@ public class MaintenanceRecordDTO {
     // 신규 필드: 라이선스 크기(GB), 라이선스 사용량(GB), 라이선스 사용률(%) - 모두 선택 입력 (varchar)
     private String licenseSizeGb; // 예: "100"
     private String licenseUsageSize; // 예: "75"
-    private String licenseUsagePct; // 예: "75"
+    private String licenseUsagePct; // 예: "75.0"
 
     // 기본 생성자
     public MaintenanceRecordDTO() {}

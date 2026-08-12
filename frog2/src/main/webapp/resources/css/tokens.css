@@ -17,7 +17,7 @@
     --palette-success-subtle: #EEF6F1;
     --palette-success: #347A58;
     --palette-warning-subtle: #FFF6E5;
-    --palette-warning: #8A5A00;
+    --palette-warning: #B54708;
     --palette-danger-subtle: #FFF1F1;
     --palette-danger: #B64B4B;
 
@@ -45,9 +45,10 @@
     --color-primary: var(--palette-brand);
     --color-primary-hover: var(--palette-brand-hover);
     --color-primary-subtle: var(--palette-brand-subtle);
+    /* Chart series: primary ratio, actual usage, neutral capacity reference. */
     --color-chart-usage: var(--palette-brand);
     --color-chart-used: var(--palette-success);
-    --color-chart-capacity: var(--palette-warning);
+    --color-chart-capacity: var(--palette-border-strong);
     --color-secondary: var(--palette-text-muted);
     --color-secondary-hover: var(--palette-text);
     --color-link: var(--palette-brand);

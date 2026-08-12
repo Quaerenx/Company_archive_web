@@ -198,7 +198,128 @@ public class MaintenanceRecordDAO {
             String customerName,
             int requestedPage,
             int pageSize) {
+        return getMaintenanceRecordsByCustomer(
+                customerName,
+                requestedPage,
+                pageSize,
+                MaintenanceHistoryFilter.empty());
+    }
+
+    public MaintenanceFormHistoryContext getMaintenanceFormHistoryContext(
+            String customerName,
+            Date inspectionDate,
+            Long excludedMaintenanceId) {
+        if (isBlank(customerName)) {
+            return MaintenanceFormHistoryContext.empty();
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            boolean hasSize = columnExists(
+                    connection, TABLE_NAME, "license_size_gb");
+            boolean hasUsagePct = columnExists(
+                    connection, TABLE_NAME, "license_usage_pct");
+            boolean hasUsageSize = columnExists(
+                    connection, TABLE_NAME, "license_usage_size");
+            boolean hasCreatorUserId = columnExists(
+                    connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
+            Date monthStart = inspectionDate == null
+                    ? null
+                    : Date.valueOf(inspectionDate.toLocalDate()
+                            .withDayOfMonth(1));
+            Date nextMonthStart = monthStart == null
+                    ? null
+                    : Date.valueOf(monthStart.toLocalDate().plusMonths(1));
+
+            MaintenanceRecordDTO previous = loadFormContextRecord(
+                    connection,
+                    customerName,
+                    monthStart,
+                    null,
+                    excludedMaintenanceId,
+                    hasSize,
+                    hasUsagePct,
+                    hasUsageSize,
+                    hasCreatorUserId);
+            MaintenanceRecordDTO duplicate = monthStart == null
+                    ? null
+                    : loadFormContextRecord(
+                            connection,
+                            customerName,
+                            monthStart,
+                            nextMonthStart,
+                            excludedMaintenanceId,
+                            hasSize,
+                            hasUsagePct,
+                            hasUsageSize,
+                            hasCreatorUserId);
+            return new MaintenanceFormHistoryContext(previous, duplicate);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load maintenance form history context", exception);
+        }
+    }
+
+    private MaintenanceRecordDTO loadFormContextRecord(
+            Connection connection,
+            String customerName,
+            Date rangeStart,
+            Date rangeEnd,
+            Long excludedMaintenanceId,
+            boolean hasSize,
+            boolean hasUsagePct,
+            boolean hasUsageSize,
+            boolean hasCreatorUserId) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT ")
+                .append(selectColumns(
+                        hasSize,
+                        hasUsagePct,
+                        hasUsageSize,
+                        hasCreatorUserId))
+                .append(" FROM maintenance_records WHERE customer_name = ?");
+        if (rangeStart != null && rangeEnd == null) {
+            sql.append(" AND inspection_date < ?");
+        } else if (rangeStart != null) {
+            sql.append(" AND inspection_date >= ? AND inspection_date < ?");
+        }
+        if (excludedMaintenanceId != null) {
+            sql.append(" AND maintenance_id <> ?");
+        }
+        sql.append(" ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, ")
+                .append("inspection_date DESC, maintenance_id DESC LIMIT 1");
+
+        try (PreparedStatement statement =
+                     connection.prepareStatement(sql.toString())) {
+            int parameter = 1;
+            statement.setString(parameter++, customerName.trim());
+            if (rangeStart != null) {
+                statement.setDate(parameter++, rangeStart);
+            }
+            if (rangeEnd != null) {
+                statement.setDate(parameter++, rangeEnd);
+            }
+            if (excludedMaintenanceId != null) {
+                statement.setLong(parameter, excludedMaintenanceId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return null;
+                }
+                return mapRowToDto(
+                        resultSet,
+                        hasSize,
+                        hasUsagePct,
+                        hasUsageSize,
+                        hasCreatorUserId);
+            }
+        }
+    }
+
+    public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
+            String customerName,
+            int requestedPage,
+            int pageSize,
+            MaintenanceHistoryFilter filter) {
         Pagination.totalPages(0, pageSize);
+        Objects.requireNonNull(filter, "filter");
         if (isBlank(customerName)) {
             return new PageResult<>(List.of(), 0, 1, pageSize);
         }
@@ -220,6 +341,7 @@ public class MaintenanceRecordDAO {
                         customerName,
                         page,
                         pageSize,
+                        filter,
                         hasSize,
                         hasUsagePct,
                         hasUsageSize,
@@ -233,7 +355,8 @@ public class MaintenanceRecordDAO {
                         rows.items(), rows.totalCount(), page, pageSize);
             }
 
-            int totalCount = countCustomerHistory(connection, customerName);
+            int totalCount = countCustomerHistory(
+                    connection, customerName, filter);
             int correctedPage = Pagination.clampPage(
                     page, Pagination.totalPages(totalCount, pageSize));
             if (totalCount == 0) {
@@ -245,6 +368,7 @@ public class MaintenanceRecordDAO {
                     customerName,
                     correctedPage,
                     pageSize,
+                    filter,
                     hasSize,
                     hasUsagePct,
                     hasUsageSize,
@@ -265,6 +389,7 @@ public class MaintenanceRecordDAO {
             String customerName,
             int page,
             int pageSize,
+            MaintenanceHistoryFilter filter,
             boolean hasSize,
             boolean hasUsagePct,
             boolean hasUsageSize,
@@ -276,15 +401,17 @@ public class MaintenanceRecordDAO {
                         hasUsageSize,
                         hasCreatorUserId)
                 + ", COUNT(*) OVER () AS total_count "
-                + "FROM maintenance_records WHERE customer_name = ? "
+                + "FROM maintenance_records WHERE "
+                + customerHistoryPredicate(filter) + " "
                 + "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
                 + "inspection_date DESC, maintenance_id DESC LIMIT ? OFFSET ?";
         List<MaintenanceRecordDTO> records = new ArrayList<>();
         int totalCount = 0;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, customerName);
-            statement.setInt(2, pageSize);
-            statement.setInt(3, Pagination.offset(page, pageSize));
+            int parameter = bindCustomerHistoryPredicate(
+                    statement, customerName, filter);
+            statement.setInt(parameter++, pageSize);
+            statement.setInt(parameter, Pagination.offset(page, pageSize));
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     if (records.isEmpty()) {
@@ -303,15 +430,62 @@ public class MaintenanceRecordDAO {
     }
 
     private static int countCustomerHistory(
-            Connection connection, String customerName) throws SQLException {
+            Connection connection,
+            String customerName,
+            MaintenanceHistoryFilter filter) throws SQLException {
         String sql = "SELECT COUNT(*) FROM maintenance_records "
-                + "WHERE customer_name = ?";
+                + "WHERE " + customerHistoryPredicate(filter);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, customerName);
+            bindCustomerHistoryPredicate(statement, customerName, filter);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? resultSet.getInt(1) : 0;
             }
         }
+    }
+
+    private static String customerHistoryPredicate(
+            MaintenanceHistoryFilter filter) {
+        StringBuilder predicate = new StringBuilder("customer_name = ?");
+        if (filter.year() != null) {
+            predicate.append(
+                    " AND inspection_date >= ? AND inspection_date < ?");
+        }
+        if (filter.version() != null) {
+            predicate.append(
+                    " AND vertica_version ILIKE ? ESCAPE '!'");
+        }
+        if (filter.query() != null) {
+            predicate.append(
+                    " AND (inspector_name ILIKE ? ESCAPE '!'"
+                            + " OR vertica_version ILIKE ? ESCAPE '!'"
+                            + " OR CAST(SUBSTR(note,1,65000) "
+                            + "AS VARCHAR(65000)) ILIKE "
+                            + "CAST(? AS VARCHAR(65000)) ESCAPE '!')");
+        }
+        return predicate.toString();
+    }
+
+    private static int bindCustomerHistoryPredicate(
+            PreparedStatement statement,
+            String customerName,
+            MaintenanceHistoryFilter filter) throws SQLException {
+        int parameter = 1;
+        statement.setString(parameter++, customerName);
+        if (filter.year() != null) {
+            statement.setDate(parameter++, filter.yearStart());
+            statement.setDate(parameter++, filter.yearEndExclusive());
+        }
+        if (filter.version() != null) {
+            statement.setString(
+                    parameter++, filter.versionLikePattern());
+        }
+        if (filter.query() != null) {
+            String queryPattern = filter.queryLikePattern();
+            statement.setString(parameter++, queryPattern);
+            statement.setString(parameter++, queryPattern);
+            statement.setString(parameter++, queryPattern);
+        }
+        return parameter;
     }
 
     public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {

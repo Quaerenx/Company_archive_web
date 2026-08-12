@@ -5,9 +5,408 @@
     min-width: 0;
 }
 
-/* 점검 기록은 일반 폼보다 긴 본문 입력 영역을 유지합니다. */
-.maintenance-add-page .ui-form textarea {
-    min-height: 100px;
+/* 등록·수정 폼은 같은 정보 구조와 입력 계약을 공유합니다. */
+.maintenance-form-page .ui-form-card {
+    padding: var(--space-24) var(--space-24) var(--space-20);
+}
+
+.maintenance-form-page .maintenance-form-section {
+    border-block-end: 1px solid var(--color-border);
+    padding-block: var(--space-24);
+}
+
+.maintenance-form-page .maintenance-form-section:first-of-type {
+    padding-block-start: var(--space-8);
+}
+
+.maintenance-form-page .maintenance-form-section h2 {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-md);
+    font-weight: 650;
+    margin: 0;
+}
+
+.maintenance-form-page .maintenance-section-heading {
+    align-items: baseline;
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+    margin-block-end: var(--space-16);
+}
+
+.maintenance-form-page .maintenance-section-heading p,
+.maintenance-form-page .maintenance-previous-callout span,
+.maintenance-form-page .maintenance-field-help,
+.maintenance-form-page .maintenance-note-meta {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.maintenance-form-page .maintenance-section-heading p {
+    margin: 0;
+}
+
+.maintenance-form-page .maintenance-primary-layout,
+.maintenance-form-page .maintenance-primary-grid,
+.maintenance-form-page .maintenance-license-grid {
+    display: grid;
+    gap: var(--space-16) var(--space-20);
+}
+
+.maintenance-form-page .maintenance-primary-layout {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+    margin-block-start: var(--space-16);
+}
+
+.maintenance-form-page .maintenance-primary-grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.maintenance-form-page .maintenance-license-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.maintenance-form-page .form-group {
+    margin: 0;
+    min-inline-size: 0;
+}
+
+.maintenance-form-page .maintenance-date-field {
+    min-inline-size: 0;
+}
+
+.maintenance-form-page .maintenance-inline-calendar {
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-12);
+}
+
+.maintenance-form-page .maintenance-calendar-toolbar,
+.maintenance-form-page .maintenance-calendar-month-nav,
+.maintenance-form-page .maintenance-date-entry {
+    align-items: center;
+    display: flex;
+}
+
+.maintenance-form-page .maintenance-calendar-toolbar {
+    gap: var(--space-12);
+    justify-content: space-between;
+    margin-block-end: var(--space-8);
+}
+
+.maintenance-form-page .maintenance-calendar-month-nav {
+    gap: var(--space-4);
+}
+
+.maintenance-form-page .maintenance-calendar-month-nav strong {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    min-inline-size: 92px;
+    text-align: center;
+}
+
+.maintenance-form-page .maintenance-calendar-nav,
+.maintenance-form-page .maintenance-calendar-today {
+    min-block-size: var(--control-height-md);
+    min-inline-size: var(--control-height-md);
+}
+
+.maintenance-form-page .maintenance-calendar-nav {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: var(--font-size-lg);
+    justify-content: center;
+    padding: 0;
+}
+
+.maintenance-form-page .maintenance-calendar-nav:hover {
+    background: var(--color-surface-hover);
+}
+
+.maintenance-form-page .maintenance-calendar-nav:focus-visible,
+.maintenance-form-page .maintenance-calendar-day:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.maintenance-form-page .maintenance-calendar-weekdays,
+.maintenance-form-page .maintenance-calendar-row {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.maintenance-form-page .maintenance-calendar-weekdays {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    margin-block-end: var(--space-4);
+    text-align: center;
+}
+
+.maintenance-form-page .maintenance-calendar-weekdays span {
+    padding-block: var(--space-4);
+}
+
+.maintenance-form-page .maintenance-calendar-grid {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.maintenance-form-page .maintenance-calendar-cell {
+    min-inline-size: 0;
+}
+
+.maintenance-form-page .maintenance-calendar-empty,
+.maintenance-form-page .maintenance-calendar-day {
+    block-size: var(--control-height-md);
+    box-sizing: border-box;
+    inline-size: 100%;
+}
+
+.maintenance-form-page .maintenance-calendar-day {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    justify-content: center;
+    padding: 0;
+}
+
+.maintenance-form-page .maintenance-calendar-day:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-border);
+}
+
+.maintenance-form-page .maintenance-calendar-day.is-today:not(.is-selected) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 650;
+}
+
+.maintenance-form-page .maintenance-calendar-day.is-selected {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: 650;
+}
+
+.maintenance-form-page .maintenance-date-entry {
+    gap: var(--space-12);
+    margin-block-start: var(--space-8);
+}
+
+.maintenance-form-page .maintenance-date-entry input {
+    flex: 0 1 190px;
+}
+
+.maintenance-form-page .maintenance-date-entry output {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.maintenance-form-page.is-calendar-enhanced .maintenance-date-entry {
+    justify-content: flex-end;
+}
+
+.maintenance-form-page.is-calendar-enhanced .maintenance-date-entry output {
+    display: block;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+}
+
+.maintenance-form-page .maintenance-previous-callout {
+    align-items: center;
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    gap: var(--space-16);
+    justify-content: space-between;
+    margin-block-end: var(--space-16);
+    padding: var(--space-12) var(--space-16);
+}
+
+.maintenance-form-page .maintenance-previous-callout > div {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.maintenance-form-page .maintenance-previous-callout strong {
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.maintenance-form-page .maintenance-duplicate-warning {
+    align-items: center;
+    margin-block-end: var(--space-16);
+}
+
+.maintenance-form-page .maintenance-context-status {
+    align-items: center;
+    margin-block-end: var(--space-16);
+}
+
+.maintenance-form-page .maintenance-context-status > span {
+    flex: 1;
+}
+
+.maintenance-form-page .maintenance-duplicate-warning > span {
+    flex: 1;
+}
+
+.maintenance-form-page .ui-input-with-suffix {
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    position: relative;
+}
+
+.maintenance-form-page .ui-input-with-suffix input {
+    padding-inline-end: 48px;
+}
+
+.maintenance-form-page .ui-input-with-suffix > span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    inset-inline-end: var(--space-12);
+    pointer-events: none;
+    position: absolute;
+}
+
+.maintenance-form-page .maintenance-output-label {
+    color: var(--color-text);
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    margin-block-end: var(--space-8);
+}
+
+.maintenance-form-page .maintenance-readonly-output {
+    align-items: baseline;
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+    display: flex;
+    gap: var(--space-4);
+    min-block-size: var(--control-height-md);
+    padding: var(--space-8) var(--space-12);
+}
+
+.maintenance-form-page .maintenance-readonly-output output {
+    color: var(--color-text-strong);
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+}
+
+.maintenance-form-page .maintenance-readonly-output span {
+    color: var(--color-text-muted);
+}
+
+.maintenance-form-page .maintenance-field-help {
+    display: block;
+    margin-block-start: var(--space-4);
+}
+
+.maintenance-form-page .maintenance-note-heading {
+    align-items: center;
+}
+
+.maintenance-form-page .maintenance-note-heading > div {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.maintenance-form-page .ui-form textarea#note {
+    line-height: 1.65;
+    min-block-size: 144px;
+    overflow-y: auto;
+    resize: vertical;
+}
+
+.maintenance-form-page .maintenance-note-meta {
+    display: flex;
+    justify-content: flex-end;
+    margin-block-start: var(--space-4);
+}
+
+.maintenance-form-page .maintenance-note-meta .ui-field-error {
+    margin-inline-end: auto;
+}
+
+.maintenance-form-page .ui-form-layout .button-group {
+    margin-block-start: var(--space-20);
+}
+
+.maintenance-delete-form {
+    display: inline;
+    margin-right: var(--space-8);
+}
+
+@media (max-width: 768px) {
+    .maintenance-form-page .ui-form-card {
+        padding: var(--space-20);
+    }
+
+    .maintenance-form-page .maintenance-primary-layout,
+    .maintenance-form-page .maintenance-license-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .maintenance-form-page .maintenance-section-heading,
+    .maintenance-form-page .maintenance-previous-callout,
+    .maintenance-form-page .maintenance-context-status {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .maintenance-form-page .maintenance-previous-callout .ui-button,
+    .maintenance-form-page .maintenance-context-status .ui-button,
+    .maintenance-form-page .maintenance-note-heading .ui-button {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .maintenance-form-page .ui-form-card {
+        padding-inline: var(--space-16);
+    }
+
+    .maintenance-form-page .maintenance-inline-calendar {
+        padding-inline: var(--space-8);
+    }
+
+    .maintenance-form-page .maintenance-calendar-weekdays,
+    .maintenance-form-page .maintenance-calendar-row,
+    .maintenance-form-page .maintenance-calendar-grid {
+        gap: 0;
+    }
+
+    .maintenance-form-page .maintenance-date-entry {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .maintenance-form-page .maintenance-date-entry input {
+        flex-basis: auto;
+        inline-size: 100%;
+    }
 }
 
 /* 유지보수 카드 페이지 */

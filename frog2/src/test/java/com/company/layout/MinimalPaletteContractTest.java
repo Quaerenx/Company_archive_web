@@ -45,7 +45,10 @@ class MinimalPaletteContractTest {
         assertTrue(tokens.contains("--color-icon-active: var(--palette-brand);"));
         assertTrue(tokens.contains("--color-chart-usage: var(--palette-brand);"));
         assertTrue(tokens.contains("--color-chart-used: var(--palette-success);"));
-        assertTrue(tokens.contains("--color-chart-capacity: var(--palette-warning);"));
+        assertTrue(tokens.contains(
+                "--color-chart-capacity: var(--palette-border-strong);"));
+        assertFalse(tokens.contains(
+                "--color-chart-capacity: var(--palette-warning);"));
     }
 
     @Test
@@ -153,7 +156,7 @@ class MinimalPaletteContractTest {
         assertTrue(dashboard.contains(".maintenance-assignee-customer::before"));
         assertTrue(maintenanceCards.contains(".maintenance-management .inspector-header i { color: currentColor;"));
         assertTrue(maintenanceCards.contains(".maintenance-management .customer-name i { color: currentColor;"));
-        assertTrue(maintenanceHistory.contains(".maintenance-history .customer-name i"));
+        assertTrue(maintenanceHistory.contains(".maintenance-history .detail-item i"));
         assertTrue(maintenanceHistory.contains("color: currentColor;"));
     }
 
@@ -170,7 +173,7 @@ class MinimalPaletteContractTest {
         return expected(
                 "#EFF2F5", "#D9DEE4", "#F8F9FA", "#EEF1F4", "#D5DAE0", "#87919B",
                 "#20252B", "#47535F", "#646F7A", "#E7EDF2", "#455F7A",
-                "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#8A5A00",
+                "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#B54708",
                 "#FFF1F1", "#B64B4B");
     }
 

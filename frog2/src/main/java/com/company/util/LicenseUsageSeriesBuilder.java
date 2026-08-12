@@ -1,6 +1,8 @@
 package com.company.util;
 
 import com.company.model.MaintenanceRecordDTO;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -27,18 +29,24 @@ public final class LicenseUsageSeriesBuilder {
 
         List<Map<String, Object>> points = new ArrayList<>(datedRecords.size());
         for (MaintenanceRecordDTO record : datedRecords) {
-            Integer percentage = parsePercentage(record.getLicenseUsagePct());
+            BigDecimal percentage = parsePercentage(
+                    record.getLicenseUsagePct());
             Double sizeTb = parseTerabytes(record.getLicenseSizeGb());
             Double usedTb = parseTerabytes(record.getLicenseUsageSize());
 
             if (percentage == null && sizeTb != null && sizeTb > 0 && usedTb != null) {
-                percentage = (int) Math.round((usedTb / sizeTb) * 100.0);
+                percentage = BigDecimal.valueOf(
+                                (usedTb / sizeTb) * 100.0)
+                        .setScale(1, RoundingMode.HALF_UP);
             }
             if (usedTb == null && sizeTb != null && percentage != null) {
-                usedTb = (sizeTb * percentage) / 100.0;
+                usedTb = (sizeTb * percentage.doubleValue()) / 100.0;
             }
-            if (sizeTb == null && usedTb != null && percentage != null && percentage > 0) {
-                sizeTb = (usedTb * 100.0) / percentage;
+            if (sizeTb == null
+                    && usedTb != null
+                    && percentage != null
+                    && percentage.signum() > 0) {
+                sizeTb = (usedTb * 100.0) / percentage.doubleValue();
             }
 
             Map<String, Object> point = new LinkedHashMap<>();
@@ -58,13 +66,20 @@ public final class LicenseUsageSeriesBuilder {
                 || record.getLicenseUsageSize() != null;
     }
 
-    private static Integer parsePercentage(String value) {
+    private static BigDecimal parsePercentage(String value) {
         if (value == null) {
             return null;
         }
         try {
-            String normalized = value.trim().replaceAll("[^0-9-]", "");
-            return normalized.isEmpty() ? null : Integer.valueOf(normalized);
+            String normalized = value.trim();
+            if (normalized.endsWith("%")) {
+                normalized = normalized.substring(0, normalized.length() - 1).trim();
+            }
+            if (!normalized.matches("[+-]?\\d+(?:\\.\\d+)?")) {
+                return null;
+            }
+            return new BigDecimal(normalized)
+                    .setScale(1, RoundingMode.HALF_UP);
         } catch (NumberFormatException exception) {
             return null;
         }

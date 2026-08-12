@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.company.model.MaintenanceRecordDTO;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +23,9 @@ class LicenseUsageSeriesBuilderTest {
                 List.of(noLicenseData, newest, middle, oldest, noDate));
 
         assertEquals(3, points.size());
-        assertPoint(points.get(0), "2026-01-01", 25, 1.0, 4.0);
-        assertPoint(points.get(1), "2026-02-02", 50, 1.0, 2.0);
-        assertPoint(points.get(2), "2026-03-03", 75, 3.0, 4.0);
+        assertPoint(points.get(0), "2026-01-01", "25.0", 1.0, 4.0);
+        assertPoint(points.get(1), "2026-02-02", "50.0", 1.0, 2.0);
+        assertPoint(points.get(2), "2026-03-03", "75.0", 3.0, 4.0);
     }
 
     @Test
@@ -40,6 +41,18 @@ class LicenseUsageSeriesBuilderTest {
         assertNull(point.get("sizeTb"));
     }
 
+    @Test
+    void decimalPercentageKeepsOneDecimalPlace() {
+        MaintenanceRecordDTO record = record(
+                "2026-01-01", "25", null, "56.5%");
+
+        Map<String, Object> point =
+                LicenseUsageSeriesBuilder.build(List.of(record)).getFirst();
+
+        assertEquals(new BigDecimal("56.5"), point.get("pct"));
+        assertEquals(14.125, point.get("usedTb"));
+    }
+
     private static MaintenanceRecordDTO record(
             String date, String size, String used, String percentage) {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
@@ -53,12 +66,12 @@ class LicenseUsageSeriesBuilderTest {
     private static void assertPoint(
             Map<String, Object> point,
             String date,
-            Integer percentage,
+            String percentage,
             Double usedTb,
             Double sizeTb) {
         assertEquals(date, point.get("date"));
-        assertEquals(percentage, point.get("value"));
-        assertEquals(percentage, point.get("pct"));
+        assertEquals(new BigDecimal(percentage), point.get("value"));
+        assertEquals(new BigDecimal(percentage), point.get("pct"));
         assertEquals(usedTb, point.get("usedTb"));
         assertEquals(sizeTb, point.get("sizeTb"));
     }

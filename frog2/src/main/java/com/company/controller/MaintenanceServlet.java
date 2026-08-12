@@ -4,6 +4,7 @@ import com.company.util.LicenseUsageSeriesBuilder;
 import com.company.util.StrictDateParser;
 import java.io.IOException;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,12 +14,15 @@ import java.util.Objects;
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.MaintenanceCustomerAssignment;
+import com.company.model.MaintenanceFormHistoryContext;
+import com.company.model.MaintenanceHistoryFilter;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
 import com.company.web.ApplicationError;
+import com.company.web.JsonResponse;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -32,6 +36,8 @@ public class MaintenanceServlet extends HttpServlet {
     private static final int HISTORY_PAGE_SIZE = 20;
     private final MaintenanceRecordDAO maintenanceDAO;
     private final CustomerDAO customerDAO;
+    private final MaintenanceRecordRequestMapper requestMapper =
+            new MaintenanceRecordRequestMapper();
 
     public MaintenanceServlet() {
         this(new MaintenanceRecordDAO(), new CustomerDAO());
@@ -93,11 +99,27 @@ public class MaintenanceServlet extends HttpServlet {
                             "점검 이력 페이지가 올바르지 않습니다.");
                     return;
                 }
+                MaintenanceHistoryFilter historyFilter;
+                try {
+                    historyFilter = MaintenanceHistoryFilter.parse(
+                            request.getParameter("historyYear"),
+                            request.getParameter("historyVersion"),
+                            request.getParameter("historyQuery"));
+                } catch (IllegalArgumentException exception) {
+                    ApplicationError.send(
+                            request,
+                            response,
+                            HttpServletResponse.SC_BAD_REQUEST,
+                            "invalid_history_filter",
+                            "점검 이력 검색 조건이 올바르지 않습니다.");
+                    return;
+                }
                 PageResult<MaintenanceRecordDTO> page =
                         maintenanceDAO.getMaintenanceRecordsByCustomer(
                                 customerName,
                                 historyPage,
-                                HISTORY_PAGE_SIZE);
+                                HISTORY_PAGE_SIZE,
+                                historyFilter);
                 List<MaintenanceRecordDTO> records = page.items();
                 // 라이선스 사용률 시리즈
                 List<Map<String, Object>> usageSeries = LicenseUsageSeriesBuilder.build(records);
@@ -116,6 +138,12 @@ public class MaintenanceServlet extends HttpServlet {
                 request.setAttribute("pageSize", page.pageSize());
                 request.setAttribute("totalPages", page.totalPages());
                 request.setAttribute("totalCount", page.totalCount());
+                request.setAttribute("historyYear", historyFilter.year());
+                request.setAttribute(
+                        "historyVersion", historyFilter.version());
+                request.setAttribute("historyQuery", historyFilter.query());
+                request.setAttribute(
+                        "historyFiltersActive", historyFilter.hasFilters());
                 request.setAttribute("viewType", "history");
                 request.getRequestDispatcher("/maintenance/maintenance_history.jsp").forward(request, response);
             } else {
@@ -124,10 +152,16 @@ public class MaintenanceServlet extends HttpServlet {
 
         } else if ("add".equals(viewType)) {
             // 새 정기점검 이력 추가 폼
-            String customerName = request.getParameter("customerName");
-            request.setAttribute("customerName", customerName);
-            request.setAttribute("viewType", "add");
-            request.getRequestDispatcher("/maintenance/maintenance_add.jsp").forward(request, response);
+            showAddForm(
+                    request,
+                    response,
+                    request.getParameter("customerName"),
+                    null,
+                    Map.of(),
+                    HttpServletResponse.SC_OK);
+
+        } else if ("formContext".equals(viewType)) {
+            writeFormContext(request, response);
 
         } else if ("edit".equals(viewType)) {
             // 정기점검 이력 수정 폼
@@ -138,6 +172,13 @@ public class MaintenanceServlet extends HttpServlet {
                     MaintenanceRecordDTO record = maintenanceDAO.getMaintenanceRecordById(maintenanceId);
                     if (record != null && isOwner(record, user)) {
                         request.setAttribute("record", record);
+                        prepareFormView(
+                                request,
+                                maintenanceFormOptions(
+                                        record.getInspectorName()),
+                                record,
+                                Map.of(),
+                                false);
                         request.setAttribute("viewType", "edit");
                         request.getRequestDispatcher("/maintenance/maintenance_edit.jsp").forward(request, response);
                     } else if (record == null) {
@@ -207,17 +248,21 @@ public class MaintenanceServlet extends HttpServlet {
 
         if ("add".equals(actionType)) {
             // 새 정기점검 이력 추가
-            MaintenanceRecordDTO record = new MaintenanceRecordDTO();
-            record.setCreatorUserId(currentUser.getUserId());
-            record.setCustomerName(request.getParameter("customer_name"));
-            record.setInspectorName(request.getParameter("inspector_name"));
-            record.setInspectionDate(parseDate(request.getParameter("inspection_date")));
-            record.setVerticaVersion(request.getParameter("vertica_version"));
-            record.setNote(request.getParameter("note"));
-            // 문자열로 그대로 수집
-            record.setLicenseSizeGb(trimToNull(request.getParameter("license_size_gb")));
-            record.setLicenseUsageSize(trimToNull(request.getParameter("license_usage_size")));
-            record.setLicenseUsagePct(trimToNull(request.getParameter("license_usage_pct")));
+            MaintenanceFormSubmission submission = requestMapper.map(
+                    request::getParameter,
+                    currentUser.getUserId(),
+                    maintenanceFormOptions(null));
+            MaintenanceRecordDTO record = submission.record();
+            if (!submission.valid()) {
+                showAddForm(
+                        request,
+                        response,
+                        record.getCustomerName(),
+                        record,
+                        submission.fieldErrors(),
+                        HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
 
             boolean success = maintenanceDAO.addMaintenanceRecord(record);
             if (success) {
@@ -235,17 +280,44 @@ public class MaintenanceServlet extends HttpServlet {
             String maintenanceIdStr = request.getParameter("maintenance_id");
             if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
                 try {
-                    MaintenanceRecordDTO record = new MaintenanceRecordDTO();
-                    record.setMaintenanceId(Long.parseLong(maintenanceIdStr));
-                    record.setCustomerName(request.getParameter("customer_name"));
-                    record.setInspectorName(request.getParameter("inspector_name"));
-                    record.setInspectionDate(parseDate(request.getParameter("inspection_date")));
-                    record.setVerticaVersion(request.getParameter("vertica_version"));
-                    record.setNote(request.getParameter("note"));
-                    // 문자열로 그대로 수집
-                    record.setLicenseSizeGb(trimToNull(request.getParameter("license_size_gb")));
-                    record.setLicenseUsageSize(trimToNull(request.getParameter("license_usage_size")));
-                    record.setLicenseUsagePct(trimToNull(request.getParameter("license_usage_pct")));
+                    Long maintenanceId = Long.parseLong(maintenanceIdStr);
+                    MaintenanceRecordDTO existing =
+                            maintenanceDAO.getMaintenanceRecordById(
+                                    maintenanceId);
+                    if (existing == null || !isOwner(existing, currentUser)) {
+                        session.setAttribute(
+                                "error",
+                                "수정 권한이 없거나 이력을 찾을 수 없습니다.");
+                        response.sendRedirect("maintenance?view=cards");
+                        return;
+                    }
+                    MaintenanceFormOptions options = maintenanceFormOptions(
+                            existing.getInspectorName());
+                    MaintenanceFormSubmission submission =
+                            requestMapper.mapForUpdate(
+                                    request::getParameter,
+                                    currentUser.getUserId(),
+                                    options,
+                                    maintenanceId,
+                                    existing.getLicenseSizeGb(),
+                                    existing.getVerticaVersion());
+                    MaintenanceRecordDTO record = submission.record();
+                    if (!submission.valid()) {
+                        request.setAttribute("record", record);
+                        prepareFormView(
+                                request,
+                                options,
+                                record,
+                                submission.fieldErrors(),
+                                false);
+                        response.setStatus(
+                                HttpServletResponse.SC_BAD_REQUEST);
+                        request.setAttribute("viewType", "edit");
+                        request.getRequestDispatcher(
+                                "/maintenance/maintenance_edit.jsp")
+                                .forward(request, response);
+                        return;
+                    }
 
                     boolean success = maintenanceDAO.updateMaintenanceRecordForOwner(
                             record, currentUser.getUserId());
@@ -306,6 +378,194 @@ public class MaintenanceServlet extends HttpServlet {
         if (v == null) return null;
         String t = v.trim();
         return t.isEmpty() ? null : t;
+    }
+
+    private void showAddForm(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String customerName,
+            MaintenanceRecordDTO submittedRecord,
+            Map<String, String> fieldErrors,
+            int status) throws ServletException, IOException {
+        MaintenanceFormOptions options = maintenanceFormOptions(null);
+        CustomerDTO customer = options.customer(customerName);
+        MaintenanceRecordDTO formRecord = submittedRecord == null
+                ? defaultFormRecord(customer)
+                : submittedRecord;
+        prepareFormView(
+                request,
+                options,
+                formRecord,
+                fieldErrors,
+                customer != null);
+        request.setAttribute("customerName", formRecord.getCustomerName());
+        request.setAttribute("viewType", "add");
+        response.setStatus(status);
+        request.getRequestDispatcher("/maintenance/maintenance_add.jsp")
+                .forward(request, response);
+    }
+
+    private MaintenanceFormOptions maintenanceFormOptions(
+            String retainedInspector) {
+        return MaintenanceFormOptions.from(
+                customerDAO.getAllCustomers("", "ASC", "maintenance"),
+                retainedInspector);
+    }
+
+    private MaintenanceRecordDTO defaultFormRecord(CustomerDTO customer) {
+        MaintenanceRecordDTO record = new MaintenanceRecordDTO();
+        record.setInspectionDate(Date.valueOf(LocalDate.now()));
+        if (customer != null) {
+            record.setCustomerName(customer.getCustomerName());
+            record.setInspectorName(firstNonBlank(
+                    customer.getManagerName(),
+                    customer.getSubManagerName()));
+            record.setVerticaVersion(
+                    trimToNull(customer.getVerticaVersion()));
+            record.setLicenseSizeGb(
+                    trimToNull(customer.getLicenseSize()));
+        }
+        return record;
+    }
+
+    private void prepareFormView(
+            HttpServletRequest request,
+            MaintenanceFormOptions options,
+            MaintenanceRecordDTO record,
+            Map<String, String> fieldErrors,
+            boolean customerFixed) {
+        MaintenanceFormHistoryContext history =
+                maintenanceDAO.getMaintenanceFormHistoryContext(
+                        record.getCustomerName(),
+                        record.getInspectionDate(),
+                        record.getMaintenanceId());
+        request.setAttribute("formRecord", record);
+        request.setAttribute("formOptions", options);
+        request.setAttribute("fieldErrors", fieldErrors);
+        request.setAttribute("formCustomerFixed", customerFixed);
+        request.setAttribute(
+                "previousMaintenanceRecord", history.previousRecord());
+        request.setAttribute(
+                "duplicateMaintenanceRecord", history.duplicateRecord());
+        request.setAttribute(
+                "licenseSizeInput",
+                MaintenanceRecordRequestMapper.normalizeTerabytesForInput(
+                        record.getLicenseSizeGb()));
+        request.setAttribute(
+                "licenseUsageInput",
+                MaintenanceRecordRequestMapper.normalizeTerabytesForInput(
+                        record.getLicenseUsageSize()));
+        request.setAttribute(
+                "licensePercentageInput",
+                MaintenanceRecordRequestMapper.normalizePercentageForInput(
+                        record.getLicenseUsagePct()));
+    }
+
+    private void writeFormContext(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        String customerName = trimToNull(
+                request.getParameter("customerName"));
+        Date inspectionDate = parseDate(
+                request.getParameter("inspectionDate"));
+        Long excludedId = parseOptionalLong(
+                request.getParameter("excludeId"));
+        MaintenanceFormOptions options = maintenanceFormOptions(null);
+        CustomerDTO customer = options.customer(customerName);
+        if (customer == null || inspectionDate == null) {
+            JsonResponse.sendError(
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_maintenance_context",
+                    "고객사와 점검일을 확인해 주세요.");
+            return;
+        }
+        MaintenanceFormHistoryContext context =
+                maintenanceDAO.getMaintenanceFormHistoryContext(
+                        customerName, inspectionDate, excludedId);
+        JsonResponse.write(
+                response,
+                HttpServletResponse.SC_OK,
+                maintenanceFormContextJson(customer, context));
+    }
+
+    private static String maintenanceFormContextJson(
+            CustomerDTO customer,
+            MaintenanceFormHistoryContext context) {
+        return new StringBuilder("{")
+                .append("\"defaultInspector\":")
+                .append(jsonString(firstNonBlank(
+                        customer.getManagerName(),
+                        customer.getSubManagerName())))
+                .append(",\"defaultVersion\":")
+                .append(jsonString(customer.getVerticaVersion()))
+                .append(",\"defaultLicenseSize\":")
+                .append(jsonString(
+                        MaintenanceRecordRequestMapper
+                                .normalizeTerabytesForInput(
+                                        customer.getLicenseSize())))
+                .append(",\"previous\":")
+                .append(recordJson(context.previousRecord()))
+                .append(",\"duplicate\":")
+                .append(recordJson(context.duplicateRecord()))
+                .append('}')
+                .toString();
+    }
+
+    private static String recordJson(MaintenanceRecordDTO record) {
+        if (record == null) {
+            return "null";
+        }
+        return new StringBuilder("{")
+                .append("\"id\":").append(record.getMaintenanceId())
+                .append(",\"inspectionDate\":")
+                .append(jsonString(StrictDateParser.formatDate(
+                        record.getInspectionDate())))
+                .append(",\"inspector\":")
+                .append(jsonString(record.getInspectorName()))
+                .append(",\"version\":")
+                .append(jsonString(record.getVerticaVersion()))
+                .append(",\"licenseSize\":")
+                .append(jsonString(
+                        MaintenanceRecordRequestMapper
+                                .normalizeTerabytesForInput(
+                                        record.getLicenseSizeGb())))
+                .append(",\"licenseUsage\":")
+                .append(jsonString(
+                        MaintenanceRecordRequestMapper
+                                .normalizeTerabytesForInput(
+                                        record.getLicenseUsageSize())))
+                .append(",\"licensePercentage\":")
+                .append(jsonString(
+                        MaintenanceRecordRequestMapper
+                                .normalizePercentageForInput(
+                                        record.getLicenseUsagePct())))
+                .append('}')
+                .toString();
+    }
+
+    private static String jsonString(String value) {
+        return value == null
+                ? "null"
+                : "\"" + JsonResponse.escape(value) + "\"";
+    }
+
+    private static Long parseOptionalLong(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value.trim());
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first.trim();
+        }
+        return second == null || second.isBlank() ? null : second.trim();
     }
 
     private static boolean isOwner(

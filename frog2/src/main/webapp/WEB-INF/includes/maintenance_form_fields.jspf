@@ -1,0 +1,265 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<fmt:formatDate var="maintenanceInspectionDateValue"
+                value="${formRecord.inspectionDate}"
+                pattern="yyyy-MM-dd" />
+
+<fmt:formatDate var="previousMaintenanceDateLabel"
+                value="${previousMaintenanceRecord.inspectionDate}"
+                pattern="yyyy.MM.dd" />
+<aside id="previousMaintenanceCallout"
+       class="maintenance-previous-callout"
+       aria-labelledby="previousMaintenanceTitle"
+       <c:if test="${empty previousMaintenanceRecord}">hidden</c:if>>
+                <div>
+            <strong id="previousMaintenanceTitle">지난 점검값을 재사용할 수 있습니다</strong>
+            <span id="previousMaintenanceSummary"><c:out value="${previousMaintenanceDateLabel}" /> 점검 · <c:out value="${previousMaintenanceRecord.verticaVersion}" default="버전 미등록" /></span>
+        </div>
+        <button type="button"
+                id="applyPreviousMaintenanceDefaults"
+                class="ui-button button--secondary button--sm"
+                data-inspector="<c:out value='${previousMaintenanceRecord.inspectorName}' />"
+                data-version="<c:out value='${previousMaintenanceRecord.verticaVersion}' />"
+                data-license-usage="<c:out value='${previousMaintenanceRecord.licenseUsageSize}' />">이전 값 불러오기</button>
+</aside>
+
+<div id="maintenanceContextStatus"
+     class="ui-alert ui-alert--danger maintenance-context-status"
+     role="status"
+     aria-live="polite"
+     hidden>
+    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+    <span id="maintenanceContextMessage">이전 점검 정보를 불러오지 못했습니다.</span>
+    <button type="button"
+            id="retryMaintenanceContext"
+            class="ui-button button--secondary button--sm">다시 시도</button>
+</div>
+
+<div id="duplicateMaintenanceWarning"
+     class="ui-alert ui-alert--warning maintenance-duplicate-warning"
+     role="status"
+     aria-live="polite"
+     <c:if test="${empty duplicateMaintenanceRecord}">hidden</c:if>>
+    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+    <span id="duplicateMaintenanceMessage">
+        <c:if test="${not empty duplicateMaintenanceRecord}">
+            이 고객사의 같은 달 점검 이력이 이미 있습니다.
+        </c:if>
+    </span>
+    <a id="duplicateMaintenanceHistoryLink"
+       class="ui-button button--secondary button--sm"
+       href="<c:out value='${customerHistoryUrl}' />">이력 확인</a>
+</div>
+
+<section class="maintenance-form-section" aria-labelledby="maintenanceBasicTitle">
+    <h2 id="maintenanceBasicTitle">점검 기본 정보</h2>
+    <div class="maintenance-primary-layout">
+        <div class="maintenance-primary-grid">
+            <div class="form-group">
+                <c:choose>
+                    <c:when test="${formCustomerFixed}">
+                        <span id="maintenanceCustomerLabel"
+                              class="maintenance-output-label">고객사</span>
+                        <div class="maintenance-readonly-output">
+                            <output id="customer_name_display"
+                                    aria-labelledby="maintenanceCustomerLabel"
+                                    aria-invalid="${not empty fieldErrors.customer_name}"><c:out value="${formRecord.customerName}" default="미등록" /></output>
+                        </div>
+                        <input type="hidden"
+                               id="customer_name"
+                               name="customer_name"
+                               value="<c:out value='${formRecord.customerName}' />" />
+                    </c:when>
+                    <c:otherwise>
+                        <label for="customer_name">고객사 <span class="required" aria-label="필수">*</span></label>
+                        <select id="customer_name"
+                                name="customer_name"
+                                required
+                                aria-invalid="${not empty fieldErrors.customer_name}">
+                            <option value="">고객사를 선택하세요</option>
+                            <c:forEach var="optionCustomer" items="${formOptions.customers}">
+                                <option value="<c:out value='${optionCustomer.customerName}' />" <c:if test="${formRecord.customerName eq optionCustomer.customerName}">selected</c:if>><c:out value="${optionCustomer.customerName}" /></option>
+                            </c:forEach>
+                        </select>
+                    </c:otherwise>
+                </c:choose>
+                <c:if test="${not empty fieldErrors.customer_name}">
+                    <span class="ui-field-error"><c:out value="${fieldErrors.customer_name}" /></span>
+                </c:if>
+            </div>
+
+            <div class="form-group maintenance-version-field">
+                <span id="maintenanceVersionLabel"
+                      class="maintenance-output-label">Vertica 버전</span>
+                <div class="maintenance-readonly-output">
+                    <output id="vertica_version_display"
+                            aria-labelledby="maintenanceVersionLabel"
+                            aria-invalid="${not empty fieldErrors.vertica_version}"><c:out value="${formRecord.verticaVersion}" default="미등록" /></output>
+                </div>
+                <input type="hidden"
+                       id="vertica_version"
+                       name="vertica_version"
+                       value="<c:out value='${formRecord.verticaVersion}' />" />
+                <span class="maintenance-field-help">고객사 정보에서 자동 적용됩니다.</span>
+                <c:if test="${not empty fieldErrors.vertica_version}">
+                    <span class="ui-field-error"><c:out value="${fieldErrors.vertica_version}" /></span>
+                </c:if>
+            </div>
+
+            <div class="form-group">
+                <label for="inspector_name">점검자 <span class="required" aria-label="필수">*</span></label>
+                <select id="inspector_name"
+                        name="inspector_name"
+                        required
+                        aria-invalid="${not empty fieldErrors.inspector_name}">
+                    <option value="">점검자를 선택하세요</option>
+                    <c:forEach var="inspectorOption" items="${formOptions.inspectors}">
+                        <option value="<c:out value='${inspectorOption}' />" <c:if test="${formRecord.inspectorName eq inspectorOption}">selected</c:if>><c:out value="${inspectorOption}" /></option>
+                    </c:forEach>
+                </select>
+                <c:if test="${not empty fieldErrors.inspector_name}">
+                    <span class="ui-field-error"><c:out value="${fieldErrors.inspector_name}" /></span>
+                </c:if>
+            </div>
+        </div>
+
+        <div class="form-group maintenance-date-field">
+            <label id="inspectionDateLabel" for="inspection_date">점검일 <span class="required" aria-label="필수">*</span></label>
+            <div id="maintenanceInlineCalendar"
+                 class="maintenance-inline-calendar"
+                 role="group"
+                 aria-labelledby="inspectionDateLabel"
+                 tabindex="-1"
+                 hidden>
+                <div class="maintenance-calendar-toolbar">
+                    <div class="maintenance-calendar-month-nav">
+                        <button type="button"
+                                id="maintenanceCalendarPreviousMonth"
+                                class="maintenance-calendar-nav"
+                                aria-label="이전 달">&lsaquo;</button>
+                        <strong id="maintenanceCalendarMonthLabel"
+                                aria-live="polite"></strong>
+                        <button type="button"
+                                id="maintenanceCalendarNextMonth"
+                                class="maintenance-calendar-nav"
+                                aria-label="다음 달">&rsaquo;</button>
+                    </div>
+                    <button type="button"
+                            id="maintenanceCalendarToday"
+                            class="ui-button button--secondary button--sm maintenance-calendar-today">오늘</button>
+                </div>
+                <div class="maintenance-calendar-weekdays" aria-hidden="true">
+                    <span>일</span><span>월</span><span>화</span><span>수</span>
+                    <span>목</span><span>금</span><span>토</span>
+                </div>
+                <div id="maintenanceCalendarGrid"
+                     class="maintenance-calendar-grid"
+                     role="grid"
+                     aria-labelledby="maintenanceCalendarMonthLabel"></div>
+            </div>
+            <div class="maintenance-date-entry">
+                <input type="date"
+                       id="inspection_date"
+                       name="inspection_date"
+                       value="<c:out value='${maintenanceInspectionDateValue}' />"
+                       required
+                       aria-describedby="maintenanceSelectedDateLabel"
+                       aria-invalid="${not empty fieldErrors.inspection_date}" />
+                <output id="maintenanceSelectedDateLabel"
+                        for="inspection_date"
+                        aria-live="polite"></output>
+            </div>
+            <c:if test="${not empty fieldErrors.inspection_date}">
+                <span class="ui-field-error"><c:out value="${fieldErrors.inspection_date}" /></span>
+            </c:if>
+        </div>
+    </div>
+</section>
+
+<section class="maintenance-form-section" aria-labelledby="maintenanceLicenseTitle">
+    <div class="maintenance-section-heading">
+        <h2 id="maintenanceLicenseTitle">라이선스</h2>
+        <p>사용량을 입력하면 고객사 전체 용량을 기준으로 사용률이 자동 계산됩니다.</p>
+    </div>
+    <div class="maintenance-license-grid">
+        <div class="form-group maintenance-capacity-field">
+            <span id="maintenanceCapacityLabel"
+                  class="maintenance-output-label">전체 용량</span>
+            <div class="maintenance-readonly-output">
+                <output id="license_size_gb_display"
+                        aria-labelledby="maintenanceCapacityLabel"
+                        aria-invalid="${not empty fieldErrors.license_size_gb}"><c:out value="${licenseSizeInput}" default="—" /></output>
+                <span aria-hidden="true">TB</span>
+            </div>
+            <input type="hidden"
+                   id="license_size_gb"
+                   name="license_size_gb"
+                   value="<c:out value='${licenseSizeInput}' />" />
+            <span class="maintenance-field-help">고객사 정보에서 자동 적용됩니다.</span>
+            <c:if test="${not empty fieldErrors.license_size_gb}">
+                <span class="ui-field-error"><c:out value="${fieldErrors.license_size_gb}" /></span>
+            </c:if>
+        </div>
+
+        <div class="form-group">
+            <label for="license_usage_size">사용량</label>
+            <div class="ui-input-with-suffix">
+                <input type="text"
+                       id="license_usage_size"
+                       name="license_usage_size"
+                       maxlength="50"
+                       inputmode="decimal"
+                       value="<c:out value='${licenseUsageInput}' />"
+                       placeholder="예: 13.9"
+                       aria-invalid="${not empty fieldErrors.license_usage_size}" />
+                <span aria-hidden="true">TB</span>
+            </div>
+            <c:if test="${not empty fieldErrors.license_usage_size}">
+                <span class="ui-field-error"><c:out value="${fieldErrors.license_usage_size}" /></span>
+            </c:if>
+        </div>
+
+        <div class="form-group maintenance-percentage-field">
+            <span class="maintenance-output-label">사용률</span>
+            <div class="maintenance-readonly-output maintenance-percentage-output">
+                <output id="license_usage_pct_display"
+                        for="license_size_gb license_usage_size"><c:out value="${licensePercentageInput}" default="—" /></output>
+                <span aria-hidden="true">%</span>
+            </div>
+            <input type="hidden"
+                   id="license_usage_pct"
+                   name="license_usage_pct"
+                   value="<c:out value='${licensePercentageInput}' />" />
+            <span class="maintenance-field-help">서버에서도 다시 계산하여 저장합니다.</span>
+        </div>
+    </div>
+</section>
+
+<section class="maintenance-form-section" aria-labelledby="maintenanceNoteTitle">
+    <div class="maintenance-section-heading maintenance-note-heading">
+        <div>
+            <h2 id="maintenanceNoteTitle">점검 메모</h2>
+            <p>점검 결과와 후속 작업을 필요한 만큼 기록하세요.</p>
+        </div>
+        <button type="button"
+                id="insertMaintenanceNoteTemplate"
+                class="ui-button button--secondary button--sm">메모 양식 넣기</button>
+    </div>
+    <div class="form-group full-width">
+        <label for="note" class="sr-only">점검 메모</label>
+        <textarea id="note"
+                  name="note"
+                  rows="5"
+                  maxlength="65000"
+                  aria-invalid="${not empty fieldErrors.note}"
+                  placeholder="점검 결과, 발견된 이슈, 조치 사항, 후속 작업을 입력해 주세요."><c:out value="${formRecord.note}" /></textarea>
+        <div class="maintenance-note-meta">
+            <c:if test="${not empty fieldErrors.note}">
+                <span class="ui-field-error"><c:out value="${fieldErrors.note}" /></span>
+            </c:if>
+            <span><span id="maintenanceNoteCount">0</span> / 65,000</span>
+        </div>
+    </div>
+</section>

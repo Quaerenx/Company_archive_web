@@ -162,7 +162,7 @@ class DesignAssetConsolidationTest {
                 "/resources/css/pages/maintenance_cards.css");
         expectedPageStyles.put(
                 "maintenance/maintenance_edit.jsp",
-                "/resources/css/pages/maintenance_edit.css");
+                "/resources/css/pages/maintenance.css");
         expectedPageStyles.put(
                 "maintenance/maintenance_history.jsp",
                 "/resources/css/pages/maintenance_history.css");

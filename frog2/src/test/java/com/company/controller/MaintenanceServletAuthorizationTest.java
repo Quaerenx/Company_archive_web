@@ -1,11 +1,14 @@
 package com.company.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
+import com.company.model.MaintenanceHistoryFilter;
+import com.company.model.MaintenanceFormHistoryContext;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.PageResult;
@@ -65,7 +68,8 @@ class MaintenanceServletAuthorizationTest {
         assertEquals(history, row.getRecord());
         assertEquals("2", row.getUsedTerabytes());
         assertEquals("4", row.getCapacityTerabytes());
-        assertEquals(50, row.getUsagePercentage());
+        assertEquals(new java.math.BigDecimal("50.0"),
+                row.getUsagePercentage());
         assertEquals("—", row.getDeltaLabel());
         assertEquals(1,
                 ((List<?>) request.attributes.get("usageSeries")).size());
@@ -95,10 +99,67 @@ class MaintenanceServletAuthorizationTest {
     }
 
     @Test
+    void historyFiltersAreNormalizedAndSharedWithTheView() throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "history");
+        request.parameters.put("customerName", "Acme");
+        request.parameters.put("historyYear", " 2026 ");
+        request.parameters.put("historyVersion", " 23.4 ");
+        request.parameters.put("historyQuery", " 김동완 ");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doGet(request.proxy(), response.proxy());
+
+        assertEquals(2026, dao.lastHistoryFilter.year());
+        assertEquals("23.4", dao.lastHistoryFilter.version());
+        assertEquals("김동완", dao.lastHistoryFilter.query());
+        assertEquals(2026, request.attributes.get("historyYear"));
+        assertEquals("23.4", request.attributes.get("historyVersion"));
+        assertEquals("김동완", request.attributes.get("historyQuery"));
+        assertEquals(true,
+                request.attributes.get("historyFiltersActive"));
+        assertEquals(
+                "/maintenance/maintenance_history.jsp",
+                request.forwardedPath);
+    }
+
+    @Test
+    void invalidHistoryFilterReturnsJsonBadRequestBeforeDaoUse()
+            throws Exception {
+        for (Map.Entry<String, String> invalid : Map.of(
+                "historyYear", "twenty",
+                "historyVersion", "v".repeat(65),
+                "historyQuery", "q".repeat(121)).entrySet()) {
+            StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+            MaintenanceServlet servlet = new MaintenanceServlet(
+                    dao, new StubCustomerDAO());
+            RequestFixture request = new RequestFixture(user("owner-1"));
+            request.accept = "application/json";
+            request.parameters.put("view", "history");
+            request.parameters.put("customerName", "Acme");
+            request.parameters.put(invalid.getKey(), invalid.getValue());
+            ResponseFixture response = new ResponseFixture();
+
+            servlet.doGet(request.proxy(), response.proxy());
+
+            assertEquals(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    response.status);
+            assertTrue(response.body.toString().contains(
+                    "\"code\":\"invalid_history_filter\""));
+            assertEquals(0, dao.historyReads);
+        }
+    }
+
+    @Test
     void nonOwnerCannotOpenEditForm() throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
         dao.record = record("owner-1");
-        MaintenanceServlet servlet = new MaintenanceServlet(dao);
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, new StubCustomerDAO());
         RequestFixture request = new RequestFixture(user("attacker-1"));
         request.parameters.put("view", "edit");
         request.parameters.put("id", "17");
@@ -116,9 +177,111 @@ class MaintenanceServletAuthorizationTest {
     }
 
     @Test
+    void addFormIsServerRenderedWithCustomerDefaultsAndPreviousRecord()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        MaintenanceRecordDTO previous = record("owner-1");
+        previous.setInspectionDate(Date.valueOf("2026-07-20"));
+        previous.setVerticaVersion("23.4");
+        previous.setLicenseSizeGb("25TB");
+        dao.formContext = new MaintenanceFormHistoryContext(previous, null);
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "add");
+        request.parameters.put("customerName", "Acme");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doGet(request.proxy(), response.proxy());
+
+        assertEquals(
+                "/maintenance/maintenance_add.jsp",
+                request.forwardedPath);
+        MaintenanceRecordDTO formRecord = (MaintenanceRecordDTO)
+                request.attributes.get("formRecord");
+        assertEquals("Acme", formRecord.getCustomerName());
+        assertEquals("Alice", formRecord.getInspectorName());
+        assertEquals("23.4.0-13", formRecord.getVerticaVersion());
+        assertEquals("25TB", formRecord.getLicenseSizeGb());
+        assertTrue(formRecord.getInspectionDate() != null);
+        assertEquals(previous,
+                request.attributes.get("previousMaintenanceRecord"));
+        assertEquals(true,
+                request.attributes.get("formCustomerFixed"));
+    }
+
+    @Test
+    void invalidAddPreservesTheSubmissionAndDoesNotCallTheDaoWrite()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("action", "add");
+        request.parameters.put("customer_name", "Acme");
+        request.parameters.put("inspector_name", "Alice");
+        request.parameters.put("inspection_date", "2026-02-30");
+        request.parameters.put("note", "작성 중인 긴 점검 메모");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.status);
+        assertEquals(
+                "/maintenance/maintenance_add.jsp",
+                request.forwardedPath);
+        assertFalse(dao.addCalled);
+        MaintenanceRecordDTO formRecord = (MaintenanceRecordDTO)
+                request.attributes.get("formRecord");
+        assertEquals("작성 중인 긴 점검 메모", formRecord.getNote());
+        Map<?, ?> errors = (Map<?, ?>)
+                request.attributes.get("fieldErrors");
+        assertTrue(errors.containsKey("inspection_date"));
+    }
+
+    @Test
+    void formContextReturnsPreviousDefaultsAndDuplicateWarningJson()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        MaintenanceRecordDTO previous = record("owner-1");
+        previous.setInspectionDate(Date.valueOf("2026-07-20"));
+        previous.setVerticaVersion("23.4");
+        previous.setLicenseSizeGb("25TB");
+        MaintenanceRecordDTO duplicate = record("owner-1");
+        duplicate.setMaintenanceId(18L);
+        duplicate.setInspectionDate(Date.valueOf("2026-08-03"));
+        dao.formContext = new MaintenanceFormHistoryContext(
+                previous, duplicate);
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "formContext");
+        request.parameters.put("customerName", "Acme");
+        request.parameters.put("inspectionDate", "2026-08-12");
+        request.accept = "application/json";
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doGet(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_OK, response.status);
+        assertTrue(response.body.toString().contains(
+                "\"defaultInspector\":\"Alice\""));
+        assertTrue(response.body.toString().contains(
+                "\"defaultLicenseSize\":\"25\""));
+        assertTrue(response.body.toString().contains(
+                "\"previous\":{"));
+        assertTrue(response.body.toString().contains(
+                "\"duplicate\":{"));
+        assertNull(request.forwardedPath);
+    }
+
+    @Test
     void postMutationsUseOnlySessionUserId() throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
-        MaintenanceServlet servlet = new MaintenanceServlet(dao);
+        dao.record = record("attacker-1");
+        dao.record.setInspectorName("Same Name");
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, new StubCustomerDAO());
 
         RequestFixture update = new RequestFixture(user("attacker-1"));
         update.parameters.put("action", "update");
@@ -173,15 +336,34 @@ class MaintenanceServletAuthorizationTest {
         private String lastHistoryCustomer;
         private int lastHistoryPage;
         private int lastHistoryPageSize;
+        private MaintenanceHistoryFilter lastHistoryFilter =
+                MaintenanceHistoryFilter.empty();
         private int historyReads;
+        private boolean addCalled;
+        private MaintenanceFormHistoryContext formContext =
+                MaintenanceFormHistoryContext.empty();
 
         @Override
         public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
                 String customerName, int page, int pageSize) {
+            return getMaintenanceRecordsByCustomer(
+                    customerName,
+                    page,
+                    pageSize,
+                    MaintenanceHistoryFilter.empty());
+        }
+
+        @Override
+        public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
+                String customerName,
+                int page,
+                int pageSize,
+                MaintenanceHistoryFilter filter) {
             historyReads++;
             lastHistoryCustomer = customerName;
             lastHistoryPage = page;
             lastHistoryPageSize = pageSize;
+            lastHistoryFilter = filter;
             return historyPage;
         }
 
@@ -189,6 +371,20 @@ class MaintenanceServletAuthorizationTest {
         public MaintenanceRecordDTO getMaintenanceRecordById(
                 Long maintenanceId) {
             return record;
+        }
+
+        @Override
+        public MaintenanceFormHistoryContext getMaintenanceFormHistoryContext(
+                String customerName,
+                Date inspectionDate,
+                Long excludedMaintenanceId) {
+            return formContext;
+        }
+
+        @Override
+        public boolean addMaintenanceRecord(MaintenanceRecordDTO record) {
+            addCalled = true;
+            return true;
         }
 
         @Override
@@ -207,10 +403,26 @@ class MaintenanceServletAuthorizationTest {
     }
 
     private static final class StubCustomerDAO extends CustomerDAO {
+        private final CustomerDTO customer = customer();
+
         @Override
         public CustomerDTO getCustomerByName(String customerName) {
+            return "Acme".equals(customerName) ? customer : null;
+        }
+
+        @Override
+        public List<CustomerDTO> getAllCustomers(
+                String sortField, String sortDirection, String filter) {
+            return List.of(customer);
+        }
+
+        private static CustomerDTO customer() {
             CustomerDTO customer = new CustomerDTO();
-            customer.setCustomerName(customerName);
+            customer.setCustomerName("Acme");
+            customer.setManagerName("Alice");
+            customer.setSubManagerName("Bob");
+            customer.setVerticaVersion("23.4.0-13");
+            customer.setLicenseSize("25TB");
             return customer;
         }
     }

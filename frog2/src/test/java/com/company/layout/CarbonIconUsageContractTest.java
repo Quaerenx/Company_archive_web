@@ -75,7 +75,8 @@ class CarbonIconUsageContractTest {
         assertFalse(maintenanceHistory.contains(
                 ".maintenance-history .inspection-date i"));
         assertTrue(maintenanceHistory.contains(
-                ".maintenance-history .license-usage-icon"));
+                ".maintenance-history .history-detail-toggle__icon"));
+        assertTrue(maintenanceHistory.contains("color: currentColor;"));
     }
 
     private static String read(String relativePath) throws Exception {

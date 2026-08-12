@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.company.model.MaintenanceRecordDTO;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 class LicenseSummaryFormatterTest {
@@ -12,7 +13,7 @@ class LicenseSummaryFormatterTest {
         MaintenanceRecordDTO record = record("12TB", "3TB", "25%");
 
         assertEquals(
-                "12.00TB 중 3.00TB 총 25% 사용 중",
+                "12.00TB 중 3.00TB 총 25.0% 사용 중",
                 LicenseSummaryFormatter.format(record));
     }
 
@@ -21,7 +22,7 @@ class LicenseSummaryFormatterTest {
         MaintenanceRecordDTO record = record("2048 GB", "512GB", null);
 
         assertEquals(
-                "2.00TB 중 0.50TB 총 25% 사용 중",
+                "2.00TB 중 0.50TB 총 25.0% 사용 중",
                 LicenseSummaryFormatter.format(record));
         assertEquals(
                 "0.5",
@@ -40,8 +41,22 @@ class LicenseSummaryFormatterTest {
         MaintenanceRecordDTO record = record("2", "1", "50");
 
         assertEquals(
-                "2.00TB 중 1.00TB 총 50% 사용 중",
+                "2.00TB 중 1.00TB 총 50.0% 사용 중",
                 LicenseSummaryFormatter.format(record));
+    }
+
+    @Test
+    void exposesAStableOneDecimalPercentageForHistoryViews() {
+        MaintenanceRecordDTO record = record("25", "13.9", null);
+
+        assertEquals(
+                new BigDecimal("55.6"),
+                LicenseSummaryFormatter
+                        .resolveUsagePercentageOneDecimal(record));
+        assertEquals(
+                new BigDecimal("55.6"),
+                LicenseSummaryFormatter
+                        .resolveUsageProgressPercentageOneDecimal(record));
     }
 
     @Test

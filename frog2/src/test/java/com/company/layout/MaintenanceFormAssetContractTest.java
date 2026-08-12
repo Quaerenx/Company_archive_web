@@ -17,6 +17,8 @@ class MaintenanceFormAssetContractTest {
     void addAndEditPagesUseOneExplicitFormContract() throws Exception {
         String add = readWebapp("maintenance/maintenance_add.jsp");
         String edit = readWebapp("maintenance/maintenance_edit.jsp");
+        String fields = readWebapp(
+                "WEB-INF/includes/maintenance_form_fields.jspf");
 
         assertTrue(add.contains("/resources/js/pages/maintenance_form.js"));
         assertTrue(edit.contains("/resources/js/pages/maintenance_form.js"));
@@ -27,6 +29,40 @@ class MaintenanceFormAssetContractTest {
         assertTrue(edit.contains("id=\"deleteFormHeader\""));
         assertTrue(edit.contains("id=\"current_customer_value\""));
         assertTrue(edit.contains("id=\"current_inspector_value\""));
+        assertTrue(add.contains(
+                "WEB-INF/includes/maintenance_form_fields.jspf"));
+        assertTrue(edit.contains(
+                "WEB-INF/includes/maintenance_form_fields.jspf"));
+        assertTrue(fields.startsWith(
+                "<%@ page pageEncoding=\"UTF-8\" %>"));
+        assertTrue(fields.contains("name=\"customer_name\""));
+        assertTrue(fields.contains("id=\"customer_name_display\""));
+        assertEquals(1, countOccurrences(fields, "name=\"inspector_name\""));
+        assertTrue(fields.contains("id=\"applyPreviousMaintenanceDefaults\""));
+        assertTrue(fields.contains("id=\"duplicateMaintenanceWarning\""));
+        assertTrue(fields.contains("class=\"ui-input-with-suffix\""));
+        assertTrue(fields.contains("id=\"vertica_version_display\""));
+        assertTrue(fields.contains("id=\"vertica_version\""));
+        assertTrue(fields.contains("id=\"license_size_gb\""));
+        assertTrue(fields.contains("type=\"hidden\""));
+        assertTrue(fields.contains("id=\"license_size_gb_display\""));
+        assertEquals(4, countOccurrences(
+                fields, "maintenance-readonly-output"));
+        assertTrue(fields.indexOf("id=\"customer_name_display\"")
+                < fields.indexOf("id=\"vertica_version_display\""));
+        assertTrue(fields.indexOf("id=\"vertica_version_display\"")
+                < fields.indexOf("id=\"inspector_name\""));
+        assertTrue(fields.contains("고객사 정보에서 자동 적용"));
+        assertTrue(fields.contains("id=\"license_usage_pct_display\""));
+        assertTrue(fields.contains("id=\"insertMaintenanceNoteTemplate\""));
+        assertTrue(fields.contains("id=\"maintenanceInlineCalendar\""));
+        assertTrue(fields.contains("tabindex=\"-1\""));
+        assertTrue(fields.contains("id=\"maintenanceCalendarGrid\""));
+        assertTrue(fields.contains("role=\"grid\""));
+        assertTrue(fields.contains("id=\"maintenanceCalendarPreviousMonth\""));
+        assertTrue(fields.contains("id=\"maintenanceCalendarNextMonth\""));
+        assertTrue(fields.contains("id=\"maintenanceCalendarToday\""));
+        assertTrue(fields.contains("type=\"date\""));
     }
 
     @Test
@@ -36,20 +72,42 @@ class MaintenanceFormAssetContractTest {
         assertTrue(script.contains("(function()"));
         assertTrue(script.contains("getElementById('maintenanceForm')"));
         assertFalse(script.contains("querySelector('form')"));
-        assertEquals(1, countOccurrences(
-                script, "/customers?action=getCustomersForMaintenance"));
+        assertFalse(script.contains(
+                "/customers?action=getCustomersForMaintenance"));
+        assertTrue(script.contains("view: 'formContext'"));
         assertTrue(script.contains("if (!response.ok)"));
-        assertTrue(script.contains("function ensureOption("));
-        assertTrue(script.contains("current_customer_value"));
-        assertTrue(script.contains("current_inspector_value"));
-        assertTrue(script.contains("getFullYear()"));
-        assertTrue(script.contains("getMonth() + 1"));
-        assertTrue(script.contains("getDate()"));
         assertFalse(script.contains("toISOString()"));
-        assertTrue(script.contains("optionsUnavailable = true"));
-        assertTrue(script.contains("고객사 및 점검자 정보를 불러오지 못했습니다."));
-        assertFalse(script.contains("직접 입력"));
+        assertTrue(script.contains("calculateLicensePercentage"));
+        assertTrue(script.contains("toFixed(1)"));
+        assertTrue(script.contains("defaultLicenseSize"));
+        assertTrue(script.contains("setFixedVersion"));
+        assertTrue(script.contains("renderFixedVersion"));
+        assertTrue(script.contains("versionDisplay"));
+        assertFalse(script.contains("previousButton.dataset.version"));
+        assertFalse(script.contains("setFieldValue(versionField"));
+        assertTrue(script.contains("setFixedCapacity"));
+        assertTrue(script.contains("renderFixedCapacity"));
+        assertTrue(script.contains("licenseSizeDisplay"));
+        assertTrue(script.contains("applyPreviousDefaults"));
+        assertTrue(script.contains("duplicateMaintenanceWarning"));
+        assertTrue(script.contains("beforeunload"));
+        assertTrue(script.contains("insertNoteTemplate"));
+        assertTrue(script.contains("autoResizeNote"));
         assertTrue(script.contains("정말 삭제하시겠습니까?"));
+        assertTrue(script.contains("initializeInlineCalendar"));
+        assertTrue(script.contains("enableInlineCalendarMode"));
+        assertTrue(script.contains("inspectionDateField.type = 'hidden'"));
+        assertTrue(script.contains(
+                "root.classList.add('is-calendar-enhanced')"));
+        assertTrue(script.contains("focusCalendarForValidation"));
+        assertTrue(script.contains("parseCalendarDate("));
+        assertTrue(script.contains("renderInlineCalendar"));
+        assertTrue(script.contains("selectCalendarDate"));
+        assertTrue(script.contains("case 'ArrowLeft':"));
+        assertTrue(script.contains("case 'ArrowRight':"));
+        assertTrue(script.contains("case 'ArrowUp':"));
+        assertTrue(script.contains("case 'ArrowDown':"));
+        assertTrue(script.contains("aria-selected"));
     }
 
     @Test
@@ -62,6 +120,14 @@ class MaintenanceFormAssetContractTest {
     void historyScriptSkipsChartRenderingWhenVendorIsUnavailable() throws Exception {
         String history = Files.readString(PAGE_SCRIPTS.resolve("maintenance_history.js"));
 
+        assertTrue(history.contains("function initializeHistoryDisclosures()"));
+        assertTrue(history.indexOf("initializeHistoryDisclosures();")
+                < history.indexOf("if (!usageSeries || usageSeries.length === 0) return;"));
+        assertTrue(history.contains("closest('[data-history-toggle]')"));
+        assertTrue(history.contains("getAttribute('aria-controls')"));
+        assertTrue(history.contains("detail.hidden = expanded"));
+        assertTrue(history.contains(
+                "toggle.setAttribute('aria-expanded', String(!expanded))"));
         assertTrue(history.contains("typeof window.Chart !== 'function'"));
         assertTrue(history.contains("new window.Chart("));
         assertTrue(history.contains("usage: cssColor('--color-chart-usage')"));
@@ -85,7 +151,8 @@ class MaintenanceFormAssetContractTest {
     }
 
     @Test
-    void historyRecordsUseAccessibleTwoRowComparisonGroups() throws Exception {
+    void historyRecordsUseCompactRowsWithIndependentAccessibleDetails()
+            throws Exception {
         String page = readWebapp("maintenance/maintenance_history.jsp");
         int tableStart = page.indexOf(
                 "<table class=\"history-comparison-table\"");
@@ -98,25 +165,44 @@ class MaintenanceFormAssetContractTest {
                 "<caption class=\"sr-only\">"));
         assertEquals(7, countOccurrences(
                 comparisonTable, "<th scope=\"col\""));
-        assertTrue(comparisonTable.contains("점검월"));
+        assertTrue(comparisonTable.contains("점검일"));
         assertTrue(comparisonTable.contains("이전 대비"));
         assertTrue(comparisonTable.contains(
                 "<c:forEach var=\"row\" items=\"${historyRows}\">"));
         assertTrue(comparisonTable.contains(
                 "<tbody class=\"history-record-group\">"));
         assertTrue(comparisonTable.contains(
-                "scope=\"rowgroup\" rowspan=\"2\""));
+                "<tr class=\"history-summary-row\">"));
         assertTrue(comparisonTable.contains(
-                "<tr class=\"history-metric-row\">"));
+                "scope=\"row\""));
         assertTrue(comparisonTable.contains(
-                "<tr class=\"history-note-row\">"));
+                "pattern=\"yyyy.MM.dd\""));
         assertTrue(comparisonTable.contains(
-                "<td class=\"history-note-cell\" colspan=\"6\">"));
+                "<c:out value=\"${row.noteSummary}\" />"));
         assertTrue(comparisonTable.contains(
-                "<div class=\"history-note-layout\">"));
+                "data-history-toggle"));
+        assertTrue(comparisonTable.contains("type=\"button\""));
+        assertTrue(comparisonTable.contains("aria-expanded=\"false\""));
+        assertTrue(comparisonTable.contains(
+                "aria-controls=\"${row.detailId}\""));
+        assertTrue(comparisonTable.contains(
+                "<tr id=\"${row.detailId}\" class=\"history-detail-row\" hidden>"));
+        assertTrue(comparisonTable.contains(
+                "<td class=\"history-detail-cell\" colspan=\"7\">"));
+        assertTrue(comparisonTable.contains(
+                "class=\"history-detail-metrics\""));
+        assertTrue(comparisonTable.contains(
+                "class=\"history-detail-note\""));
+        assertTrue(comparisonTable.contains(
+                "<div class=\"history-detail-note\"><c:choose>"));
+        assertTrue(comparisonTable.contains(
+                "</c:choose></div>"));
         assertTrue(comparisonTable.contains(
                 "<c:out value=\"${row.record.note}\" />"));
-        assertTrue(comparisonTable.contains("기록 없음"));
+        assertTrue(comparisonTable.contains("특이사항 없음"));
+        assertTrue(comparisonTable.contains("수정 일시"));
+        assertFalse(comparisonTable.contains("rowspan=\"2\""));
+        assertFalse(comparisonTable.contains("history-note-row"));
         assertTrue(page.contains("class=\"history-table-scroll\""));
         assertTrue(page.contains("tabindex=\"0\""));
         assertTrue(page.contains("class=\"history-scroll-hint\""));
@@ -124,33 +210,95 @@ class MaintenanceFormAssetContractTest {
     }
 
     @Test
-    void historyLicenseUsageUsesCompactTextWithADecorativeProgressRing()
+    void expandedHistoryUsesFullWidthSummaryAndReadableNoteMetadataSplit()
+            throws Exception {
+        String page = readWebapp("maintenance/maintenance_history.jsp");
+
+        int detailStart = page.indexOf(
+                "<div class=\"history-detail-content\">");
+        int detailEnd = page.indexOf("</td>", detailStart);
+        assertTrue(detailStart >= 0);
+        assertTrue(detailEnd > detailStart);
+        String detail = page.substring(detailStart, detailEnd);
+
+        int summary = detail.indexOf(
+                "history-detail-summary");
+        int lower = detail.indexOf(
+                "class=\"history-detail-lower\"");
+        int note = detail.indexOf(
+                "history-detail-note-section");
+        int metadata = detail.indexOf(
+                "history-detail-meta-section");
+        assertTrue(summary >= 0);
+        assertTrue(lower > summary);
+        assertTrue(note > lower);
+        assertTrue(metadata > note);
+        assertTrue(detail.contains(
+                "class=\"history-detail-metrics\""));
+        assertTrue(detail.contains("class=\"history-detail-meta\""));
+    }
+
+    @Test
+    void expandedHistoryLayoutKeepsMetricsDenseAndMetadataAligned()
+            throws Exception {
+        String styles = Files.readString(
+                PAGE_STYLES.resolve("maintenance_history.css"));
+
+        assertTrue(styles.contains(
+                "grid-template-columns: repeat(4, minmax(0, 1fr));"));
+        assertTrue(styles.contains(
+                "grid-template-columns: minmax(0, 7fr) minmax(220px, 3fr);"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-detail-meta > div"));
+        assertTrue(styles.contains(
+                "grid-template-columns: 72px minmax(0, 1fr);"));
+        assertTrue(styles.contains("white-space: nowrap;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-detail-lower"));
+    }
+
+    @Test
+    void historyLicenseUsageCombinesCapacityProgressAndAccessibleText()
             throws Exception {
         String page = readWebapp("maintenance/maintenance_history.jsp");
         String styles = Files.readString(
                 PAGE_STYLES.resolve("maintenance_history.css"));
 
-        assertTrue(page.contains("class=\"history-usage-value\""));
+        assertTrue(page.contains("class=\"history-license-cell\""));
+        assertTrue(page.contains("class=\"history-license-values\""));
         assertTrue(page.contains(
                 "test=\"${not empty row.usagePercentage}\""));
         assertTrue(page.contains(
-                "class=\"license-usage-icon\" aria-hidden=\"true\""));
-        assertTrue(page.contains("focusable=\"false\""));
-        assertTrue(page.contains("pathLength=\"100\""));
-        assertTrue(page.contains("license-usage-icon__track"));
-        assertTrue(page.contains("license-usage-icon__value"));
+                "class=\"history-license-progress history-license-progress--${row.usageTone}\""));
+        assertTrue(page.contains("max=\"100\""));
+        assertTrue(page.contains("value=\"${row.usageProgressPercentage}\""));
+        assertTrue(page.contains(
+                "aria-label=\"라이선스 사용률 ${row.usagePercentage}%, ${row.usageStatusLabel}\""));
+        assertTrue(page.contains(
+                "history-license-percent--${row.usageTone}"));
+        assertTrue(page.contains("${row.usageStatusLabel}"));
         assertTrue(page.contains("${row.usageProgressPercentage}"));
         assertTrue(page.contains("${row.usagePercentage}"));
         assertTrue(page.contains("${row.usedTerabytes}"));
         assertTrue(page.contains("${row.capacityTerabytes}"));
         assertTrue(page.contains("${row.deltaLabel}"));
-        assertTrue(page.contains("history-delta--${row.deltaTone}"));
+        assertTrue(page.contains("class=\"history-delta\""));
+        assertFalse(page.contains("history-delta--${row.deltaTone}"));
 
         assertTrue(styles.contains(
-                ".maintenance-history .license-usage-icon"));
-        assertTrue(styles.contains("inline-size: 14px;"));
-        assertTrue(styles.contains("block-size: 14px;"));
-        assertTrue(styles.contains("var(--color-chart-usage)"));
+                ".maintenance-history .history-license-progress"));
+        assertTrue(styles.contains("progress::-webkit-progress-value"));
+        assertTrue(styles.contains("progress::-moz-progress-bar"));
+        assertTrue(styles.contains(
+                ".history-license-progress--warning"));
+        assertTrue(styles.contains(
+                ".history-license-progress--risk"));
+        assertTrue(styles.contains(
+                ".history-license-percent--normal"));
+        assertTrue(styles.contains(
+                ".history-license-percent--warning"));
+        assertTrue(styles.contains(
+                ".history-license-percent--risk"));
     }
 
     @Test
@@ -164,15 +312,31 @@ class MaintenanceFormAssetContractTest {
         assertTrue(styles.contains("overflow-x: auto;"));
         assertTrue(styles.contains(
                 ".maintenance-history .history-comparison-table"));
-        assertTrue(styles.contains("min-width: 760px;"));
+        assertTrue(styles.contains("min-width: 880px;"));
         assertTrue(styles.contains(
                 ".maintenance-history .history-record-group"));
         assertTrue(styles.contains(
-                ".maintenance-history .history-note-cell"));
+                ".maintenance-history .history-summary-row"));
         assertTrue(styles.contains(
-                ".maintenance-history .history-note-layout"));
+                "block-size: 60px;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-detail-cell"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-detail-note"));
         assertTrue(styles.contains("white-space: pre-wrap;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-detail-note-section"));
+        assertTrue(styles.contains("align-items: stretch;"));
+        assertTrue(styles.contains("flex: 1 1 auto;"));
+        assertTrue(styles.contains("min-block-size: 112px;"));
+        assertTrue(styles.contains(
+                "padding: var(--space-12) var(--space-16);"));
+        assertFalse(styles.contains("min-block-size: 72px;"));
         assertTrue(styles.contains("font-variant-numeric: tabular-nums;"));
+        assertTrue(styles.contains("@media (max-width: 1024px)"));
+        assertTrue(styles.contains(".history-col-note"));
+        assertTrue(styles.contains("@media (max-width: 768px)"));
+        assertTrue(styles.contains(".history-col-inspector"));
         assertFalse(styles.contains(".maintenance-history .history-item"));
         assertFalse(styles.contains("!important"));
     }

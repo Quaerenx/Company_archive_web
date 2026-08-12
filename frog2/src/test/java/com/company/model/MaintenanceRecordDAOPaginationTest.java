@@ -76,6 +76,76 @@ class MaintenanceRecordDAOPaginationTest {
     }
 
     @Test
+    void filteredCustomerHistoryUsesTheSameBoundPredicateForPageAndCount() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 21L,
+                "customer_name", "Acme",
+                "inspector_name", "Tester",
+                "inspection_date", Date.valueOf("2026-02-10"),
+                "vertica_version", "12_1",
+                "note", "disk% checked",
+                "created_at", null,
+                "updated_at", null,
+                "total_count", 21));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+        MaintenanceHistoryFilter filter =
+                MaintenanceHistoryFilter.parse(
+                        "2026", "12_", "disk%");
+
+        PageResult<MaintenanceRecordDTO> result =
+                dao.getMaintenanceRecordsByCustomer(
+                        "Acme", 999, 20, filter);
+
+        assertEquals(3, jdbc.statements.size());
+        String pageSql = jdbc.statements.get(0).sql;
+        String countSql = jdbc.statements.get(1).sql;
+        assertTrue(pageSql.contains("inspection_date >= ?"));
+        assertTrue(pageSql.contains("inspection_date < ?"));
+        assertTrue(pageSql.contains(
+                "vertica_version ILIKE ? ESCAPE '!'"));
+        assertTrue(pageSql.contains("inspector_name ILIKE ? ESCAPE '!'"));
+        assertTrue(pageSql.contains("SUBSTR(note,1,65000)"));
+        assertTrue(countSql.contains("inspection_date >= ?"));
+        assertTrue(countSql.contains(
+                "vertica_version ILIKE ? ESCAPE '!'"));
+        assertTrue(countSql.contains("SUBSTR(note,1,65000)"));
+        assertFalse(pageSql.contains("disk%"));
+        assertFalse(countSql.contains("disk%"));
+
+        PaginationJdbcFixture.StatementRecord first =
+                jdbc.statements.get(0);
+        assertEquals("Acme", first.parameters.get(1));
+        assertEquals(Date.valueOf("2026-01-01"),
+                first.parameters.get(2));
+        assertEquals(Date.valueOf("2027-01-01"),
+                first.parameters.get(3));
+        assertEquals("%12!_%", first.parameters.get(4));
+        assertEquals("%disk!%%", first.parameters.get(5));
+        assertEquals("%disk!%%", first.parameters.get(6));
+        assertEquals("%disk!%%", first.parameters.get(7));
+        assertEquals(20, first.parameters.get(8));
+        assertEquals(19_960, first.parameters.get(9));
+
+        PaginationJdbcFixture.StatementRecord count =
+                jdbc.statements.get(1);
+        assertEquals(first.parameters.get(1), count.parameters.get(1));
+        assertEquals(first.parameters.get(2), count.parameters.get(2));
+        assertEquals(first.parameters.get(3), count.parameters.get(3));
+        assertEquals(first.parameters.get(4), count.parameters.get(4));
+        assertEquals(first.parameters.get(5), count.parameters.get(5));
+        assertEquals(first.parameters.get(6), count.parameters.get(6));
+        assertEquals(first.parameters.get(7), count.parameters.get(7));
+
+        assertEquals(2, result.page());
+        assertEquals(21, result.totalCount());
+        assertEquals(20, jdbc.statements.get(2).parameters.get(9));
+    }
+
+    @Test
     void ownerHistoryFailsClosedWhenStableOwnershipColumnIsMissing() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
@@ -155,5 +225,51 @@ class MaintenanceRecordDAOPaginationTest {
                 jdbc.statements.getFirst();
         assertTrue(statement.sql.contains("created_by_user_id"));
         assertEquals("owner-1", statement.parameters.get(3));
+    }
+
+    @Test
+    void formContextLoadsPreviousMonthAndSameMonthDuplicateInOneConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 7L,
+                "customer_name", "Acme",
+                "inspector_name", "Alice",
+                "inspection_date", Date.valueOf("2026-07-20"),
+                "vertica_version", "23.4",
+                "note", null,
+                "created_at", null,
+                "updated_at", null));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 8L,
+                "customer_name", "Acme",
+                "inspector_name", "Alice",
+                "inspection_date", Date.valueOf("2026-08-03"),
+                "vertica_version", "23.4",
+                "note", null,
+                "created_at", null,
+                "updated_at", null));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        MaintenanceFormHistoryContext context =
+                dao.getMaintenanceFormHistoryContext(
+                        "Acme", Date.valueOf("2026-08-12"), 99L);
+
+        assertEquals(7L, context.previousRecord().getMaintenanceId());
+        assertEquals(8L, context.duplicateRecord().getMaintenanceId());
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+        assertEquals(2, jdbc.statements.size());
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "inspection_date < ?"));
+        assertEquals(Date.valueOf("2026-08-01"),
+                jdbc.statements.get(0).parameters.get(2));
+        assertTrue(jdbc.statements.get(1).sql.contains(
+                "inspection_date >= ? AND inspection_date < ?"));
+        assertEquals(Date.valueOf("2026-08-01"),
+                jdbc.statements.get(1).parameters.get(2));
+        assertEquals(Date.valueOf("2026-09-01"),
+                jdbc.statements.get(1).parameters.get(3));
+        assertEquals(99L, jdbc.statements.get(1).parameters.get(4));
     }
 }

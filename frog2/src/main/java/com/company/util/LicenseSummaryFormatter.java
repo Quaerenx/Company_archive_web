@@ -25,7 +25,9 @@ public final class LicenseSummaryFormatter {
 
         String size = sizeTb == null ? "-" : formatLegacyTerabytes(sizeTb);
         String usage = usageTb == null ? "-" : formatLegacyTerabytes(usageTb);
-        String pct = percentage == null ? "-" : Math.round(percentage) + "%";
+        String pct = percentage == null
+                ? "-"
+                : formatPercentageOneDecimal(percentage) + "%";
         return size + " 중 " + usage + " 총 " + pct + " 사용 중";
     }
 
@@ -68,6 +70,26 @@ public final class LicenseSummaryFormatter {
             return null;
         }
         return Math.max(0, Math.min(100, percentage));
+    }
+
+    public static BigDecimal resolveUsagePercentageOneDecimal(
+            MaintenanceRecordDTO record) {
+        Double percentage = resolveUsagePercentage(record);
+        return percentage == null
+                ? null
+                : BigDecimal.valueOf(percentage)
+                        .setScale(1, RoundingMode.HALF_UP);
+    }
+
+    public static BigDecimal resolveUsageProgressPercentageOneDecimal(
+            MaintenanceRecordDTO record) {
+        BigDecimal percentage = resolveUsagePercentageOneDecimal(record);
+        if (percentage == null) {
+            return null;
+        }
+        return percentage.max(BigDecimal.ZERO)
+                .min(new BigDecimal("100.0"))
+                .setScale(1, RoundingMode.HALF_UP);
     }
 
     public static Double resolveUsagePercentage(MaintenanceRecordDTO record) {
@@ -124,6 +146,12 @@ public final class LicenseSummaryFormatter {
 
     private static String formatLegacyTerabytes(double value) {
         return String.format(Locale.US, "%.2fTB", value);
+    }
+
+    private static String formatPercentageOneDecimal(double value) {
+        return BigDecimal.valueOf(value)
+                .setScale(1, RoundingMode.HALF_UP)
+                .toPlainString();
     }
 
     private static String formatTerabytes(double value) {

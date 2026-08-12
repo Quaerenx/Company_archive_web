@@ -1,395 +1,501 @@
 .maintenance-history {
-        min-width: 0;
-    }
-
-    .maintenance-history .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--space-16);
-    }
-
-    .maintenance-history .customer-info {
-        flex: 1;
-    }
-
-    .maintenance-history .customer-name {
-        font-size: var(--font-size-2xl);
-        font-weight: 600;
-        color: var(--color-text-strong);
-        margin-bottom: var(--space-8);
-        display: flex;
-        align-items: center;
-        gap: var(--space-12);
-    }
-
-    .maintenance-history .customer-name i {
-        color: currentColor;
-        font-size: var(--icon-size-lg);
-    }
-
-    .maintenance-history .customer-details {
-        display: flex;
-        gap: var(--space-32);
-        flex-wrap: wrap;
-        color: var(--color-text-muted);
-        font-size: var(--font-size-md);
-    }
-
-    .maintenance-history .detail-item {
-        display: flex;
-        align-items: center;
-        gap: var(--space-8);
-    }
-
-    /* detail-item 아래의 불필요한 선을 제거합니다. */
-	.maintenance-history .detail-item {
-		    border-bottom: none;
-	}
-
-    .maintenance-history .detail-item i {
-        color: currentColor;
-        width: 16px;
-    }
-
-    .maintenance-history .action-buttons { display: flex; gap: var(--space-8); flex-wrap: wrap; }
-
-    /* 정기점검 이력 카드 */
-    .maintenance-history .history-container {
-        background: var(--color-surface);
-        border-radius: var(--radius-lg);
-        box-shadow: none;
-        border: 1px solid var(--color-border);
-        overflow: hidden;
-    }
-
-    .maintenance-history .history-header {
-        background: var(--color-surface-subtle);
-        padding: var(--space-16) var(--space-20);
-        border-bottom: 1px solid var(--color-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .maintenance-history .history-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: var(--space-8);
-    }
-
-    .maintenance-history .record-count {
-        color: var(--color-text-muted);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-    }
-
-    .maintenance-history .history-scroll-hint {
-        color: var(--color-text-muted);
-        display: none;
-        font-size: var(--font-size-xs);
-        margin: 0;
-        padding: var(--space-8) var(--space-16) 0;
-    }
-
-    .maintenance-history .history-table-scroll {
-        max-width: 100%;
-        min-width: 0;
-        overflow-x: auto;
-        overscroll-behavior-inline: contain;
-    }
-
-    .maintenance-history .history-table-scroll:focus-visible {
-        box-shadow: inset 0 0 0 2px var(--color-focus);
-        outline: 2px solid var(--color-focus);
-        outline-offset: -2px;
-    }
-
-    .maintenance-history .history-comparison-table {
-        border-collapse: separate;
-        border-spacing: 0;
-        color: var(--color-text);
-        font-size: var(--font-size-sm);
-        min-width: 760px;
-        table-layout: fixed;
-        width: 100%;
-    }
-
-    .maintenance-history .history-comparison-table thead th {
-        background: var(--color-surface-subtle);
-        border-bottom: 1px solid var(--color-border-strong);
-        color: var(--color-text-muted);
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        padding: var(--space-8) var(--space-12);
-        text-align: left;
-        white-space: nowrap;
-    }
-
-    .maintenance-history .history-comparison-table thead th:nth-child(1) {
-        width: 112px;
-    }
-
-    .maintenance-history .history-comparison-table thead th:nth-child(2) {
-        width: 108px;
-    }
-
-    .maintenance-history .history-comparison-table thead th:nth-child(3),
-    .maintenance-history .history-comparison-table thead th:nth-child(4),
-    .maintenance-history .history-comparison-table thead th:nth-child(5),
-    .maintenance-history .history-comparison-table thead th:nth-child(6) {
-        width: 104px;
-    }
-
-    .maintenance-history .history-comparison-table thead th:nth-child(7) {
-        width: 124px;
-    }
-
-    .maintenance-history .history-numeric-column {
-        text-align: right;
-    }
-
-    .maintenance-history .history-record-group {
-        background: var(--color-surface);
-    }
-
-    .maintenance-history .history-record-group .history-metric-row > td {
-        border-bottom: 1px solid var(--color-border);
-    }
-
-    .maintenance-history .history-record-group .history-month-cell,
-    .maintenance-history .history-record-group .history-note-cell {
-        border-bottom: 1px solid var(--color-border-strong);
-    }
-
-    .maintenance-history .history-metric-row > th,
-    .maintenance-history .history-metric-row > td {
-        padding: var(--space-12);
-        vertical-align: middle;
-    }
-
-    .maintenance-history .history-month-cell {
-        background: var(--color-surface);
-        font-weight: 400;
-        text-align: left;
-        vertical-align: top;
-    }
-
-    .maintenance-history .history-date-link {
-        align-items: flex-start;
-        color: var(--color-text);
-        display: inline-flex;
-        flex-direction: column;
-        gap: var(--space-2);
-        justify-content: center;
-        min-block-size: var(--control-height-md);
-        text-decoration: none;
-    }
-
-    .maintenance-history .history-date-link:hover .history-month {
-        text-decoration: underline;
-        text-underline-offset: 3px;
-    }
-
-    .maintenance-history .history-date-link:focus-visible {
-        border-radius: var(--radius-sm);
-        box-shadow: 0 0 0 3px var(--color-focus-ring);
-        outline: 2px solid var(--color-focus);
-        outline-offset: 2px;
-    }
-
-    .maintenance-history .history-month {
-        font-size: var(--font-size-sm);
-        font-variant-numeric: tabular-nums;
-        font-weight: 600;
-    }
-
-    .maintenance-history .history-exact-date {
-        color: var(--color-text-muted);
-        font-size: var(--font-size-xs);
-        font-variant-numeric: tabular-nums;
-        font-weight: 400;
-    }
-
-    .maintenance-history .version-tag {
-        background: var(--color-surface-muted);
-        border: 1px solid var(--color-border);
-        color: var(--color-text-muted);
-        padding: var(--space-2) var(--space-8);
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-xs);
-        font-weight: 500;
-    }
-
-    .maintenance-history .history-number-cell {
-        color: var(--color-text);
-        font-variant-numeric: tabular-nums;
-        text-align: right;
-        white-space: nowrap;
-    }
-
-    .maintenance-history .history-number {
-        font-weight: 600;
-    }
-
-    .maintenance-history .history-unit {
-        color: var(--color-text-muted);
-        font-size: var(--font-size-xs);
-        margin-left: var(--space-2);
-    }
-
-    .maintenance-history .history-usage-value {
-        align-items: center;
-        display: inline-flex;
-        font-variant-numeric: tabular-nums;
-        gap: var(--space-4);
-        justify-content: flex-end;
-    }
-
-    .maintenance-history .license-usage-icon {
-        block-size: 14px;
-        color: var(--color-chart-usage);
-        display: inline-flex;
-        flex: 0 0 14px;
-        inline-size: 14px;
-    }
-
-    .maintenance-history .license-usage-icon svg {
-        block-size: 100%;
-        display: block;
-        inline-size: 100%;
-    }
-
-    .maintenance-history .license-usage-icon__track {
-        stroke: var(--color-border-strong);
-    }
-
-    .maintenance-history .license-usage-icon__value {
-        stroke: var(--color-chart-usage);
-    }
-
-    .maintenance-history .history-delta {
-        font-variant-numeric: tabular-nums;
-        font-weight: 600;
-    }
-
-    .maintenance-history .history-delta--up {
-        color: var(--color-danger);
-    }
-
-    .maintenance-history .history-delta--down {
-        color: var(--color-success);
-    }
-
-    .maintenance-history .history-delta--flat,
-    .maintenance-history .history-delta--unavailable {
-        color: var(--color-text-muted);
-    }
-
-    .maintenance-history .history-inspector-cell {
-        min-width: 0;
-    }
-
-    .maintenance-history .inspector-name {
-        color: var(--color-text);
-        font-weight: 500;
-        overflow-wrap: anywhere;
-    }
-
-    .maintenance-history .history-note-cell {
-        background: var(--color-surface-subtle);
-        padding: var(--space-8) var(--space-12) var(--space-12);
-    }
-
-    .maintenance-history .history-note-layout {
-        align-items: baseline;
-        display: grid;
-        gap: var(--space-12);
-        grid-template-columns: 68px minmax(0, 1fr);
-    }
-
-    .maintenance-history .note-label {
-        color: var(--color-text-muted);
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-    }
-
-    .maintenance-history .note-content {
-        color: var(--color-text);
-        font-size: var(--font-size-sm);
-        line-height: 1.6;
-        overflow-wrap: anywhere;
-        white-space: pre-wrap;
-    }
-
-    .maintenance-history .empty-history {
-        text-align: center;
-        padding: var(--space-64) var(--space-32);
-        color: var(--color-text-muted);
-    }
-
-    .maintenance-history .empty-history i {
-        font-size: var(--illustration-icon-size-xl);
-        margin-bottom: var(--space-16);
-        opacity: 0.5;
-        color: var(--color-border-strong);
-    }
-
-    .maintenance-history .empty-history h3 {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text-muted);
-        margin-bottom: var(--space-8);
-    }
-
-    .maintenance-history .empty-history p {
-        margin-bottom: var(--space-24);
-    }
-
-    .maintenance-history .timestamp-info {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-muted);
-        font-variant-numeric: tabular-nums;
-        margin-top: var(--space-2);
-    }
-
-  /* 반응형 디자인 */
-    @media (max-width: 768px) {
-        .maintenance-history .header-content {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .maintenance-history .customer-name {
-            font-size: var(--font-size-xl);
-        }
-
-        .maintenance-history .customer-details {
-            flex-direction: column;
-            gap: var(--space-8);
-        }
-
-        .maintenance-history .action-buttons {
-            width: 100%;
-            justify-content: stretch;
-        }
-
-        .maintenance-history .empty-history .btn {
-            flex: 1;
-            justify-content: center;
-        }
-
-        .maintenance-history .history-scroll-hint {
-            display: block;
-        }
-    }
-
-    /* 차트 카드 여백 보정 */
-.maintenance-history .usage-chart-wrap { padding: var(--space-16) var(--space-20) var(--space-20); }
+    min-width: 0;
+}
+
+.maintenance-history .detail-item {
+    align-items: center;
+    border-bottom: 0;
+    display: flex;
+    gap: var(--space-8);
+}
+
+.maintenance-history .detail-item i {
+    color: currentColor;
+    width: 16px;
+}
+
+.maintenance-history .history-container {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.maintenance-history .history-chart-container {
+    margin-bottom: var(--space-16);
+}
+
+.maintenance-history .history-header {
+    align-items: center;
+    background: var(--color-surface-subtle);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-16) var(--space-20);
+}
+
+.maintenance-history .history-title {
+    align-items: center;
+    color: var(--color-text);
+    display: flex;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    gap: var(--space-8);
+}
+
+.maintenance-history .record-count {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+
+.maintenance-history .history-filter-form {
+    align-items: end;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: 116px 180px minmax(220px, 1fr) auto;
+    padding: var(--space-12) var(--space-20);
+}
+
+.maintenance-history .history-filter-field {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.maintenance-history .history-filter-field > span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.maintenance-history .history-filter-field input {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font: inherit;
+    min-block-size: var(--control-height-sm);
+    min-width: 0;
+    padding: var(--space-8) var(--space-12);
+    width: 100%;
+}
+
+.maintenance-history .history-filter-field input:focus-visible {
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.maintenance-history .history-filter-actions {
+    align-items: center;
+    display: flex;
+    gap: var(--space-8);
+}
+
+.maintenance-history .history-scroll-hint {
+    color: var(--color-text-muted);
+    display: none;
+    font-size: var(--font-size-xs);
+    margin: 0;
+    padding: var(--space-8) var(--space-16) 0;
+}
+
+.maintenance-history .history-table-scroll {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+}
+
+.maintenance-history .history-table-scroll:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--color-focus);
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+
+.maintenance-history .history-comparison-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    min-width: 880px;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.maintenance-history .history-comparison-table thead th {
+    background: var(--color-surface-subtle);
+    border-bottom: 1px solid var(--color-border-strong);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    padding: var(--space-8) var(--space-12);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.maintenance-history .history-comparison-table thead th:nth-child(1) {
+    width: 112px;
+}
+
+.maintenance-history .history-comparison-table thead th:nth-child(2) {
+    width: 104px;
+}
+
+.maintenance-history .history-comparison-table thead th:nth-child(3) {
+    width: 220px;
+}
+
+.maintenance-history .history-comparison-table thead th:nth-child(4) {
+    width: 100px;
+}
+
+.maintenance-history .history-comparison-table thead th:nth-child(5) {
+    width: 112px;
+}
+
+.maintenance-history .history-comparison-table thead th:nth-child(7) {
+    width: 60px;
+}
+
+.maintenance-history .history-record-group {
+    background: var(--color-surface);
+}
+
+.maintenance-history .history-summary-row {
+    block-size: 60px;
+}
+
+.maintenance-history .history-summary-row > th,
+.maintenance-history .history-summary-row > td {
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-8) var(--space-12);
+    vertical-align: middle;
+}
+
+.maintenance-history .history-summary-row:hover > th,
+.maintenance-history .history-summary-row:hover > td {
+    background: var(--color-surface-subtle);
+}
+
+.maintenance-history .history-date-cell {
+    font-weight: 600;
+    text-align: left;
+}
+
+.maintenance-history .history-date-link {
+    color: var(--color-text);
+    display: inline-flex;
+    font-variant-numeric: tabular-nums;
+    min-block-size: var(--control-height-sm);
+    text-decoration: none;
+    align-items: center;
+}
+
+.maintenance-history .history-date-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.maintenance-history .history-date-link:focus-visible,
+.maintenance-history .history-detail-toggle:focus-visible {
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.maintenance-history .version-tag {
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    padding: var(--space-2) var(--space-8);
+}
+
+.maintenance-history .history-license-cell {
+    font-variant-numeric: tabular-nums;
+}
+
+.maintenance-history .history-license-values {
+    align-items: center;
+    display: flex;
+    gap: var(--space-8);
+    justify-content: space-between;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.maintenance-history .history-license-values strong,
+.maintenance-history .history-license-percent {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.maintenance-history .history-license-status-label {
+    color: currentColor;
+    font-size: var(--font-size-xs);
+    margin-left: var(--space-4);
+}
+
+.maintenance-history .history-license-percent--normal {
+    color: var(--color-success-text);
+}
+
+.maintenance-history .history-license-percent--warning {
+    color: var(--color-warning-text);
+}
+
+.maintenance-history .history-license-percent--risk {
+    color: var(--color-danger-text);
+}
+
+.maintenance-history .history-license-progress {
+    appearance: none;
+    background: transparent;
+    block-size: 4px;
+    border: 0;
+    display: block;
+    inline-size: 100%;
+    margin-top: var(--space-4);
+}
+
+.maintenance-history .history-license-progress::-webkit-progress-bar {
+    background: var(--color-surface-muted);
+    border-radius: var(--radius-pill);
+}
+
+.maintenance-history .history-license-progress::-webkit-progress-value {
+    background: var(--color-success);
+    border-radius: var(--radius-pill);
+}
+
+.maintenance-history .history-license-progress::-moz-progress-bar {
+    background: var(--color-success);
+    border-radius: var(--radius-pill);
+}
+
+.maintenance-history .history-license-progress--warning::-webkit-progress-value {
+    background: var(--color-warning);
+}
+
+.maintenance-history .history-license-progress--warning::-moz-progress-bar {
+    background: var(--color-warning);
+}
+
+.maintenance-history .history-license-progress--risk::-webkit-progress-value {
+    background: var(--color-danger);
+}
+
+.maintenance-history .history-license-progress--risk::-moz-progress-bar {
+    background: var(--color-danger);
+}
+
+.maintenance-history .history-number-cell,
+.maintenance-history .history-delta {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.maintenance-history .history-inspector-cell {
+    color: var(--color-text);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.maintenance-history .history-note-summary-cell {
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.maintenance-history .history-detail-toggle-cell {
+    text-align: center;
+}
+
+.maintenance-history .history-detail-toggle {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    min-block-size: var(--control-height-md);
+    min-inline-size: var(--control-height-md);
+    padding: 0;
+}
+
+.maintenance-history .history-detail-toggle:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+.maintenance-history .history-detail-toggle__icon {
+    color: currentColor;
+    transition: transform 140ms ease;
+}
+
+.maintenance-history .history-detail-toggle[aria-expanded="true"]
+    .history-detail-toggle__icon {
+    transform: rotate(180deg);
+}
+
+.maintenance-history .history-detail-row[hidden] {
+    display: none;
+}
+
+.maintenance-history .history-detail-cell {
+    background: var(--color-surface-subtle);
+    border-bottom: 1px solid var(--color-border-strong);
+    padding: var(--space-16) var(--space-20) var(--space-20);
+}
+
+.maintenance-history .history-detail-content {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.maintenance-history .history-detail-section {
+    min-width: 0;
+}
+
+.maintenance-history .history-detail-section h3 {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    margin: 0 0 var(--space-8);
+}
+
+.maintenance-history .history-detail-summary {
+    align-items: start;
+    border-bottom: 1px solid var(--color-border);
+    display: grid;
+    gap: var(--space-16);
+    grid-template-columns: 112px minmax(0, 1fr);
+    padding-bottom: var(--space-16);
+}
+
+.maintenance-history .history-detail-summary h3 {
+    margin: var(--space-2) 0 0;
+}
+
+.maintenance-history .history-detail-metrics {
+    display: grid;
+    gap: var(--space-16);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+}
+
+.maintenance-history .history-detail-metrics > div {
+    min-width: 0;
+}
+
+.maintenance-history .history-detail-metrics dt,
+.maintenance-history .history-detail-meta dt {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.maintenance-history .history-detail-metrics dd,
+.maintenance-history .history-detail-meta dd {
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+    margin: var(--space-2) 0 0;
+    overflow-wrap: anywhere;
+}
+
+.maintenance-history .history-detail-lower {
+    align-items: stretch;
+    display: grid;
+    gap: var(--space-24);
+    grid-template-columns: minmax(0, 7fr) minmax(220px, 3fr);
+}
+
+.maintenance-history .history-detail-note-section {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.maintenance-history .history-detail-note {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    flex: 1 1 auto;
+    line-height: 1.6;
+    min-block-size: 112px;
+    overflow-wrap: anywhere;
+    padding: var(--space-12) var(--space-16);
+    white-space: pre-wrap;
+}
+
+.maintenance-history .history-detail-meta-section {
+    border-left: 1px solid var(--color-border);
+    padding-left: var(--space-24);
+}
+
+.maintenance-history .history-detail-meta {
+    display: grid;
+    gap: var(--space-8);
+    margin: 0;
+}
+
+.maintenance-history .history-detail-meta > div {
+    align-items: baseline;
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: 72px minmax(0, 1fr);
+    min-width: 0;
+}
+
+.maintenance-history .history-detail-meta dd {
+    white-space: nowrap;
+}
+
+.maintenance-history .history-detail-meta-section .ui-button {
+    margin-top: var(--space-12);
+}
+
+.maintenance-history .empty-history {
+    color: var(--color-text-muted);
+    padding: var(--space-64) var(--space-32);
+    text-align: center;
+}
+
+.maintenance-history .empty-history i {
+    color: var(--color-border-strong);
+    font-size: var(--illustration-icon-size-xl);
+    margin-bottom: var(--space-16);
+    opacity: 0.5;
+}
+
+.maintenance-history .empty-history h3 {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-8);
+}
+
+.maintenance-history .empty-history p {
+    margin-bottom: var(--space-24);
+}
+
+.maintenance-history .usage-chart-wrap {
+    padding: var(--space-16) var(--space-20) var(--space-20);
+}
+
 .maintenance-history .chart-summary {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
@@ -429,11 +535,86 @@
     padding: var(--space-12);
     text-align: left;
 }
-.maintenance-history .chart-note { color: var(--color-text-muted); font-size: var(--font-size-xs); margin: var(--space-4) 0 var(--space-8); }
-.maintenance-history .history-chart-container {
-    margin-bottom: var(--space-16);
+
+.maintenance-history .chart-note {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    margin: var(--space-4) 0 var(--space-8);
 }
 
 .maintenance-history .usage-chart-empty {
     padding: var(--space-32) var(--space-16);
+}
+
+@media (max-width: 1024px) {
+    .maintenance-history .history-filter-form {
+        grid-template-columns: 116px minmax(160px, 0.6fr) minmax(220px, 1fr);
+    }
+
+    .maintenance-history .history-filter-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+    }
+
+    .maintenance-history .history-col-note {
+        display: none;
+    }
+
+    .maintenance-history .history-comparison-table {
+        min-width: 720px;
+    }
+
+    .maintenance-history .history-detail-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .maintenance-history .history-filter-form {
+        grid-template-columns: 1fr;
+        padding-inline: var(--space-16);
+    }
+
+    .maintenance-history .history-filter-actions {
+        grid-column: auto;
+        justify-content: flex-start;
+    }
+
+    .maintenance-history .history-col-inspector {
+        display: none;
+    }
+
+    .maintenance-history .history-comparison-table {
+        min-width: 600px;
+    }
+
+    .maintenance-history .history-scroll-hint {
+        display: block;
+    }
+
+    .maintenance-history .history-detail-summary,
+    .maintenance-history .history-detail-lower {
+        grid-template-columns: 1fr;
+    }
+
+    .maintenance-history .history-detail-summary {
+        gap: var(--space-8);
+    }
+
+    .maintenance-history .history-detail-summary h3 {
+        margin: 0;
+    }
+
+    .maintenance-history .history-detail-meta-section {
+        border-left: 0;
+        border-top: 1px solid var(--color-border);
+        padding-left: 0;
+        padding-top: var(--space-16);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .maintenance-history .history-detail-toggle__icon {
+        transition: none;
+    }
 }

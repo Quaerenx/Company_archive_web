@@ -44,7 +44,9 @@ class CustomerPaginationViewContractTest {
         assertTrue(page.contains("class=\"table-container customer-list-panel\""));
         assertTrue(page.contains("<t:pageHeader>"));
         assertTrue(page.contains("고객사 정보"));
-        assertFalse(page.contains("<jsp:attribute name=\"subtitle\">"));
+        assertTrue(page.contains("<jsp:attribute name=\"subtitle\">"));
+        assertTrue(page.contains(
+                "고객사별 시스템 환경과 담당 정보를 확인하고 관리합니다."));
         assertFalse(page.contains("전체 고객사 <strong>"));
         assertFalse(styles.contains(".customer-management > .page-header"));
         assertTrue(page.contains("class=\"customer-list-toolbar\""));

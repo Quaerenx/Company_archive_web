@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import com.company.util.LicenseRiskPolicy;
 import com.company.util.LicenseSummaryFormatter;
 import java.io.IOException;
 import java.sql.Date;
@@ -125,7 +126,8 @@ public class DashboardServlet extends HttpServlet {
             }
 
             Double usagePct = LicenseSummaryFormatter.resolveUsagePercentage(record);
-            boolean licenseRisk = usagePct != null && usagePct >= 90.0;
+            boolean licenseRisk =
+                    LicenseRiskPolicy.requiresAttention(usagePct);
             String statusCode = "done";
             String statusLabel = "완료";
             if (inspectionDate != null && inspectionDate.isAfter(today)) {

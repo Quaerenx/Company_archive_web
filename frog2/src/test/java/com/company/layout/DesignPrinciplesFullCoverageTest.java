@@ -132,8 +132,8 @@ class DesignPrinciplesFullCoverageTest {
         assertTrue(uiScript.contains("function setButtonLoading"));
         assertTrue(uiScript.contains("function showFieldError"));
         assertTrue(uiScript.contains("aria-busy"));
-        assertTrue(maintenanceScript.contains("retryMaintenanceOptions"));
-        assertTrue(maintenanceScript.contains("showOptionsStatus"));
+        assertTrue(maintenanceScript.contains("retryMaintenanceContext"));
+        assertTrue(maintenanceScript.contains("showContextStatus"));
 
         int nativeConfirmCalls = 0;
         try (var paths = Files.walk(WEBAPP.resolve("resources/js"))) {

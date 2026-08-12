@@ -1,6 +1,28 @@
 'use strict';
 
 (function() {
+    function initializeHistoryDisclosures() {
+        document.addEventListener('click', function(event) {
+            if (!(event.target instanceof Element)) return;
+            const toggle = event.target.closest('[data-history-toggle]');
+            if (!toggle) return;
+
+            const detailId = toggle.getAttribute('aria-controls');
+            const detail = detailId ? document.getElementById(detailId) : null;
+            if (!detail) return;
+
+            const expanded = toggle.getAttribute('aria-expanded') === 'true';
+            toggle.setAttribute('aria-expanded', String(!expanded));
+            detail.hidden = expanded;
+            const nextLabel = expanded
+                ? toggle.dataset.expandLabel
+                : toggle.dataset.collapseLabel;
+            if (nextLabel) toggle.setAttribute('aria-label', nextLabel);
+        });
+    }
+
+    initializeHistoryDisclosures();
+
     const usageSeries = Array.from(document.querySelectorAll('[data-usage-point]'))
         .map(function(point) {
             return {
@@ -158,7 +180,7 @@
                             if (y == null || !Number.isFinite(y)) return null;
                             const name = ctx.dataset && ctx.dataset.label ? ctx.dataset.label : '';
                             if (ctx.dataset && ctx.dataset.yAxisID === 'y') {
-                                return (name ? name + ': ' : '') + y.toFixed(0) + '%';
+                                return (name ? name + ': ' : '') + y.toFixed(1) + '%';
                             }
                             return (name ? name + ': ' : '') + y.toFixed(2) + ' TB';
                         }
