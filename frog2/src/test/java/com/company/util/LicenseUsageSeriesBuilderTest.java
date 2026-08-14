@@ -30,7 +30,8 @@ class LicenseUsageSeriesBuilderTest {
 
     @Test
     void preservesRowsWithPresentButUnparseableLicenseValues() {
-        MaintenanceRecordDTO record = record("2026-01-01", "", null, null);
+        MaintenanceRecordDTO record = record(
+                "2026-01-01", "54nodes", null, null);
 
         Map<String, Object> point = LicenseUsageSeriesBuilder.build(List.of(record)).get(0);
 

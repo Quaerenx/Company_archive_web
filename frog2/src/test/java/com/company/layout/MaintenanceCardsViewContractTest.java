@@ -17,9 +17,13 @@ class MaintenanceCardsViewContractTest {
         String styles = Files.readString(
                 WEBAPP.resolve("resources/css/pages/maintenance_cards.css"));
 
-        assertEquals(2, occurrences(page, "class=\"maintenance-frequency\""));
+        assertEquals(1, occurrences(page, "class=\"maintenance-frequency\""));
+        assertEquals(1, occurrences(page, "class=\"customer-card\""));
+        assertEquals(1, occurrences(page,
+                "<c:forEach var=\"entry\" items=\"${inspectorCustomers}\">"));
         assertTrue(page.contains("maintenanceFrequencyLabels[customer.customerName]"));
-        assertTrue(page.contains("? '월별' :"));
+        assertTrue(page.contains("eq '분기'"));
+        assertTrue(!page.contains("? '월별' :"));
         assertTrue(styles.contains(
                 ".maintenance-management .maintenance-frequency"));
         assertTrue(styles.contains("font-size: var(--font-size-xs)"));

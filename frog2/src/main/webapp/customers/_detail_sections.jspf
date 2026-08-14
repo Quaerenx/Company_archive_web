@@ -43,7 +43,7 @@
         </div>
     </section>
 
-    <details class="detail-section detail-section--collapsible">
+    <details class="detail-section detail-section--collapsible" open>
         <summary class="detail-section-title">
             <i class="fas fa-database" aria-hidden="true"></i>
             Vertica 운영 설정
@@ -61,7 +61,7 @@
         </div>
     </details>
 
-    <details class="detail-section detail-section--collapsible">
+    <details class="detail-section detail-section--collapsible" open>
         <summary class="detail-section-title">
             <i class="fas fa-server" aria-hidden="true"></i>
             인프라·네트워크
@@ -85,7 +85,7 @@
         </div>
     </details>
 
-    <details class="detail-section detail-section--collapsible">
+    <details class="detail-section detail-section--collapsible" open>
         <summary class="detail-section-title">
             <i class="fas fa-puzzle-piece" aria-hidden="true"></i>
             연계 솔루션
@@ -98,7 +98,7 @@
         </div>
     </details>
 
-    <details class="detail-section detail-section--collapsible">
+    <details class="detail-section detail-section--collapsible" open>
         <summary class="detail-section-title">
             <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
             기타 정보

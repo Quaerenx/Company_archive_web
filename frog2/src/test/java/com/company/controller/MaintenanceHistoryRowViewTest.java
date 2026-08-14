@@ -137,6 +137,21 @@ class MaintenanceHistoryRowViewTest {
         assertEquals("unavailable", rows.get(4).getUsageTone());
     }
 
+    @Test
+    void appliesRiskThresholdsToTheDisplayedOneDecimalValue() {
+        List<MaintenanceHistoryRowView> rows =
+                MaintenanceHistoryRowView.fromRecords(List.of(
+                        record(2L, "2026-08-03", "100", "89.95", "89.95"),
+                        record(1L, "2026-07-03", "100", "105.05", "105.05")));
+
+        assertEquals(new BigDecimal("90.0"),
+                rows.get(0).getUsagePercentage());
+        assertEquals("warning", rows.get(0).getUsageTone());
+        assertEquals(new BigDecimal("105.1"),
+                rows.get(1).getUsagePercentage());
+        assertEquals("risk", rows.get(1).getUsageTone());
+    }
+
     private static MaintenanceRecordDTO record(
             long id,
             String date,

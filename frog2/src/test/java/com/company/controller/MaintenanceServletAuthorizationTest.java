@@ -252,8 +252,9 @@ class MaintenanceServletAuthorizationTest {
         duplicate.setInspectionDate(Date.valueOf("2026-08-03"));
         dao.formContext = new MaintenanceFormHistoryContext(
                 previous, duplicate);
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
         MaintenanceServlet servlet = new MaintenanceServlet(
-                dao, new StubCustomerDAO());
+                dao, customerDAO);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "formContext");
         request.parameters.put("customerName", "Acme");
@@ -273,6 +274,33 @@ class MaintenanceServletAuthorizationTest {
         assertTrue(response.body.toString().contains(
                 "\"duplicate\":{"));
         assertNull(request.forwardedPath);
+        assertEquals(1, customerDAO.customerReads);
+        assertEquals(0, customerDAO.allCustomerReads);
+    }
+
+    @Test
+    void formContextRejectsAnActiveNonMaintenanceCustomer()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customer.setCustomerType("일반 고객사");
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, customerDAO);
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "formContext");
+        request.parameters.put("customerName", "Acme");
+        request.parameters.put("inspectionDate", "2026-08-12");
+        request.accept = "application/json";
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doGet(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.status);
+        assertTrue(response.body.toString().contains(
+                "\"code\":\"invalid_maintenance_context\""));
+        assertEquals(1, customerDAO.customerReads);
+        assertEquals(0, customerDAO.allCustomerReads);
+        assertNull(dao.lastFormContextCustomer);
     }
 
     @Test
@@ -342,6 +370,7 @@ class MaintenanceServletAuthorizationTest {
         private boolean addCalled;
         private MaintenanceFormHistoryContext formContext =
                 MaintenanceFormHistoryContext.empty();
+        private String lastFormContextCustomer;
 
         @Override
         public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
@@ -378,6 +407,7 @@ class MaintenanceServletAuthorizationTest {
                 String customerName,
                 Date inspectionDate,
                 Long excludedMaintenanceId) {
+            lastFormContextCustomer = customerName;
             return formContext;
         }
 
@@ -404,15 +434,19 @@ class MaintenanceServletAuthorizationTest {
 
     private static final class StubCustomerDAO extends CustomerDAO {
         private final CustomerDTO customer = customer();
+        private int customerReads;
+        private int allCustomerReads;
 
         @Override
         public CustomerDTO getCustomerByName(String customerName) {
+            customerReads++;
             return "Acme".equals(customerName) ? customer : null;
         }
 
         @Override
         public List<CustomerDTO> getAllCustomers(
                 String sortField, String sortDirection, String filter) {
+            allCustomerReads++;
             return List.of(customer);
         }
 
@@ -423,6 +457,7 @@ class MaintenanceServletAuthorizationTest {
             customer.setSubManagerName("Bob");
             customer.setVerticaVersion("23.4.0-13");
             customer.setLicenseSize("25TB");
+            customer.setCustomerType("정기점검 계약 고객사");
             return customer;
         }
     }

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public final class LicenseUsageSeriesBuilder {
@@ -86,14 +85,6 @@ public final class LicenseUsageSeriesBuilder {
     }
 
     private static Double parseTerabytes(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        String normalized = value.trim().toLowerCase(Locale.ROOT);
-        Double number = LicenseSummaryFormatter.parseNumber(normalized);
-        if (number == null) {
-            return null;
-        }
-        return normalized.contains("gb") ? number / 1024.0 : number;
+        return LicenseSummaryFormatter.toTerabytes(value);
     }
 }

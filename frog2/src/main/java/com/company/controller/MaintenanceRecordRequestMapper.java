@@ -17,6 +17,8 @@ final class MaintenanceRecordRequestMapper {
     private static final int NOTE_MAX_LENGTH = 65_000;
     private static final BigDecimal MAX_TERABYTES =
             new BigDecimal("1000000");
+    private static final BigDecimal MAX_PERCENTAGE =
+            new BigDecimal("1000000.0");
     private static final Pattern TERABYTE_VALUE = Pattern.compile(
             "^([+-]?\\d+(?:\\.\\d{1,6})?)\\s*(TB|GB)?$",
             Pattern.CASE_INSENSITIVE);
@@ -28,7 +30,14 @@ final class MaintenanceRecordRequestMapper {
             String creatorUserId,
             MaintenanceFormOptions options) {
         return mapWithFixedSnapshot(
-                parameter, creatorUserId, options, null, null, false);
+                parameter,
+                creatorUserId,
+                options,
+                null,
+                null,
+                null,
+                null,
+                false);
     }
 
     private MaintenanceFormSubmission mapWithFixedSnapshot(
@@ -37,6 +46,8 @@ final class MaintenanceRecordRequestMapper {
             MaintenanceFormOptions options,
             String fixedLicenseSize,
             String fixedVersion,
+            String fixedLicenseUsage,
+            String fixedLicensePercentage,
             boolean useHistoricalSnapshot) {
         Objects.requireNonNull(parameter, "parameter");
         Objects.requireNonNull(options, "options");
@@ -90,13 +101,29 @@ final class MaintenanceRecordRequestMapper {
         String rawCapacity = trimToNull(useHistoricalSnapshot
                 ? fixedLicenseSize
                 : customer == null ? null : customer.getLicenseSize());
-        String rawUsage = trimToNull(parameter.apply("license_usage_size"));
-        String rawPercentage = trimToNull(
-                parameter.apply("license_usage_pct"));
+        Map<String, String> capacityErrors = new LinkedHashMap<>();
         BigDecimal capacity = parseTerabytes(
-                rawCapacity, "license_size_gb", "전체 용량", errors);
-        BigDecimal usage = parseTerabytes(
-                rawUsage, "license_usage_size", "사용량", errors);
+                rawCapacity,
+                "license_size_gb",
+                "전체 용량",
+                capacityErrors);
+        boolean capacityUsesSupportedUnit = rawCapacity == null
+                || capacityErrors.isEmpty();
+        if (capacityUsesSupportedUnit) {
+            errors.putAll(capacityErrors);
+        }
+        String rawUsage = capacityUsesSupportedUnit
+                ? trimToNull(parameter.apply("license_usage_size"))
+                : useHistoricalSnapshot ? trimToNull(fixedLicenseUsage) : null;
+        String rawPercentage = capacityUsesSupportedUnit
+                ? trimToNull(parameter.apply("license_usage_pct"))
+                : useHistoricalSnapshot
+                        ? trimToNull(fixedLicensePercentage)
+                        : null;
+        BigDecimal usage = capacityUsesSupportedUnit
+                ? parseTerabytes(
+                        rawUsage, "license_usage_size", "사용량", errors)
+                : null;
 
         record.setLicenseSizeGb(
                 capacity == null ? rawCapacity : decimal(capacity));
@@ -113,17 +140,21 @@ final class MaintenanceRecordRequestMapper {
                 } else {
                     percentage = "0.0";
                 }
-            } else if (usage.compareTo(capacity) > 0) {
-                errors.put(
-                        "license_usage_size",
-                        "사용량은 전체 용량보다 클 수 없습니다.");
             } else {
-                percentage = usage
-                        .multiply(BigDecimal.valueOf(100))
+                BigDecimal percentageNumerator = usage.multiply(
+                        BigDecimal.valueOf(100));
+                if (percentageNumerator.compareTo(
+                        capacity.multiply(MAX_PERCENTAGE)) > 0) {
+                    errors.put(
+                            "license_usage_size",
+                            "계산된 사용률의 입력 범위를 확인해 주세요.");
+                } else {
+                    percentage = percentageNumerator
                         .divide(capacity, 1, RoundingMode.HALF_UP)
                         .toPlainString();
+                }
             }
-        } else if (rawPercentage != null) {
+        } else if (capacityUsesSupportedUnit && rawPercentage != null) {
             BigDecimal parsedPercentage = parsePercentage(
                     rawPercentage, errors);
             if (parsedPercentage != null) {
@@ -144,13 +175,17 @@ final class MaintenanceRecordRequestMapper {
             MaintenanceFormOptions options,
             Long maintenanceId,
             String fixedLicenseSize,
-            String fixedVersion) {
+            String fixedVersion,
+            String fixedLicenseUsage,
+            String fixedLicensePercentage) {
         MaintenanceFormSubmission submission = mapWithFixedSnapshot(
                 parameter,
                 creatorUserId,
                 options,
                 fixedLicenseSize,
                 fixedVersion,
+                fixedLicenseUsage,
+                fixedLicensePercentage,
                 true);
         submission.record().setMaintenanceId(maintenanceId);
         return submission;
@@ -222,10 +257,10 @@ final class MaintenanceRecordRequestMapper {
         try {
             BigDecimal percentage = new BigDecimal(matcher.group(1));
             if (percentage.signum() < 0
-                    || percentage.compareTo(BigDecimal.valueOf(100)) > 0) {
+                    || percentage.compareTo(MAX_PERCENTAGE) > 0) {
                 errors.put(
                         "license_usage_pct",
-                        "사용률은 0%에서 100% 사이여야 합니다.");
+                        "사용률의 입력 범위를 확인해 주세요.");
                 return null;
             }
             return percentage;

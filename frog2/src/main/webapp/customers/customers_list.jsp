@@ -20,27 +20,7 @@
         </jsp:attribute>
     </t:pageHeader>
 
-	<!-- 성공/에러 메시지 표시 -->
-	<c:if test="${not empty sessionScope.message}">
-		    <div class="alert alert-success ui-alert ui-alert--success"
-                 role="status"
-                 aria-live="polite"
-                 aria-atomic="true">
-	        <i class="fas fa-check-circle"></i>
-	        <c:out value="${sessionScope.message}" />
-	    </div>
-	    <c:remove var="message" scope="session" />
-	</c:if>
-
-	<c:if test="${not empty sessionScope.error}">
-		    <div class="alert alert-danger ui-alert ui-alert--danger"
-                 role="alert"
-                 aria-atomic="true">
-	        <i class="fas fa-exclamation-circle"></i>
-	        <c:out value="${sessionScope.error}" />
-	    </div>
-	    <c:remove var="error" scope="session" />
-	</c:if>
+    <t:flashMessages />
     <div class="table-container customer-list-panel">
       <div class="customer-list-toolbar">
         <div class="filter-toggle">

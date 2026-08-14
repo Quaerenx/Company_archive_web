@@ -4,8 +4,14 @@ import com.company.model.MaintenanceRecordDTO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class LicenseSummaryFormatter {
+    private static final Pattern STORAGE_CAPACITY = Pattern.compile(
+            "^([+-]?\\d+(?:\\.\\d+)?)\\s*(TB|GB)?$",
+            Pattern.CASE_INSENSITIVE);
+
     private LicenseSummaryFormatter() {
     }
 
@@ -81,6 +87,12 @@ public final class LicenseSummaryFormatter {
                         .setScale(1, RoundingMode.HALF_UP);
     }
 
+    public static LicenseRiskPolicy.Level resolveUsageRiskLevel(
+            MaintenanceRecordDTO record) {
+        return LicenseRiskPolicy.classify(
+                resolveUsagePercentageOneDecimal(record));
+    }
+
     public static BigDecimal resolveUsageProgressPercentageOneDecimal(
             MaintenanceRecordDTO record) {
         BigDecimal percentage = resolveUsagePercentageOneDecimal(record);
@@ -127,17 +139,27 @@ public final class LicenseSummaryFormatter {
     }
 
     private static Double toGigabytes(String value) {
+        Double terabytes = toTerabytes(value);
+        return terabytes == null ? null : terabytes * 1024.0;
+    }
+
+    static Double toTerabytes(String value) {
         if (value == null || value.trim().isEmpty()) {
             return null;
         }
-        String normalized = value.trim().toLowerCase(Locale.ROOT);
-        Double number = parseNumber(normalized);
-        if (number == null) {
+        Matcher matcher = STORAGE_CAPACITY.matcher(
+                value.trim().replace(",", ""));
+        if (!matcher.matches()) {
             return null;
         }
-        boolean gigabytes = normalized.contains("gb");
-        boolean terabytes = normalized.contains("tb");
-        return terabytes || !gigabytes ? number * 1024.0 : number;
+        try {
+            double number = Double.parseDouble(matcher.group(1));
+            return "GB".equalsIgnoreCase(matcher.group(2))
+                    ? number / 1024.0
+                    : number;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     private static String formatGigabytesAsTerabytes(Double value) {

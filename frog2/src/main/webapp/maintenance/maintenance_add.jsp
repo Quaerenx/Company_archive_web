@@ -59,7 +59,7 @@
                 <%@ include file="/WEB-INF/includes/maintenance_form_fields.jspf" %>
 
                 <!-- 버튼 -->
-                <div class="button-group">
+                <div class="button-group ui-form-actions">
                     <c:choose>
                         <c:when test="${not empty customerName}">
                             <a href="<c:out value='${customerHistoryUrl}' />"

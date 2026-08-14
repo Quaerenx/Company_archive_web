@@ -79,6 +79,9 @@ class MaintenanceFormAssetContractTest {
         assertFalse(script.contains("toISOString()"));
         assertTrue(script.contains("calculateLicensePercentage"));
         assertTrue(script.contains("toFixed(1)"));
+        assertTrue(script.contains("maxLicensePercentage = 1000000"));
+        assertFalse(script.contains("used > capacity"));
+        assertFalse(script.contains("사용량은 전체 용량보다 클 수 없습니다."));
         assertTrue(script.contains("defaultLicenseSize"));
         assertTrue(script.contains("setFixedVersion"));
         assertTrue(script.contains("renderFixedVersion"));
@@ -143,6 +146,9 @@ class MaintenanceFormAssetContractTest {
         assertTrue(history.contains("prefers-reduced-motion: reduce"));
         assertTrue(history.contains(
                 "animation: reduceMotion ? false : undefined"));
+        assertTrue(history.contains("matchMedia('(max-width: 768px)')"));
+        assertTrue(history.contains("maxTicksLimit: compactChart ? 8 : undefined"));
+        assertTrue(history.contains("maxRotation: compactChart ? 0 : 50"));
         assertFalse(history.contains(".history-item"));
         assertFalse(history.contains("item.animate"));
         assertFalse(history.contains("item.addEventListener('click'"));
@@ -339,6 +345,22 @@ class MaintenanceFormAssetContractTest {
         assertTrue(styles.contains(".history-col-inspector"));
         assertFalse(styles.contains(".maintenance-history .history-item"));
         assertFalse(styles.contains("!important"));
+    }
+
+    @Test
+    void mobileHistoryChartKeepsAReadableWidthInsideItsOwnScrollRegion()
+            throws Exception {
+        String styles = Files.readString(
+                PAGE_STYLES.resolve("maintenance_history.css"));
+
+        assertTrue(styles.contains(
+                ".maintenance-history .usage-chart-scroll"));
+        assertTrue(styles.contains("overscroll-behavior-inline: contain;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .usage-chart-canvas"));
+        assertTrue(styles.contains("min-width: 720px;"));
+        assertTrue(styles.contains("@media (max-width: 480px)"));
+        assertTrue(styles.contains("flex-direction: column;"));
     }
 
     private static String readWebapp(String relativePath) throws Exception {

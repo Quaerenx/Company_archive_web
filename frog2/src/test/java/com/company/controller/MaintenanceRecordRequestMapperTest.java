@@ -86,7 +86,7 @@ class MaintenanceRecordRequestMapperTest {
     }
 
     @Test
-    void rejectsUsageAboveTheCustomerMasterCapacity() {
+    void acceptsUsageAboveCapacityAndCalculatesOverOneHundredPercent() {
         Map<String, String> parameters = validParameters();
         parameters.put("license_size_gb", "999");
         parameters.put("license_usage_size", "8");
@@ -94,8 +94,76 @@ class MaintenanceRecordRequestMapperTest {
         MaintenanceFormSubmission submission = mapper.map(
                 parameters::get, "owner-1", options("5TB"));
 
-        assertFalse(submission.valid());
-        assertTrue(submission.fieldErrors().containsKey(
+        assertTrue(submission.valid());
+        assertEquals("5", submission.record().getLicenseSizeGb());
+        assertEquals("8", submission.record().getLicenseUsageSize());
+        assertEquals("160.0", submission.record().getLicenseUsagePct());
+        assertFalse(submission.fieldErrors().containsKey(
+                "license_usage_size"));
+    }
+
+    @Test
+    void acceptsExplicitOverOneHundredPercentWhenNoCapacityIsAvailable() {
+        Map<String, String> parameters = validParameters();
+        parameters.put("license_usage_pct", "105.1%");
+
+        MaintenanceFormSubmission submission = mapper.map(
+                parameters::get, "owner-1", options(null));
+
+        assertTrue(submission.valid());
+        assertEquals("105.1", submission.record().getLicenseUsagePct());
+    }
+
+    @Test
+    void allowsNonCapacityLicenseModelsWithoutInventingTbUsage() {
+        Map<String, String> parameters = validParameters();
+        parameters.put("license_usage_size", "999");
+        parameters.put("license_usage_pct", "99");
+
+        MaintenanceFormSubmission submission = mapper.map(
+                parameters::get, "owner-1", options("54nodes"));
+
+        assertTrue(submission.valid());
+        assertEquals("54nodes", submission.record().getLicenseSizeGb());
+        assertNull(submission.record().getLicenseUsageSize());
+        assertNull(submission.record().getLicenseUsagePct());
+        assertFalse(submission.fieldErrors().containsKey(
+                "license_size_gb"));
+    }
+
+    @Test
+    void retainsZeroCapacityAndExtremePercentageSafetyLimits() {
+        Map<String, String> zeroCapacity = validParameters();
+        zeroCapacity.put("license_usage_size", "1");
+
+        MaintenanceFormSubmission zeroCapacitySubmission = mapper.map(
+                zeroCapacity::get, "owner-1", options("0"));
+
+        assertFalse(zeroCapacitySubmission.valid());
+        assertTrue(zeroCapacitySubmission.fieldErrors().containsKey(
+                "license_usage_size"));
+
+        Map<String, String> extremePercentage = validParameters();
+        extremePercentage.put("license_usage_pct", "1000000.1");
+
+        MaintenanceFormSubmission extremePercentageSubmission = mapper.map(
+                extremePercentage::get, "owner-1", options(null));
+
+        assertFalse(extremePercentageSubmission.valid());
+        assertTrue(extremePercentageSubmission.fieldErrors().containsKey(
+                "license_usage_pct"));
+
+        Map<String, String> calculatedAboveLimit = validParameters();
+        calculatedAboveLimit.put("license_usage_size", "10000.000004");
+
+        MaintenanceFormSubmission calculatedAboveLimitSubmission =
+                mapper.map(
+                        calculatedAboveLimit::get,
+                        "owner-1",
+                        options("0.001TB"));
+
+        assertFalse(calculatedAboveLimitSubmission.valid());
+        assertTrue(calculatedAboveLimitSubmission.fieldErrors().containsKey(
                 "license_usage_size"));
     }
 
@@ -151,13 +219,41 @@ class MaintenanceRecordRequestMapperTest {
                 options("30TB"),
                 17L,
                 "20TB",
-                "12.0.2-1");
+                "12.0.2-1",
+                "5",
+                "25.0");
 
         assertTrue(submission.valid());
         assertEquals("20", submission.record().getLicenseSizeGb());
         assertEquals("25.0", submission.record().getLicenseUsagePct());
         assertEquals(
                 "12.0.2-1", submission.record().getVerticaVersion());
+    }
+
+    @Test
+    void updatePreservesHistoricalValuesForNonCapacityLicenses() {
+        Map<String, String> parameters = validParameters();
+        parameters.put("license_usage_size", "999");
+        parameters.put("license_usage_pct", "99");
+
+        MaintenanceFormSubmission submission = mapper.mapForUpdate(
+                parameters::get,
+                "owner-1",
+                options("54nodes"),
+                18L,
+                "54nodes",
+                "12.0.2-1",
+                "legacy-usage",
+                "legacy-percentage");
+
+        assertTrue(submission.valid());
+        assertEquals("54nodes", submission.record().getLicenseSizeGb());
+        assertEquals(
+                "legacy-usage",
+                submission.record().getLicenseUsageSize());
+        assertEquals(
+                "legacy-percentage",
+                submission.record().getLicenseUsagePct());
     }
 
     private static MaintenanceFormOptions options(String licenseSize) {

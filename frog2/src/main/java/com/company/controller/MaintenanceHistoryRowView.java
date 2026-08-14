@@ -41,7 +41,7 @@ public final class MaintenanceHistoryRowView {
         previousUsagePercentage = LicenseSummaryFormatter
                 .resolveUsagePercentageOneDecimal(olderRecord);
         LicenseRiskPolicy.Level usageLevel =
-                LicenseRiskPolicy.classify(usagePercentage);
+                LicenseSummaryFormatter.resolveUsageRiskLevel(record);
         usageTone = switch (usageLevel) {
             case NORMAL -> "normal";
             case WARNING -> "warning";

@@ -503,6 +503,20 @@
     margin: 0 0 var(--space-12);
 }
 
+.maintenance-history .usage-chart-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+}
+
+.maintenance-history .usage-chart-canvas {
+    min-width: 0;
+}
+
+.maintenance-history .usage-chart-canvas canvas {
+    display: block;
+}
+
 .maintenance-history .chart-data-details {
     border-top: 1px solid var(--color-border);
     margin-top: var(--space-16);
@@ -570,6 +584,10 @@
 }
 
 @media (max-width: 768px) {
+    .maintenance-history .usage-chart-canvas {
+        min-width: 720px;
+    }
+
     .maintenance-history .history-filter-form {
         grid-template-columns: 1fr;
         padding-inline: var(--space-16);
@@ -610,6 +628,14 @@
         border-top: 1px solid var(--color-border);
         padding-left: 0;
         padding-top: var(--space-16);
+    }
+}
+
+@media (max-width: 480px) {
+    .maintenance-history .history-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-4);
     }
 }
 

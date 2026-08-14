@@ -191,7 +191,7 @@
                 <output id="license_size_gb_display"
                         aria-labelledby="maintenanceCapacityLabel"
                         aria-invalid="${not empty fieldErrors.license_size_gb}"><c:out value="${licenseSizeInput}" default="—" /></output>
-                <span aria-hidden="true">TB</span>
+                <span id="maintenanceCapacityUnit" aria-hidden="true">TB</span>
             </div>
             <input type="hidden"
                    id="license_size_gb"
@@ -214,8 +214,11 @@
                        value="<c:out value='${licenseUsageInput}' />"
                        placeholder="예: 13.9"
                        aria-invalid="${not empty fieldErrors.license_usage_size}" />
-                <span aria-hidden="true">TB</span>
+                <span id="maintenanceUsageUnit" aria-hidden="true">TB</span>
             </div>
+            <span id="maintenanceUnsupportedCapacityHelp"
+                  class="maintenance-field-help"
+                  hidden>이 고객사의 라이선스는 TB/GB 용량이 아니어 사용량과 사용률을 자동 계산하지 않습니다.</span>
             <c:if test="${not empty fieldErrors.license_usage_size}">
                 <span class="ui-field-error"><c:out value="${fieldErrors.license_usage_size}" /></span>
             </c:if>

@@ -1,6 +1,19 @@
 (function() {
     'use strict';
 
+    function formatLicensePercentageHalfUp(value) {
+        if (!Number.isFinite(value) || value < 0) return '';
+        const scaled = value * 10;
+        const tolerance = Number.EPSILON
+            * Math.max(1, Math.abs(scaled)) * 2;
+        return (Math.floor(scaled + 0.5 + tolerance) / 10).toFixed(1);
+    }
+
+    if (typeof module === 'object' && module.exports) {
+        module.exports = {formatLicensePercentageHalfUp};
+        return;
+    }
+
     const root = document.querySelector(
         '[data-maintenance-form-mode][data-context-path]');
     if (!root) return;
@@ -10,6 +23,7 @@
 
     const contextPath = root.getAttribute('data-context-path') || '';
     const formMode = root.getAttribute('data-maintenance-form-mode') || '';
+    const maxLicensePercentage = 1000000;
     const customerField = document.getElementById('customer_name');
     const inspectorField = document.getElementById('inspector_name');
     const inspectionDateField = document.getElementById('inspection_date');
@@ -33,7 +47,13 @@
     const licenseSizeField = document.getElementById('license_size_gb');
     const licenseSizeDisplay = document.getElementById(
         'license_size_gb_display');
+    const licenseCapacityUnit = document.getElementById(
+        'maintenanceCapacityUnit');
     const licenseUsageField = document.getElementById('license_usage_size');
+    const licenseUsageUnit = document.getElementById(
+        'maintenanceUsageUnit');
+    const unsupportedCapacityHelp = document.getElementById(
+        'maintenanceUnsupportedCapacityHelp');
     const licensePercentageField = document.getElementById(
         'license_usage_pct');
     const licensePercentageDisplay = document.getElementById(
@@ -505,10 +525,29 @@
 
     function renderFixedCapacity() {
         if (!licenseSizeDisplay) return;
-        const capacity = normalizeLegacyNumber(
+        const rawCapacity = normalizedValue(
             licenseSizeField && licenseSizeField.value);
+        const supportedCapacity = isSupportedCapacity(rawCapacity);
+        const capacity = supportedCapacity
+            ? normalizeLegacyNumber(rawCapacity)
+            : rawCapacity;
         licenseSizeDisplay.value = capacity || '—';
         licenseSizeDisplay.textContent = capacity || '—';
+        if (licenseCapacityUnit) licenseCapacityUnit.hidden = !supportedCapacity;
+        if (licenseUsageUnit) licenseUsageUnit.hidden = !supportedCapacity;
+        if (unsupportedCapacityHelp) {
+            unsupportedCapacityHelp.hidden = supportedCapacity;
+        }
+        if (licenseUsageField) {
+            licenseUsageField.readOnly = !supportedCapacity;
+            if (supportedCapacity) {
+                licenseUsageField.removeAttribute('aria-describedby');
+            } else {
+                licenseUsageField.setAttribute(
+                    'aria-describedby',
+                    'maintenanceUnsupportedCapacityHelp');
+            }
+        }
     }
 
     function setFieldValue(field, value) {
@@ -530,23 +569,40 @@
             : String(number);
     }
 
+    function isSupportedCapacity(value) {
+        const normalized = normalizedValue(value);
+        return !normalized || /^([+-]?\d+(?:\.\d+)?)\s*(TB|GB)?$/i
+            .test(normalized);
+    }
+
     function calculateLicensePercentage() {
         if (!licensePercentageField || !licensePercentageDisplay) return;
-        const capacity = parsePositiveNumber(licenseSizeField);
-        const used = parsePositiveNumber(licenseUsageField);
         clearLicenseValidity();
         let percentage = '';
+        if (!isSupportedCapacity(
+            licenseSizeField && licenseSizeField.value)) {
+            licensePercentageField.value = '';
+            licensePercentageDisplay.value = '—';
+            licensePercentageDisplay.textContent = '—';
+            return;
+        }
+        const capacity = parsePositiveNumber(licenseSizeField);
+        const used = parsePositiveNumber(licenseUsageField);
         if (capacity !== null && used !== null) {
             if (capacity === 0 && used > 0) {
                 licenseUsageField.setCustomValidity(
                     '전체 용량이 0일 때 사용량을 입력할 수 없습니다.');
-            } else if (used > capacity) {
-                licenseUsageField.setCustomValidity(
-                    '사용량은 전체 용량보다 클 수 없습니다.');
             } else {
-                percentage = capacity === 0
-                    ? '0.0'
-                    : ((used / capacity) * 100).toFixed(1);
+                const calculatedPercentage = capacity === 0
+                    ? 0
+                    : (used / capacity) * 100;
+                if (calculatedPercentage > maxLicensePercentage) {
+                    licenseUsageField.setCustomValidity(
+                        '계산된 사용률의 입력 범위를 확인해 주세요.');
+                } else {
+                    percentage = formatLicensePercentageHalfUp(
+                        calculatedPercentage);
+                }
             }
         }
         licensePercentageField.value = percentage;

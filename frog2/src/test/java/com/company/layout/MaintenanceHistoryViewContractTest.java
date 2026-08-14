@@ -48,6 +48,11 @@ class MaintenanceHistoryViewContractTest {
         assertTrue(page.contains("role=\"img\""));
         assertTrue(page.contains("aria-labelledby=\"licenseUsageChartTitle\""));
         assertTrue(page.contains("aria-describedby=\"licenseUsageChartSummary\""));
+        assertTrue(page.contains("class=\"usage-chart-scroll\""));
+        assertTrue(page.contains("data-ui-scroll-region"));
+        assertTrue(page.contains(
+                "data-ui-scroll-label=\"라이선스 사용률 추이 차트\""));
+        assertTrue(page.contains("class=\"usage-chart-canvas\""));
         assertTrue(page.contains("<details class=\"chart-data-details\""));
         assertTrue(page.contains("<table class=\"chart-data-table ui-table\""));
         assertTrue(page.contains(

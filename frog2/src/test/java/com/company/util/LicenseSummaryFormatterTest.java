@@ -60,6 +60,18 @@ class LicenseSummaryFormatterTest {
     }
 
     @Test
+    void classifiesRiskAfterTheSameOneDecimalRoundingUsedForDisplay() {
+        assertEquals(
+                LicenseRiskPolicy.Level.WARNING,
+                LicenseSummaryFormatter.resolveUsageRiskLevel(
+                        record("100", "89.95", "89.95")));
+        assertEquals(
+                LicenseRiskPolicy.Level.RISK,
+                LicenseSummaryFormatter.resolveUsageRiskLevel(
+                        record("100", "105.05", "105.05")));
+    }
+
+    @Test
     void progressPercentageIsRoundedAndBoundedForVisualDisplay() {
         assertEquals(25, LicenseSummaryFormatter
                 .resolveUsageProgressPercentage(
@@ -85,6 +97,10 @@ class LicenseSummaryFormatterTest {
         assertNull(LicenseSummaryFormatter.resolveUsagePercentage(new MaintenanceRecordDTO()));
         assertNull(LicenseSummaryFormatter.resolveUsagePercentage(null));
         assertNull(LicenseSummaryFormatter.parseNumber("not-a-number"));
+        assertNull(LicenseSummaryFormatter.format(
+                record("54nodes", null, null)));
+        assertNull(LicenseSummaryFormatter.resolveUsagePercentage(
+                record("54nodes", "27nodes", null)));
     }
 
     private static MaintenanceRecordDTO record(

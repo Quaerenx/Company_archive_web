@@ -85,13 +85,19 @@
             </div>
             <c:choose>
                 <c:when test="${not empty usageSeries}">
-                    <canvas id="licenseUsageChart"
-                            height="120"
-                            role="img"
-                            aria-labelledby="licenseUsageChartTitle"
-                            aria-describedby="licenseUsageChartSummary">
-                        라이선스 사용률 추이를 날짜별로 표시한 선 그래프입니다.
-                    </canvas>
+                    <div class="usage-chart-scroll"
+                         data-ui-scroll-region
+                         data-ui-scroll-label="라이선스 사용률 추이 차트">
+                        <div class="usage-chart-canvas">
+                            <canvas id="licenseUsageChart"
+                                    height="120"
+                                    role="img"
+                                    aria-labelledby="licenseUsageChartTitle"
+                                    aria-describedby="licenseUsageChartSummary">
+                                라이선스 사용률 추이를 날짜별로 표시한 선 그래프입니다.
+                            </canvas>
+                        </div>
+                    </div>
                 </c:when>
                 <c:otherwise>
                     <div class="empty-history usage-chart-empty">
@@ -132,27 +138,7 @@
         </div>
     </div>
 
-    <!-- 성공/에러 메시지 표시 -->
-    <c:if test="${not empty sessionScope.message}">
-        <div class="alert alert-success ui-alert ui-alert--success"
-             role="status"
-             aria-live="polite"
-             aria-atomic="true">
-            <i class="fas fa-check-circle"></i>
-            <c:out value="${sessionScope.message}" />
-        </div>
-        <c:remove var="message" scope="session" />
-    </c:if>
-
-    <c:if test="${not empty sessionScope.error}">
-        <div class="alert alert-danger ui-alert ui-alert--danger"
-             role="alert"
-             aria-atomic="true">
-            <i class="fas fa-exclamation-circle"></i>
-            <c:out value="${sessionScope.error}" />
-        </div>
-        <c:remove var="error" scope="session" />
-    </c:if>
+    <t:flashMessages />
 
     <!-- 정기점검 이력 목록 -->
     <div class="history-container">

@@ -84,7 +84,7 @@
             </div>
             
             <!-- 버튼 -->
-            <div class="button-group">
+            <div class="button-group ui-form-actions">
                 <c:url value="/maintenance" var="cancelUrl">
                     <c:param name="view" value="history"/>
                     <c:param name="customerName" value="${record.customerName}"/>

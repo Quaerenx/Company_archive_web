@@ -161,13 +161,7 @@ public class MaintenanceRecordDAO {
     }
 
     public MaintenanceRecordDTO getMaintenanceRecordById(Long maintenanceId) {
-        MaintenanceRecordDTO record = null;
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
+        try (Connection conn = connectionProvider.getConnection()) {
             boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
             boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
             boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
@@ -177,21 +171,23 @@ public class MaintenanceRecordDAO {
             String sql = "SELECT " + selectColumns(
                     hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId)
                     + " FROM maintenance_records WHERE maintenance_id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setLong(1, maintenanceId);
-            rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                record = mapRowToDto(
-                        rs, hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId);
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setLong(1, maintenanceId);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return mapRowToDto(
+                                rs,
+                                hasSize,
+                                hasUsagePct,
+                                hasUsageSize,
+                                hasCreatorUserId);
+                    }
+                }
             }
         } catch (SQLException  e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
         }
-
-        return record;
+        return null;
     }
 
     public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
@@ -490,12 +486,7 @@ public class MaintenanceRecordDAO {
 
     public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
         List<MaintenanceRecordDTO> records = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
+        try (Connection conn = connectionProvider.getConnection()) {
             boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
             boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
             boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
@@ -504,19 +495,18 @@ public class MaintenanceRecordDAO {
                     + " FROM maintenance_records " +
                     "WHERE inspection_date >= ? AND inspection_date < ? " +
                     "ORDER BY inspection_date ASC, customer_name ASC";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setDate(1, startDate);
-            pstmt.setDate(2, endDate);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                MaintenanceRecordDTO record = mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize);
-                records.add(record);
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setDate(1, startDate);
+                pstmt.setDate(2, endDate);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        records.add(mapRowToDto(
+                                rs, hasSize, hasUsagePct, hasUsageSize));
+                    }
+                }
             }
         } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
         }
 
         return records;

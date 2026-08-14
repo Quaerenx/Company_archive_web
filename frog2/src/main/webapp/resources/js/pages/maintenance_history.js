@@ -63,6 +63,8 @@
     if (!ctx || typeof window.Chart !== 'function') return;
     const reduceMotion = typeof window.matchMedia === 'function'
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const compactChart = typeof window.matchMedia === 'function'
+        && window.matchMedia('(max-width: 768px)').matches;
 
     const rootStyles = window.getComputedStyle(document.documentElement);
     function cssColor(tokenName) {
@@ -213,7 +215,12 @@
                 },
                 x: {
                     grid: { color: chartColors.border },
-                    ticks: { color: chartColors.textMuted },
+                    ticks: {
+                        color: chartColors.textMuted,
+                        maxRotation: compactChart ? 0 : 50,
+                        maxTicksLimit: compactChart ? 8 : undefined,
+                        minRotation: 0
+                    },
                     title: { display: true, text: '점검일', color: chartColors.text }
                 }
             }

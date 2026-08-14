@@ -26,7 +26,7 @@ class CustomerDetailViewStructureTest {
         assertEquals(49, occurrences(fragment, "<t:detailField "));
         assertEquals(4, occurrences(
                 fragment,
-                "<details class=\"detail-section detail-section--collapsible\">"));
+                "<details class=\"detail-section detail-section--collapsible\" open>"));
         assertTrue(fragment.contains("핵심 정보"));
         assertTrue(fragment.contains("기본·담당자 정보"));
         assertTrue(fragment.contains("인프라·네트워크"));

@@ -74,26 +74,7 @@
         </jsp:attribute>
     </t:pageHeader>
 
-    <c:if test="${not empty sessionScope.message}">
-        <div class="alert alert-success ui-alert ui-alert--success"
-             role="status"
-             aria-live="polite"
-             aria-atomic="true">
-            <i class="fas fa-check-circle"></i>
-            <c:out value="${sessionScope.message}" />
-        </div>
-        <c:remove var="message" scope="session" />
-    </c:if>
-
-    <c:if test="${not empty sessionScope.error}">
-        <div class="alert alert-danger ui-alert ui-alert--danger"
-             role="alert"
-             aria-atomic="true">
-            <i class="fas fa-exclamation-circle"></i>
-            <c:out value="${sessionScope.error}" />
-        </div>
-        <c:remove var="error" scope="session" />
-    </c:if>
+    <t:flashMessages />
 
     <c:set var="hasAnyDetail" value="${not empty customerDetail or not empty customerDetailStg or not empty customerDetailDev}" />
     <c:if test="${hasAnyDetail}">

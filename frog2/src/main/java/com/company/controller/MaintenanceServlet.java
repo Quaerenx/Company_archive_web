@@ -34,6 +34,8 @@ import jakarta.servlet.http.HttpSession;
 public class MaintenanceServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int HISTORY_PAGE_SIZE = 20;
+    private static final String MAINTENANCE_CUSTOMER_TYPE =
+            "정기점검 계약 고객사";
     private final MaintenanceRecordDAO maintenanceDAO;
     private final CustomerDAO customerDAO;
     private final MaintenanceRecordRequestMapper requestMapper =
@@ -74,7 +76,10 @@ public class MaintenanceServlet extends HttpServlet {
 
         if ("cards".equals(viewType)) {
             // 담당자별 고객사 카드 목록 표시 (라이선스 요약 제거)
-            Map<String, List<CustomerDTO>> inspectorCustomers = getInspectorCustomersMap();
+            Map<String, List<CustomerDTO>> inspectorCustomers =
+                    prioritizeInspector(
+                            getInspectorCustomersMap(),
+                            user.getUserName());
             request.setAttribute("inspectorCustomers", inspectorCustomers);
             request.setAttribute(
                     "maintenanceFrequencyLabels",
@@ -222,6 +227,25 @@ public class MaintenanceServlet extends HttpServlet {
         return inspectorCustomers;
     }
 
+    static Map<String, List<CustomerDTO>> prioritizeInspector(
+            Map<String, List<CustomerDTO>> inspectorCustomers,
+            String preferredInspector) {
+        Objects.requireNonNull(inspectorCustomers, "inspectorCustomers");
+        Map<String, List<CustomerDTO>> ordered = new LinkedHashMap<>();
+        String preferred = preferredInspector == null
+                ? null
+                : preferredInspector.trim();
+        if (preferred != null && !preferred.isEmpty()) {
+            List<CustomerDTO> preferredCustomers =
+                    inspectorCustomers.get(preferred);
+            if (preferredCustomers != null) {
+                ordered.put(preferred, preferredCustomers);
+            }
+        }
+        inspectorCustomers.forEach(ordered::putIfAbsent);
+        return ordered;
+    }
+
     private Map<String, String> getMaintenanceFrequencyLabels(
             CustomerDAO customerDAO) {
         Map<String, String> labels = new LinkedHashMap<>();
@@ -300,7 +324,9 @@ public class MaintenanceServlet extends HttpServlet {
                                     options,
                                     maintenanceId,
                                     existing.getLicenseSizeGb(),
-                                    existing.getVerticaVersion());
+                                    existing.getVerticaVersion(),
+                                    existing.getLicenseUsageSize(),
+                                    existing.getLicenseUsagePct());
                     MaintenanceRecordDTO record = submission.record();
                     if (!submission.valid()) {
                         request.setAttribute("record", record);
@@ -470,9 +496,11 @@ public class MaintenanceServlet extends HttpServlet {
                 request.getParameter("inspectionDate"));
         Long excludedId = parseOptionalLong(
                 request.getParameter("excludeId"));
-        MaintenanceFormOptions options = maintenanceFormOptions(null);
-        CustomerDTO customer = options.customer(customerName);
-        if (customer == null || inspectionDate == null) {
+        CustomerDTO customer = customerName == null
+                ? null
+                : customerDAO.getCustomerByName(customerName);
+        if (!isActiveMaintenanceCustomer(customer)
+                || inspectionDate == null) {
             JsonResponse.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
@@ -486,68 +514,14 @@ public class MaintenanceServlet extends HttpServlet {
         JsonResponse.write(
                 response,
                 HttpServletResponse.SC_OK,
-                maintenanceFormContextJson(customer, context));
+                MaintenanceFormContextJson.encode(customer, context));
     }
 
-    private static String maintenanceFormContextJson(
-            CustomerDTO customer,
-            MaintenanceFormHistoryContext context) {
-        return new StringBuilder("{")
-                .append("\"defaultInspector\":")
-                .append(jsonString(firstNonBlank(
-                        customer.getManagerName(),
-                        customer.getSubManagerName())))
-                .append(",\"defaultVersion\":")
-                .append(jsonString(customer.getVerticaVersion()))
-                .append(",\"defaultLicenseSize\":")
-                .append(jsonString(
-                        MaintenanceRecordRequestMapper
-                                .normalizeTerabytesForInput(
-                                        customer.getLicenseSize())))
-                .append(",\"previous\":")
-                .append(recordJson(context.previousRecord()))
-                .append(",\"duplicate\":")
-                .append(recordJson(context.duplicateRecord()))
-                .append('}')
-                .toString();
-    }
-
-    private static String recordJson(MaintenanceRecordDTO record) {
-        if (record == null) {
-            return "null";
-        }
-        return new StringBuilder("{")
-                .append("\"id\":").append(record.getMaintenanceId())
-                .append(",\"inspectionDate\":")
-                .append(jsonString(StrictDateParser.formatDate(
-                        record.getInspectionDate())))
-                .append(",\"inspector\":")
-                .append(jsonString(record.getInspectorName()))
-                .append(",\"version\":")
-                .append(jsonString(record.getVerticaVersion()))
-                .append(",\"licenseSize\":")
-                .append(jsonString(
-                        MaintenanceRecordRequestMapper
-                                .normalizeTerabytesForInput(
-                                        record.getLicenseSizeGb())))
-                .append(",\"licenseUsage\":")
-                .append(jsonString(
-                        MaintenanceRecordRequestMapper
-                                .normalizeTerabytesForInput(
-                                        record.getLicenseUsageSize())))
-                .append(",\"licensePercentage\":")
-                .append(jsonString(
-                        MaintenanceRecordRequestMapper
-                                .normalizePercentageForInput(
-                                        record.getLicenseUsagePct())))
-                .append('}')
-                .toString();
-    }
-
-    private static String jsonString(String value) {
-        return value == null
-                ? "null"
-                : "\"" + JsonResponse.escape(value) + "\"";
+    private static boolean isActiveMaintenanceCustomer(
+            CustomerDTO customer) {
+        return customer != null
+                && MAINTENANCE_CUSTOMER_TYPE.equals(
+                        customer.getCustomerType());
     }
 
     private static Long parseOptionalLong(String value) {
