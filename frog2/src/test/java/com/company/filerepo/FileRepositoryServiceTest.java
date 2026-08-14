@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.company.performance.RequestPerformanceContext;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,8 +15,17 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -196,6 +206,22 @@ class FileRepositoryServiceTest {
     }
 
     @Test
+    void requestMetricsDistinguishColdScanFromWarmCacheHit()
+            throws Exception {
+        RequestPerformanceContext.begin();
+
+        service.list("");
+        service.list("");
+        RequestPerformanceContext.Snapshot performance =
+                RequestPerformanceContext.finish();
+
+        assertEquals(1, performance.fileSnapshotCacheMisses());
+        assertEquals(1, performance.fileSnapshotCacheHits());
+        assertEquals(1, performance.fileSnapshotScanCount());
+        assertTrue(performance.fileSnapshotScanDurationNanos() > 0);
+    }
+
+    @Test
     void uploadInvalidatesSnapshotsSharedBySeparateServletServices()
             throws Exception {
         assertEquals(0, service.list("").getFileCount());
@@ -215,6 +241,208 @@ class FileRepositoryServiceTest {
 
         assertEquals(1, service.list("").getFileCount());
         assertEquals(2, service.snapshotScanCount());
+    }
+
+    @RepeatedTest(10)
+    void concurrentColdRequestsShareOneDirectoryScan() throws Exception {
+        Files.createDirectory(root.resolve("alpha"));
+        CountDownLatch scanStarted = new CountDownLatch(1);
+        CountDownLatch releaseScan = new CountDownLatch(1);
+        service = new FileRepositoryService(root, path -> {
+            scanStarted.countDown();
+            awaitUnchecked(releaseScan);
+        });
+        ExecutorService executor = Executors.newFixedThreadPool(8);
+        CountDownLatch callersReady = new CountDownLatch(8);
+        CountDownLatch releaseCallers = new CountDownLatch(1);
+        List<Future<FileRepositoryListing>> listings = new ArrayList<>();
+        try {
+            for (int index = 0; index < 8; index++) {
+                listings.add(executor.submit(() -> {
+                    callersReady.countDown();
+                    awaitUnchecked(releaseCallers);
+                    return service.list("");
+                }));
+            }
+            assertTrue(callersReady.await(5, TimeUnit.SECONDS));
+            releaseCallers.countDown();
+            assertTrue(scanStarted.await(5, TimeUnit.SECONDS));
+            releaseScan.countDown();
+
+            for (Future<FileRepositoryListing> listing : listings) {
+                assertEquals(List.of("alpha"), names(listing.get(5, TimeUnit.SECONDS)));
+            }
+        } finally {
+            releaseCallers.countDown();
+            releaseScan.countDown();
+            executor.shutdownNow();
+        }
+
+        assertEquals(1, service.snapshotScanCount());
+    }
+
+    @Test
+    void scanOfOneDirectoryDoesNotBlockAnotherDirectory() throws Exception {
+        Files.createDirectory(root.resolve("alpha"));
+        Files.createDirectory(root.resolve("beta"));
+        CountDownLatch alphaStarted = new CountDownLatch(1);
+        CountDownLatch releaseAlpha = new CountDownLatch(1);
+        service = new FileRepositoryService(root, path -> {
+            if (path.getFileName().toString().equals("alpha")) {
+                alphaStarted.countDown();
+                awaitUnchecked(releaseAlpha);
+            }
+        });
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<FileRepositoryListing> alpha =
+                    executor.submit(() -> service.list("alpha"));
+            assertTrue(alphaStarted.await(5, TimeUnit.SECONDS));
+
+            Future<FileRepositoryListing> beta =
+                    executor.submit(() -> service.list("beta"));
+            assertTrue(beta.get(5, TimeUnit.SECONDS).getEntries().isEmpty());
+
+            releaseAlpha.countDown();
+            assertTrue(alpha.get(5, TimeUnit.SECONDS).getEntries().isEmpty());
+        } finally {
+            releaseAlpha.countDown();
+            executor.shutdownNow();
+        }
+
+        assertEquals(2, service.snapshotScanCount());
+    }
+
+    @Test
+    void failedColdScanDoesNotPoisonTheNextRequest() throws Exception {
+        AtomicBoolean failFirstScan = new AtomicBoolean(true);
+        service = new FileRepositoryService(root, path -> {
+            if (failFirstScan.getAndSet(false)) {
+                throw new IllegalStateException("simulated scan failure");
+            }
+        });
+
+        assertThrows(IllegalStateException.class, () -> service.list(""));
+        assertTrue(service.list("").getEntries().isEmpty());
+        assertEquals(2, service.snapshotScanCount());
+    }
+
+    @Test
+    void invalidationDuringColdScanPublishesFreshSnapshot() throws Exception {
+        CountDownLatch scanStarted = new CountDownLatch(1);
+        CountDownLatch releaseScan = new CountDownLatch(1);
+        AtomicInteger scanAttempts = new AtomicInteger();
+        service = new FileRepositoryService(root, path -> {
+            if (scanAttempts.incrementAndGet() == 1) {
+                scanStarted.countDown();
+                awaitUnchecked(releaseScan);
+            }
+        });
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<FileRepositoryListing> listing =
+                    executor.submit(() -> service.list(""));
+            assertTrue(scanStarted.await(5, TimeUnit.SECONDS));
+
+            FileRepositoryService uploadService =
+                    new FileRepositoryService(root);
+            byte[] content = "fresh snapshot".getBytes(StandardCharsets.UTF_8);
+            var validated = uploadService.validateUpload(
+                    "fresh.txt", "text/plain", content.length);
+            uploadService.store(
+                    "", validated, content.length,
+                    new ByteArrayInputStream(content));
+            Files.setLastModifiedTime(
+                    root,
+                    FileTime.fromMillis(System.currentTimeMillis() + 2_000));
+            releaseScan.countDown();
+
+            assertEquals(1, listing.get(5, TimeUnit.SECONDS).getFileCount());
+        } finally {
+            releaseScan.countDown();
+            executor.shutdownNow();
+        }
+
+        assertTrue(service.snapshotScanCount() >= 2);
+        assertEquals(1, service.list("").getFileCount());
+    }
+
+    @Test
+    void requestAfterUploadDoesNotJoinAnInvalidatedColdLoad()
+            throws Exception {
+        CountDownLatch firstScanStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstScan = new CountDownLatch(1);
+        AtomicInteger scanAttempts = new AtomicInteger();
+        service = new FileRepositoryService(root, path -> {
+            if (scanAttempts.incrementAndGet() == 1) {
+                firstScanStarted.countDown();
+                awaitUnchecked(releaseFirstScan);
+            }
+        });
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<FileRepositoryListing> beforeUpload =
+                    executor.submit(() -> service.list(""));
+            assertTrue(firstScanStarted.await(5, TimeUnit.SECONDS));
+
+            FileRepositoryService uploadService =
+                    new FileRepositoryService(root);
+            byte[] content = "published during cold scan"
+                    .getBytes(StandardCharsets.UTF_8);
+            var validated = uploadService.validateUpload(
+                    "fresh.txt", "text/plain", content.length);
+            uploadService.store(
+                    "", validated, content.length,
+                    new ByteArrayInputStream(content));
+
+            Future<FileRepositoryListing> afterUpload =
+                    executor.submit(() -> service.list(""));
+            assertEquals(
+                    1,
+                    afterUpload.get(5, TimeUnit.SECONDS).getFileCount());
+
+            releaseFirstScan.countDown();
+            assertEquals(
+                    1,
+                    beforeUpload.get(5, TimeUnit.SECONDS).getFileCount());
+        } finally {
+            releaseFirstScan.countDown();
+            executor.shutdownNow();
+        }
+
+        assertTrue(service.snapshotScanCount() >= 2);
+    }
+
+    @Test
+    void repeatedInvalidationCannotStarveAColdListing() throws Exception {
+        FileRepositoryService uploadService =
+                new FileRepositoryService(root);
+        AtomicInteger scanAttempts = new AtomicInteger();
+        service = new FileRepositoryService(root, path -> {
+            int attempt = scanAttempts.incrementAndGet();
+            if (attempt > 12) {
+                throw new IllegalStateException(
+                        "snapshot retry limit was not enforced");
+            }
+            byte[] content = ("concurrent upload " + attempt)
+                    .getBytes(StandardCharsets.UTF_8);
+            try {
+                var validated = uploadService.validateUpload(
+                        "fresh-" + attempt + ".txt",
+                        "text/plain",
+                        content.length);
+                uploadService.store(
+                        "", validated, content.length,
+                        new ByteArrayInputStream(content));
+            } catch (FileRepositoryException exception) {
+                throw new IllegalStateException(exception);
+            }
+        });
+
+        FileRepositoryListing listing = service.list("");
+
+        assertTrue(listing.getFileCount() > 0);
+        assertTrue(scanAttempts.get() <= 6);
     }
 
     @Test
@@ -305,6 +533,17 @@ class FileRepositoryServiceTest {
         return listing.getEntries().stream()
                 .map(FileRepositoryEntry::getName)
                 .toList();
+    }
+
+    private static void awaitUnchecked(CountDownLatch latch) {
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("timed out waiting for test coordination");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("test coordination interrupted", exception);
+        }
     }
 
     private Path managedPath(String id, String suffix) {

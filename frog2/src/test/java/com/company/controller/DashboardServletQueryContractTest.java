@@ -7,6 +7,7 @@ import com.company.model.CustomerDAO;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
+import com.company.model.MaintenanceSchedule;
 import com.company.model.UserDTO;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
@@ -75,6 +76,45 @@ class DashboardServletQueryContractTest {
         assertEquals(1, customerDAO.assignmentCalls);
     }
 
+    @Test
+    void recordOnlyQuarterlyCustomerKeepsItsConfiguredFrequencyLabel()
+            throws Exception {
+        LocalDate today = LocalDate.now();
+        YearMonth currentMonth = YearMonth.from(today);
+        StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
+        maintenanceDAO.records = List.of(
+                maintenanceRecord("quarterly-extra", today, "89.95"));
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.assignments = List.of(
+                new MaintenanceCustomerAssignment(
+                        "quarterly-extra",
+                        "Quarterly Manager",
+                        new MaintenanceSchedule(
+                                3,
+                                currentMonth.minusMonths(1),
+                                LocalDate.of(2000, 1, 1),
+                                null,
+                                true)));
+        DashboardServlet servlet = new DashboardServlet(
+                maintenanceDAO, customerDAO);
+        RequestFixture request = new RequestFixture();
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        @SuppressWarnings("unchecked")
+        List<DashboardServlet.MaintenanceAssigneeGroup> groups =
+                (List<DashboardServlet.MaintenanceAssigneeGroup>)
+                        request.attributes.get(
+                                "monthlyMaintenanceAssigneeGroups");
+        assertEquals(1, groups.size());
+        assertEquals("Quarterly Manager", groups.getFirst().getManagerName());
+        DashboardServlet.MonthlyMaintenanceCustomer customer =
+                groups.getFirst().getCustomers().getFirst();
+        assertEquals("quarterly-extra", customer.getCustomerName());
+        assertEquals(true, customer.isQuarterly());
+        assertEquals(true, customer.isLicenseRisk());
+    }
+
     private static MaintenanceRecordDTO maintenanceRecord(
             String customerName, LocalDate inspectionDate, String usagePercentage) {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
@@ -102,8 +142,8 @@ class DashboardServletQueryContractTest {
         private int assignmentCalls;
 
         @Override
-        public List<MaintenanceCustomerAssignment> getMaintenanceCustomerAssignments(
-                YearMonth targetMonth) {
+        public List<MaintenanceCustomerAssignment>
+                getAllMaintenanceCustomerAssignments() {
             assignmentCalls++;
             return assignments;
         }

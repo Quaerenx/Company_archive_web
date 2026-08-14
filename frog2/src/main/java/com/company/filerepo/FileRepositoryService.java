@@ -2,6 +2,7 @@ package com.company.filerepo;
 
 import com.company.filerepo.FileRepositoryFilePolicy.ValidatedFile;
 import com.company.filerepo.FileRepositoryPathPolicy.ResolvedDirectory;
+import com.company.performance.RequestPerformanceContext;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,8 +27,12 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +49,7 @@ public final class FileRepositoryService {
     private static final int MAX_CURSOR_BYTES = 2048;
     private static final int MAX_CACHED_DIRECTORIES = 32;
     private static final int MAX_CACHED_ENTRIES = 50_000;
+    private static final int MAX_SNAPSHOT_LOAD_ATTEMPTS = 3;
     private static final long MAX_CACHE_AGE_NANOS =
             Duration.ofSeconds(60).toNanos();
     private static final Duration INTERRUPTED_UPLOAD_GRACE =
@@ -63,11 +69,22 @@ public final class FileRepositoryService {
     private static final LinkedHashMap<Path, CachedDirectorySnapshot>
             SNAPSHOT_CACHE =
             new LinkedHashMap<>(16, 0.75f, true);
+    private static final ConcurrentHashMap<Path, SnapshotLoad>
+            SNAPSHOT_LOADS = new ConcurrentHashMap<>();
     private final AtomicLong snapshotScanCount = new AtomicLong();
+    private final SnapshotScanObserver snapshotScanObserver;
     private static int cachedEntryCount;
 
     public FileRepositoryService(Path repositoryRoot) throws IOException {
+        this(repositoryRoot, path -> { });
+    }
+
+    FileRepositoryService(
+            Path repositoryRoot,
+            SnapshotScanObserver snapshotScanObserver) throws IOException {
         paths = new FileRepositoryPathPolicy(repositoryRoot);
+        this.snapshotScanObserver = Objects.requireNonNull(
+                snapshotScanObserver, "snapshotScanObserver");
     }
 
     public FileRepositoryListing list(String rawPath) throws FileRepositoryException {
@@ -130,53 +147,163 @@ public final class FileRepositoryService {
         FileTime modified = lastModified(path);
         DirectorySnapshot cached = cachedSnapshot(path, modified);
         if (cached != null) {
+            RequestPerformanceContext.recordFileSnapshotCacheHit();
             return cached;
         }
+        RequestPerformanceContext.recordFileSnapshotCacheMiss();
 
-        for (int attempt = 0; attempt < 2; attempt++) {
-            FileTime before = lastModified(path);
-            DirectorySnapshot loaded = scanDirectory(directory);
-            FileTime after = lastModified(path);
-            if (before.equals(after)) {
-                cacheSnapshot(path, after, loaded);
-                return loaded;
+        SnapshotLoad proposed = new SnapshotLoad();
+        SnapshotLoad active = SNAPSHOT_LOADS.putIfAbsent(path, proposed);
+        if (active != null) {
+            return awaitSnapshot(active);
+        }
+
+        try {
+            DirectorySnapshot racedCache = cachedSnapshot(
+                    path, lastModified(path));
+            if (racedCache != null
+                    && completeCachedSnapshotIfCurrent(
+                            path, proposed, racedCache)) {
+                return racedCache;
+            }
+            return loadAndCompleteSnapshot(directory, proposed);
+        } catch (FileRepositoryException | RuntimeException | Error exception) {
+            proposed.future().completeExceptionally(exception);
+            throw exception;
+        } finally {
+            SNAPSHOT_LOADS.remove(path, proposed);
+        }
+    }
+
+    private static boolean completeCachedSnapshotIfCurrent(
+            Path path,
+            SnapshotLoad load,
+            DirectorySnapshot snapshot) {
+        synchronized (load) {
+            if (SNAPSHOT_LOADS.get(path) != load) {
+                return false;
+            }
+            load.future().complete(snapshot);
+            return true;
+        }
+    }
+
+    private DirectorySnapshot loadAndCompleteSnapshot(
+            ResolvedDirectory directory,
+            SnapshotLoad load) throws FileRepositoryException {
+        for (int attempt = 0;
+                attempt < MAX_SNAPSHOT_LOAD_ATTEMPTS;
+                attempt++) {
+            long generation = load.generation();
+            LoadedDirectorySnapshot loaded = loadStableSnapshot(directory);
+            synchronized (load) {
+                boolean generationMatches =
+                        load.generation() == generation;
+                boolean ownsLoad =
+                        SNAPSHOT_LOADS.get(directory.path()) == load;
+                if (generationMatches && ownsLoad && loaded.cacheable()) {
+                    cacheSnapshot(
+                            directory.path(),
+                            loaded.modified(),
+                            loaded.snapshot());
+                }
+                if (generationMatches
+                        || attempt == MAX_SNAPSHOT_LOAD_ATTEMPTS - 1) {
+                    load.future().complete(loaded.snapshot());
+                    return loaded.snapshot();
+                }
             }
         }
-        return scanDirectory(directory);
+        throw new IllegalStateException("Snapshot load attempts exhausted");
+    }
+
+    private LoadedDirectorySnapshot loadStableSnapshot(
+            ResolvedDirectory directory) throws FileRepositoryException {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            FileTime before = lastModified(directory.path());
+            DirectorySnapshot loaded = scanDirectory(directory);
+            FileTime after = lastModified(directory.path());
+            if (before.equals(after)) {
+                return new LoadedDirectorySnapshot(after, loaded, true);
+            }
+        }
+        return new LoadedDirectorySnapshot(
+                null, scanDirectory(directory), false);
+    }
+
+    private static DirectorySnapshot awaitSnapshot(SnapshotLoad load)
+            throws FileRepositoryException {
+        try {
+            return load.future().get();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new FileRepositoryException(
+                    500,
+                    "repository_io_error",
+                    "Repository directory scan was interrupted",
+                    exception);
+        } catch (ExecutionException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof FileRepositoryException repositoryException) {
+                throw repositoryException;
+            }
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new FileRepositoryException(
+                    500,
+                    "repository_io_error",
+                    "Unable to list repository directory",
+                    cause);
+        }
     }
 
     private DirectorySnapshot scanDirectory(ResolvedDirectory directory)
             throws FileRepositoryException {
+        long started = System.nanoTime();
         snapshotScanCount.incrementAndGet();
-        List<Candidate> candidates = new ArrayList<>();
-        int directoryCount = 0;
-        int fileCount = 0;
-        long totalSize = 0;
-        try (var children = Files.list(directory.path())) {
-            var iterator = children.iterator();
-            while (iterator.hasNext()) {
-                Path child = iterator.next();
-                FileRepositoryEntry entry = entryFor(directory, child);
-                if (entry == null) {
-                    continue;
+        try {
+            snapshotScanObserver.beforeScan(directory.path());
+            List<Candidate> candidates = new ArrayList<>();
+            int directoryCount = 0;
+            int fileCount = 0;
+            long totalSize = 0;
+            try (var children = Files.list(directory.path())) {
+                var iterator = children.iterator();
+                while (iterator.hasNext()) {
+                    Path child = iterator.next();
+                    FileRepositoryEntry entry = entryFor(directory, child);
+                    if (entry == null) {
+                        continue;
+                    }
+                    if (entry.isDirectory()) {
+                        directoryCount++;
+                    } else {
+                        fileCount++;
+                        totalSize += entry.getSize();
+                    }
+                    candidates.add(new Candidate(sortKey(entry), entry));
                 }
-                if (entry.isDirectory()) {
-                    directoryCount++;
-                } else {
-                    fileCount++;
-                    totalSize += entry.getSize();
-                }
-                candidates.add(new Candidate(sortKey(entry), entry));
+            } catch (IOException e) {
+                throw new FileRepositoryException(
+                        500,
+                        "repository_io_error",
+                        "Unable to list repository directory",
+                        e);
             }
-        } catch (IOException e) {
-            throw new FileRepositoryException(500, "repository_io_error", "Unable to list repository directory", e);
+            candidates.sort(Comparator.comparing(Candidate::key));
+            return new DirectorySnapshot(
+                    List.copyOf(candidates),
+                    directoryCount,
+                    fileCount,
+                    totalSize);
+        } finally {
+            RequestPerformanceContext.recordFileSnapshotScan(
+                    Math.max(0, System.nanoTime() - started));
         }
-        candidates.sort(Comparator.comparing(Candidate::key));
-        return new DirectorySnapshot(
-                List.copyOf(candidates),
-                directoryCount,
-                fileCount,
-                totalSize);
     }
 
     private static int firstCandidateAfter(
@@ -223,7 +350,7 @@ public final class FileRepositoryService {
         }
     }
 
-    private void cacheSnapshot(
+    private static void cacheSnapshot(
             Path path, FileTime modified, DirectorySnapshot snapshot) {
         int entryCount = snapshot.candidates().size();
         if (entryCount > MAX_CACHED_ENTRIES) {
@@ -251,6 +378,23 @@ public final class FileRepositoryService {
     }
 
     private static void invalidateSnapshot(Path path) {
+        SnapshotLoad active = SNAPSHOT_LOADS.get(path);
+        if (active != null) {
+            synchronized (active) {
+                if (SNAPSHOT_LOADS.get(path) != active) {
+                    removeCachedSnapshot(path);
+                    return;
+                }
+                active.invalidate();
+                removeCachedSnapshot(path);
+                SNAPSHOT_LOADS.remove(path, active);
+            }
+            return;
+        }
+        removeCachedSnapshot(path);
+    }
+
+    private static void removeCachedSnapshot(Path path) {
         synchronized (SNAPSHOT_CACHE_LOCK) {
             CachedDirectorySnapshot removed = SNAPSHOT_CACHE.remove(path);
             if (removed != null) {
@@ -717,6 +861,35 @@ public final class FileRepositoryService {
             FileTime modified,
             long loadedAtNanos,
             DirectorySnapshot snapshot) {
+    }
+
+    private record LoadedDirectorySnapshot(
+            FileTime modified,
+            DirectorySnapshot snapshot,
+            boolean cacheable) {
+    }
+
+    private static final class SnapshotLoad {
+        private final CompletableFuture<DirectorySnapshot> future =
+                new CompletableFuture<>();
+        private long generation;
+
+        private CompletableFuture<DirectorySnapshot> future() {
+            return future;
+        }
+
+        private synchronized long generation() {
+            return generation;
+        }
+
+        private synchronized void invalidate() {
+            generation++;
+        }
+    }
+
+    @FunctionalInterface
+    interface SnapshotScanObserver {
+        void beforeScan(Path path);
     }
 
     private record SortKey(

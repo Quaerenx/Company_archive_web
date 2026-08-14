@@ -1,6 +1,7 @@
 package com.company.util;
 
 import com.company.config.ApplicationEnvironment;
+import com.company.performance.JdbcConnectionAcquisition;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
@@ -138,7 +139,7 @@ public class DBConnection {
         }
         
         Connection conn = JdbcConnectionDecorator.decorate(
-                dataSource.getConnection(),
+                JdbcConnectionAcquisition.acquire(dataSource::getConnection),
                 queryTimeoutSeconds,
                 ApplicationEnvironment.isReadOnly());
         if (logger.isDebugEnabled()) {

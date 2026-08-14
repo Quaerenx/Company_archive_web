@@ -9,6 +9,7 @@ public final class RequestPaths {
     private static final Set<String> FAVICON_PATHS =
             Set.of("/favicon.ico", "/favicon.png", "/favicon.svg");
     private static final Set<String> BRAND_ASSET_PATHS = Set.of(
+            "/resources/images/archive-logo.svg",
             "/resources/images/archive-primary-logo.svg",
             "/resources/images/archive-compact-horizontal.svg");
     private static final Set<String> ERROR_PATHS = Set.of(

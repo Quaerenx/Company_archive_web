@@ -31,6 +31,7 @@ class RequestPathsTest {
                 "/js/legacy.js",
                 "/webjars/library/file.js",
                 "/resources/fonts/ibm-plex-sans-kr/1.1.0/font.woff2",
+                "/resources/images/archive-logo.svg",
                 "/resources/images/archive-primary-logo.svg",
                 "/resources/images/archive-compact-horizontal.svg",
                 "/favicon.ico",
@@ -74,7 +75,7 @@ class RequestPathsTest {
         assertTrue(RequestPaths.isPublicStaticRequest(
                 request("GET", "/frog2/resources/fonts/font.woff2", "/frog2")));
         assertTrue(RequestPaths.isPublicStaticRequest(
-                request("GET", "/frog2/resources/images/archive-primary-logo.svg", "/frog2")));
+                request("GET", "/frog2/resources/images/archive-logo.svg", "/frog2")));
         assertTrue(RequestPaths.isPublicStaticRequest(
                 request("HEAD", "/frog2/favicon.ico", "/frog2")));
         assertTrue(RequestPaths.isPublicStaticRequest(

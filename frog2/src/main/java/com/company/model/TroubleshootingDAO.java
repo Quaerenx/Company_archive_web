@@ -13,6 +13,8 @@ import java.util.Objects;
 import com.company.util.DBConnection;
 import com.company.util.Pagination;
 import com.company.util.SearchQueryPolicy;
+import com.company.performance.RequestPerformanceContext;
+import com.company.performance.RequestPerformanceContext.Operation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +77,11 @@ public class TroubleshootingDAO {
             int requestedPage,
             int pageSize) {
         String normalizedQuery = normalizedQuery(query);
+        if (normalizedQuery != null) {
+            RequestPerformanceContext.markOperation(includeContent
+                    ? Operation.TROUBLESHOOTING_CONTENT_SEARCH
+                    : Operation.TROUBLESHOOTING_SUMMARY_SEARCH);
+        }
         String searchPredicate = includeContent
                 ? CONTENT_SEARCH_PREDICATE
                 : SUMMARY_SEARCH_PREDICATE;

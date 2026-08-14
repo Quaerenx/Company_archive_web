@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
+import com.company.performance.RequestPerformanceContext;
 import org.junit.jupiter.api.Test;
 
 class TroubleshootingDAOPaginationTest {
@@ -22,8 +23,11 @@ class TroubleshootingDAOPaginationTest {
         TroubleshootingDAO dao = new TroubleshootingDAO(
                 jdbc::open, new SchemaCapabilityCache());
 
+        RequestPerformanceContext.begin();
         PageResult<TroubleshootingDTO> result =
                 dao.getTroubleshootingPage("  needle  ", 1, 20);
+        RequestPerformanceContext.Snapshot performance =
+                RequestPerformanceContext.finish();
 
         assertEquals(1, jdbc.statements.size());
         assertTrue(jdbc.statements.get(0).sql.contains(
@@ -45,6 +49,9 @@ class TroubleshootingDAOPaginationTest {
         assertEquals(7, result.items().getFirst().getId());
         assertEquals(1, jdbc.openCount);
         assertEquals(1, jdbc.closeCount);
+        assertEquals(
+                RequestPerformanceContext.Operation.TROUBLESHOOTING_SUMMARY_SEARCH,
+                performance.operation());
     }
 
     @Test
@@ -61,9 +68,12 @@ class TroubleshootingDAOPaginationTest {
         TroubleshootingDAO dao = new TroubleshootingDAO(
                 jdbc::open, new SchemaCapabilityCache());
 
+        RequestPerformanceContext.begin();
         PageResult<TroubleshootingDTO> result =
                 dao.getTroubleshootingPage(
                         "needle", true, 1, 20);
+        RequestPerformanceContext.Snapshot performance =
+                RequestPerformanceContext.finish();
 
         assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(overview"));
         assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(script_content"));
@@ -73,6 +83,9 @@ class TroubleshootingDAOPaginationTest {
         assertEquals(20, jdbc.statements.get(0).parameters.get(10));
         assertEquals(0, jdbc.statements.get(0).parameters.get(11));
         assertEquals(1, result.totalCount());
+        assertEquals(
+                RequestPerformanceContext.Operation.TROUBLESHOOTING_CONTENT_SEARCH,
+                performance.operation());
     }
 
     @Test

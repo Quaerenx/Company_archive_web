@@ -64,10 +64,13 @@ public class DashboardServlet extends HttpServlet {
                                 Date.valueOf(monthStart),
                                 Date.valueOf(nextMonthStart)),
                         today);
+        List<MaintenanceCustomerAssignment> allAssignments =
+                customerDAO.getAllMaintenanceCustomerAssignments();
         List<MaintenanceAssigneeGroup> monthlyMaintenanceAssigneeGroups =
                 buildMaintenanceAssigneeGroups(
-                        customerDAO.getMaintenanceCustomerAssignments(selectedMonth),
-                        monthlyMaintenanceCards);
+                        allAssignments,
+                        monthlyMaintenanceCards,
+                        selectedMonth);
 
         request.setAttribute("maintenanceMonthParam", selectedMonth.format(MONTH_PARAM_FORMATTER));
         request.setAttribute("maintenanceMonthLabel", selectedMonth.format(MONTH_LABEL_FORMATTER));
@@ -125,9 +128,11 @@ public class DashboardServlet extends HttpServlet {
                 inspectionDate = record.getInspectionDate().toLocalDate();
             }
 
-            Double usagePct = LicenseSummaryFormatter.resolveUsagePercentage(record);
-            boolean licenseRisk =
-                    LicenseRiskPolicy.requiresAttention(usagePct);
+            LicenseRiskPolicy.Level licenseRiskLevel =
+                    LicenseSummaryFormatter.resolveUsageRiskLevel(record);
+            boolean licenseRisk = licenseRiskLevel
+                    == LicenseRiskPolicy.Level.WARNING
+                    || licenseRiskLevel == LicenseRiskPolicy.Level.RISK;
             String statusCode = "done";
             String statusLabel = "완료";
             if (inspectionDate != null && inspectionDate.isAfter(today)) {
@@ -151,7 +156,8 @@ public class DashboardServlet extends HttpServlet {
 
     private List<MaintenanceAssigneeGroup> buildMaintenanceAssigneeGroups(
             List<MaintenanceCustomerAssignment> assignments,
-            List<MonthlyMaintenanceCard> cards) {
+            List<MonthlyMaintenanceCard> cards,
+            YearMonth selectedMonth) {
         Map<String, CustomerMonthState> stateByCustomer = new LinkedHashMap<>();
         for (MonthlyMaintenanceCard card : cards) {
             String customerName = normalizedName(card.getCustomerName());
@@ -170,11 +176,18 @@ public class DashboardServlet extends HttpServlet {
 
         Map<String, List<MonthlyMaintenanceCustomer>> customersByManager =
                 new LinkedHashMap<>();
+        Map<String, MaintenanceCustomerAssignment> assignmentByCustomer =
+                new LinkedHashMap<>();
         Set<String> assignedCustomers = new HashSet<>();
         if (assignments != null) {
             for (MaintenanceCustomerAssignment assignment : assignments) {
                 String customerName = normalizedName(assignment.customerName());
-                if (customerName.isEmpty() || !assignedCustomers.add(customerName)) {
+                if (customerName.isEmpty()) {
+                    continue;
+                }
+                assignmentByCustomer.putIfAbsent(customerName, assignment);
+                if (!assignment.schedule().isDue(selectedMonth)
+                        || !assignedCustomers.add(customerName)) {
                     continue;
                 }
                 CustomerMonthState state = stateByCustomer.get(customerName);
@@ -191,12 +204,17 @@ public class DashboardServlet extends HttpServlet {
             if (assignedCustomers.contains(entry.getKey())) {
                 continue;
             }
+            MaintenanceCustomerAssignment assignment =
+                    assignmentByCustomer.get(entry.getKey());
             addMaintenanceCustomer(
                     customersByManager,
-                    displayManagerName(entry.getValue().inspectorName),
+                    displayManagerName(assignment == null
+                            ? entry.getValue().inspectorName
+                            : assignment.managerName()),
                     entry.getKey(),
                     entry.getValue(),
-                    false);
+                    assignment != null
+                            && assignment.schedule().isQuarterly());
         }
 
         List<MaintenanceAssigneeGroup> groups = new ArrayList<>();
