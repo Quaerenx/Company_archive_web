@@ -2,8 +2,8 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <c:set var="pageTitle" value="회의록 작성" scope="request" />
-<c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_form.css" scope="request" />
+<c:set var="pageBodyClass" value="page-1050 page-meeting page-meeting-form" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting_form.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/meeting_form.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
@@ -42,7 +42,7 @@
             <%@ include file="/WEB-INF/includes/_meeting_form_fields.jspf" %>
 
             <!-- 버튼 -->
-            <div class="button-group">
+            <div class="button-group ui-form-actions">
                 <a href="${pageContext.request.contextPath}/meeting?view=list"
                    class="btn btn-cancel ui-button button--secondary button--md">취소</a>
                 <button type="button"

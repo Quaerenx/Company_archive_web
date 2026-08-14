@@ -52,14 +52,20 @@ class MeetingFormContractTest {
             assertTrue(behavior.contains("'daily': '일일 회의'"));
             assertTrue(behavior.contains("'emergency': '긴급 회의'"));
             assertTrue(behavior.contains("beforeunload"));
+            assertTrue(behavior.contains("insertTemplate"));
+            assertTrue(behavior.contains("updateTitleSuggestion"));
+            assertTrue(behavior.contains("updateContentCount"));
+            assertFalse(behavior.contains("회의록을 등록하시겠습니까?"));
+            assertFalse(behavior.contains("회의록을 수정하시겠습니까?"));
         }
 
-        assertTrue(writeBehavior.contains("회의록을 등록하시겠습니까?"));
         assertTrue(writeBehavior.contains("getFullYear"));
-        assertTrue(editBehavior.contains("회의록을 수정하시겠습니까?"));
         assertTrue(editBehavior.contains("정말로 이 회의록을 삭제하시겠습니까?"));
         assertTrue(editBehavior.contains("originalData"));
         assertTrue(editPage.contains("id=\"deleteForm\""));
+        assertTrue(formFields.contains("data-meeting-action=\"insert-template\""));
+        assertTrue(formFields.contains("id=\"contentCount\""));
+        assertFalse(formFields.contains("공간 확보용"));
     }
 
     private static String behaviorSource(String page) throws Exception {

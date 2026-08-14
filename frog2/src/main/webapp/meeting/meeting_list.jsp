@@ -3,9 +3,8 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="회의록 관리" scope="request" />
-<c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_list_layout.css,/resources/css/pages/meeting_list.css" scope="request" />
-<c:set var="pageScript" value="/resources/js/pages/meeting_list.js" scope="request" />
+<c:set var="pageBodyClass" value="page-1050 page-meeting page-meeting-list" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting_list.css" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
@@ -15,34 +14,14 @@
         <jsp:attribute name="title">
         	<i class="fas fa-clipboard-list"></i> 회의록 관리
         </jsp:attribute>
-        <jsp:attribute name="subtitle">총 ${totalCount}개의 회의록이 등록되어 있습니다</jsp:attribute>
+        <jsp:attribute name="subtitle">회의 결과와 후속 내용을 한곳에서 확인합니다.</jsp:attribute>
         <jsp:attribute name="actions">
             <a href="${pageContext.request.contextPath}/meeting?view=write"
                class="add-button ui-button button--primary button--md"><i class="fas fa-pen"></i> 새 회의록 작성</a>
         </jsp:attribute>
     </t:pageHeader>
     
-    <!-- 성공/에러 메시지 표시 -->
-    <c:if test="${not empty sessionScope.message}">
-        <div class="alert alert-success ui-alert ui-alert--success"
-             role="status"
-             aria-live="polite"
-             aria-atomic="true">
-            <i class="fas fa-check-circle"></i>
-            <c:out value="${sessionScope.message}" />
-        </div>
-        <c:remove var="message" scope="session" />
-    </c:if>
-
-    <c:if test="${not empty sessionScope.error}">
-        <div class="alert alert-danger ui-alert ui-alert--danger"
-             role="alert"
-             aria-atomic="true">
-            <i class="fas fa-exclamation-circle"></i>
-            <c:out value="${sessionScope.error}" />
-        </div>
-        <c:remove var="error" scope="session" />
-    </c:if>
+    <t:flashMessages />
     
     <!-- 회의록 목록 (troubleshooting_list 테이블 디자인 적용) -->
 
@@ -56,9 +35,10 @@
                         <caption class="sr-only">회의록 목록</caption>
                         <thead>
                             <tr>
+                                <th scope="col" class="meeting-col-datetime">회의 일시</th>
+                                <th scope="col" class="meeting-col-type">유형</th>
                                 <th scope="col">제목</th>
-                                <th scope="col" width="120">글쓴이</th>
-                                <th scope="col" width="160">회의 일시</th>
+                                <th scope="col" class="meeting-col-author">작성자</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -68,17 +48,31 @@
                                     <c:param name="id" value="${meeting.meetingId}" />
                                     <c:param name="returnPage" value="${currentPage}" />
                                 </c:url>
-                                <tr data-detail-url="<c:out value='${meetingViewUrl}' />">
-                                    <td>
+                                <fmt:formatDate var="meetingDateIso" value="${meeting.meetingDatetime}" pattern="yyyy-MM-dd'T'HH:mm" />
+                                <fmt:formatDate var="meetingDateLabel" value="${meeting.meetingDatetime}" pattern="yyyy.MM.dd" />
+                                <fmt:formatDate var="meetingTimeLabel" value="${meeting.meetingDatetime}" pattern="HH:mm" />
+                                <tr>
+                                    <td class="meeting-datetime-cell">
+                                        <time datetime="<c:out value='${meetingDateIso}' />">
+                                            <span class="meeting-date"><c:out value="${meetingDateLabel}" /></span>
+                                            <span class="meeting-time"><c:out value="${meetingTimeLabel}" /></span>
+                                        </time>
+                                    </td>
+                                    <td class="meeting-type-cell">
+                                        <span class="meeting-type-badge ui-badge"><c:out value="${meeting.meetingTypeLabel}" /></span>
+                                    </td>
+                                    <td class="meeting-title-cell">
                                         <a href="<c:out value='${meetingViewUrl}' />"
                                            class="title-link">
                                             <c:out value="${meeting.title}" />
                                         </a>
+                                        <span class="meeting-row-meta" aria-hidden="true">
+                                            <span><c:out value="${meeting.meetingTypeLabel}" /></span>
+                                            <span><c:out value="${meetingDateLabel}" /> <c:out value="${meetingTimeLabel}" /></span>
+                                            <span><c:out value="${meeting.authorName}" /></span>
+                                        </span>
                                     </td>
-                                    <td class="text-center"><c:out value="${meeting.authorName}" /></td>
-                                    <td class="text-center">
-                                        <fmt:formatDate value="${meeting.meetingDatetime}" pattern="yyyy-MM-dd HH:mm"/>
-                                    </td>
+                                    <td class="meeting-author-cell"><c:out value="${meeting.authorName}" /></td>
                                 </tr>
                             </c:forEach>
                         </tbody>

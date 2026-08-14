@@ -44,7 +44,7 @@ class RuntimePerformanceContractTest {
                 .collect(Collectors.toSet());
 
         assertEquals(
-                Set.of("meeting_id", "title", "author_name", "meeting_datetime"),
+                Set.of("meeting_id", "title", "meeting_type", "author_name", "meeting_datetime"),
                 columns);
         assertFalse(sql.contains("meeting_comments"), sql);
         assertFalse(sql.contains("content"), sql);

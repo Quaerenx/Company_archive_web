@@ -74,6 +74,10 @@ class VisualRegressionToolContractTest {
         assertTrue(shell.contains(" public"));
         assertTrue(shell.contains(" authenticated"));
         assertTrue(capture.contains("scrollWidth"));
+        assertTrue(capture.contains("window.scrollTo(0, 0)"));
+        assertTrue(capture.contains("scrollX: metrics.scrollX"));
+        assertTrue(capture.contains("scrollY: metrics.scrollY"));
+        assertTrue(capture.contains("metrics.scrollX !== 0 || metrics.scrollY !== 0"));
         assertTrue(capture.contains("consoleErrorCount"));
         assertTrue(capture.contains("capture-metrics.json"));
         assertFalse(capture.contains("e2ePassword" + "}"));

@@ -16,6 +16,23 @@
         meetingDateTime: document.getElementById('meeting_datetime'),
         content: document.getElementById('content')
     };
+    const contentCount = document.getElementById('contentCount');
+    const contentTemplate = [
+        '참석자',
+        '- ',
+        '',
+        '주요 논의사항',
+        '- ',
+        '',
+        '결정사항',
+        '- ',
+        '',
+        '후속 조치',
+        '- 담당자 / 기한: ',
+        '',
+        '다음 회의',
+        '- '
+    ].join('\n');
     let isSubmitting = false;
     let originalData;
 
@@ -25,6 +42,8 @@
         if (mode === 'write' && !fields.meetingDateTime.value) {
             fields.meetingDateTime.value = currentLocalDateTime();
         }
+        updateTitleSuggestion();
+        updateContentCount();
         originalData = readFormData();
 
         document.querySelectorAll('[data-meeting-action="preview"]').forEach(function(button) {
@@ -33,6 +52,13 @@
         document.querySelectorAll('[data-meeting-action="close-preview"]').forEach(function(button) {
             button.addEventListener('click', closePreview);
         });
+        document.querySelectorAll('[data-meeting-action="insert-template"]').forEach(function(button) {
+            button.addEventListener('click', insertTemplate);
+        });
+
+        fields.meetingType.addEventListener('change', updateTitleSuggestion);
+        fields.meetingDateTime.addEventListener('change', updateTitleSuggestion);
+        fields.content.addEventListener('input', updateContentCount);
 
         const deleteButton = document.querySelector('[data-meeting-action="delete"]');
         if (deleteButton) {
@@ -94,6 +120,38 @@
         previewDialog.close();
     }
 
+    function updateTitleSuggestion() {
+        const dateValue = fields.meetingDateTime.value.slice(0, 10);
+        const typeValue = fields.meetingType.value;
+        if (!dateValue || !typeValue) {
+            fields.title.placeholder = '회의 제목을 입력하세요';
+            return;
+        }
+        fields.title.placeholder = dateValue.split('-').join('.')
+                + ' ' + getTypeLabel(typeValue);
+    }
+
+    function insertTemplate() {
+        if (fields.content.value.trim()) {
+            window.Frog2UI.notify(
+                '작성 중인 내용을 보호하기 위해 빈 입력란에만 기본 틀을 넣을 수 있습니다.',
+                'warning');
+            fields.content.focus();
+            return;
+        }
+        fields.content.value = contentTemplate;
+        updateContentCount();
+        fields.content.focus();
+        const firstEntryPosition = contentTemplate.indexOf('- ') + 2;
+        fields.content.setSelectionRange(firstEntryPosition, firstEntryPosition);
+    }
+
+    function updateContentCount() {
+        if (contentCount) {
+            contentCount.textContent = Array.from(fields.content.value).length + '자';
+        }
+    }
+
     function confirmDelete(event) {
         if (window.Frog2UI.confirmAction('정말로 이 회의록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) {
             window.Frog2UI.setButtonLoading(event.currentTarget, true, '삭제 중');
@@ -126,14 +184,6 @@
 
     function handleSubmit(event) {
         if (!validateForm()) {
-            event.preventDefault();
-            return;
-        }
-
-        const message = mode === 'edit'
-                ? '회의록을 수정하시겠습니까?'
-                : '회의록을 등록하시겠습니까?';
-        if (!window.Frog2UI.confirmAction(message)) {
             event.preventDefault();
             return;
         }

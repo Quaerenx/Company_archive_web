@@ -1,7 +1,6 @@
 package com.company.layout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -17,19 +16,17 @@ class MeetingCssSplitContractTest {
     private static final Path CSS = WEBAPP.resolve("resources/css/pages");
     private static final List<String> PAGE_CHUNKS = List.of(
             "/resources/css/pages/meeting_view.css",
-            "/resources/css/pages/meeting_list_layout.css",
+            "/resources/css/pages/meeting_list.css",
             "/resources/css/pages/meeting_form.css");
 
     @Test
-    void splitFilesKeepPageResponsibilitiesAndUseSharedUiTokens() throws Exception {
-        String shared = readCss("meeting.css");
+    void pageFilesKeepResponsibilitiesAndUseSharedUiTokens() throws Exception {
         String view = readCss("meeting_view.css");
-        String list = readCss("meeting_list_layout.css");
+        String list = readCss("meeting_list.css");
         String form = readCss("meeting_form.css");
 
-        assertTrue(shared.contains("/* 회의 관리 페이지 전용 스타일 */"));
         assertTrue(view.startsWith("/* meeting_view.jsp 전용 스타일 */"));
-        assertTrue(list.startsWith("/* meeting_list.jsp 전용 스타일 */"));
+        assertTrue(list.contains(".meeting-management .meeting-list-table"));
         assertTrue(form.startsWith("/* meeting_write.jsp 전용 스타일 */"));
         assertTrue(form.contains(".meeting-page-container .ui-form textarea"));
         String uiSystem = Files.readString(
@@ -41,6 +38,9 @@ class MeetingCssSplitContractTest {
         assertFalse(form.contains("#007bff"));
         assertFalse(form.contains(".form-group input"));
         assertFalse(form.contains(".alert-danger"));
+        assertFalse(view.contains("!important"));
+        assertFalse(list.contains("!important"));
+        assertFalse(form.contains("!important"));
     }
 
     @Test
@@ -48,21 +48,16 @@ class MeetingCssSplitContractTest {
         Map<String, String> expectedStyles = new LinkedHashMap<>();
         expectedStyles.put(
                 "meeting/meeting_list.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_list_layout.css,"
-                        + "/resources/css/pages/meeting_list.css");
+                "/resources/css/pages/meeting_list.css");
         expectedStyles.put(
                 "meeting/meeting_view.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_view.css");
+                "/resources/css/pages/meeting_view.css");
         expectedStyles.put(
                 "meeting/meeting_write.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css");
+                "/resources/css/pages/meeting_form.css");
         expectedStyles.put(
                 "meeting/meeting_edit.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css");
+                "/resources/css/pages/meeting_form.css");
 
         for (Map.Entry<String, String> entry : expectedStyles.entrySet()) {
             String page = Files.readString(WEBAPP.resolve(entry.getKey()));
@@ -72,20 +67,14 @@ class MeetingCssSplitContractTest {
                             + "\" scope=\"request\" />";
 
             assertTrue(page.contains(expectedDeclaration), entry.getKey());
-            assertEquals(1, occurrences(page, "/resources/css/pages/meeting.css"),
-                    entry.getKey());
-            String selectedChunk = null;
             for (String chunk : PAGE_CHUNKS) {
                 assertEquals(entry.getValue().contains(chunk), page.contains(chunk),
                         entry.getKey() + ": " + chunk);
-                if (entry.getValue().contains(chunk)) {
-                    selectedChunk = chunk;
-                }
             }
-            assertNotNull(selectedChunk, entry.getKey());
-            assertTrue(entry.getValue().indexOf("/resources/css/pages/meeting.css")
-                            < entry.getValue().indexOf(selectedChunk),
+            assertFalse(page.contains("/resources/css/pages/meeting.css"),
                     entry.getKey());
+            assertFalse(page.contains(
+                    "/resources/css/pages/meeting_list_layout.css"), entry.getKey());
             assertFalse(entry.getValue().contains(
                     "/resources/css/pages/customers.css"), entry.getKey());
             assertTrue(page.contains("content-management"), entry.getKey());
@@ -93,25 +82,22 @@ class MeetingCssSplitContractTest {
     }
 
     @Test
-    void sharedMeetingCssDoesNotRedefineViewAndCommentSelectors()
+    void activeMeetingCssDoesNotKeepVerifiedLegacySelectors()
             throws Exception {
-        String shared = readCss("meeting.css");
         String view = readCss("meeting_view.css");
+        String list = readCss("meeting_list.css");
 
         for (String selector : List.of(
                 ".meeting-header {",
                 ".meeting-title {",
                 ".meeting-actions {",
                 ".meeting-actions .btn {",
-                ".comments-section {",
-                ".comment-item {",
-                ".comment-header {",
-                ".comment-author {",
-                ".comment-date {",
-                ".comment-content {",
-                ".comment-actions {")) {
-            assertFalse(shared.contains(selector), selector);
+                ".btn-save {",
+                ".btn-cancel-edit {")) {
+            assertFalse(view.contains(selector), selector);
         }
+        assertFalse(view.lines().map(String::strip)
+                .anyMatch(".btn-comment {"::equals));
 
         for (String selector : List.of(
                 ":where(.meeting-view) .comments-section {",
@@ -121,8 +107,9 @@ class MeetingCssSplitContractTest {
                 ":where(.meeting-view) .comment-actions {")) {
             assertTrue(view.contains(selector), selector);
         }
-        assertFalse(shared.contains("!important"));
-        assertFalse(view.contains("!important"));
+        assertFalse(list.contains("tr[data-detail-url]"));
+        assertTrue(list.contains(".meeting-row-meta"));
+        assertTrue(list.contains("@media (max-width: 768px)"));
     }
 
     private static String readCss(String fileName) throws Exception {

@@ -28,9 +28,9 @@ class FocusedVisualHierarchyContractTest {
         assertTrue(header.contains("keep only functional indicators visible"));
         assertTrue(header.contains(".main-nav .nav-link > i:not(.dropdown-chevron)"));
         assertTrue(header.contains(".main-nav .nav-link:hover,"));
-        assertTrue(header.contains("color: var(--color-text-strong);"));
+        assertTrue(header.contains("color: var(--color-navigation-text-strong);"));
         assertTrue(header.contains(".main-nav .nav-link.active,"));
-        assertTrue(header.contains("color: var(--color-primary);"));
+        assertTrue(header.contains("background: var(--color-navigation-current);"));
     }
 
     @Test

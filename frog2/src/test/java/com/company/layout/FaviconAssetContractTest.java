@@ -18,11 +18,10 @@ class FaviconAssetContractTest {
         String lower = svg.toLowerCase();
 
         assertTrue(svg.contains("width=\"32\" height=\"32\""));
-        assertTrue(svg.contains("viewBox=\"0 0 32 32\""));
-        assertTrue(svg.contains("<rect x=\"1\" y=\"1\" width=\"30\" height=\"30\" rx=\"5\""));
-        assertTrue(svg.contains("fill=\"#20252B\""));
+        assertTrue(svg.contains("viewBox=\"0 0 1024 1024\""));
+        assertTrue(svg.contains("fill=\"#1B364B\""));
         assertTrue(svg.contains("<path"));
-        assertTrue(svg.contains("fill=\"#FFFFFF\""));
+        assertTrue(svg.contains("fill=\"#F9FBFB\""));
         assertEquals(0, occurrences(svg, "<image "));
         assertEquals(0, occurrences(svg, "data:image/"));
         assertEquals(0, occurrences(svg, "<text"));
@@ -41,7 +40,7 @@ class FaviconAssetContractTest {
         assertTrue(include.contains("/favicon.svg"));
         assertTrue(include.contains("type=\"image/svg+xml\""));
         assertTrue(include.contains("sizes=\"any\""));
-        assertTrue(include.contains("?v=${initParam.frog2AssetVersion}"));
+        assertTrue(include.contains("?v=20260814-archive-favicon-1"));
         assertEquals(1, occurrences(include, "rel=\"icon\""));
         assertFalse(include.contains("/favicon.png"));
         assertFalse(include.contains("rel=\"apple-touch-icon\""));

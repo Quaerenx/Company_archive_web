@@ -8,7 +8,7 @@
 
     <context-param>
         <param-name>frog2AssetVersion</param-name>
-        <param-value>20260812-mypage-workspace-1</param-value>
+        <param-value>20260814-meeting-ux-1</param-value>
     </context-param>
 
     <session-config>

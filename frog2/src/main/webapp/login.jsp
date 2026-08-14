@@ -23,9 +23,9 @@
             <header class="login-header">
                 <div class="login-brand">
                     <img class="login-brand-logo"
-                         src="${pageContext.request.contextPath}/resources/images/archive-primary-logo.svg"
-                         width="1119"
-                         height="288"
+                         src="${pageContext.request.contextPath}/resources/images/archive-logo.svg"
+                         width="4096"
+                         height="2286"
                          alt="${productName}">
                 </div>
             </header>

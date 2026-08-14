@@ -25,6 +25,7 @@ class AuthFilterTest {
                 "/frog2/favicon.png",
                 "/frog2/favicon.ico",
                 "/frog2/favicon.svg",
+                "/frog2/resources/images/archive-logo.svg",
                 "/frog2/resources/images/archive-primary-logo.svg",
                 "/frog2/resources/images/archive-compact-horizontal.svg",
                 "/frog2/resources/fonts/ibm-plex-sans-kr/1.1.0/font.woff2"

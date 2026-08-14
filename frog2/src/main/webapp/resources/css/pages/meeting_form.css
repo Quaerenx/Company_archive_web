@@ -1,8 +1,63 @@
 /* meeting_write.jsp 전용 스타일 */
 /* 회의록 본문은 일반 폼보다 넉넉한 편집 영역을 유지합니다. */
 .meeting-page-container .ui-form textarea {
-    min-height: 300px;
+    min-height: 340px;
     line-height: 1.6;
+}
+
+.meeting-template-actions,
+.meeting-content-guidance {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+}
+
+.meeting-template-actions {
+    margin: calc(var(--space-8) * -1) 0 var(--space-16);
+}
+
+.meeting-template-actions .help-text,
+.meeting-content-guidance .help-text {
+    margin: 0;
+}
+
+.meeting-character-count {
+    flex: none;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+}
+
+.meeting-audit-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12) var(--space-32);
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.meeting-audit-list > div {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+}
+
+.meeting-audit-list dt {
+    color: var(--color-text-muted);
+}
+
+.meeting-audit-list dd {
+    margin: 0;
+    color: var(--color-text);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.meeting-delete-button {
+    order: -1;
+    margin-inline-end: auto;
 }
 
 /* 미리보기 내용 스타일 */
@@ -47,6 +102,34 @@
 
 /* 반응형 */
 @media (max-width: 768px) {
+    .meeting-page-container .ui-form textarea {
+        min-height: 280px;
+    }
+
+    .meeting-template-actions,
+    .meeting-content-guidance {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .meeting-template-actions .ui-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .meeting-character-count {
+        align-self: flex-end;
+    }
+
+    .meeting-audit-list {
+        flex-direction: column;
+        gap: var(--space-8);
+    }
+
+    .meeting-delete-button {
+        margin-inline-end: 0;
+    }
+
     .modal-wide .modal-content {
         width: 95%;
         margin: 2% auto;

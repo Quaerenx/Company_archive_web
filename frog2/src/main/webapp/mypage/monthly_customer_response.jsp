@@ -237,7 +237,7 @@
                 </div>
             </div>
 
-            <div class="modal-footer">
+            <div class="modal-footer ui-form-actions">
                 <button type="button"
                         class="btn btn-cancel ui-button button--secondary button--md"
                         data-monthly-action="close">취소</button>

@@ -1,7 +1,20 @@
 .meeting-management .meeting-list-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
     font-size: var(--font-size-sm);
+}
+
+.meeting-management .meeting-col-datetime {
+    width: 148px;
+}
+
+.meeting-management .meeting-col-type {
+    width: 124px;
+}
+
+.meeting-management .meeting-col-author {
+    width: 104px;
 }
 
 .meeting-management .meeting-list-table th {
@@ -20,7 +33,6 @@
 .meeting-management .meeting-list-table tbody tr {
     transition: background-color var(--motion-fast) var(--motion-ease);
     border-bottom: 1px solid var(--color-border);
-    cursor: pointer;
 }
 
 .meeting-management .meeting-list-table tbody tr:hover {
@@ -28,7 +40,7 @@
 }
 
 .meeting-management .meeting-list-table td {
-    padding: var(--space-12);
+    padding: var(--space-16) var(--space-12);
     vertical-align: middle;
     color: var(--color-text);
 }
@@ -42,4 +54,119 @@
 .meeting-management .title-link:hover {
     color: var(--color-primary);
     text-decoration: underline;
+}
+
+.meeting-management .title-link:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+}
+
+.meeting-management .meeting-datetime-cell time {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.meeting-management .meeting-date {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.meeting-management .meeting-time,
+.meeting-management .meeting-author-cell {
+    color: var(--color-text-muted);
+}
+
+.meeting-management .meeting-author-cell {
+    text-align: center;
+}
+
+.meeting-management .meeting-type-cell {
+    text-align: center;
+}
+
+.meeting-management .meeting-type-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+    padding: var(--space-4) var(--space-8);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.meeting-management .meeting-row-meta {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .meeting-management .meeting-list-table {
+        table-layout: auto;
+    }
+
+    .meeting-management .meeting-list-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .meeting-management .meeting-list-table,
+    .meeting-management .meeting-list-table tbody,
+    .meeting-management .meeting-list-table tr,
+    .meeting-management .meeting-list-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .meeting-management .meeting-list-table tbody tr {
+        padding: var(--space-16);
+    }
+
+    .meeting-management .meeting-list-table td {
+        padding: 0;
+        border: 0;
+    }
+
+    .meeting-management .meeting-datetime-cell,
+    .meeting-management .meeting-type-cell,
+    .meeting-management .meeting-author-cell {
+        display: none;
+    }
+
+    .meeting-management .title-link {
+        padding: 0;
+        font-size: var(--font-size-md);
+        line-height: 1.45;
+    }
+
+    .meeting-management .meeting-row-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-8);
+        margin-top: var(--space-8);
+        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .meeting-management .meeting-row-meta span + span::before {
+        content: "·";
+        margin-right: var(--space-8);
+        color: var(--color-border-strong);
+    }
 }

@@ -47,14 +47,25 @@ class MeetingViewContractTest {
     }
 
     @Test
-    void missingLegacyMeetingTypeUsesANullSafeFallback() throws Exception {
+    void detailUsesTheDtoMeetingTypeLabelInsteadOfTheStoredCode() throws Exception {
         String page = read("meeting/meeting_view.jsp");
 
         assertFalse(page.contains("meeting.meetingType.toLowerCase()"));
-        assertTrue(page.contains("meetingTypeValue"));
-        assertTrue(page.contains("meetingTypeLabel"));
-        assertTrue(page.contains("? 'other' : fn:toLowerCase(meeting.meetingType)"));
-        assertTrue(page.contains("? '기타' : meeting.meetingType"));
+        assertTrue(page.contains("meeting.meetingTypeLabel"));
+        assertFalse(page.contains("${meeting.meetingType}"));
+        assertFalse(page.contains("type-${"));
+    }
+
+    @Test
+    void detailHasOneBackNavigationAndAnExplicitCommentLabel() throws Exception {
+        String page = read("meeting/meeting_view.jsp");
+
+        assertTrue(page.contains("<nav class=\"back-navigation\""));
+        assertTrue(page.contains("aria-label=\"회의록 상세 이동\""));
+        assertTrue(page.contains("<label for=\"commentContent\" class=\"sr-only\""));
+        assertTrue(page.contains("aria-describedby=\"commentHelp\""));
+        assertTrue(page.contains("최근 <c:out value=\"${comments.size()}\" />개"));
+        assertFalse(page.contains("회의록 목록으로 돌아가기"));
     }
 
     @Test

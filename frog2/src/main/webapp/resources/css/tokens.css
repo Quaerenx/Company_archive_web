@@ -90,6 +90,14 @@
     --color-primary-ring: rgba(69, 95, 122, 0.18);
     --color-overlay: rgba(32, 37, 43, 0.62);
     --color-overlay-soft: rgba(32, 37, 43, 0.48);
+
+    /* Navigation uses one quiet ink-tinted layer between the ambient canvas and content. */
+    --color-navigation-surface: rgba(248, 249, 250, 0.92);
+    --color-navigation-border: var(--palette-border);
+    --color-navigation-text: var(--palette-text);
+    --color-navigation-text-strong: var(--palette-brand-hover);
+    --color-navigation-hover: var(--palette-surface-muted);
+    --color-navigation-current: var(--palette-brand-subtle);
     --color-on-primary: var(--palette-surface);
     --color-on-secondary: var(--palette-surface);
     --color-on-success: var(--palette-surface);
@@ -103,9 +111,12 @@
     /* Login and authenticated pages share one quiet graphite mist. */
     --color-login-background: var(--color-ambient-background);
     --color-login-particle: var(--color-ambient-particle);
-    --color-login-card: rgba(248, 249, 250, 0.94);
-    --color-login-card-border: rgba(255, 255, 255, 0.72);
-    --color-login-halo: rgba(255, 255, 255, 0.48);
+    --color-login-card: rgba(249, 251, 252, 0.96);
+    --color-login-card-border: rgba(255, 255, 255, 0.88);
+    --color-login-field: rgba(255, 255, 255, 0.72);
+    --color-login-field-focus: var(--palette-surface);
+    --color-login-field-border: var(--palette-border);
+    --color-login-halo: rgba(255, 255, 255, 0.28);
     --color-login-action: var(--palette-brand-hover);
     --color-login-action-hover: var(--palette-text-strong);
     --color-ambient-background: var(--palette-ambient);
@@ -203,7 +214,13 @@
     --shadow-sm: none;
     --shadow-md: 0 2px 6px rgba(32, 37, 43, 0.10);
     --shadow-lg: 0 12px 30px rgba(32, 37, 43, 0.16);
-    --shadow-login: 0 18px 50px rgba(32, 37, 43, 0.12);
+    --shadow-login:
+        0 4px 12px rgba(32, 55, 78, 0.06),
+        0 24px 60px rgba(32, 55, 78, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.90);
+    --shadow-login-action: 0 2px 6px rgba(32, 55, 78, 0.14);
+    --shadow-login-action-hover: 0 6px 16px rgba(32, 55, 78, 0.18);
+    --shadow-navigation: 0 8px 24px rgba(15, 40, 59, 0.05);
     --shadow-header: none;
     --login-card-blur: 12px;
 

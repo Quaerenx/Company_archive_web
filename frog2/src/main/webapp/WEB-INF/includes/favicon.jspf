@@ -1,1 +1,1 @@
-<link rel="icon" href="${pageContext.request.contextPath}/favicon.svg?v=${initParam.frog2AssetVersion}" type="image/svg+xml" sizes="any">
+<link rel="icon" href="${pageContext.request.contextPath}/favicon.svg?v=20260814-archive-favicon-1" type="image/svg+xml" sizes="any">

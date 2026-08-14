@@ -1,6 +1,6 @@
 /* meeting_view.jsp 전용 스타일 */
 .back-navigation {
-    margin-bottom: var(--space-16);
+    margin-bottom: var(--space-12);
 }
 
 .back-link {
@@ -18,31 +18,10 @@
     text-decoration: none;
 }
 
-/* 회의록 헤더 */
-:where(.meeting-view) .meeting-header {
-    background: var(--color-surface);
-    padding: var(--space-32);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-24);
-    box-shadow: none;
-    border: 1px solid var(--color-border);
-}
-
-:where(.meeting-view) .meeting-title {
-    font-size: var(--font-size-2xl);
-    font-weight: 600;
-    color: var(--color-text-strong);
-    margin-bottom: var(--space-16);
-    line-height: 1.3;
-}
-
-.meeting-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-24);
-    margin-bottom: var(--space-24);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
+.back-link:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
 }
 
 .meta-item {
@@ -68,12 +47,6 @@
     color: var(--color-text);
 }
 
-:where(.meeting-view) .meeting-actions {
-    display: flex;
-    gap: var(--space-12);
-    flex-wrap: wrap;
-}
-
 /* 회의록 내용 */
 .meeting-content {
     background: var(--color-surface);
@@ -85,8 +58,8 @@
 }
 
 .content-header {
-    background: var(--color-surface-muted);
-    padding: var(--space-24);
+    background: var(--color-surface);
+    padding: var(--space-24) var(--space-32) var(--space-16);
     border-bottom: 1px solid var(--color-border);
 }
 
@@ -110,6 +83,8 @@
     white-space: pre-wrap;
     font-size: var(--font-size-md);
     max-inline-size: var(--measure-wide);
+    margin-inline: auto;
+    overflow-wrap: anywhere;
 }
 
 /* 댓글 섹션 */
@@ -124,8 +99,8 @@
 }
 
 .comments-header {
-    background: var(--color-surface-muted);
-    padding: var(--space-24);
+    background: var(--color-surface);
+    padding: var(--space-24) var(--space-32) var(--space-16);
     border-bottom: 1px solid var(--color-border);
     display: flex;
     justify-content: space-between;
@@ -143,29 +118,25 @@
 }
 
 .comment-count {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
-    padding: var(--space-4) var(--space-12);
-    border-radius: var(--radius-pill);
+    color: var(--color-text-muted);
     font-size: var(--font-size-sm);
     font-weight: 500;
 }
 
 /* 댓글 작성 폼 */
 .comment-form {
-    padding: var(--space-24);
-    border-bottom: 1px solid var(--color-surface-subtle);
-    background: var(--color-surface-muted);
+    padding: var(--space-20) var(--space-32);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
 }
 
 .comment-textarea {
     width: 100%;
     padding: var(--space-16);
     border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     resize: vertical;
-    min-height: 100px;
+    min-height: 76px;
     font-family: inherit;
     font-size: var(--font-size-md);
     line-height: 1.6;
@@ -180,36 +151,21 @@
 }
 
 .comment-form-actions {
-    margin-top: var(--space-16);
-    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+    margin-top: var(--space-12);
 }
 
-.btn-comment {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    padding: var(--space-8) var(--space-16);
-    border-radius: var(--radius-md);
-    border: none;
-    cursor: pointer;
-    font-size: var(--font-size-sm);
-    min-block-size: var(--control-height-md);
-    font-weight: 500;
-    transition: background-color var(--motion-fast) var(--motion-ease);
-}
-
-.btn-comment:hover {
-    background: var(--color-primary-hover);
-}
-
-.btn-comment:disabled {
-    background: var(--color-secondary);
-    cursor: not-allowed;
-    transform: none;
+.comment-help {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
 }
 
 /* 댓글 목록 */
 .comments-list {
-    padding: var(--space-24);
+    padding: 0 var(--space-32);
 }
 
 .comment-pagination {
@@ -289,6 +245,7 @@
     white-space: pre-wrap;
     margin-bottom: var(--space-8);
     max-inline-size: var(--measure-wide);
+    overflow-wrap: anywhere;
 }
 
 .comment-edit-form {
@@ -319,36 +276,6 @@
     gap: var(--space-8);
 }
 
-.btn-save {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    padding: var(--space-8) var(--space-12);
-    border-radius: var(--radius-sm);
-    border: none;
-    cursor: pointer;
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-}
-
-.btn-save:hover {
-    background: var(--color-primary-hover);
-}
-
-.btn-cancel-edit {
-    background: var(--color-secondary);
-    color: var(--color-on-secondary);
-    padding: var(--space-8) var(--space-12);
-    border-radius: var(--radius-sm);
-    border: none;
-    cursor: pointer;
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-}
-
-.btn-cancel-edit:hover {
-    background: var(--color-secondary-hover);
-}
-
 .empty-comments {
     text-align: center;
     padding: var(--space-48) var(--space-32);
@@ -368,29 +295,21 @@
         max-width: 100%;
     }
 
-    :where(.meeting-view) .meeting-header {
-        padding: var(--space-24);
-    }
-
-    :where(.meeting-view) .meeting-title {
-        font-size: var(--font-size-xl);
-    }
-
-    .meeting-meta {
-        flex-direction: column;
-        gap: var(--space-12);
-    }
-
-    :where(.meeting-view) .meeting-actions {
-        flex-direction: column;
-    }
-
-    :where(.meeting-view) .meeting-actions .btn {
-        justify-content: center;
-    }
-
     .content-body {
         padding: var(--space-24);
+    }
+
+    .content-header,
+    .comments-header {
+        padding-inline: var(--space-24);
+    }
+
+    .comment-form {
+        padding: var(--space-20) var(--space-24);
+    }
+
+    .comments-list {
+        padding-inline: var(--space-24);
     }
 
     :where(.meeting-view) .comment-header {
@@ -400,6 +319,22 @@
     }
 
     :where(.meeting-view) .comment-actions {
-        order: -1;
+        align-self: flex-end;
+    }
+
+    .comment-form-actions {
+        align-items: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .comment-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .comment-form-actions .btn-comment {
+        width: 100%;
+        justify-content: center;
     }
 }

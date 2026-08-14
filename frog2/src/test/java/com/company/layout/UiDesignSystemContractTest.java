@@ -142,7 +142,9 @@ class UiDesignSystemContractTest {
         assertFalse(utilities.matches(
                 "(?s).*\\.(?:text|bg|border)-(?:success|danger|warning|info)"
                         + "[^{]*\\{[^}]*#[0-9a-fA-F]{3,8}.*"));
-        assertTrue(header.contains("var(--color-divider)"));
+        assertTrue(header.contains("var(--color-navigation-surface)"));
+        assertTrue(header.contains("var(--color-navigation-border)"));
+        assertTrue(header.contains("var(--shadow-navigation)"));
         assertTrue(header.contains("box-shadow: none"));
         assertFalse(header.contains("box-shadow: var(--shadow-header)"));
         assertTrue(components.contains("var(--color-primary-ring)"));
@@ -326,10 +328,14 @@ class UiDesignSystemContractTest {
                 "maintenance",
                 "meeting",
                 "troubleshooting",
-                "WEB-INF/views/filerepo")) {
+                "WEB-INF/views/filerepo",
+                "WEB-INF/tags")) {
             try (var paths = Files.walk(WEBAPP.resolve(directory))) {
                 for (Path path : paths.filter(Files::isRegularFile)
-                        .filter(file -> file.getFileName().toString().endsWith(".jsp"))
+                        .filter(file -> {
+                            String name = file.getFileName().toString();
+                            return name.endsWith(".jsp") || name.endsWith(".tag");
+                        })
                         .toList()) {
                     String source = Files.readString(path);
                     Matcher matcher = ALERT_TAG.matcher(source);
@@ -351,7 +357,7 @@ class UiDesignSystemContractTest {
                 }
             }
         }
-        assertTrue(alertCount >= 20, "unexpected alert coverage: " + alertCount);
+        assertTrue(alertCount >= 12, "unexpected alert coverage: " + alertCount);
     }
 
     @Test

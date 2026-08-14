@@ -37,7 +37,7 @@ class FaviconServletTest {
 
         assertEquals(HttpServletResponse.SC_FOUND, status.get());
         assertEquals(
-                "/frog2/favicon.svg?v=20260811-favicon-vector-1",
+                "/frog2/favicon.svg?v=20260814-archive-favicon-1",
                 headers.get("Location"));
     }
 

@@ -31,9 +31,9 @@ body.login-page {
 
 body.login-page::after {
     background: radial-gradient(
-        circle at center,
+        ellipse at center,
         var(--color-login-halo) 0,
-        transparent 42%
+        transparent 58%
     );
     content: "";
     inset: 0;
@@ -46,10 +46,10 @@ body.login-page::after {
     -webkit-backdrop-filter: blur(var(--login-card-blur));
     background: var(--color-login-card);
     border: 1px solid var(--color-login-card-border);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-login);
     backdrop-filter: blur(var(--login-card-blur));
-    padding: clamp(var(--space-24), 6vw, var(--space-40));
+    padding: var(--space-40) var(--space-40) var(--space-32);
 }
 
 .login-page .login-header {
@@ -57,14 +57,23 @@ body.login-page::after {
 }
 
 .login-page .login-brand {
+    align-items: center;
+    aspect-ratio: 2.49 / 1;
     display: flex;
+    inline-size: 100%;
     justify-content: center;
+    overflow: hidden;
 }
 
 .login-page .login-brand-logo {
     block-size: auto;
     display: block;
-    inline-size: min(100%, 208px);
+    flex: 0 0 auto;
+    inline-size: 100%;
+    max-inline-size: none;
+    /* Crop the vector's transparent safe area to align its artwork with the form. */
+    transform: scale(1.12);
+    transform-origin: center;
 }
 
 .login-page .login-form {
@@ -96,11 +105,18 @@ body.login-page::after {
 }
 
 .login-page #loginForm input {
-    background: var(--color-surface);
-    border-color: var(--color-border);
-    border-radius: var(--radius-lg);
+    background: var(--color-login-field);
+    border-color: var(--color-login-field-border);
+    border-radius: var(--radius-xl);
     min-block-size: 52px;
     padding-block: var(--space-20) var(--space-4);
+}
+
+.login-page #loginForm input:focus-visible {
+    background: var(--color-login-field-focus);
+    border-color: var(--color-login-action);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 0;
 }
 
 .login-page #loginForm input::placeholder {
@@ -132,16 +148,32 @@ body.login-page::after {
 .login-page .login-submit {
     background: var(--color-login-action);
     border-color: var(--color-login-action);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-login-action);
     color: var(--color-text-inverse);
+    font-weight: 600;
     inline-size: 100%;
+    letter-spacing: 0.01em;
     margin-block-start: var(--space-4);
+    min-block-size: 52px;
 }
 
 .login-page .login-submit:hover {
     background: var(--color-login-action-hover);
     border-color: var(--color-login-action-hover);
+    box-shadow: var(--shadow-login-action-hover);
     color: var(--color-text-inverse);
+    transform: translateY(-1px);
+}
+
+.login-page .login-submit:active {
+    box-shadow: var(--shadow-login-action);
+    transform: translateY(0);
+}
+
+.login-page .login-submit:is(:disabled, .is-loading) {
+    box-shadow: none;
+    transform: none;
 }
 
 @media (max-width: 480px) {

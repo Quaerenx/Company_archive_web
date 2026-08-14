@@ -55,7 +55,7 @@
             <%@ include file="/WEB-INF/includes/_troubleshooting_form_fields.jspf" %>
 
             <!-- 버튼 -->
-            <div class="button-group">
+            <div class="button-group ui-form-actions">
                 <a href="<c:out value='${troubleshootingListReturnUrl}' />"
                    class="btn btn-cancel ui-button button--secondary button--md">취소</a>
                 <a href="<c:out value='${troubleshootingDetailReturnUrl}' />"

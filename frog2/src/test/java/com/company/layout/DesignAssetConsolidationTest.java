@@ -168,21 +168,16 @@ class DesignAssetConsolidationTest {
                 "/resources/css/pages/maintenance_history.css");
         expectedPageStyles.put(
                 "meeting/meeting_edit.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css");
+                "/resources/css/pages/meeting_form.css");
         expectedPageStyles.put(
                 "meeting/meeting_list.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_list_layout.css,"
-                        + "/resources/css/pages/meeting_list.css");
+                "/resources/css/pages/meeting_list.css");
         expectedPageStyles.put(
                 "meeting/meeting_view.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_view.css");
+                "/resources/css/pages/meeting_view.css");
         expectedPageStyles.put(
                 "meeting/meeting_write.jsp",
-                "/resources/css/pages/meeting.css,"
-                        + "/resources/css/pages/meeting_form.css");
+                "/resources/css/pages/meeting_form.css");
 
         for (Map.Entry<String, String> entry : expectedPageStyles.entrySet()) {
             String page = readWebapp(entry.getKey());
@@ -264,7 +259,6 @@ class DesignAssetConsolidationTest {
         expectedPageScripts.put("maintenance/maintenance_edit.jsp", "/resources/js/pages/maintenance_form.js");
         expectedPageScripts.put("maintenance/maintenance_history.jsp", "/resources/js/pages/maintenance_history.js");
         expectedPageScripts.put("meeting/meeting_edit.jsp", "/resources/js/pages/meeting_form.js");
-        expectedPageScripts.put("meeting/meeting_list.jsp", "/resources/js/pages/meeting_list.js");
         expectedPageScripts.put("meeting/meeting_view.jsp", "/resources/js/pages/meeting_view.js");
         expectedPageScripts.put("meeting/meeting_write.jsp", "/resources/js/pages/meeting_form.js");
         Pattern directPageScript = Pattern.compile(

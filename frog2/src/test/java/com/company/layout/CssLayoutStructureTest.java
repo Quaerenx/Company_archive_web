@@ -182,10 +182,6 @@ class CssLayoutStructureTest {
     @Test
     void migratedMeetingPagesHaveNoInlineBlocks() throws Exception {
         assertExternalized(
-                "meeting/meeting_list.jsp",
-                "resources/js/pages/meeting_list.js",
-                true);
-        assertExternalized(
                 "meeting/meeting_write.jsp",
                 "resources/js/pages/meeting_form.js",
                 false);
@@ -203,14 +199,16 @@ class CssLayoutStructureTest {
         assertTrue(list.contains("meeting-list-table"));
         assertFalse(list.contains("troubleshooting-table"));
         assertFalse(list.contains("onclick="));
+        assertFalse(list.contains("<script>"));
+        assertFalse(list.contains("<style>"));
+        assertFalse(list.contains("pageScript"));
+        assertFalse(list.contains("data-detail-url"));
+        assertTrue(list.contains("meeting-row-meta"));
 
         String listCss = Files.readString(CSS.resolve("pages/meeting_list.css"));
         assertTrue(listCss.contains(".meeting-management .meeting-list-table"));
         assertTrue(listCss.contains(".meeting-management .title-link"));
-
-        String listScript = Files.readString(
-                WEBAPP.resolve("resources/js/pages/meeting_list.js"));
-        assertTrue(listScript.contains(".meeting-management tr[data-detail-url]"));
+        assertTrue(listCss.contains("@media (max-width: 768px)"));
 
         String write = Files.readString(WEBAPP.resolve("meeting/meeting_write.jsp"));
         String edit = Files.readString(WEBAPP.resolve("meeting/meeting_edit.jsp"));
@@ -405,6 +403,11 @@ class CssLayoutStructureTest {
         assertFalse(listCss.lines().map(String::stripLeading)
                 .anyMatch(line -> line.startsWith(".alert")
                         || line.startsWith(".troubleshooting-table")));
+        assertTrue(listCss.contains(
+                ".troubleshooting-management .troubleshooting-table"));
+        assertTrue(listCss.contains("min-width: 720px;"));
+        assertTrue(listCss.contains(
+                ".troubleshooting-management .troubleshooting-table td:nth-child(1)"));
         assertFalse(viewCss.lines().map(String::stripLeading)
                 .anyMatch(line -> line.startsWith(".alert")
                         || line.startsWith(".detail-grid")));

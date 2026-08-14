@@ -1,6 +1,7 @@
 package com.company.model;
 
 import java.sql.Timestamp;
+import java.util.Locale;
 
 public class MeetingRecordDTO {
     private Long meetingId;
@@ -51,6 +52,22 @@ public class MeetingRecordDTO {
 
     public void setMeetingType(String meetingType) {
         this.meetingType = meetingType;
+    }
+
+    public String getMeetingTypeLabel() {
+        if (meetingType == null || meetingType.isBlank()) {
+            return "기타";
+        }
+        String normalizedType = meetingType.trim().toLowerCase(Locale.ROOT);
+        return switch (normalizedType) {
+            case "daily" -> "일일 회의";
+            case "weekly" -> "주간 회의";
+            case "monthly" -> "월간 회의";
+            case "project" -> "프로젝트 회의";
+            case "emergency" -> "긴급 회의";
+            case "other" -> "기타";
+            default -> meetingType.trim();
+        };
     }
 
     public String getContent() {

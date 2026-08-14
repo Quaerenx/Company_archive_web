@@ -3,8 +3,8 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="회의록 수정" scope="request" />
-<c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_form.css" scope="request" />
+<c:set var="pageBodyClass" value="page-1050 page-meeting page-meeting-form" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting_form.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/meeting_form.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
@@ -50,34 +50,29 @@
 
             <!-- 작성 정보 -->
             <div class="section-title">작성 정보</div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>작성자</label>
-                    <input type="text" value="<c:out value="${meeting.authorName}" />" readonly class="readonly-field">
+            <fmt:formatDate var="meetingCreatedIso" value="${meeting.createdAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" />
+            <fmt:formatDate var="meetingCreatedLabel" value="${meeting.createdAt}" pattern="yyyy.MM.dd HH:mm" />
+            <fmt:formatDate var="meetingUpdatedIso" value="${meeting.updatedAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" />
+            <fmt:formatDate var="meetingUpdatedLabel" value="${meeting.updatedAt}" pattern="yyyy.MM.dd HH:mm" />
+            <dl class="meeting-audit-list">
+                <div>
+                    <dt>작성자</dt>
+                    <dd><c:out value="${meeting.authorName}" /></dd>
                 </div>
-                <div class="form-group">
-                    <label>등록일시</label>
-                    <input type="text" value="<fmt:formatDate value='${meeting.createdAt}' pattern='yyyy-MM-dd HH:mm:ss'/>"
-                           readonly class="readonly-field">
+                <div>
+                    <dt>등록</dt>
+                    <dd><time datetime="<c:out value='${meetingCreatedIso}' />"><c:out value="${meetingCreatedLabel}" /></time></dd>
                 </div>
-            </div>
-
-            <c:if test="${meeting.updatedAt != meeting.createdAt}">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>최종 수정일시</label>
-                        <input type="text" value="<fmt:formatDate value='${meeting.updatedAt}' pattern='yyyy-MM-dd HH:mm:ss'/>"
-                               readonly class="readonly-field">
+                <c:if test="${meeting.updatedAt != meeting.createdAt}">
+                    <div>
+                        <dt>최종 수정</dt>
+                        <dd><time datetime="<c:out value='${meetingUpdatedIso}' />"><c:out value="${meetingUpdatedLabel}" /></time></dd>
                     </div>
-                    <div class="form-group">
-                        <!-- 공간 확보용 -->
-                    </div>
-                </div>
-            </c:if>
+                </c:if>
+            </dl>
 
             <!-- 버튼 -->
-            <div class="button-group">
+            <div class="button-group ui-form-actions">
                 <a href="<c:out value='${meetingDetailReturnUrl}' />"
                    class="btn btn-cancel ui-button button--secondary button--md">취소</a>
                 <button type="button"
@@ -87,7 +82,7 @@
                         class="btn btn-primary ui-button button--primary button--md"
                         data-busy-label="수정 중">수정하기</button>
                 <button type="button"
-                        class="btn btn-danger ui-button button--danger button--md"
+                        class="btn btn-danger ui-button button--danger button--md meeting-delete-button"
                         data-meeting-action="delete">삭제하기</button>
             </div>
         </form>

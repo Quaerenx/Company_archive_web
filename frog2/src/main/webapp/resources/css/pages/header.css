@@ -11,10 +11,10 @@
 .main-header .header-box {
     max-width: var(--page-content-max-width);
     margin: var(--space-12) auto 0;
-    background: var(--color-surface-elevated);
-    border: 1px solid var(--color-divider);
+    background: var(--color-navigation-surface);
+    border: 1px solid var(--color-navigation-border);
     border-radius: var(--radius-lg);
-    box-shadow: none;
+    box-shadow: var(--shadow-navigation);
 }
 
 .main-header .container {
@@ -90,11 +90,19 @@
     flex-direction: column;
     gap: var(--space-4);
     padding: 0;
-    color: var(--neutral-800);
+    color: var(--color-navigation-text);
     background: transparent;
-    border: 1px solid var(--neutral-300);
+    border: 1px solid var(--color-navigation-border);
     border-radius: var(--radius-md);
     cursor: pointer;
+    transition:
+        color var(--motion-fast) var(--motion-ease),
+        background-color var(--motion-fast) var(--motion-ease);
+}
+
+.mobile-nav-toggle:hover {
+    color: var(--color-navigation-text-strong);
+    background: var(--color-navigation-hover);
 }
 
 .mobile-nav-toggle-bar {
@@ -148,7 +156,7 @@
     justify-content: center;
     gap: var(--space-4);
     padding: var(--space-8);
-    color: var(--neutral-600);
+    color: var(--color-navigation-text);
     background: transparent;
     border: 0;
     border-radius: var(--radius-md);
@@ -167,15 +175,15 @@
 
 .main-nav .nav-link:hover,
 .main-nav .dropdown-toggle:hover {
-    color: var(--color-text-strong);
-    background: var(--color-surface-hover);
+    color: var(--color-navigation-text-strong);
+    background: var(--color-navigation-hover);
 }
 
 .main-nav .nav-link.active,
 .main-nav .dropdown-toggle.active,
 .main-nav .current-section > .dropdown-toggle {
-    color: var(--color-primary);
-    background: var(--color-primary-subtle);
+    color: var(--color-navigation-text-strong);
+    background: var(--color-navigation-current);
 }
 
 .main-nav .nav-link.active,
@@ -226,7 +234,7 @@
     align-items: center;
     min-height: 40px;
     padding: var(--space-8) var(--space-16);
-    color: var(--neutral-600);
+    color: var(--color-navigation-text);
     font-size: var(--font-size-sm);
     font-weight: 500;
     text-decoration: none;
@@ -236,13 +244,13 @@
 }
 
 .main-nav .dropdown-menu a:hover {
-    color: var(--color-text-strong);
-    background-color: var(--color-surface-hover);
+    color: var(--color-navigation-text-strong);
+    background-color: var(--color-navigation-hover);
 }
 
 .main-nav .dropdown-menu a.active {
-    color: var(--color-primary);
-    background-color: var(--color-primary-subtle);
+    color: var(--color-navigation-text-strong);
+    background-color: var(--color-navigation-current);
 }
 
 .main-header .brand-link:focus-visible,
@@ -260,10 +268,10 @@
 }
 
 .quick-nav-shortcut {
-    background: var(--color-surface-subtle);
-    border: 1px solid var(--color-border);
+    background: var(--color-navigation-hover);
+    border: 1px solid var(--color-navigation-border);
     border-radius: var(--radius-sm);
-    color: var(--color-text-muted);
+    color: var(--color-navigation-text);
     font-size: var(--font-size-2xs);
     font-weight: 600;
     line-height: var(--line-height-ui);
@@ -523,8 +531,8 @@
         margin-top: var(--space-8);
         overflow-y: auto;
         overscroll-behavior: contain;
-        background: var(--color-surface-elevated);
-        border: 1px solid var(--neutral-200);
+        background: var(--color-navigation-surface);
+        border: 1px solid var(--color-navigation-border);
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-lg);
     }

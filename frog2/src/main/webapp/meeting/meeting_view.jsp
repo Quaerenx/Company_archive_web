@@ -1,14 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="${meeting.title}" scope="request" />
-<c:set var="pageBodyClass" value="page-1050 page-customers page-meeting" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/meeting.css,/resources/css/pages/meeting_view.css" scope="request" />
+<c:set var="pageBodyClass" value="page-1050 page-meeting page-meeting-view" scope="request" />
+<c:set var="pageCss" value="/resources/css/pages/meeting_view.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/meeting_view.js" scope="request" />
-<c:set var="meetingTypeValue" value="${empty meeting.meetingType ? 'other' : fn:toLowerCase(meeting.meetingType)}" />
-<c:set var="meetingTypeLabel" value="${empty meeting.meetingType ? '기타' : meeting.meetingType}" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
@@ -23,10 +20,16 @@
 </c:url>
 
 <div class="meeting-view content-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />" data-meeting-id="<c:out value='${meeting.meetingId}' />">
+    <nav class="back-navigation" aria-label="회의록 상세 이동">
+        <a href="<c:out value='${meetingListReturnUrl}' />" class="back-link">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            회의록 목록
+        </a>
+    </nav>
     <t:pageHeader>
         <jsp:attribute name="title"><i class="fas fa-file-alt"></i> <c:out value="${meeting.title}" /></jsp:attribute>
         <jsp:attribute name="subtitle">
-            <span class="meta-item"><i class="fas fa-tag"></i> <span class="type-badge ui-badge type-<c:out value="${meetingTypeValue}" />"><c:out value="${meetingTypeLabel}" /></span></span>
+            <span class="meta-item"><i class="fas fa-tag"></i> <span class="type-badge ui-badge"><c:out value="${meeting.meetingTypeLabel}" /></span></span>
             <span class="meta-item"><i class="fas fa-calendar"></i> <fmt:formatDate value="${meeting.meetingDatetime}" pattern="yyyy년 MM월 dd일 HH:mm"/></span>
             <span class="meta-item"><i class="fas fa-user"></i> <c:out value="${meeting.authorName}" /></span>
         </jsp:attribute>
@@ -35,44 +38,15 @@
                 <a href="<c:out value='${meetingEditUrl}' />"
                    class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-edit"></i> 수정하기</a>
             </c:if>
-            <a href="<c:out value='${meetingListReturnUrl}' />"
-               class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-list"></i> 목록</a>
         </jsp:attribute>
     </t:pageHeader>
-    <!-- 뒤로 가기 -->
-    <div class="back-navigation">
-        <a href="<c:out value='${meetingListReturnUrl}' />" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            회의록 목록으로 돌아가기
-        </a>
-    </div>
 
-    <!-- 성공/에러 메시지 표시 -->
-    <c:if test="${not empty sessionScope.message}">
-        <div class="alert alert-success ui-alert ui-alert--success"
-             role="status"
-             aria-live="polite"
-             aria-atomic="true">
-            <i class="fas fa-check-circle"></i>
-            <c:out value="${sessionScope.message}" />
-        </div>
-        <c:remove var="message" scope="session" />
-    </c:if>
-
-    <c:if test="${not empty sessionScope.error}">
-        <div class="alert alert-danger ui-alert ui-alert--danger"
-             role="alert"
-             aria-atomic="true">
-            <i class="fas fa-exclamation-circle"></i>
-            <c:out value="${sessionScope.error}" />
-        </div>
-        <c:remove var="error" scope="session" />
-    </c:if>
+    <t:flashMessages />
 
     <!-- 회의록 내용 -->
-    <div class="meeting-content">
+    <section class="meeting-content" aria-labelledby="meetingContentTitle">
         <div class="content-header">
-            <h2 class="content-title">
+            <h2 class="content-title" id="meetingContentTitle">
                 <i class="fas fa-file-alt"></i>
                 회의 내용
             </h2>
@@ -80,7 +54,7 @@
         <div class="content-body">
             <div class="meeting-text"><c:out value="${meeting.content}" /></div>
         </div>
-    </div>
+    </section>
 
     <!-- 댓글 섹션 -->
     <div class="comments-section" id="comments">
@@ -89,16 +63,20 @@
                 <i class="fas fa-comments"></i>
                 댓글
             </h2>
-            <span class="comment-count"><c:out value="${comments.size()}" />개 표시</span>
+            <span class="comment-count">최근 <c:out value="${comments.size()}" />개</span>
         </div>
 
         <!-- 댓글 작성 폼 -->
         <div class="comment-form">
             <form id="commentForm" class="ui-form">
                 <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
+                <label for="commentContent" class="sr-only">댓글 내용</label>
                 <textarea id="commentContent" class="comment-textarea"
-                          placeholder="댓글을 작성해주세요..." required></textarea>
+                          rows="3"
+                          aria-describedby="commentHelp"
+                          placeholder="회의 결과에 대한 의견이나 후속 내용을 남겨주세요." required></textarea>
                 <div class="comment-form-actions">
+                    <span class="comment-help" id="commentHelp">Enter로 줄바꿈할 수 있습니다.</span>
                     <button type="submit"
                             class="btn-comment ui-button button--primary button--md">
                         <i class="fas fa-paper-plane"></i>
@@ -165,7 +143,7 @@
                     <div class="empty-comments">
                         <i class="fas fa-comment-slash"></i>
                         <p>등록된 댓글이 없습니다.</p>
-                        <p>첫 번째 댓글을 작성해보세요!</p>
+                        <p>첫 댓글을 남겨보세요.</p>
                     </div>
                 </c:otherwise>
             </c:choose>

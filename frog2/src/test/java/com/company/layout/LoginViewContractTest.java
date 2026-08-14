@@ -16,14 +16,15 @@ class LoginViewContractTest {
     void loginUsesMinimalArchiveIdentityAndTheSharedUiSystem() throws Exception {
         String page = read("login.jsp");
         String styles = read("resources/css/login_style.css");
+        String tokens = read("resources/css/tokens.css");
 
         assertTrue(page.contains("<html lang=\"ko\">"));
         assertTrue(page.contains("var=\"productName\" value=\"Archive\""));
         assertTrue(page.contains("content=\"Archive 로그인\""));
         assertTrue(page.contains("class=\"login-brand-logo\""));
-        assertTrue(page.contains("/resources/images/archive-primary-logo.svg"));
-        assertTrue(page.contains("width=\"1119\""));
-        assertTrue(page.contains("height=\"288\""));
+        assertTrue(page.contains("/resources/images/archive-logo.svg"));
+        assertTrue(page.contains("width=\"4096\""));
+        assertTrue(page.contains("height=\"2286\""));
         assertTrue(page.contains("alt=\"${productName}\""));
         assertFalse(page.contains("ARCHIVE"));
         assertFalse(page.contains("WorkSpace"));
@@ -83,17 +84,24 @@ class LoginViewContractTest {
                 "(?s).*\\.login-page \\.login-card\\s*\\{[^}]*"
                         + "background:\\s*var\\(--color-login-card\\);[^}]*"
                         + "border:\\s*1px solid var\\(--color-login-card-border\\);[^}]*"
-                        + "border-radius:\\s*var\\(--radius-xl\\);[^}]*"
+                        + "border-radius:\\s*var\\(--radius-2xl\\);[^}]*"
                         + "box-shadow:\\s*var\\(--shadow-login\\);[^}]*"
                         + "backdrop-filter:\\s*blur\\(var\\(--login-card-blur\\)\\);[^}]*"
-                        + "padding:\\s*clamp\\(var\\(--space-24\\), 6vw, var\\(--space-40\\)\\);.*"));
-        assertFalse(styles.contains("box-shadow: none;"));
+                        + "padding:\\s*var\\(--space-40\\) var\\(--space-40\\) "
+                        + "var\\(--space-32\\);.*"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-header\\s*\\{[^}]*"
                         + "margin-block-end:\\s*var\\(--space-24\\);.*"));
         assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-brand\\s*\\{[^}]*"
+                        + "aspect-ratio:\\s*2\\.49 / 1;[^}]*"
+                        + "inline-size:\\s*100%;[^}]*"
+                        + "overflow:\\s*hidden;.*"));
+        assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-brand-logo\\s*\\{[^}]*"
-                        + "inline-size:\\s*min\\(100%, 208px\\);.*"));
+                        + "inline-size:\\s*100%;[^}]*"
+                        + "max-inline-size:\\s*none;[^}]*"
+                        + "transform:\\s*scale\\(1\\.12\\);.*"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-form \\.form-group\\s*\\{[^}]*"
                         + "position:\\s*relative;.*"));
@@ -112,17 +120,25 @@ class LoginViewContractTest {
                 "#loginForm input:-webkit-autofill + .login-field-label {"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page #loginForm input\\s*\\{[^}]*"
-                        + "background:\\s*var\\(--color-surface\\);[^}]*"
-                        + "border-color:\\s*var\\(--color-border\\);[^}]*"
-                        + "border-radius:\\s*var\\(--radius-lg\\);.*"));
+                        + "background:\\s*var\\(--color-login-field\\);[^}]*"
+                        + "border-color:\\s*var\\(--color-login-field-border\\);[^}]*"
+                        + "border-radius:\\s*var\\(--radius-xl\\);[^}]*"
+                        + "min-block-size:\\s*52px;.*"));
+        assertTrue(styles.contains(".login-page #loginForm input:focus-visible {"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-submit\\s*\\{[^}]*"
                         + "background:\\s*var\\(--color-login-action\\);[^}]*"
                         + "border-color:\\s*var\\(--color-login-action\\);[^}]*"
-                        + "border-radius:\\s*var\\(--radius-lg\\);.*"));
+                        + "border-radius:\\s*var\\(--radius-xl\\);[^}]*"
+                        + "min-block-size:\\s*52px;.*"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-submit:hover\\s*\\{[^}]*"
                         + "background:\\s*var\\(--color-login-action-hover\\);.*"));
+        assertTrue(tokens.contains(
+                "--color-login-action: var(--palette-brand-hover);"));
+        assertTrue(tokens.contains(
+                "--color-login-field-border: var(--palette-border);"));
+        assertTrue(tokens.contains("--shadow-login-action-hover:"));
         assertTrue(styles.contains(".login-page #loginForm input::placeholder"));
         assertHasClasses(firstTag(page, "body"), "ui-system", "login-page");
         assertHasClasses(loginForm(page), "ui-form", "login-form");

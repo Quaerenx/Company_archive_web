@@ -123,12 +123,15 @@ try {
             ) {
                 throw new Error(`Authenticated session is unavailable for route: ${route.name}`);
             }
+            await resetDocumentScroll();
             assertNoConsoleErrors(`${route.name}-${width}x${height}`, errorStart);
             const metrics = await assertPageViewport(width, height);
             captureMetrics.push({
                 consoleErrorCount: consoleErrors.length - errorStart,
                 height,
                 route: route.name,
+                scrollX: metrics.scrollX,
+                scrollY: metrics.scrollY,
                 scrollWidth: metrics.scrollWidth,
                 width
             });
@@ -269,7 +272,28 @@ async function assertPageViewport(width, height) {
             + `${metrics.scrollWidth}px content in ${metrics.width}px viewport`
         );
     }
+    if (metrics.scrollX !== 0 || metrics.scrollY !== 0) {
+        throw new Error(
+            `Capture did not start at the document origin: `
+            + `${metrics.scrollX},${metrics.scrollY}`
+        );
+    }
     return metrics;
+}
+
+async function resetDocumentScroll() {
+    await request('POST', `/session/${sessionId}/execute/sync`, {
+        script: `window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.documentElement.scrollLeft = 0;
+            if (document.body) {
+                document.body.scrollTop = 0;
+                document.body.scrollLeft = 0;
+            }
+            return null;`,
+        args: []
+    });
+    await delay(50);
 }
 
 function writeCaptureMetrics() {
@@ -297,7 +321,9 @@ function viewportMetrics() {
         script: `return {
             width: window.innerWidth,
             height: window.innerHeight,
-            scrollWidth: document.documentElement.scrollWidth
+            scrollWidth: document.documentElement.scrollWidth,
+            scrollX: window.scrollX,
+            scrollY: window.scrollY
         };`,
         args: []
     });

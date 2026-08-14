@@ -126,11 +126,21 @@
 @media (max-width: 768px) {
     .troubleshooting-management .troubleshooting-table {
         font-size: var(--font-size-xs);
+        min-width: 720px;
     }
 
     .troubleshooting-management .troubleshooting-table th,
     .troubleshooting-management .troubleshooting-table td {
         padding: var(--space-8);
+    }
+
+    .troubleshooting-management .troubleshooting-table th:nth-child(1),
+    .troubleshooting-management .troubleshooting-table td:nth-child(1),
+    .troubleshooting-management .troubleshooting-table th:nth-child(3),
+    .troubleshooting-management .troubleshooting-table td:nth-child(3),
+    .troubleshooting-management .troubleshooting-table th:nth-child(4),
+    .troubleshooting-management .troubleshooting-table td:nth-child(4) {
+        white-space: nowrap;
     }
 }
 

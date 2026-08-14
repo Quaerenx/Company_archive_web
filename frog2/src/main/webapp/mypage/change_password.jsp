@@ -77,7 +77,7 @@
                        required autocomplete="new-password" placeholder="새 비밀번호를 다시 입력하세요">
             </div>
 
-            <div class="form-actions">
+            <div class="form-actions ui-form-actions">
                 <button type="submit"
                         class="btn btn-primary ui-button button--primary button--md"
                         data-busy-label="변경 중">

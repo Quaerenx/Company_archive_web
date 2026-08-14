@@ -13,7 +13,7 @@ import com.company.util.DBConnection;
 public class MeetingRecordDAO {
     private static final int PAGE_SIZE = 20;
     static final String LIST_SQL =
-            "SELECT meeting_id, title, author_name, meeting_datetime "
+            "SELECT meeting_id, title, meeting_type, author_name, meeting_datetime "
                     + "FROM meeting_records "
                     + "ORDER BY meeting_datetime DESC LIMIT ? OFFSET ?";
     private final JdbcConnectionProvider connectionProvider;
@@ -44,6 +44,7 @@ public class MeetingRecordDAO {
                 MeetingRecordDTO record = new MeetingRecordDTO();
                 record.setMeetingId(rs.getLong("meeting_id"));
                 record.setTitle(rs.getString("title"));
+                record.setMeetingType(rs.getString("meeting_type"));
                 record.setMeetingDatetime(rs.getTimestamp("meeting_datetime"));
                 record.setAuthorName(rs.getString("author_name"));
 

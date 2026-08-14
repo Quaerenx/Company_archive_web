@@ -46,7 +46,7 @@
                        required autocomplete="name" placeholder="이름을 입력하세요">
             </div>
 
-            <div class="form-actions">
+            <div class="form-actions ui-form-actions">
                 <button type="submit"
                         class="btn btn-primary ui-button button--primary button--md"
                         data-busy-label="저장 중">

@@ -63,9 +63,9 @@
                    class="brand-link"
                    aria-label="Archive 대시보드">
                     <img class="brand-logo"
-                         src="${pageContext.request.contextPath}/resources/images/archive-compact-horizontal.svg"
-                         width="373"
-                         height="112"
+                         src="${pageContext.request.contextPath}/resources/images/archive-logo.svg"
+                         width="4096"
+                         height="2286"
                          alt=""
                          aria-hidden="true">
                 </a>

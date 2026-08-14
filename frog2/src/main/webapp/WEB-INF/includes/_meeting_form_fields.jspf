@@ -7,12 +7,17 @@
 <div class="section-title">회의 기본 정보</div>
 
 <div class="form-row">
-    <div class="form-group">
+    <div class="form-group full-width">
         <label for="title">회의 제목 <span class="required">*</span></label>
         <input type="text" id="title" name="title" required maxlength="200"
+               aria-describedby="titleHelp"
                value="<c:out value='${meeting.title}' />" placeholder="회의 제목을 입력하세요">
+        <span class="help-text" id="titleHelp">회의 목적이나 핵심 안건이 드러나는 제목을 사용하세요.</span>
     </div>
-    <div class="form-group">
+</div>
+
+<div class="form-row">
+    <div class="form-group meeting-type-group">
         <label for="meeting_type">회의 유형 <span class="required">*</span></label>
         <select id="meeting_type" name="meeting_type" required>
             <option value="">회의 유형을 선택하세요</option>
@@ -24,21 +29,21 @@
             <option value="other" ${meeting.meetingType == 'other' ? 'selected' : ''}>기타</option>
         </select>
     </div>
-</div>
-
-<div class="form-row">
     <div class="form-group">
         <label for="meeting_datetime">회의 일시 <span class="required">*</span></label>
         <input type="datetime-local" id="meeting_datetime" name="meeting_datetime" required
                value="<fmt:formatDate value='${meeting.meetingDatetime}' pattern='yyyy-MM-dd\'T\'HH:mm'/>">
     </div>
-    <div class="form-group">
-        <!-- 공간 확보용 -->
-    </div>
 </div>
 
 <!-- 회의 내용 -->
 <div class="section-title">회의 내용</div>
+<div class="meeting-template-actions">
+    <span class="help-text">기본 틀을 넣은 뒤 필요한 항목만 남겨도 됩니다.</span>
+    <button type="button"
+            class="ui-button button--secondary button--sm"
+            data-meeting-action="insert-template">기본 틀 넣기</button>
+</div>
 
 <div class="form-row">
     <div class="form-group full-width">
@@ -46,12 +51,18 @@
         <c:choose>
             <c:when test="${meetingFormMode == 'edit'}">
                 <textarea id="content" name="content" rows="15" required
-                          placeholder="회의 내용을 상세히 작성해주세요."><c:out value="${meeting.content}" /></textarea>
+                          aria-describedby="contentHelp contentCount"
+                          placeholder="논의 내용과 결정사항을 정리해주세요."><c:out value="${meeting.content}" /></textarea>
             </c:when>
             <c:otherwise>
                 <textarea id="content" name="content" rows="15" required
-                          placeholder="회의 내용을 상세히 작성해주세요.&#10;&#10;• 참석자:&#10;• 주요 논의사항:&#10;• 결정사항:&#10;• 액션 아이템:&#10;• 다음 회의 일정:"></textarea>
+                          aria-describedby="contentHelp contentCount"
+                          placeholder="논의 내용과 결정사항을 정리해주세요."></textarea>
             </c:otherwise>
         </c:choose>
+        <div class="meeting-content-guidance">
+            <span class="help-text" id="contentHelp">참석자, 주요 논의, 결정사항, 후속 조치 순으로 정리하면 찾기 쉽습니다.</span>
+            <span class="meeting-character-count" id="contentCount" aria-live="polite">0자</span>
+        </div>
     </div>
 </div>
