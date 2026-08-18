@@ -79,13 +79,13 @@
 
             <div class="form-actions ui-form-actions">
                 <button type="submit"
-                        class="btn btn-primary ui-button button--primary button--md"
+                        class="ui-button button--primary button--md"
                         data-busy-label="변경 중">
                     <i class="fas fa-save"></i>
                     변경
                 </button>
                 <a href="${pageContext.request.contextPath}/mypage"
-                   class="btn btn-secondary ui-button button--secondary button--md">
+                   class="ui-button button--secondary button--md">
                     <i class="fas fa-times"></i>
                     취소
                 </a>

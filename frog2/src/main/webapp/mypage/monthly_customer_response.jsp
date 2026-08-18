@@ -25,7 +25,7 @@
         </jsp:attribute>
         <jsp:attribute name="actions">
             <button type="button"
-                    class="add-button ui-button button--primary button--md"
+                    class="ui-button button--primary button--md"
                     data-monthly-action="add">
                 <i class="fas fa-plus"></i> 응대 추가
             </button>
@@ -92,7 +92,7 @@
                 <c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월 고객 응대 현황 (<c:out value="${monthlyResponses.size()}" />건)
             </h3>
             <button type="button"
-                    class="btn-min ui-button button--secondary button--sm"
+                    class="ui-button button--secondary button--sm"
                     data-monthly-action="add">
                 <i class="fas fa-plus"></i> 추가
             </button>
@@ -161,7 +161,7 @@
                 <c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월 고객 응대 현황
             </h3>
             <button type="button"
-                    class="btn-min ui-button button--secondary button--sm"
+                    class="ui-button button--secondary button--sm"
                     data-monthly-action="add">
                 <i class="fas fa-plus"></i> 추가
             </button>
@@ -170,7 +170,7 @@
             <i class="fas fa-inbox"></i>
             <p><c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월에는 고객 응대 기록이 없습니다.</p>
             <button type="button"
-                    class="add-button secondary ui-button button--secondary button--md"
+                    class="ui-button button--secondary button--md"
                     data-monthly-action="add">
                 <i class="fas fa-plus"></i> 첫 응대 기록 추가
             </button>
@@ -239,10 +239,10 @@
 
             <div class="modal-footer ui-form-actions">
                 <button type="button"
-                        class="btn btn-cancel ui-button button--secondary button--md"
+                        class="ui-button button--secondary button--md"
                         data-monthly-action="close">취소</button>
                 <button type="submit"
-                        class="btn btn-primary ui-button button--primary button--md"
+                        class="ui-button button--primary button--md"
                         id="submitBtn"
                         data-busy-label="저장 중">저장</button>
             </div>

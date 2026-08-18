@@ -111,30 +111,6 @@ body {
     margin: var(--space-24) 0;
 }
 
-/* 버튼 스타일 */
-.button {
-    display: inline-block;
-    padding: var(--space-12) var(--space-24);
-    background-color: var(--color-primary);
-    color: var(--color-on-primary);
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-    transition:
-        background-color var(--motion-fast) var(--motion-ease),
-        box-shadow var(--motion-fast) var(--motion-ease),
-        color var(--motion-fast) var(--motion-ease);
-}
-
-.button:hover {
-    background-color: var(--color-primary-hover);
-    box-shadow: none;
-    color: var(--color-on-primary);
-}
-
 /* 섹션 스타일 */
 .features-section, .info-section {
     margin-bottom: var(--space-32);

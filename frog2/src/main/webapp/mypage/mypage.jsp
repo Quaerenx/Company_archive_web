@@ -40,7 +40,7 @@
             <%@ include file="/WEB-INF/includes/mypage/host_manager.jspf" %>
         </c:when>
         <c:otherwise>
-            <div class="mypage-overview">
+            <div class="mypage-overview ui-work-surface">
                 <%@ include file="/WEB-INF/includes/mypage/profile_summary.jspf" %>
                 <%@ include file="/WEB-INF/includes/mypage/recent_activity.jspf" %>
                 <%@ include file="/WEB-INF/includes/mypage/host_summary.jspf" %>

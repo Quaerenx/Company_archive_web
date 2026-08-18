@@ -21,7 +21,7 @@
     </t:pageHeader>
 
     <t:flashMessages />
-    <div class="table-container customer-list-panel">
+    <div class="table-container customer-list-panel ui-work-surface">
       <div class="customer-list-toolbar">
         <div class="filter-toggle">
             <button type="button" class="filter-btn ui-touch-target ${filter == 'maintenance' ? 'active' : ''} js-customer-filter" data-filter="maintenance">
@@ -156,7 +156,7 @@
                             <c:param name="returnPage" value="${currentPage}" />
                             <c:param name="returnPageSize" value="${pageSize}" />
                         </c:url>
-                        <tr class="customer-row"
+                        <tr class="customer-row ui-data-row"
                             data-detail-url="<c:out value="${customerDetailUrl}" />">
                             <td title="<c:out value="${customer.customerName}" />" data-original="<c:out value="${customer.customerName}" />">
                                 <a class="customer-detail-link"

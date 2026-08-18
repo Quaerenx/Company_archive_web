@@ -27,11 +27,11 @@
                 <c:choose>
                     <c:when test="${not empty customerName}">
                         <a href="<c:out value='${customerHistoryUrl}' />"
-                           class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-history"></i> 이력으로</a>
+                           class="ui-button button--secondary button--md"><i class="fas fa-history"></i> 이력으로</a>
                     </c:when>
                     <c:otherwise>
                         <a href="${pageContext.request.contextPath}/maintenance?view=cards"
-                           class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-list"></i> 카드로</a>
+                           class="ui-button button--secondary button--md"><i class="fas fa-list"></i> 카드로</a>
                     </c:otherwise>
                 </c:choose>
             </jsp:attribute>
@@ -63,15 +63,15 @@
                     <c:choose>
                         <c:when test="${not empty customerName}">
                             <a href="<c:out value='${customerHistoryUrl}' />"
-                               class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                               class="ui-button button--secondary button--md">취소</a>
                         </c:when>
                         <c:otherwise>
                             <a href="${pageContext.request.contextPath}/maintenance?view=cards"
-                               class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                               class="ui-button button--secondary button--md">취소</a>
                         </c:otherwise>
                     </c:choose>
                     <button type="submit"
-                            class="btn btn-primary ui-button button--primary button--md"
+                            class="ui-button button--primary button--md"
                             data-busy-label="등록 중">등록하기</button>
                 </div>
             </form>

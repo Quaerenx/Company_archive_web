@@ -15,7 +15,7 @@
         <jsp:attribute name="subtitle">회의 내용을 정리하여 등록해주세요.</jsp:attribute>
         <jsp:attribute name="actions">
             <a href="${pageContext.request.contextPath}/meeting?view=list"
-               class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-list"></i> 목록으로</a>
+               class="ui-button button--secondary button--md"><i class="fas fa-list"></i> 목록으로</a>
         </jsp:attribute>
     </t:pageHeader>
 
@@ -44,12 +44,12 @@
             <!-- 버튼 -->
             <div class="button-group ui-form-actions">
                 <a href="${pageContext.request.contextPath}/meeting?view=list"
-                   class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                   class="ui-button button--secondary button--md">취소</a>
                 <button type="button"
-                        class="btn btn-secondary ui-button button--secondary button--md"
+                        class="ui-button button--secondary button--md"
                         data-meeting-action="preview">미리보기</button>
                 <button type="submit"
-                        class="btn btn-primary ui-button button--primary button--md"
+                        class="ui-button button--primary button--md"
                         data-busy-label="등록 중">등록하기</button>
             </div>
         </form>
@@ -88,7 +88,7 @@
         </div>
         <div class="modal-footer">
             <button type="button"
-                    class="btn btn-secondary ui-button button--secondary button--md"
+                    class="ui-button button--secondary button--md"
                     data-meeting-action="close-preview">닫기</button>
         </div>
     </div>

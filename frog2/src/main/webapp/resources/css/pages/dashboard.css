@@ -37,23 +37,13 @@
 }
 
 .dashboard-page .maintenance-month-board {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: none;
   container-name: dashboard-maintenance;
   container-type: inline-size;
   overflow: visible;
-  padding: var(--space-24);
 }
 
 .dashboard-page .maintenance-month-header {
-  align-items: center;
-  border-block-end: 1px solid var(--color-divider);
-  display: flex;
-  gap: var(--space-16);
-  justify-content: space-between;
-  padding: 0 0 var(--space-20);
+  padding-block-end: var(--space-20);
 }
 
 .dashboard-page .maintenance-month-title {
@@ -113,7 +103,7 @@
 }
 
 .dashboard-page .maintenance-month-body {
-  padding-block-start: var(--space-24);
+  min-inline-size: 0;
 }
 
 .dashboard-page .maintenance-month-body.is-collapsed {
@@ -136,8 +126,6 @@
 
 .dashboard-page .maintenance-assignee-group {
   align-content: start;
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-lg);
   display: grid;
   gap: var(--space-8);
   grid-template-rows: max-content max-content;
@@ -145,7 +133,6 @@
   inline-size: 100%;
   margin: 0;
   min-inline-size: 0;
-  padding: var(--space-16);
 }
 
 .dashboard-page .maintenance-assignee-name {
@@ -325,10 +312,6 @@
 @media (max-width: 480px) {
   .dashboard-page .dashboard-workspace {
     padding-inline: 0;
-  }
-
-  .dashboard-page .maintenance-month-board {
-    padding: var(--space-16);
   }
 
   .dashboard-page .maintenance-month-actions {

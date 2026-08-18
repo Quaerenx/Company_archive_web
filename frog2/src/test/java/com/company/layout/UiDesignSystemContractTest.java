@@ -55,6 +55,8 @@ class UiDesignSystemContractTest {
                 ".button--primary",
                 ".button--secondary",
                 ".button--danger",
+                ".button--ghost",
+                ".button--ghost-danger",
                 ".button--sm",
                 ".button--md",
                 ".ui-touch-target",
@@ -74,6 +76,18 @@ class UiDesignSystemContractTest {
                 ".ui-toast-region",
                 ".ui-badge",
                 ".ui-badge--neutral",
+                ".ui-badge--success",
+                ".ui-badge--warning",
+                ".ui-badge--danger",
+                ".ui-work-surface",
+                ".ui-work-surface--padded",
+                ".ui-section-header",
+                ".ui-section-header--compact",
+                ".ui-section-actions",
+                ".ui-section-title",
+                ".ui-section-body",
+                ".ui-subgroup",
+                ".ui-data-row",
                 ".ui-table",
                 ".content-shell")) {
             assertTrue(styles.contains(selector), selector);
@@ -84,6 +98,9 @@ class UiDesignSystemContractTest {
         assertTrue(tokens.contains("--page-content-gutter: var(--space-16)"));
         assertTrue(tokens.contains(
                 "--page-content-total-gutter: calc(var(--page-content-gutter) * 2)"));
+        assertTrue(tokens.contains("--work-surface-padding: var(--space-24)"));
+        assertTrue(tokens.contains("--section-content-gap: var(--space-24)"));
+        assertTrue(tokens.contains("--item-content-gap: var(--space-12)"));
         assertTrue(styles.contains("background: var(--background)"));
         assertTrue(styles.contains("width: calc(100% - var(--page-content-total-gutter))"));
         assertTrue(styles.contains("padding-block: var(--space-32)"));
@@ -123,6 +140,113 @@ class UiDesignSystemContractTest {
             assertFalse(read(pageStyle).contains(
                     "max-width: var(--page-content-max-width)"), pageStyle);
         }
+    }
+
+    @Test
+    void workspaceHierarchyAndRowNavigationAreSharedAcrossDomains()
+            throws Exception {
+        String styles = read("resources/css/ui-system.css");
+        String script = read("resources/js/ui-system.js");
+
+        assertTrue(styles.contains(":where(.ui-work-surface, .table-container)"));
+        assertTrue(styles.contains(".ui-section-header--flush"));
+        assertTrue(styles.contains(".ui-section-body--flush"));
+        assertTrue(script.contains(".ui-data-row[data-detail-url]"));
+        assertTrue(script.contains("window.location.assign(row.dataset.detailUrl)"));
+        assertTrue(script.contains("event.defaultPrevented"));
+        assertTrue(script.contains("window.getSelection()"));
+        assertTrue(script.contains("!selection.isCollapsed"));
+        assertTrue(script.contains("isSelectingText"));
+        assertTrue(script.contains("row.getAttribute('aria-disabled') === 'true'"));
+
+        for (String page : List.of(
+                "customers/customers_list.jsp",
+                "meeting/meeting_list.jsp",
+                "troubleshooting/troubleshooting_list.jsp")) {
+            String source = read(page);
+            assertTrue(source.contains("ui-data-row"), page);
+            assertTrue(source.contains("data-detail-url"), page);
+        }
+
+        for (String page : List.of(
+                "dashboard.jsp",
+                "customers/customers_detail.jsp",
+                "maintenance/maintenance_history.jsp",
+                "meeting/meeting_view.jsp",
+                "troubleshooting/troubleshooting_view.jsp",
+                "WEB-INF/views/filerepo/list.jsp",
+                "mypage/mypage.jsp")) {
+            assertTrue(read(page).contains("ui-work-surface"), page);
+        }
+    }
+
+    @Test
+    void legacyButtonVisualClassesAreRetiredFromViews() throws Exception {
+        List<String> legacyClasses = List.of(
+                "button",
+                "btn",
+                "btn-primary",
+                "btn-secondary",
+                "btn-success",
+                "btn-danger",
+                "btn-warning",
+                "btn-cancel",
+                "btn-sm",
+                "btn-min",
+                "add-button");
+        Pattern classAttribute = Pattern.compile("class=\"([^\"]*)\"");
+
+        try (var paths = Files.walk(WEBAPP)) {
+            for (Path path : paths.filter(Files::isRegularFile)
+                    .filter(UiDesignSystemContractTest::isViewTemplate)
+                    .toList()) {
+                Matcher matcher = classAttribute.matcher(Files.readString(path));
+                while (matcher.find()) {
+                    List<String> classes = List.of(matcher.group(1).trim().split("\\s+"));
+                    for (String legacyClass : legacyClasses) {
+                        assertFalse(classes.contains(legacyClass),
+                                () -> path + " still uses " + legacyClass);
+                    }
+                }
+            }
+        }
+
+        String base = read("resources/css/base.css");
+        String components = read("resources/css/components.css");
+        assertFalse(base.contains(".button {"));
+        for (String selector : List.of(
+                ".btn {", ".btn-primary", ".btn-secondary", ".btn-success",
+                ".btn-danger", ".btn-warning", ".btn-cancel", ".btn-min",
+                ".add-button")) {
+            assertFalse(components.contains(selector), selector);
+        }
+    }
+
+    @Test
+    void repeatedSectionHeadersUseOneTagContract() throws Exception {
+        String tag = read("WEB-INF/tags/sectionHeader.tag");
+        assertTrue(tag.contains("ui-section-header"));
+        assertTrue(tag.contains("ui-section-header--flush"));
+        assertTrue(tag.contains("ui-section-header--compact"));
+        assertTrue(tag.contains("ui-section-actions"));
+        assertTrue(tag.contains("<jsp:invoke fragment=\"title\" />"));
+        assertTrue(tag.contains("<jsp:invoke fragment=\"actions\" />"));
+
+        String maintenanceHistory = read("maintenance/maintenance_history.jsp");
+        String maintenanceCards = read("maintenance/maintenance_cards.jsp");
+        String meetingView = read("meeting/meeting_view.jsp");
+        assertTrue(maintenanceHistory.contains(
+                "<t:sectionHeader className=\"history-header\">"));
+        assertTrue(maintenanceCards.contains(
+                "<t:sectionHeader className=\"inspector-header\" compact=\"true\">"));
+        assertTrue(meetingView.contains(
+                "<t:sectionHeader className=\"content-header\">"));
+        assertTrue(meetingView.contains(
+                "<t:sectionHeader className=\"comments-header\">"));
+        assertFalse(maintenanceHistory.contains(
+                "class=\"history-header ui-section-header\""));
+        assertFalse(meetingView.contains(
+                "class=\"content-header ui-section-header\""));
     }
 
     @Test
@@ -228,9 +352,10 @@ class UiDesignSystemContractTest {
         String customerEdit = read("customers/customers_detail_edit.jsp");
         String troubleshooting = read("troubleshooting/troubleshooting_view.jsp");
         assertTrue(customerView.contains("class=\"environment-detail ui-detail\""));
-        assertTrue(customerEdit.contains("class=\"detail-container ui-detail\""));
+        assertTrue(customerEdit.contains(
+                "class=\"detail-container ui-detail ui-work-surface\""));
         assertTrue(troubleshooting.contains(
-                "class=\"detail-container ui-detail troubleshooting-report\""));
+                "class=\"detail-container ui-detail troubleshooting-report ui-work-surface\""));
 
         String troubleshootingStyles = read(
                 "resources/css/pages/troubleshooting_view.css");
@@ -412,6 +537,13 @@ class UiDesignSystemContractTest {
         assertTrue(source.contains("ui-button"), path);
         assertTrue(source.contains("button--primary"), path);
         assertTrue(source.contains("button--secondary"), path);
+    }
+
+    private static boolean isViewTemplate(Path path) {
+        String fileName = path.getFileName().toString();
+        return fileName.endsWith(".jsp")
+                || fileName.endsWith(".jspf")
+                || fileName.endsWith(".tag");
     }
 
     private static String read(String path) throws Exception {

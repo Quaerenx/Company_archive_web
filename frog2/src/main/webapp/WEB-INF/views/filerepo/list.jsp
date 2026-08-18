@@ -24,9 +24,9 @@
         </jsp:attribute>
     </t:pageHeader>
 
-    <section class="file-main" aria-label="업무자료 목록">
+    <section class="file-main ui-work-surface ui-work-surface--padded" aria-label="업무자료 목록">
 
-        <nav class="breadcrumb" aria-label="자료실 경로">
+        <nav class="breadcrumb ui-subgroup" aria-label="자료실 경로">
             <c:url var="rootUrl" value="/file-repository" />
             <a href="<c:out value="${rootUrl}" />"><i class="fas fa-home"></i> 자료실</a>
             <c:forEach var="crumb" items="${listing.breadcrumbs}">

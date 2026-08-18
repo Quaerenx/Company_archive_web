@@ -21,7 +21,7 @@
         <jsp:attribute name="subtitle">회의 내용을 수정해주세요.</jsp:attribute>
         <jsp:attribute name="actions">
             <a href="<c:out value='${meetingDetailReturnUrl}' />"
-               class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-file-alt"></i> 상세보기</a>
+               class="ui-button button--secondary button--md"><i class="fas fa-file-alt"></i> 상세보기</a>
         </jsp:attribute>
     </t:pageHeader>
 
@@ -74,15 +74,15 @@
             <!-- 버튼 -->
             <div class="button-group ui-form-actions">
                 <a href="<c:out value='${meetingDetailReturnUrl}' />"
-                   class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                   class="ui-button button--secondary button--md">취소</a>
                 <button type="button"
-                        class="btn btn-secondary ui-button button--secondary button--md"
+                        class="ui-button button--secondary button--md"
                         data-meeting-action="preview">미리보기</button>
                 <button type="submit"
-                        class="btn btn-primary ui-button button--primary button--md"
+                        class="ui-button button--primary button--md"
                         data-busy-label="수정 중">수정하기</button>
                 <button type="button"
-                        class="btn btn-danger ui-button button--danger button--md meeting-delete-button"
+                        class="ui-button button--danger button--md meeting-delete-button"
                         data-meeting-action="delete">삭제하기</button>
             </div>
         </form>
@@ -131,7 +131,7 @@
         </div>
         <div class="modal-footer">
             <button type="button"
-                    class="btn btn-secondary ui-button button--secondary button--md"
+                    class="ui-button button--secondary button--md"
                     data-meeting-action="close-preview">닫기</button>
         </div>
     </div>

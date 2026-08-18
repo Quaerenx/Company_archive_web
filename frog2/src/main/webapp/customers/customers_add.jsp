@@ -19,7 +19,7 @@
             </jsp:attribute>
             <jsp:attribute name="actions">
                 <a href="${pageContext.request.contextPath}/customers?view=list"
-                   class="add-button ui-button button--secondary button--md">
+                   class="ui-button button--secondary button--md">
                     <i class="fas fa-list"></i> 목록으로
                 </a>
             </jsp:attribute>
@@ -49,9 +49,9 @@
                 <!-- 버튼 -->
                 <div class="button-group ui-form-actions">
                     <a href="${pageContext.request.contextPath}/customers?view=list"
-                       class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                       class="ui-button button--secondary button--md">취소</a>
                     <button type="submit"
-                            class="btn btn-primary ui-button button--primary button--md"
+                            class="ui-button button--primary button--md"
                             data-busy-label="등록 중">등록하기</button>
                 </div>
             </form>

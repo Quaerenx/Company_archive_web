@@ -172,6 +172,9 @@
     --page-content-gutter: var(--space-16);
     --page-content-total-gutter: calc(var(--page-content-gutter) * 2);
     --page-section-gap: var(--space-24);
+    --work-surface-padding: var(--space-24);
+    --section-content-gap: var(--space-24);
+    --item-content-gap: var(--space-12);
 
     /* 8px rhythm with 2px/4px sub-grid values for borders and tight pairs. */
     --space-0: 0;

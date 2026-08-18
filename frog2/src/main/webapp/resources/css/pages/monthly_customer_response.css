@@ -285,7 +285,7 @@
         width: 100%;
     }
 
-    .monthly-response-page .modal-footer .btn {
+    .monthly-response-page .modal-footer .ui-button {
         width: 100%;
         justify-content: center;
     }
@@ -306,8 +306,8 @@
         flex-direction: column;
     }
 
-    .monthly-response-page .results-header .btn-min,
-    .monthly-response-page .empty-state .add-button {
+    .monthly-response-page .results-header .ui-button,
+    .monthly-response-page .empty-state .ui-button {
         width: 100%;
         justify-content: center;
     }

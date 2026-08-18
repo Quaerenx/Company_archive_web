@@ -44,16 +44,6 @@
             });
         });
 
-        document.querySelectorAll('.customer-row[data-detail-url]').forEach(function(row) {
-            function openDetail() {
-                window.location.href = row.dataset.detailUrl;
-            }
-            row.addEventListener('click', function(event) {
-                if (!event.target.closest('a, button, input, select, textarea')) {
-                    openDetail();
-                }
-            });
-        });
     }
 
     function initializeSearch() {

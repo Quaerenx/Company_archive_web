@@ -29,24 +29,28 @@
         </jsp:attribute>
         <jsp:attribute name="actions">
             <a href="${addHistoryUrl}"
-               class="btn-min ui-button button--primary button--sm"><i class="fas fa-plus"></i> 새 점검 이력 추가</a>
+               class="ui-button button--primary button--sm"><i class="fas fa-plus"></i> 새 점검 이력 추가</a>
             <a href="${pageContext.request.contextPath}/maintenance?view=cards"
-               class="btn-min ui-button button--secondary button--sm"><i class="fas fa-arrow-left"></i> 목록으로</a>
+               class="ui-button button--secondary button--sm"><i class="fas fa-arrow-left"></i> 목록으로</a>
         </jsp:attribute>
     </t:pageHeader>
 
     <!-- 라이선스 사용률 추이 차트 -->
-    <div class="history-container history-chart-container">
-        <div class="history-header">
-            <div class="history-title" id="licenseUsageChartTitle"><i class="fas fa-chart-line"></i> 라이선스 사용률 추이</div>
-            <div class="record-count">
+    <div class="history-container history-chart-container ui-work-surface">
+        <t:sectionHeader className="history-header">
+            <jsp:attribute name="title">
+                <h2 class="history-title ui-section-title" id="licenseUsageChartTitle"><i class="fas fa-chart-line"></i> 라이선스 사용률 추이</h2>
+            </jsp:attribute>
+            <jsp:attribute name="actions">
+                <div class="record-count">
                 <c:choose>
                     <c:when test="${not empty usageSeries}">데이터: ${fn:length(usageSeries)}건</c:when>
                     <c:otherwise>데이터 없음</c:otherwise>
                 </c:choose>
-            </div>
-        </div>
-        <div class="usage-chart-wrap">
+                </div>
+            </jsp:attribute>
+        </t:sectionHeader>
+        <div class="usage-chart-wrap ui-section-body">
             <c:if test="${not empty usageSeries}">
                 <c:set var="usagePointCount" value="${fn:length(usageSeries)}" />
                 <c:set var="latestPoint" value="${usageSeries[usagePointCount - 1]}" />
@@ -141,16 +145,20 @@
     <t:flashMessages />
 
     <!-- 정기점검 이력 목록 -->
-    <div class="history-container">
-        <div class="history-header">
-            <div class="history-title">
-                <i class="fas fa-clipboard-list"></i>
-                정기점검 이력
-            </div>
-            <div class="record-count">
-                <c:out value="${totalCount}" />건
-            </div>
-        </div>
+    <div class="history-container ui-work-surface">
+        <t:sectionHeader className="history-header">
+            <jsp:attribute name="title">
+                <h2 class="history-title ui-section-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    정기점검 이력
+                </h2>
+            </jsp:attribute>
+            <jsp:attribute name="actions">
+                <div class="record-count">
+                    <c:out value="${totalCount}" />건
+                </div>
+            </jsp:attribute>
+        </t:sectionHeader>
 
         <c:url var="maintenanceHistoryResetUrl" value="/maintenance">
             <c:param name="view" value="history" />
@@ -255,7 +263,7 @@
                                     <td class="history-version-cell">
                                         <c:choose>
                                             <c:when test="${not empty row.record.verticaVersion}">
-                                                <span class="version-tag ui-badge"><c:out value="${row.record.verticaVersion}" /></span>
+                                                <span class="version-tag ui-badge ui-badge--neutral"><c:out value="${row.record.verticaVersion}" /></span>
                                             </c:when>
                                             <c:otherwise>—</c:otherwise>
                                         </c:choose>
@@ -411,7 +419,7 @@
                             <h3>정기점검 이력이 없습니다</h3>
                             <p><c:out value="${customerName}" />의 정기점검 이력이 아직 등록되지 않았습니다.</p>
                             <a href="${addHistoryUrl}"
-                               class="btn btn-secondary ui-button button--secondary button--md">
+                               class="ui-button button--secondary button--md">
                                 <i class="fas fa-plus"></i>
                                 첫 번째 점검 이력 추가하기
                             </a>

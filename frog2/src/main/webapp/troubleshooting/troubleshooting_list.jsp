@@ -6,7 +6,6 @@
 <c:set var="pageTitle" value="트러블 슈팅" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-troubleshooting" scope="request" />
 <c:set var="pageCss" value="/resources/css/pages/troubleshooting_list.css" scope="request" />
-<c:set var="pageScript" value="/resources/js/pages/troubleshooting_list.js" scope="request" />
 <%@ include file="/includes/header.jsp" %>
 
 
@@ -16,7 +15,7 @@
         <jsp:attribute name="subtitle">기술지원 및 문제 해결 이력 <strong><c:out value="${totalCount}" /></strong>건</jsp:attribute>
         <jsp:attribute name="actions">
             <a href="${pageContext.request.contextPath}/troubleshooting?view=add"
-               class="add-button ui-button button--primary button--md">
+               class="ui-button button--primary button--md">
                 <i class="fas fa-plus" aria-hidden="true"></i>
                 새 트러블 슈팅 등록
             </a>
@@ -25,7 +24,7 @@
 
     <t:flashMessages />
 
-    <div class="table-container">
+    <div class="table-container ui-work-surface">
     <div class="ts-search-bar">
         <form class="ts-search-form ui-form"
               method="get"
@@ -79,7 +78,7 @@
                         <c:param name="returnPage" value="${currentPage}" />
                         <c:param name="returnPageSize" value="${pageSize}" />
                     </c:url>
-                    <tr data-detail-url="<c:out value='${troubleshootingViewUrl}' />">
+                    <tr class="ui-data-row" data-detail-url="<c:out value='${troubleshootingViewUrl}' />">
                         <%-- 2. '고객사'와 '제목' 데이터 셀(td)의 순서를 헤더와 동일하게 변경합니다. --%>
                         <td class="text-center"><c:out value="${ts.customerName}" /></td>
                         <td>

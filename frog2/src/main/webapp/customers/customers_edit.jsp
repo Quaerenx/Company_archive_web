@@ -25,11 +25,11 @@
         </jsp:attribute>
         <jsp:attribute name="actions">
             <a href="${pageContext.request.contextPath}/customers?view=list"
-               class="add-button ui-button button--secondary button--md">
+               class="ui-button button--secondary button--md">
                 <i class="fas fa-list"></i> 목록으로
             </a>
             <a href="<c:out value='${customerDetailUrl}' />"
-               class="add-button secondary ui-button button--secondary button--md">
+               class="ui-button button--secondary button--md">
                 <i class="fas fa-info-circle"></i> 상세보기
             </a>
         </jsp:attribute>
@@ -59,11 +59,11 @@
             <!-- 버튼 -->
             <div class="button-group ui-form-actions">
                 <a href="${pageContext.request.contextPath}/customers?view=list"
-                   class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                   class="ui-button button--secondary button--md">취소</a>
                 <a href="<c:out value='${customerDetailUrl}' />"
-                   class="btn btn-secondary ui-button button--secondary button--md">상세보기</a>
+                   class="ui-button button--secondary button--md">상세보기</a>
                 <button type="submit"
-                        class="btn btn-primary ui-button button--primary button--md"
+                        class="ui-button button--primary button--md"
                         data-busy-label="수정 중">수정 완료</button>
             </div>
         </form>

@@ -21,6 +21,8 @@ class MaintenanceCardsViewContractTest {
         assertEquals(1, occurrences(page, "class=\"customer-card\""));
         assertEquals(1, occurrences(page,
                 "<c:forEach var=\"entry\" items=\"${inspectorCustomers}\">"));
+        assertTrue(page.contains(
+                "class=\"inspector-block ui-work-surface ui-work-surface--padded\""));
         assertTrue(page.contains("maintenanceFrequencyLabels[customer.customerName]"));
         assertTrue(page.contains("eq '분기'"));
         assertTrue(!page.contains("? '월별' :"));

@@ -20,7 +20,8 @@ class MeetingViewContractTest {
         assertTrue(page.contains("data-comment-id="));
         assertTrue(page.contains("commentPage.hasOlder"));
         assertTrue(page.contains("commentBefore"));
-        assertTrue(page.contains("class=\"comments-section\" id=\"comments\""));
+        assertTrue(page.contains(
+                "class=\"comments-section ui-work-surface\" id=\"comments\""));
         assertTrue(page.contains("class=\"comment-btn edit ui-button"));
         assertTrue(page.contains("class=\"comment-btn delete ui-button"));
         assertTrue(page.contains("class=\"btn-save ui-button"));
@@ -66,6 +67,17 @@ class MeetingViewContractTest {
         assertTrue(page.contains("aria-describedby=\"commentHelp\""));
         assertTrue(page.contains("최근 <c:out value=\"${comments.size()}\" />개"));
         assertFalse(page.contains("회의록 목록으로 돌아가기"));
+    }
+
+    @Test
+    void meetingContentUsesTheAvailableCardWidthWithoutCentering() throws Exception {
+        String styles = read("resources/css/pages/meeting_view.css");
+
+        assertTrue(styles.contains(".meeting-text {"));
+        assertTrue(styles.contains("inline-size: 100%;"));
+        assertTrue(styles.contains("max-inline-size: none;"));
+        assertTrue(styles.contains("margin: 0;"));
+        assertFalse(styles.contains("margin-inline: auto;"));
     }
 
     @Test

@@ -57,11 +57,11 @@
             <!-- 버튼 -->
             <div class="button-group ui-form-actions">
                 <a href="<c:out value='${troubleshootingListReturnUrl}' />"
-                   class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                   class="ui-button button--secondary button--md">취소</a>
                 <a href="<c:out value='${troubleshootingDetailReturnUrl}' />"
-                   class="btn btn-secondary ui-button button--secondary button--md">상세보기</a>
+                   class="ui-button button--secondary button--md">상세보기</a>
                 <button type="submit"
-                        class="btn btn-primary ui-button button--primary button--md"
+                        class="ui-button button--primary button--md"
                         data-busy-label="수정 중">수정 완료</button>
             </div>
         </form>

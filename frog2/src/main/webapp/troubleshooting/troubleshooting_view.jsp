@@ -47,7 +47,7 @@
         </jsp:attribute>
         <jsp:attribute name="actions">
             <a href="<c:out value='${troubleshootingListReturnUrl}' />"
-               class="btn btn-secondary ui-button button--secondary button--md">
+               class="ui-button button--secondary button--md">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i>
                 목록으로
             </a>
@@ -56,7 +56,7 @@
     
     <t:flashMessages />
     
-    <article class="detail-container ui-detail troubleshooting-report">
+    <article class="detail-container ui-detail troubleshooting-report ui-work-surface">
         <section class="detail-section troubleshooting-meta-section"
                  aria-labelledby="troubleshooting-meta-title">
             <h2 id="troubleshooting-meta-title" class="detail-section-title">
@@ -196,10 +196,10 @@
             <c:if test="${canManageTroubleshooting}">
                 <div class="section-actions">
                     <a href="<c:out value='${troubleshootingEditUrl}' />"
-                       class="btn btn-ghost ui-button button--secondary button--sm">수정하기</a>
+                       class="ui-button button--ghost button--sm">수정하기</a>
                     <button type="submit"
                             id="deleteTroubleshootingButton"
-                            class="btn btn-ghost btn-ghost-danger ui-button button--danger button--sm"
+                            class="ui-button button--ghost button--ghost-danger button--sm"
                             form="deleteTroubleshootingForm"
                             data-busy-label="삭제 중">삭제하기</button>
                 </div>

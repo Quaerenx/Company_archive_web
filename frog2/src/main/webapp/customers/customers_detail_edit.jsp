@@ -45,11 +45,11 @@
         <jsp:attribute name="subtitle">고객사 상세정보를 수정하세요</jsp:attribute>
         <jsp:attribute name="actions">
             <a href="<c:out value='${customerDetailUrl}' />"
-               class="add-button secondary ui-button button--secondary button--md">
+               class="ui-button button--secondary button--md">
                 <i class="fas fa-info-circle"></i> 상세보기
             </a>
             <a href="<c:out value='${customerListReturnUrl}' />"
-               class="add-button ui-button button--secondary button--md">
+               class="ui-button button--secondary button--md">
                 <i class="fas fa-list"></i> 목록으로
             </a>
         </jsp:attribute>
@@ -66,7 +66,7 @@
         <input type="hidden" name="action" value="saveDetail">
         <input type="hidden" name="env" value="<c:out value="${env != null ? env : 'prod'}" />">
 
-        <div class="detail-container ui-detail">
+        <div class="detail-container ui-detail ui-work-surface">
             <!-- 메타정보 섹션 -->
             <div class="detail-section">
                 <div class="detail-section-title">
@@ -539,18 +539,18 @@
         <!-- 버튼 그룹 -->
         <div class="form-actions ui-form-actions">
             <button type="submit"
-                    class="btn btn-success ui-button button--primary button--md"
+                    class="ui-button button--primary button--md"
                     data-busy-label="저장 중">
                 <i class="fas fa-save"></i>
                 저장하기
             </button>
             <a href="<c:out value='${customerDetailUrl}' />"
-               class="btn btn-secondary ui-button button--secondary button--md">
+               class="ui-button button--secondary button--md">
                 <i class="fas fa-times"></i>
                 취소
             </a>
             <a href="<c:out value='${customerListReturnUrl}' />"
-               class="btn btn-secondary ui-button button--secondary button--md">
+               class="ui-button button--secondary button--md">
                 <i class="fas fa-list"></i>
                 목록으로
             </a>

@@ -24,6 +24,86 @@ body.ui-system .content-shell {
     width: calc(100% - var(--page-content-total-gutter));
 }
 
+/*
+ * Shared workspace hierarchy:
+ * page channel -> work surface -> local subgroup.
+ * Domain styles should only describe content-specific layout inside these
+ * layers, not recreate their border, radius, or spacing contract.
+ */
+.ui-system :where(.ui-work-surface, .table-container) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+    min-inline-size: 0;
+    overflow: hidden;
+}
+
+.ui-system .ui-work-surface--padded {
+    padding: var(--work-surface-padding);
+}
+
+.ui-system .ui-section-header {
+    align-items: center;
+    background: var(--color-surface);
+    border-block-end: 1px solid var(--color-divider);
+    display: flex;
+    gap: var(--space-16);
+    justify-content: space-between;
+    padding: var(--space-16) var(--work-surface-padding);
+}
+
+.ui-system .ui-section-header--flush {
+    padding: 0 0 var(--space-16);
+}
+
+.ui-system .ui-section-header--compact {
+    background: transparent;
+    border: 0;
+    justify-content: flex-start;
+    padding: 0;
+}
+
+.ui-system .ui-section-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    margin-inline-start: auto;
+    min-inline-size: 0;
+}
+
+.ui-system .ui-section-title {
+    align-items: center;
+    color: var(--color-text-strong);
+    display: flex;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    gap: var(--space-8);
+    line-height: var(--line-height-heading);
+    margin: 0;
+}
+
+.ui-system .ui-section-body {
+    padding: var(--section-content-gap) var(--work-surface-padding);
+}
+
+.ui-system .ui-section-body--flush {
+    padding: var(--section-content-gap) 0 0;
+}
+
+.ui-system .ui-subgroup {
+    background: var(--color-surface-subtle);
+    border-radius: var(--radius-md);
+    min-inline-size: 0;
+    padding: var(--space-16);
+}
+
+.ui-system .ui-item-stack {
+    display: grid;
+    gap: var(--item-content-gap);
+}
+
 /* Keyboard users can bypass persistent navigation without affecting layout. */
 .ui-system .skip-link {
     background: var(--color-surface-elevated);
@@ -162,6 +242,23 @@ body.ui-system .content-shell {
     background: var(--color-danger-hover);
     border-color: var(--color-danger-hover);
     color: var(--color-on-danger);
+}
+
+.ui-system .button--ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-text);
+}
+
+.ui-system .button--ghost:hover {
+    background: var(--color-surface-muted);
+    border-color: transparent;
+    color: var(--color-primary);
+}
+
+.ui-system .button--ghost-danger,
+.ui-system .button--ghost-danger:hover {
+    color: var(--color-danger-text);
 }
 
 .ui-system .button--sm {
@@ -546,19 +643,51 @@ body.ui-system .content-shell {
 /* Badges and tables use the same semantic tokens without changing layout. */
 .ui-system .ui-badge {
     align-items: center;
+    border-radius: var(--radius-pill);
     display: inline-flex;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
     line-height: 1;
+    min-block-size: 24px;
+    padding-inline: var(--space-8);
 }
 
 .ui-system .ui-badge--neutral {
     background: var(--color-surface-muted);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
     color: var(--color-text);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    min-block-size: 24px;
-    padding-inline: var(--space-8);
+}
+
+.ui-system .ui-badge--success {
+    background: var(--color-success-bg);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success-text);
+}
+
+.ui-system .ui-badge--warning {
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-warning-border);
+    color: var(--color-warning-text);
+}
+
+.ui-system .ui-badge--danger {
+    background: var(--color-danger-bg);
+    border: 1px solid var(--color-danger-border);
+    color: var(--color-danger-text);
+}
+
+/* One mouse-row affordance; the real link in each row remains the keyboard path. */
+.ui-system .ui-data-row[data-detail-url] {
+    cursor: pointer;
+    transition: background-color var(--motion-fast) var(--motion-ease);
+}
+
+.ui-system .ui-data-row[data-detail-url]:hover {
+    background: var(--color-surface-subtle);
+}
+
+.ui-system .ui-data-row[data-detail-url]:focus-within {
+    background: var(--color-surface-selected);
 }
 
 .ui-system .ui-table-wrap {
@@ -771,6 +900,24 @@ body.ui-dialog-open {
 @media (max-width: 768px) {
     body.ui-system .content-shell {
         padding-block: var(--space-24);
+    }
+
+    .ui-system .ui-work-surface--padded,
+    .ui-system .ui-section-body {
+        padding: var(--space-16);
+    }
+
+    .ui-system .ui-section-body--flush {
+        padding: var(--space-16) 0 0;
+    }
+
+    .ui-system .ui-section-header {
+        align-items: flex-start;
+        padding: var(--space-16);
+    }
+
+    .ui-system .ui-section-header--flush {
+        padding: 0 0 var(--space-16);
     }
 
     .ui-system .ui-form-card {

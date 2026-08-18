@@ -86,10 +86,10 @@ class TroubleshootingViewContractTest {
         assertTrue(page.contains("class=\"title-link\""));
         assertTrue(page.contains("troubleshootingList"));
 
-        String behavior = behavior(
-                page, "resources/js/pages/troubleshooting_list.js");
+        String behavior = read("resources/js/ui-system.js");
+        assertTrue(page.contains("ui-data-row"));
         assertTrue(behavior.contains("dataset.detailUrl"));
-        assertTrue(behavior.contains("closest('a')"));
+        assertTrue(behavior.contains("interactiveTarget"));
 
         String styles = styles(
                 page, "resources/css/pages/troubleshooting_list.css");
@@ -155,7 +155,9 @@ class TroubleshootingViewContractTest {
         assertTrue(styles.contains("white-space: pre-wrap"));
         assertTrue(styles.contains("white-space: pre"));
         assertFalse(styles.contains(".detail-item.full-width"));
-        assertTrue(styles.contains("min-width: 120px"));
+        assertTrue(page.contains("button--ghost"));
+        assertTrue(page.contains("button--ghost-danger"));
+        assertFalse(styles.contains("min-width: 120px"));
         assertTrue(styles.contains("@media (max-width: 768px)"));
     }
 

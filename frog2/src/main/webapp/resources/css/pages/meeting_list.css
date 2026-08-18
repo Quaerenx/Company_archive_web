@@ -1,20 +1,14 @@
 .meeting-management .meeting-list-table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
+    table-layout: auto;
     font-size: var(--font-size-sm);
 }
 
-.meeting-management .meeting-col-datetime {
-    width: 148px;
-}
-
-.meeting-management .meeting-col-type {
-    width: 124px;
-}
-
+.meeting-management .meeting-col-datetime,
+.meeting-management .meeting-col-type,
 .meeting-management .meeting-col-author {
-    width: 104px;
+    width: 1%;
 }
 
 .meeting-management .meeting-list-table th {
@@ -31,12 +25,7 @@
 }
 
 .meeting-management .meeting-list-table tbody tr {
-    transition: background-color var(--motion-fast) var(--motion-ease);
     border-bottom: 1px solid var(--color-border);
-}
-
-.meeting-management .meeting-list-table tbody tr:hover {
-    background-color: var(--color-surface-subtle);
 }
 
 .meeting-management .meeting-list-table td {
@@ -47,8 +36,13 @@
 
 .meeting-management .title-link {
     color: var(--color-text);
+    display: block;
     text-decoration: none;
     font-weight: 500;
+}
+
+.meeting-management .meeting-title-cell {
+    min-width: 240px;
 }
 
 .meeting-management .title-link:hover {
@@ -89,17 +83,7 @@
 }
 
 .meeting-management .meeting-type-badge {
-    display: inline-flex;
-    align-items: center;
     justify-content: center;
-    min-height: 26px;
-    padding: var(--space-4) var(--space-8);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface-muted);
-    color: var(--color-text-muted);
-    font-size: var(--font-size-xs);
-    font-weight: 500;
     white-space: nowrap;
 }
 

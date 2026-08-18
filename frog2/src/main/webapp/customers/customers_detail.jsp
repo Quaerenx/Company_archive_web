@@ -56,7 +56,7 @@
 		<jsp:attribute name="actions">
 			<div class="header-actions">
 					<a href="<c:out value='${customerListReturnUrl}' />"
-                   class="btn-min ui-button button--secondary button--sm">
+                   class="ui-button button--secondary button--sm">
 					<i class="fas fa-arrow-left"></i> 목록으로
 				</a>
 			</div>
@@ -78,7 +78,7 @@
 
     <c:set var="hasAnyDetail" value="${not empty customerDetail or not empty customerDetailStg or not empty customerDetailDev}" />
     <c:if test="${hasAnyDetail}">
-        <div class="detail-container env-tabs">
+        <div class="detail-container env-tabs ui-work-surface">
             <div class="tab-nav" role="tablist" aria-label="고객사 환경">
                 <button type="button" id="env-prod-tab" class="tab-btn ui-touch-target active"
                         role="tab" aria-selected="true" aria-controls="env-prod" tabindex="0"
@@ -121,7 +121,7 @@
     </c:if>
 
     <c:if test="${empty customerDetail and not empty customer}">
-        <div class="detail-container">
+        <div class="detail-container ui-work-surface">
             <div class="detail-section text-center p-5">
                 <i class="fas fa-info-circle text-warning customer-empty-icon"></i>
                 <h3 class="text-dark mb-3">상세정보가 등록되지 않았습니다</h3>
@@ -131,12 +131,12 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center">
                     <a href="<c:out value='${customerListReturnUrl}' />"
-                       class="btn btn-secondary ui-button button--secondary button--md">
+                       class="ui-button button--secondary button--md">
                         <i class="fas fa-arrow-left"></i>
                         목록으로 돌아가기
                     </a>
 				    <a href="<c:out value='${currentCustomerEditUrl}' />"
-                       class="btn btn-secondary ui-button button--secondary button--md">
+                       class="ui-button button--secondary button--md">
 				        <i class="fas fa-edit"></i>
 				        정보 수정하기
 				    </a>
@@ -146,13 +146,13 @@
     </c:if>
 
     <c:if test="${empty customer and not hasAnyDetail}">
-        <div class="detail-container">
+        <div class="detail-container ui-work-surface">
             <div class="detail-section text-center p-5">
                 <i class="fas fa-exclamation-triangle text-danger customer-empty-icon"></i>
                 <h3 class="text-dark mb-3">고객사 정보를 찾을 수 없습니다</h3>
                 <p class="text-muted mb-4">요청하신 고객사 정보가 존재하지 않거나 삭제되었을 수 있습니다.</p>
                 <a href="<c:out value='${customerListReturnUrl}' />"
-                   class="btn btn-secondary ui-button button--secondary button--md">
+                   class="ui-button button--secondary button--md">
                     <i class="fas fa-arrow-left"></i>
                     목록으로 돌아가기
                 </a>
@@ -164,13 +164,13 @@
         <div class="detail-actions">
             <a href="<c:out value='${currentCustomerEditUrl}' />"
                id="editCustomerButton" data-customer-name="<c:out value='${currentCustomerName}' />"
-               class="btn-min ui-button button--secondary button--sm">
+               class="ui-button button--secondary button--sm">
                 <i class="fas fa-edit"></i> 정보수정
             </a>
             <button type="button"
                     id="deleteCustomerButton"
                     data-customer-name="<c:out value='${currentCustomerName}' />"
-                    class="btn-min danger ui-button button--danger button--sm"
+                    class="ui-button button--danger button--sm"
                     data-busy-label="삭제 중">
                 <i class="fas fa-trash"></i> 고객사 삭제
             </button>

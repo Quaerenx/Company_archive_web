@@ -108,6 +108,8 @@ class MeetingCssSplitContractTest {
             assertTrue(view.contains(selector), selector);
         }
         assertFalse(list.contains("tr[data-detail-url]"));
+        assertTrue(Files.readString(WEBAPP.resolve("resources/js/ui-system.js"))
+                .contains(".ui-data-row[data-detail-url]"));
         assertTrue(list.contains(".meeting-row-meta"));
         assertTrue(list.contains("@media (max-width: 768px)"));
     }

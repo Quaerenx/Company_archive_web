@@ -448,39 +448,6 @@
     font-size: var(--font-size-sm);
 }
 
-.customer-actions {
-    display: flex;
-    gap: var(--space-12);
-    flex-wrap: wrap;
-}
-
-.customer-actions .btn {
-    padding: var(--space-8) var(--space-16);
-    font-size: var(--font-size-sm);
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-    font-weight: 500;
-    transition: background-color var(--motion-fast) var(--motion-ease);
-}
-
-.customer-actions .btn-primary {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-}
-
-.customer-actions .btn-primary:hover {
-    background: var(--color-primary-hover);
-}
-
-.customer-actions .btn-secondary {
-    background: var(--color-secondary);
-    color: var(--color-on-secondary);
-}
-
-.customer-actions .btn-secondary:hover {
-    background: var(--color-secondary-hover);
-}
-
 /* 유지보수 이력 페이지 */
 .maintenance-history-page {
     padding: var(--space-20);

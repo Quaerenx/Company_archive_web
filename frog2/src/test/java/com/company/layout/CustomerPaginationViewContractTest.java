@@ -41,7 +41,8 @@ class CustomerPaginationViewContractTest {
         String styles = Files.readString(WEBAPP.resolve("resources/css/pages/customers.css"));
         String baseStyles = Files.readString(WEBAPP.resolve("resources/css/base.css"));
 
-        assertTrue(page.contains("class=\"table-container customer-list-panel\""));
+        assertTrue(page.contains(
+                "class=\"table-container customer-list-panel ui-work-surface\""));
         assertTrue(page.contains("<t:pageHeader>"));
         assertTrue(page.contains("고객사 정보"));
         assertTrue(page.contains("<jsp:attribute name=\"subtitle\">"));

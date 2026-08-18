@@ -201,14 +201,23 @@ class CssLayoutStructureTest {
         assertFalse(list.contains("onclick="));
         assertFalse(list.contains("<script>"));
         assertFalse(list.contains("<style>"));
-        assertFalse(list.contains("pageScript"));
-        assertFalse(list.contains("data-detail-url"));
+        assertFalse(list.contains("/resources/js/pages/meeting_list.js"));
+        assertTrue(list.contains("data-detail-url"));
+        assertTrue(list.contains("ui-data-row"));
         assertTrue(list.contains("meeting-row-meta"));
 
         String listCss = Files.readString(CSS.resolve("pages/meeting_list.css"));
         assertTrue(listCss.contains(".meeting-management .meeting-list-table"));
         assertTrue(listCss.contains(".meeting-management .title-link"));
+        assertTrue(listCss.contains("table-layout: auto"));
+        assertFalse(listCss.contains("tbody tr[data-detail-url]"));
         assertTrue(listCss.contains("@media (max-width: 768px)"));
+
+        String sharedScript = Files.readString(
+                WEBAPP.resolve("resources/js/ui-system.js"));
+        assertTrue(sharedScript.contains(".ui-data-row[data-detail-url]"));
+        assertTrue(sharedScript.contains("interactiveTarget"));
+        assertTrue(sharedScript.contains("window.location.assign"));
 
         String write = Files.readString(WEBAPP.resolve("meeting/meeting_write.jsp"));
         String edit = Files.readString(WEBAPP.resolve("meeting/meeting_edit.jsp"));
@@ -333,10 +342,6 @@ class CssLayoutStructureTest {
                 "resources/js/pages/troubleshooting_form.js",
                 true);
         assertExternalized(
-                "troubleshooting/troubleshooting_list.jsp",
-                "resources/js/pages/troubleshooting_list.js",
-                true);
-        assertExternalized(
                 "troubleshooting/troubleshooting_view.jsp",
                 "resources/js/pages/troubleshooting_view.js",
                 true);
@@ -373,11 +378,11 @@ class CssLayoutStructureTest {
         assertFalse(formCss.contains(".add-page"));
         assertFalse(formCss.contains(".edit-page"));
 
-        String listScript = Files.readString(
-                WEBAPP.resolve("resources/js/pages/troubleshooting_list.js"));
-        assertFalse(listScript.contains(".style."));
-        assertFalse(listScript.contains("animationDelay"));
-        assertTrue(listScript.contains("tr[data-detail-url]"));
+        String list = Files.readString(
+                WEBAPP.resolve("troubleshooting/troubleshooting_list.jsp"));
+        assertFalse(list.contains("/resources/js/pages/troubleshooting_list.js"));
+        assertTrue(list.contains("ui-data-row"));
+        assertTrue(list.contains("data-detail-url"));
 
         String view = Files.readString(
                 WEBAPP.resolve("troubleshooting/troubleshooting_view.jsp"));

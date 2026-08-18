@@ -22,12 +22,12 @@
     </jsp:attribute>
   </t:pageHeader>
 
-  <section class="maintenance-month-board"
+  <section class="maintenance-month-board ui-work-surface ui-work-surface--padded"
            id="maintenanceMonthBoard"
            aria-labelledby="maintenanceMonthTitle">
-    <div class="maintenance-month-header">
+    <div class="maintenance-month-header ui-section-header ui-section-header--flush">
       <div class="maintenance-month-title">
-        <h2 id="maintenanceMonthTitle">
+        <h2 id="maintenanceMonthTitle" class="ui-section-title">
           <span>정기점검</span>
           <c:if test="${not empty maintenanceMonthLabel}">
             <span class="maintenance-month-label">
@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <div class="maintenance-month-body"
+    <div class="maintenance-month-body ui-section-body ui-section-body--flush"
          id="maintenanceMonthBoardBody"
          aria-busy="false">
       <div class="dashboard-state dashboard-state--loading"
@@ -101,7 +101,7 @@
               id="maintenanceRecordGrid"
               aria-label="담당자별 월간 정기점검 진행 현황">
             <c:forEach var="group" items="${monthlyMaintenanceAssigneeGroups}">
-              <li class="maintenance-assignee-group">
+              <li class="maintenance-assignee-group ui-subgroup">
                 <h3 class="maintenance-assignee-name">
                   <c:out value="${group.managerName}" />
                 </h3>

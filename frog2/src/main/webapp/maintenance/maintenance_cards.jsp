@@ -15,7 +15,7 @@
         <jsp:attribute name="subtitle">담당자별 고객사를 선택하여 정기점검 이력을 관리하세요</jsp:attribute>
         <jsp:attribute name="actions">
             <a href="${pageContext.request.contextPath}/maintenance?view=add"
-               class="add-button ui-button button--primary button--md"><i class="fas fa-plus"></i> 이력 추가</a>
+               class="ui-button button--primary button--md"><i class="fas fa-plus"></i> 이력 추가</a>
         </jsp:attribute>
     </t:pageHeader>
 	    
@@ -25,12 +25,16 @@
     <c:choose>
         <c:when test="${not empty inspectorCustomers}">
             <c:forEach var="entry" items="${inspectorCustomers}">
-                <div class="inspector-block">
+                <div class="inspector-block ui-work-surface ui-work-surface--padded">
                     <div class="inspector-section">
-                        <div class="inspector-header">
-                            <i class="fas fa-user-tie"></i>
-                            <span><c:out value="${entry.key}" /></span>
-                        </div>
+                        <t:sectionHeader className="inspector-header" compact="true">
+                            <jsp:attribute name="title">
+                                <h2 class="inspector-title ui-section-title">
+                                    <i class="fas fa-user-tie"></i>
+                                    <span><c:out value="${entry.key}" /></span>
+                                </h2>
+                            </jsp:attribute>
+                        </t:sectionHeader>
                         
                         <div class="customer-grid">
                             <c:forEach var="customer" items="${entry.value}">
@@ -59,7 +63,7 @@
                                             <span class="info-label">버전</span>
                                             <span class="info-value">
                                                 <c:if test="${not empty customer.verticaVersion}">
-                                                    <span class="version-badge ui-badge"><c:out value="${customer.verticaVersion}" /></span>
+                                                    <span class="version-badge ui-badge ui-badge--neutral"><c:out value="${customer.verticaVersion}" /></span>
                                                 </c:if>
                                             </span>
                                         </div>
@@ -67,7 +71,7 @@
                                             <span class="info-label">모드</span>
                                             <span class="info-value">
                                                 <c:if test="${not empty customer.mode}">
-                                                    <span class="mode-badge ui-badge"><c:out value="${customer.mode}" /></span>
+                                                    <span class="mode-badge ui-badge ui-badge--neutral"><c:out value="${customer.mode}" /></span>
                                                 </c:if>
                                             </span>
                                         </div>

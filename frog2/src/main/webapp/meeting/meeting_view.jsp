@@ -29,14 +29,14 @@
     <t:pageHeader>
         <jsp:attribute name="title"><i class="fas fa-file-alt"></i> <c:out value="${meeting.title}" /></jsp:attribute>
         <jsp:attribute name="subtitle">
-            <span class="meta-item"><i class="fas fa-tag"></i> <span class="type-badge ui-badge"><c:out value="${meeting.meetingTypeLabel}" /></span></span>
+            <span class="meta-item"><i class="fas fa-tag"></i> <span class="type-badge ui-badge ui-badge--neutral"><c:out value="${meeting.meetingTypeLabel}" /></span></span>
             <span class="meta-item"><i class="fas fa-calendar"></i> <fmt:formatDate value="${meeting.meetingDatetime}" pattern="yyyy년 MM월 dd일 HH:mm"/></span>
             <span class="meta-item"><i class="fas fa-user"></i> <c:out value="${meeting.authorName}" /></span>
         </jsp:attribute>
         <jsp:attribute name="actions">
             <c:if test="${meeting.authorId == user.userId}">
                 <a href="<c:out value='${meetingEditUrl}' />"
-                   class="add-button secondary ui-button button--secondary button--md"><i class="fas fa-edit"></i> 수정하기</a>
+                   class="ui-button button--secondary button--md"><i class="fas fa-edit"></i> 수정하기</a>
             </c:if>
         </jsp:attribute>
     </t:pageHeader>
@@ -44,30 +44,36 @@
     <t:flashMessages />
 
     <!-- 회의록 내용 -->
-    <section class="meeting-content" aria-labelledby="meetingContentTitle">
-        <div class="content-header">
-            <h2 class="content-title" id="meetingContentTitle">
-                <i class="fas fa-file-alt"></i>
-                회의 내용
-            </h2>
-        </div>
-        <div class="content-body">
+    <section class="meeting-content ui-work-surface" aria-labelledby="meetingContentTitle">
+        <t:sectionHeader className="content-header">
+            <jsp:attribute name="title">
+                <h2 class="content-title ui-section-title" id="meetingContentTitle">
+                    <i class="fas fa-file-alt"></i>
+                    회의 내용
+                </h2>
+            </jsp:attribute>
+        </t:sectionHeader>
+        <div class="content-body ui-section-body">
             <div class="meeting-text"><c:out value="${meeting.content}" /></div>
         </div>
     </section>
 
     <!-- 댓글 섹션 -->
-    <div class="comments-section" id="comments">
-        <div class="comments-header">
-            <h2 class="comments-title">
-                <i class="fas fa-comments"></i>
-                댓글
-            </h2>
-            <span class="comment-count">최근 <c:out value="${comments.size()}" />개</span>
-        </div>
+    <div class="comments-section ui-work-surface" id="comments">
+        <t:sectionHeader className="comments-header">
+            <jsp:attribute name="title">
+                <h2 class="comments-title ui-section-title">
+                    <i class="fas fa-comments"></i>
+                    댓글
+                </h2>
+            </jsp:attribute>
+            <jsp:attribute name="actions">
+                <span class="comment-count">최근 <c:out value="${comments.size()}" />개</span>
+            </jsp:attribute>
+        </t:sectionHeader>
 
         <!-- 댓글 작성 폼 -->
-        <div class="comment-form">
+        <div class="comment-form ui-section-body">
             <form id="commentForm" class="ui-form">
                 <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
                 <label for="commentContent" class="sr-only">댓글 내용</label>

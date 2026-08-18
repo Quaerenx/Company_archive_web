@@ -77,10 +77,13 @@ class DashboardViewContractTest {
         String assigneeGroup = cssRule(
                 styles,
                 ".dashboard-page .maintenance-assignee-group");
-        assertTrue(assigneeGroup.contains(
+        assertTrue(page.contains("maintenance-assignee-group ui-subgroup"));
+        String sharedStyles = read("resources/css/ui-system.css");
+        String subgroup = cssRule(sharedStyles, ".ui-system .ui-subgroup");
+        assertTrue(subgroup.contains(
                 "background: var(--color-surface-subtle);"));
-        assertTrue(assigneeGroup.contains(
-                "border-radius: var(--radius-lg);"));
+        assertTrue(subgroup.contains(
+                "border-radius: var(--radius-md);"));
         assertTrue(assigneeGroup.contains("block-size: 100%;"));
         assertTrue(assigneeGroup.contains(
                 "grid-template-rows: max-content max-content;"));
@@ -113,17 +116,20 @@ class DashboardViewContractTest {
         assertTrue(frequency.contains("border: 1px solid var(--color-border);"));
         assertTrue(frequency.contains("white-space: nowrap;"));
         String monthHeader = cssRule(
-                styles,
-                ".dashboard-page .maintenance-month-header");
+                sharedStyles,
+                ".ui-system .ui-section-header");
         assertTrue(monthHeader.contains(
                 "border-block-end: 1px solid var(--color-divider);"));
         String monthBoard = cssRule(
-                styles,
-                ".dashboard-page .maintenance-month-board");
+                sharedStyles,
+                ".ui-system :where(.ui-work-surface, .table-container)");
         assertTrue(monthBoard.contains("background: var(--color-surface);"));
         assertTrue(monthBoard.contains("border: 1px solid var(--color-border);"));
         assertTrue(monthBoard.contains("border-radius: var(--radius-lg);"));
-        assertTrue(monthBoard.contains("padding: var(--space-24);"));
+        assertTrue(page.contains(
+                "ui-work-surface ui-work-surface--padded"));
+        assertTrue(sharedStyles.contains(
+                ".ui-work-surface--padded"));
         assertFalse(styles.contains(".dashboard-support"));
         assertTrue(styles.contains("container-type: inline-size"));
         assertTrue(styles.contains("@container dashboard-maintenance"));

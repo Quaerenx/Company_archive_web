@@ -258,8 +258,6 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     min-inline-size: var(--indicator-icon-size);
 }
 .customer-table thead th .sort-icon.active { color: var(--color-text-muted); }
-.customer-table tbody tr:hover td { background: var(--color-surface-subtle); }
-.customer-table tbody tr { transition: background-color var(--motion-fast) var(--motion-ease); }
 /* 숫자 중심 컬럼 정렬: 노드(5), 라이선스(6) */
 .customer-table tbody td:nth-child(5),
 .customer-table tbody td:nth-child(6) { text-align: right; font-variant-numeric: tabular-nums; }
@@ -543,11 +541,7 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
 }
 
 .detail-container {
-    background: var(--color-surface);
-    border-radius: var(--radius-lg);
-    box-shadow: none;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
+    min-width: 0;
 }
 
 .detail-container .detail-section {
@@ -687,10 +681,6 @@ textarea.form-control {
     }
 }
 
-
-.customer-row[data-detail-url] {
-    cursor: pointer;
-}
 
 .customer-detail-link {
     color: var(--color-text-strong);

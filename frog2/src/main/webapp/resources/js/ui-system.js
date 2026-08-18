@@ -365,6 +365,38 @@
     window.addEventListener('load', updateScrollableTableRegions, { once: true });
     window.addEventListener('resize', scheduleScrollableTableRegionUpdate);
 
+    document.addEventListener('click', function (event) {
+        if (!(event.target instanceof Element)) {
+            return;
+        }
+
+        var row = event.target.closest('.ui-data-row[data-detail-url]');
+        var interactiveTarget = event.target.closest([
+            'a',
+            'button',
+            'input',
+            'select',
+            'textarea',
+            'summary',
+            '[contenteditable="true"]',
+            '[role="button"]',
+            '[role="link"]'
+        ].join(','));
+        var selection = window.getSelection();
+        var isSelectingText = selection
+            && !selection.isCollapsed
+            && selection.toString().trim().length > 0;
+
+        if (!row || interactiveTarget || event.defaultPrevented
+                || event.button !== 0 || event.ctrlKey || event.metaKey
+                || event.shiftKey || event.altKey || isSelectingText
+                || row.getAttribute('aria-disabled') === 'true') {
+            return;
+        }
+
+        window.location.assign(row.dataset.detailUrl);
+    });
+
     document.addEventListener('input', function (event) {
         if (event.target.matches('[data-ui-error-id]')) {
             clearFieldError(event.target);

@@ -31,7 +31,7 @@
                 <input type="hidden" name="maintenance_id" value="${record.maintenanceId}">
                 <input type="hidden" name="customer_name" value="<c:out value='${record.customerName}'/>">
                 <button type="submit"
-                        class="btn-min danger ui-button button--danger button--sm"
+                        class="ui-button button--danger button--sm"
                         data-busy-label="삭제 중"><i class="fas fa-trash"></i> 삭제</button>
             </form>
             <c:url value="/maintenance" var="headerHistoryUrl">
@@ -39,7 +39,7 @@
                 <c:param name="customerName" value="${record.customerName}"/>
             </c:url>
             <a href="${headerHistoryUrl}"
-               class="btn-min ui-button button--secondary button--sm"><i class="fas fa-history"></i> 이력으로</a>
+               class="ui-button button--secondary button--sm"><i class="fas fa-history"></i> 이력으로</a>
         </jsp:attribute>
     </t:pageHeader>
     
@@ -90,9 +90,9 @@
                     <c:param name="customerName" value="${record.customerName}"/>
                 </c:url>
                 <a href="${cancelUrl}"
-                   class="btn btn-cancel ui-button button--secondary button--md">취소</a>
+                   class="ui-button button--secondary button--md">취소</a>
                 <button type="submit"
-                        class="btn btn-primary ui-button button--primary button--md"
+                        class="ui-button button--primary button--md"
                         data-busy-label="수정 중">수정하기</button>
             </div>
         </form>
