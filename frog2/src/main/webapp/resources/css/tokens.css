@@ -1,16 +1,16 @@
 :root {
     color-scheme: light;
 
-    /* Archive: Light Graphite Mist + Ink Blue. Semantic tokens below are the public API. */
+    /* Archive: Cool Gray Mist + Ink Blue. Semantic tokens below are the public API. */
     --palette-canvas: #EFF2F5;
-    --palette-ambient: #D9DEE4;
-    --palette-surface: #F8F9FA;
+    --palette-ambient: #E8EDF2;
+    --palette-surface: #FAFBFC;
     --palette-surface-muted: #EEF1F4;
-    --palette-border: #D5DAE0;
+    --palette-border: #D5DCE3;
     --palette-border-strong: #87919B;
     --palette-text-strong: #20252B;
     --palette-text: #47535F;
-    --palette-text-muted: #646F7A;
+    --palette-text-muted: #5B6672;
     --palette-brand-subtle: #E7EDF2;
     --palette-brand: #455F7A;
     --palette-brand-hover: #344A60;
@@ -92,7 +92,7 @@
     --color-overlay-soft: rgba(32, 37, 43, 0.48);
 
     /* Navigation uses one quiet ink-tinted layer between the ambient canvas and content. */
-    --color-navigation-surface: rgba(248, 249, 250, 0.92);
+    --color-navigation-surface: rgba(252, 252, 253, 0.94);
     --color-navigation-border: var(--palette-border);
     --color-navigation-text: var(--palette-text);
     --color-navigation-text-strong: var(--palette-brand-hover);
@@ -108,7 +108,7 @@
     --color-on-strong: var(--palette-surface);
     --color-on-strong-muted: rgba(255, 255, 255, 0.15);
 
-    /* Login and authenticated pages share one quiet graphite mist. */
+    /* Login and authenticated pages share one quiet cool-gray mist. */
     --color-login-background: var(--color-ambient-background);
     --color-login-particle: var(--color-ambient-particle);
     --color-login-card: rgba(249, 251, 252, 0.96);
@@ -121,9 +121,9 @@
     --color-login-action-hover: var(--palette-text-strong);
     --color-ambient-background: var(--palette-ambient);
     --color-ambient-channel: rgba(239, 242, 245, 0.90);
-    --color-ambient-glow-light: rgba(255, 255, 255, 0.35);
-    --color-ambient-glow-ink: rgba(65, 85, 108, 0.10);
-    --color-ambient-particle: rgba(69, 95, 122, 0.30);
+    --color-ambient-glow-light: rgba(255, 255, 255, 0.45);
+    --color-ambient-glow-ink: rgba(52, 74, 96, 0.06);
+    --color-ambient-particle: rgba(69, 95, 122, 0.14);
 
     --color-success-bg: var(--palette-success-subtle);
     --color-success-border: var(--palette-success);

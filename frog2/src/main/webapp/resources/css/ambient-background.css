@@ -1,8 +1,10 @@
-/* Light graphite ambience sits behind the authenticated work surfaces. */
+/* A quiet cool-gray mist frames the floating authenticated work surfaces. */
 body.ui-system.has-ambient-background {
     background-color: var(--color-ambient-background);
     background-image: none;
     background-attachment: fixed;
+    display: flex;
+    flex-direction: column;
     isolation: isolate;
 }
 
@@ -10,14 +12,14 @@ body.ui-system.has-ambient-background::before {
     animation: ambient-mist-drift 36s ease-in-out infinite alternate;
     background:
         radial-gradient(
-            circle at 18% 16%,
+            circle at 50% 18%,
             var(--color-ambient-glow-light) 0,
-            transparent 42%
+            transparent 58%
         ),
         radial-gradient(
-            circle at 82% 74%,
+            circle at 78% 72%,
             var(--color-ambient-glow-ink) 0,
-            transparent 46%
+            transparent 52%
         );
     content: "";
     inset: -8%;
@@ -44,26 +46,25 @@ body.ui-system.has-ambient-background > .main-footer {
 }
 
 body.ui-system.has-ambient-background > .app-main {
-    background: var(--color-ambient-channel);
-    border-inline: 0;
-    border-radius: var(--radius-lg);
-    box-shadow:
-        inset 1px 0 var(--color-border),
-        inset -1px 0 var(--color-border);
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     margin-inline: auto;
-    max-width: var(--page-content-max-width);
-    width: calc(100% - var(--page-content-total-gutter));
+    max-width: none;
+    width: 100%;
 }
 
 body.ui-system.has-ambient-background > .app-main > .content-shell {
-    max-width: 100%;
-    padding-inline: var(--page-content-gutter);
-    width: 100%;
+    max-width: var(--page-content-max-width);
+    padding-inline: 0;
+    width: calc(100% - var(--page-content-total-gutter));
 }
 
 body.ui-system.has-ambient-background > .main-footer {
     border-block-start: 0;
     color: var(--color-text-muted);
+    margin-block-start: auto;
+    width: 100%;
 }
 
 body.ui-system.has-ambient-background .content-shell > .back-link {

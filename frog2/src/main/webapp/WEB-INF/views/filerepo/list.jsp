@@ -24,31 +24,38 @@
         </jsp:attribute>
     </t:pageHeader>
 
-    <section class="file-main ui-work-surface ui-work-surface--padded" aria-label="업무자료 목록">
+    <section class="file-main ui-work-surface" aria-label="업무자료 목록">
 
-        <nav class="breadcrumb ui-subgroup" aria-label="자료실 경로">
-            <c:url var="rootUrl" value="/file-repository" />
-            <a href="<c:out value="${rootUrl}" />"><i class="fas fa-home"></i> 자료실</a>
-            <c:forEach var="crumb" items="${listing.breadcrumbs}">
-                <span aria-hidden="true"> / </span>
-                <c:url var="crumbUrl" value="/file-repository">
-                    <c:param name="path" value="${crumb.path}" />
-                </c:url>
-                <a href="<c:out value="${crumbUrl}" />"><c:out value="${crumb.name}" /></a>
-            </c:forEach>
-        </nav>
+        <div class="file-toolbar ui-table-toolbar">
+            <nav class="breadcrumb" aria-label="자료실 경로">
+                <c:url var="rootUrl" value="/file-repository" />
+                <a href="<c:out value="${rootUrl}" />"><i class="fas fa-home"></i> 자료실</a>
+                <c:forEach var="crumb" items="${listing.breadcrumbs}">
+                    <span aria-hidden="true"> / </span>
+                    <c:url var="crumbUrl" value="/file-repository">
+                        <c:param name="path" value="${crumb.path}" />
+                    </c:url>
+                    <a href="<c:out value="${crumbUrl}" />"><c:out value="${crumb.name}" /></a>
+                </c:forEach>
+            </nav>
+            <div class="stats" aria-label="현재 폴더 요약">
+                폴더 <strong><c:out value="${listing.directoryCount}" /></strong>개,
+                파일 <strong><c:out value="${listing.fileCount}" /></strong>개,
+                합계 <strong><c:out value="${listing.totalSizeText}" /></strong>
+            </div>
+        </div>
 
         <div class="table-wrapper ui-table-wrap"
              data-ui-scroll-region
              data-ui-scroll-label="자료실 파일 및 폴더 표">
-            <table class="file-table ui-table">
+            <table class="file-table ui-table ui-data-table">
                 <caption class="sr-only">자료실 파일 및 폴더 목록</caption>
                 <thead>
                     <tr>
-                        <th scope="col">이름</th>
-                        <th scope="col">설명</th>
-                        <th scope="col">수정일</th>
-                        <th scope="col" class="size">크기</th>
+                        <th scope="col" class="col--title">이름</th>
+                        <th scope="col" class="col--description">설명</th>
+                        <th scope="col" class="col--date">수정일</th>
+                        <th scope="col" class="size col--numeric">크기</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -65,27 +72,29 @@
 
                     <c:forEach var="entry" items="${listing.entries}">
                         <tr>
-                            <td class="file-name ${entry.directory ? 'directory' : ''}">
-                                <span class="icon" aria-hidden="true"><c:out value="${entry.icon}" /></span>
-                                <c:choose>
-                                    <c:when test="${entry.directory}">
-                                        <c:url var="directoryUrl" value="/file-repository">
-                                            <c:param name="path" value="${entry.path}" />
-                                        </c:url>
-                                        <a href="<c:out value="${directoryUrl}" />"><c:out value="${entry.name}" /></a>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <c:url var="downloadUrl" value="/file-repository/download">
-                                            <c:param name="path" value="${entry.path}" />
-                                            <c:param name="id" value="${entry.id}" />
-                                        </c:url>
-                                        <a href="<c:out value="${downloadUrl}" />" rel="nofollow"><c:out value="${entry.name}" /></a>
-                                    </c:otherwise>
-                                </c:choose>
+                            <td class="file-name col--title ${entry.directory ? 'directory' : ''}">
+                                <span class="file-name-content">
+                                    <span class="icon" aria-hidden="true"><c:out value="${entry.icon}" /></span>
+                                    <c:choose>
+                                        <c:when test="${entry.directory}">
+                                            <c:url var="directoryUrl" value="/file-repository">
+                                                <c:param name="path" value="${entry.path}" />
+                                            </c:url>
+                                            <a href="<c:out value="${directoryUrl}" />"><c:out value="${entry.name}" /></a>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:url var="downloadUrl" value="/file-repository/download">
+                                                <c:param name="path" value="${entry.path}" />
+                                                <c:param name="id" value="${entry.id}" />
+                                            </c:url>
+                                            <a href="<c:out value="${downloadUrl}" />" rel="nofollow"><c:out value="${entry.name}" /></a>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </span>
                             </td>
-                            <td><c:out value="${entry.description}" /></td>
-                            <td class="date"><c:out value="${entry.lastModifiedText}" /></td>
-                            <td class="size"><c:out value="${entry.sizeText}" /></td>
+                            <td class="col--description"><c:out value="${entry.description}" /></td>
+                            <td class="date col--date"><c:out value="${entry.lastModifiedText}" /></td>
+                            <td class="size col--numeric"><c:out value="${entry.sizeText}" /></td>
                         </tr>
                     </c:forEach>
 
@@ -121,12 +130,6 @@
                        previousUrl="${filePreviousPageUrl}"
                        nextUrl="${fileNextPageUrl}"
                        paginationLabel="자료실 페이지" />
-
-        <div class="stats">
-            폴더 <strong><c:out value="${listing.directoryCount}" /></strong>개,
-            파일 <strong><c:out value="${listing.fileCount}" /></strong>개,
-            합계 <strong><c:out value="${listing.totalSizeText}" /></strong>
-        </div>
 
     </section>
 </div>

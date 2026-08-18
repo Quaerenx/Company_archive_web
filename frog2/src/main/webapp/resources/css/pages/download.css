@@ -14,9 +14,11 @@ body.page-file-repository {
 }
 
 .page-file-repository .breadcrumb {
-    margin-bottom: var(--space-16);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin: 0;
     font-size: var(--font-size-sm);
-    border: 1px solid var(--color-border);
 }
 
 .page-file-repository .breadcrumb a {
@@ -29,21 +31,6 @@ body.page-file-repository {
     text-decoration: underline;
 }
 
-.page-file-repository .file-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--font-size-sm);
-}
-
-.page-file-repository .file-table th {
-    background: var(--color-surface-subtle);
-    padding: var(--space-12);
-    text-align: left;
-    border-bottom: 1px solid var(--color-border);
-    font-weight: 600;
-    color: var(--color-text);
-}
-
 .page-file-repository .file-table th a {
     color: var(--color-text);
     text-decoration: none;
@@ -53,14 +40,6 @@ body.page-file-repository {
     color: var(--color-primary);
 }
 
-.page-file-repository .file-table td {
-    padding: var(--space-12);
-    border-bottom: 1px solid var(--color-surface-subtle);
-    vertical-align: middle;
-}
-
-.page-file-repository .file-table tbody tr:hover td { background: var(--color-surface-subtle); }
-
 .page-file-repository .icon {
     width: 20px;
     height: 20px;
@@ -68,9 +47,10 @@ body.page-file-repository {
     vertical-align: middle;
 }
 
-.page-file-repository .file-name {
+.page-file-repository .file-name-content {
     display: flex;
     align-items: center;
+    min-width: 0;
 }
 
 .page-file-repository .file-name a {
@@ -89,7 +69,6 @@ body.page-file-repository {
 }
 
 .page-file-repository .size {
-    text-align: right;
     font-family: var(--font-mono);
     color: var(--color-text-muted);
 }
@@ -103,13 +82,9 @@ body.page-file-repository {
 .page-file-repository .parent-dir:hover { background: var(--color-surface-hover); }
 
 .page-file-repository .stats {
-    background: var(--color-surface-subtle);
-    padding: var(--space-12) var(--space-16);
-    border-radius: var(--radius-lg);
-    margin-top: var(--space-16);
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
-    border: 1px solid var(--color-border);
+    white-space: nowrap;
 }
 
 .page-file-repository .file-footer {
@@ -118,4 +93,15 @@ body.page-file-repository {
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
     margin-top: var(--space-40);
+}
+
+@media (max-width: 768px) {
+    .page-file-repository .file-table {
+        min-width: 680px;
+    }
+
+    .page-file-repository .stats {
+        white-space: normal;
+        width: 100%;
+    }
 }

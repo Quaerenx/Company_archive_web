@@ -26,20 +26,37 @@ class AmbientBackgroundContractTest {
     }
 
     @Test
-    void ambienceContinuesBehindTheCentralContentRail() throws Exception {
+    void ambienceContinuesBehindFloatingWorkSurfaces() throws Exception {
+        String tokens = read("resources/css/tokens.css");
         String styles = read("resources/css/ambient-background.css");
         String script = read("resources/js/ambient-background.js");
 
+        assertTrue(tokens.contains("--palette-ambient: #E8EDF2;"));
+        assertTrue(tokens.contains("--palette-surface: #FAFBFC;"));
+        assertTrue(tokens.contains("--palette-border: #D5DCE3;"));
+        assertTrue(tokens.contains(
+                "--color-navigation-surface: rgba(252, 252, 253, 0.94);"));
+        assertTrue(tokens.contains(
+                "--color-ambient-glow-light: rgba(255, 255, 255, 0.45);"));
+        assertTrue(tokens.contains(
+                "--color-ambient-glow-ink: rgba(52, 74, 96, 0.06);"));
+        assertTrue(tokens.contains(
+                "--color-ambient-particle: rgba(69, 95, 122, 0.14);"));
         assertTrue(styles.contains("var(--color-ambient-background)"));
-        assertTrue(styles.contains("var(--color-ambient-channel)"));
         assertTrue(styles.contains("var(--color-ambient-glow-light)"));
         assertTrue(styles.contains("var(--color-ambient-glow-ink)"));
+        assertTrue(styles.contains("circle at 50% 18%"));
+        assertTrue(styles.contains("circle at 78% 72%"));
+        assertTrue(styles.contains("background: transparent;"));
+        assertTrue(styles.contains("border-radius: 0;"));
+        assertTrue(styles.contains("box-shadow: none;"));
+        assertTrue(styles.contains("max-width: none;"));
+        assertTrue(styles.contains("width: 100%;"));
         assertTrue(styles.contains("max-width: var(--page-content-max-width);"));
         assertTrue(styles.contains(
                 "width: calc(100% - var(--page-content-total-gutter));"));
         assertTrue(styles.contains("> .app-main > .content-shell"));
-        assertTrue(styles.contains("border-radius: var(--radius-lg);"));
-        assertTrue(styles.contains("padding-inline: var(--page-content-gutter);"));
+        assertTrue(styles.contains("padding-inline: 0;"));
         assertFalse(styles.contains(
                 "var(--page-content-max-width) + var(--page-content-total-gutter)"));
         assertTrue(styles.contains("border-block-start: 0;"));

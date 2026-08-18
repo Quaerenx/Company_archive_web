@@ -207,9 +207,12 @@ class CssLayoutStructureTest {
         assertTrue(list.contains("meeting-row-meta"));
 
         String listCss = Files.readString(CSS.resolve("pages/meeting_list.css"));
+        String uiSystemCss = Files.readString(CSS.resolve("ui-system.css"));
         assertTrue(listCss.contains(".meeting-management .meeting-list-table"));
         assertTrue(listCss.contains(".meeting-management .title-link"));
-        assertTrue(listCss.contains("table-layout: auto"));
+        assertFalse(listCss.contains("table-layout: auto"));
+        assertTrue(uiSystemCss.contains(".ui-system .ui-data-table {"));
+        assertTrue(uiSystemCss.contains("table-layout: auto"));
         assertFalse(listCss.contains("tbody tr[data-detail-url]"));
         assertTrue(listCss.contains("@media (max-width: 768px)"));
 
@@ -411,8 +414,9 @@ class CssLayoutStructureTest {
         assertTrue(listCss.contains(
                 ".troubleshooting-management .troubleshooting-table"));
         assertTrue(listCss.contains("min-width: 720px;"));
-        assertTrue(listCss.contains(
-                ".troubleshooting-management .troubleshooting-table td:nth-child(1)"));
+        assertFalse(listCss.contains("nth-child"));
+        assertTrue(Files.readString(WEBAPP.resolve(
+                "troubleshooting/troubleshooting_list.jsp")).contains("col--customer"));
         assertFalse(viewCss.lines().map(String::stripLeading)
                 .anyMatch(line -> line.startsWith(".alert")
                         || line.startsWith(".detail-grid")));

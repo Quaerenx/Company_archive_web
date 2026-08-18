@@ -78,6 +78,11 @@
                     <label class="login-field-label" for="password">비밀번호</label>
                 </div>
 
+                <label class="login-remember" for="rememberId">
+                    <input type="checkbox" id="rememberId">
+                    <span>아이디 저장</span>
+                </label>
+
                 <button type="submit"
                         class="login-submit ui-button button--primary button--md"
                         data-busy-label="로그인">
@@ -88,5 +93,6 @@
     </main>
     <script src="${pageContext.request.contextPath}/resources/js/ui-system.js?v=${initParam.frog2AssetVersion}"></script>
     <script src="${pageContext.request.contextPath}/resources/js/ambient-background.js?v=${initParam.frog2AssetVersion}"></script>
+    <script src="${pageContext.request.contextPath}/resources/js/pages/login.js?v=${initParam.frog2AssetVersion}"></script>
 </body>
 </html>

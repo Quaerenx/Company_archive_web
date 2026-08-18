@@ -184,8 +184,8 @@ class MinimalPaletteContractTest {
 
     private static Map<String, String> expectedLight() {
         return expected(
-                "#EFF2F5", "#D9DEE4", "#F8F9FA", "#EEF1F4", "#D5DAE0", "#87919B",
-                "#20252B", "#47535F", "#646F7A", "#E7EDF2", "#455F7A",
+                "#EFF2F5", "#E8EDF2", "#FAFBFC", "#EEF1F4", "#D5DCE3", "#87919B",
+                "#20252B", "#47535F", "#5B6672", "#E7EDF2", "#455F7A",
                 "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#D4A900",
                 "#FFF1F1", "#B64B4B");
     }

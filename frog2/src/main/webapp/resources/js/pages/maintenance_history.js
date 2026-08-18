@@ -216,9 +216,11 @@
                 x: {
                     grid: { color: chartColors.border },
                     ticks: {
+                        autoSkip: true,
+                        autoSkipPadding: 12,
                         color: chartColors.textMuted,
-                        maxRotation: compactChart ? 0 : 50,
-                        maxTicksLimit: compactChart ? 8 : undefined,
+                        maxRotation: compactChart ? 0 : 35,
+                        maxTicksLimit: compactChart ? 5 : 8,
                         minRotation: 0
                     },
                     title: { display: true, text: '점검일', color: chartColors.text }

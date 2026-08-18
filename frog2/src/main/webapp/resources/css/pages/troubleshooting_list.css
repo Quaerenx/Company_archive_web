@@ -3,40 +3,6 @@
     min-width: 0;
 }
 
-.troubleshooting-management .table-wrapper {
-    overflow-x: auto;
-    max-width: 100%;
-}
-
-.troubleshooting-management .troubleshooting-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--font-size-sm);
-}
-
-.troubleshooting-management .troubleshooting-table th {
-    background: var(--color-surface-subtle);
-    color: var(--color-text);
-    font-weight: 600;
-    padding: var(--space-16) var(--space-12);
-    text-align: center;
-    border-bottom: 1px solid var(--color-border);
-    position: sticky;
-    top: 0;
-    z-index: var(--z-table-sticky);
-    white-space: nowrap;
-}
-
-.troubleshooting-management .troubleshooting-table tbody tr {
-    border-bottom: 1px solid var(--color-border);
-}
-
-.troubleshooting-management .troubleshooting-table td {
-    padding: var(--space-12);
-    vertical-align: middle;
-    color: var(--color-text);
-}
-
 .troubleshooting-management .title-link {
     color: var(--color-text);
     text-decoration: none;
@@ -64,37 +30,11 @@
 /* 반응형 디자인 */
 @media (max-width: 768px) {
     .troubleshooting-management .troubleshooting-table {
-        font-size: var(--font-size-xs);
         min-width: 720px;
-    }
-
-    .troubleshooting-management .troubleshooting-table th,
-    .troubleshooting-management .troubleshooting-table td {
-        padding: var(--space-8);
-    }
-
-    .troubleshooting-management .troubleshooting-table th:nth-child(1),
-    .troubleshooting-management .troubleshooting-table td:nth-child(1),
-    .troubleshooting-management .troubleshooting-table th:nth-child(3),
-    .troubleshooting-management .troubleshooting-table td:nth-child(3),
-    .troubleshooting-management .troubleshooting-table th:nth-child(4),
-    .troubleshooting-management .troubleshooting-table td:nth-child(4) {
-        white-space: nowrap;
     }
 }
 
 /* 검색 바 */
-.troubleshooting-management .ts-search-bar {
-    display: flex;
-    gap: var(--space-8);
-    align-items: center;
-    padding: var(--space-12);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: none;
-    margin-bottom: var(--space-12);
-}
 .troubleshooting-management .ts-search-form {
     display: flex;
     gap: var(--space-8);
@@ -121,18 +61,6 @@
 .troubleshooting-management .ts-search-scope input {
     margin: 0;
 }
-.troubleshooting-management .btn-search-simple {
-    padding: var(--space-12) var(--space-16);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-surface);
-    color: var(--color-text);
-    cursor: pointer;
-}
-.troubleshooting-management .btn-search-simple:hover {
-    background: var(--color-surface-subtle);
-}
-
 @media (max-width: 768px) {
     .troubleshooting-management .ts-search-form {
         flex-wrap: wrap;

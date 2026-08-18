@@ -104,7 +104,7 @@ body.login-page::after {
         transform var(--motion-fast) var(--motion-ease);
 }
 
-.login-page #loginForm input {
+.login-page #loginForm .form-group > input {
     background: var(--color-login-field);
     border-color: var(--color-login-field-border);
     border-radius: var(--radius-xl);
@@ -112,33 +112,58 @@ body.login-page::after {
     padding-block: var(--space-20) var(--space-4);
 }
 
-.login-page #loginForm input:focus-visible {
+.login-page #loginForm .form-group > input:focus-visible {
     background: var(--color-login-field-focus);
     border-color: var(--color-login-action);
     box-shadow: 0 0 0 3px var(--color-focus-ring);
     outline: 0;
 }
 
-.login-page #loginForm input::placeholder {
+.login-page #loginForm .form-group > input::placeholder {
     color: transparent;
     opacity: 0;
 }
 
-.login-page #loginForm input:focus + .login-field-label,
-.login-page #loginForm input:not(:placeholder-shown) + .login-field-label {
+.login-page #loginForm .form-group > input:focus + .login-field-label,
+.login-page #loginForm .form-group > input:not(:placeholder-shown) + .login-field-label {
     font-size: var(--font-size-xs);
     top: var(--space-4);
     transform: none;
 }
 
-.login-page #loginForm input:-webkit-autofill + .login-field-label {
+.login-page #loginForm .form-group > input:-webkit-autofill + .login-field-label {
     font-size: var(--font-size-xs);
     top: var(--space-4);
     transform: none;
 }
 
-.login-page #loginForm input:focus + .login-field-label {
+.login-page #loginForm .form-group > input:focus + .login-field-label {
     color: var(--color-focus);
+}
+
+.login-page .login-remember {
+    align-items: center;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: var(--font-size-sm);
+    gap: var(--space-8);
+    justify-self: start;
+    min-block-size: 44px;
+    user-select: none;
+}
+
+.login-page .login-remember input {
+    accent-color: var(--color-login-action);
+    block-size: 18px;
+    flex: 0 0 auto;
+    inline-size: 18px;
+    margin: 0;
+}
+
+.login-page .login-remember input:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 .login-page .login-error {

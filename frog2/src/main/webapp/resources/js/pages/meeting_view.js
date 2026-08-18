@@ -9,6 +9,87 @@
     const commentEndpoint = root.getAttribute('data-context-path') + '/comment';
     const meetingId = root.getAttribute('data-meeting-id');
 
+    enhanceMeetingText(root.querySelector('[data-meeting-text]'));
+
+    function enhanceMeetingText(container) {
+        if (!container) return;
+
+        const lines = container.textContent.replace(/\r\n?/g, '\n').split('\n');
+        const fragment = document.createDocumentFragment();
+        let paragraphLines = [];
+        let list = null;
+
+        function flushParagraph() {
+            if (paragraphLines.length === 0) return;
+            const paragraph = document.createElement('p');
+            paragraph.className = 'meeting-text-paragraph';
+            paragraphLines.forEach(function(line, index) {
+                if (index > 0) paragraph.appendChild(document.createElement('br'));
+                paragraph.appendChild(document.createTextNode(line));
+            });
+            fragment.appendChild(paragraph);
+            paragraphLines = [];
+        }
+
+        function flushList() {
+            if (!list) return;
+            fragment.appendChild(list);
+            list = null;
+        }
+
+        lines.forEach(function(rawLine) {
+            const trimmed = rawLine.trim();
+            const framedHeading = trimmed.match(/^#{4,}\s*(.*?)\s*#{4,}$/);
+            const listItem = rawLine.match(/^(\s*)-\s+(.+)$/);
+
+            if (/^#{5,}$/.test(trimmed)) {
+                flushParagraph();
+                flushList();
+                const divider = document.createElement('hr');
+                divider.className = 'meeting-text-divider';
+                fragment.appendChild(divider);
+                return;
+            }
+
+            if (framedHeading && framedHeading[1]) {
+                flushParagraph();
+                flushList();
+                const heading = document.createElement('h3');
+                heading.className = 'meeting-text-heading';
+                heading.textContent = framedHeading[1];
+                fragment.appendChild(heading);
+                return;
+            }
+
+            if (listItem) {
+                flushParagraph();
+                if (!list) {
+                    list = document.createElement('ul');
+                    list.className = 'meeting-text-list';
+                }
+                const item = document.createElement('li');
+                item.textContent = listItem[2];
+                if (listItem[1].length > 0) {
+                    item.classList.add('meeting-text-list-item--nested');
+                }
+                list.appendChild(item);
+                return;
+            }
+
+            flushList();
+            if (!trimmed) {
+                flushParagraph();
+                return;
+            }
+            paragraphLines.push(trimmed);
+        });
+
+        flushParagraph();
+        flushList();
+        container.replaceChildren(fragment);
+        container.classList.add('is-enhanced');
+    }
+
     document.querySelectorAll('.comment-item[data-comment-id]').forEach(function(item) {
         const commentId = item.getAttribute('data-comment-id');
         const editButton = item.querySelector('.comment-btn.edit');

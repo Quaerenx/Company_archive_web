@@ -147,8 +147,8 @@ class MaintenanceFormAssetContractTest {
         assertTrue(history.contains(
                 "animation: reduceMotion ? false : undefined"));
         assertTrue(history.contains("matchMedia('(max-width: 768px)')"));
-        assertTrue(history.contains("maxTicksLimit: compactChart ? 8 : undefined"));
-        assertTrue(history.contains("maxRotation: compactChart ? 0 : 50"));
+        assertTrue(history.contains("maxTicksLimit: compactChart ? 5 : 8"));
+        assertTrue(history.contains("maxRotation: compactChart ? 0 : 35"));
         assertFalse(history.contains(".history-item"));
         assertFalse(history.contains("item.animate"));
         assertFalse(history.contains("item.addEventListener('click'"));

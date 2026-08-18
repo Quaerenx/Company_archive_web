@@ -126,10 +126,10 @@
 
 .dashboard-page .maintenance-assignee-group {
   align-content: start;
+  block-size: 100%;
   display: grid;
   gap: var(--space-8);
   grid-template-rows: max-content max-content;
-  block-size: 100%;
   inline-size: 100%;
   margin: 0;
   min-inline-size: 0;

@@ -74,7 +74,10 @@ class HeaderNavViewContractTest {
         assertTrue(styles.contains(":focus-visible"));
         assertTrue(styles.contains("prefers-reduced-motion"));
         assertTrue(styles.contains("@media (max-width: 768px)"));
-        assertTrue(styles.contains("margin-inline-start: var(--space-16);"));
+        assertTrue(styles.contains("padding: var(--space-8) var(--space-24);"));
+        assertTrue(styles.contains("inline-size: 76px;"));
+        assertTrue(styles.contains("min-block-size: var(--control-height-md);"));
+        assertFalse(styles.contains("margin-inline-start: var(--space-16);"));
     }
 
     private static String read(String path) throws Exception {

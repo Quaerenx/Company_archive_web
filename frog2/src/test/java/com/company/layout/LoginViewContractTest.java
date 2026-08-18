@@ -46,7 +46,7 @@ class LoginViewContractTest {
         assertFalse(page.contains("업무 계정으로 로그인"));
         assertFalse(page.contains("한곳에서 확인하세요"));
         assertFalse(page.contains("승인된 사내 계정"));
-        assertFalse(page.contains("아이디 저장"));
+        assertTrue(page.contains("아이디 저장"));
         assertFalse(page.contains("로그인 폼으로 건너뛰기"));
         assertFalse(page.contains("class=\"login-footer\""));
         assertTrue(page.contains(
@@ -61,7 +61,8 @@ class LoginViewContractTest {
         assertTrue(page.contains("aria-hidden=\"true\""));
         assertTrue(page.contains("/resources/css/ambient-background.css?v=${initParam.frog2AssetVersion}"));
         assertTrue(page.contains("/resources/js/ambient-background.js?v=${initParam.frog2AssetVersion}"));
-        assertFalse(page.contains("/resources/js/pages/login.js"));
+        assertTrue(page.contains(
+                "/resources/js/pages/login.js?v=${initParam.frog2AssetVersion}"));
         assertTrue(styles.contains("background: var(--color-login-background);"));
         assertTrue(styles.contains("color: var(--color-login-particle);"));
         assertTrue(styles.matches(
@@ -109,22 +110,24 @@ class LoginViewContractTest {
                 "(?s).*\\.login-page #loginForm \\.login-field-label\\s*\\{[^}]*"
                         + "line-height:\\s*var\\(--line-height-tight\\);.*"));
         assertTrue(styles.matches(
-                "(?s).*#loginForm input:not\\(:placeholder-shown\\) "
+                "(?s).*#loginForm \\.form-group > input:not\\(:placeholder-shown\\) "
                         + "\\+ \\.login-field-label\\s*\\{[^}]*"
                         + "top:\\s*var\\(--space-4\\);.*"));
-        assertTrue(styles.contains(".login-page #loginForm input {"));
-        assertTrue(styles.contains("#loginForm input:focus + .login-field-label"));
+        assertTrue(styles.contains(".login-page #loginForm .form-group > input {"));
         assertTrue(styles.contains(
-                "#loginForm input:not(:placeholder-shown) + .login-field-label {"));
+                "#loginForm .form-group > input:focus + .login-field-label"));
         assertTrue(styles.contains(
-                "#loginForm input:-webkit-autofill + .login-field-label {"));
+                "#loginForm .form-group > input:not(:placeholder-shown) + .login-field-label {"));
+        assertTrue(styles.contains(
+                "#loginForm .form-group > input:-webkit-autofill + .login-field-label {"));
         assertTrue(styles.matches(
-                "(?s).*\\.login-page #loginForm input\\s*\\{[^}]*"
+                "(?s).*\\.login-page #loginForm \\.form-group > input\\s*\\{[^}]*"
                         + "background:\\s*var\\(--color-login-field\\);[^}]*"
                         + "border-color:\\s*var\\(--color-login-field-border\\);[^}]*"
                         + "border-radius:\\s*var\\(--radius-xl\\);[^}]*"
                         + "min-block-size:\\s*52px;.*"));
-        assertTrue(styles.contains(".login-page #loginForm input:focus-visible {"));
+        assertTrue(styles.contains(
+                ".login-page #loginForm .form-group > input:focus-visible {"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-submit\\s*\\{[^}]*"
                         + "background:\\s*var\\(--color-login-action\\);[^}]*"
@@ -139,7 +142,8 @@ class LoginViewContractTest {
         assertTrue(tokens.contains(
                 "--color-login-field-border: var(--palette-border);"));
         assertTrue(tokens.contains("--shadow-login-action-hover:"));
-        assertTrue(styles.contains(".login-page #loginForm input::placeholder"));
+        assertTrue(styles.contains(
+                ".login-page #loginForm .form-group > input::placeholder"));
         assertHasClasses(firstTag(page, "body"), "ui-system", "login-page");
         assertHasClasses(loginForm(page), "ui-form", "login-form");
         assertTrue(Pattern.compile(
@@ -156,6 +160,7 @@ class LoginViewContractTest {
         String form = loginForm(page);
         String userId = tagById(page, "userId");
         String password = tagById(page, "password");
+        String rememberId = tagById(page, "rememberId");
 
         assertTrue(form.contains("action=\"login\""));
         assertTrue(form.contains("method=\"post\""));
@@ -179,8 +184,26 @@ class LoginViewContractTest {
                 < page.indexOf("class=\"login-field-label\" for=\"userId\""));
         assertTrue(page.indexOf(password)
                 < page.indexOf("class=\"login-field-label\" for=\"password\""));
-        assertFalse(page.contains("rememberId"));
+        assertTrue(rememberId.contains("type=\"checkbox\""));
+        assertFalse(rememberId.contains("name="));
+        assertTrue(page.contains("class=\"login-remember\" for=\"rememberId\""));
         assertFalse(page.contains("autocomplete=\"new-password\""));
+    }
+
+    @Test
+    void rememberedUserIdUsesExpiringLocalStorageWithoutTouchingPasswords()
+            throws Exception {
+        String script = read("resources/js/pages/login.js");
+
+        assertTrue(script.contains("archive.login.rememberedUserId.v1"));
+        assertTrue(script.contains("90 * 24 * 60 * 60 * 1000"));
+        assertTrue(script.contains("window.localStorage.getItem(STORAGE_KEY)"));
+        assertTrue(script.contains("window.localStorage.setItem(STORAGE_KEY"));
+        assertTrue(script.contains("window.localStorage.removeItem(STORAGE_KEY)"));
+        assertTrue(script.contains("form.addEventListener('submit'"));
+        assertTrue(script.contains("rememberIdInput.addEventListener('change'"));
+        assertFalse(script.contains("getElementById('password')"));
+        assertFalse(script.contains("name=\"password\""));
     }
 
     @Test

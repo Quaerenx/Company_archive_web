@@ -72,6 +72,7 @@ class DashboardViewContractTest {
                 ".dashboard-page .maintenance-assignee-grid");
         assertTrue(assigneeGrid.contains("display: grid;"));
         assertTrue(assigneeGrid.contains("grid-auto-rows: 1fr;"));
+        assertFalse(assigneeGrid.contains("align-items: start;"));
         assertTrue(assigneeGrid.contains(
                 "grid-template-columns: repeat(2, minmax(0, 1fr));"));
         String assigneeGroup = cssRule(
@@ -84,6 +85,7 @@ class DashboardViewContractTest {
                 "background: var(--color-surface-subtle);"));
         assertTrue(subgroup.contains(
                 "border-radius: var(--radius-md);"));
+        assertFalse(assigneeGroup.contains("align-self: start;"));
         assertTrue(assigneeGroup.contains("block-size: 100%;"));
         assertTrue(assigneeGroup.contains(
                 "grid-template-rows: max-content max-content;"));

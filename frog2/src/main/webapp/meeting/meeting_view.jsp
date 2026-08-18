@@ -54,7 +54,7 @@
             </jsp:attribute>
         </t:sectionHeader>
         <div class="content-body ui-section-body">
-            <div class="meeting-text"><c:out value="${meeting.content}" /></div>
+            <div class="meeting-text" data-meeting-text><c:out value="${meeting.content}" /></div>
         </div>
     </section>
 
