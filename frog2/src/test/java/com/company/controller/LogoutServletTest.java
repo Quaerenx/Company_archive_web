@@ -52,8 +52,53 @@ class LogoutServletTest {
         assertTrue(expiredCookie.get().getSecure());
     }
 
+    @Test
+    void postExpiresTheSessionCookieThatMatchesTheRequestedSessionId()
+            throws Exception {
+        AtomicBoolean invalidated = new AtomicBoolean();
+        AtomicReference<Cookie> expiredCookie = new AtomicReference<>();
+
+        new LogoutServlet().doPost(
+                request(
+                        invalidated,
+                        false,
+                        "dev-session",
+                        new Cookie("JSESSIONID", "prod-session"),
+                        new Cookie("FROG2DEVSESSION", "dev-session")),
+                response(expiredCookie, new AtomicReference<>()));
+
+        assertTrue(invalidated.get());
+        assertNotNull(expiredCookie.get());
+        assertEquals("FROG2DEVSESSION", expiredCookie.get().getName());
+    }
+
+    @Test
+    void postFallsBackToTheStandardCookieNameWithoutRequestCookieMetadata()
+            throws Exception {
+        AtomicReference<Cookie> expiredCookie = new AtomicReference<>();
+
+        new LogoutServlet().doPost(
+                request(new AtomicBoolean(), false, null, (Cookie[]) null),
+                response(expiredCookie, new AtomicReference<>()));
+
+        assertNotNull(expiredCookie.get());
+        assertEquals("JSESSIONID", expiredCookie.get().getName());
+    }
+
     private static HttpServletRequest request(
             AtomicBoolean invalidated, boolean secure) {
+        return request(
+                invalidated,
+                secure,
+                "session-id",
+                new Cookie("JSESSIONID", "session-id"));
+    }
+
+    private static HttpServletRequest request(
+            AtomicBoolean invalidated,
+            boolean secure,
+            String requestedSessionId,
+            Cookie... cookies) {
         HttpSession session = (HttpSession) Proxy.newProxyInstance(
                 HttpSession.class.getClassLoader(),
                 new Class<?>[] {HttpSession.class},
@@ -69,6 +114,8 @@ class LogoutServletTest {
                 (ignored, method, args) -> switch (method.getName()) {
                     case "getSession" -> session;
                     case "getContextPath" -> "/frog2";
+                    case "getRequestedSessionId" -> requestedSessionId;
+                    case "getCookies" -> cookies;
                     case "isSecure" -> secure;
                     default -> defaultValue(method.getReturnType());
                 });

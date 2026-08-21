@@ -22,17 +22,33 @@ public class LogoutServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String sessionCookieName = resolveSessionCookieName(request);
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
         }
-        expireSessionCookie(request, response);
+        expireSessionCookie(request, response, sessionCookieName);
         response.sendRedirect(request.getContextPath() + "/login");
     }
 
+    private static String resolveSessionCookieName(HttpServletRequest request) {
+        String requestedSessionId = request.getRequestedSessionId();
+        Cookie[] cookies = request.getCookies();
+        if (requestedSessionId != null && cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (requestedSessionId.equals(cookie.getValue())) {
+                    return cookie.getName();
+                }
+            }
+        }
+        return "JSESSIONID";
+    }
+
     private static void expireSessionCookie(
-            HttpServletRequest request, HttpServletResponse response) {
-        Cookie cookie = new Cookie("JSESSIONID", "");
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String sessionCookieName) {
+        Cookie cookie = new Cookie(sessionCookieName, "");
         String contextPath = request.getContextPath();
         cookie.setPath(contextPath == null || contextPath.isEmpty()
                 ? "/"
