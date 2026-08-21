@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.PageResult;
+import com.company.performance.RequestPerformanceContext;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -139,14 +140,23 @@ class CustomerHistoryRepositoryTest {
                 "owner-id",
                 "담당자");
 
+        RequestPerformanceContext.begin();
         PageResult<CustomerHistoryRecord> first = repository.findPage(
                 "", "all", "", 1, 1);
+        RequestPerformanceContext.Snapshot performance =
+                RequestPerformanceContext.finish();
         PageResult<CustomerHistoryRecord> second = repository.findPage(
                 "", "all", "", 2, 1);
 
         assertEquals("신규 증설", first.items().getFirst().getTitle());
         assertEquals("구버전", second.items().getFirst().getTitle());
         assertEquals(2, first.totalCount());
+        assertEquals(
+                RequestPerformanceContext.Operation.CUSTOMER_HISTORY_LIST,
+                performance.operation());
+        assertEquals(1, performance.customerHistoryScanCount());
+        assertEquals(2, performance.customerHistoryRecordFileCount());
+        assertTrue(performance.customerHistoryScanDurationNanos() >= 0);
     }
 
     private static CustomerHistoryDraft draft(

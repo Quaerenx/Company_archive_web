@@ -66,6 +66,20 @@ public final class RequestPerformanceContext {
                 state.maxFileSnapshotScanNanos, safeElapsed);
     }
 
+    public static void recordCustomerHistoryScan(
+            int recordFileCount, long elapsedNanos) {
+        State state = CURRENT.get();
+        if (state == null) {
+            return;
+        }
+        long safeElapsed = Math.max(0, elapsedNanos);
+        state.customerHistoryScanCount++;
+        state.customerHistoryRecordFileCount += Math.max(0, recordFileCount);
+        state.customerHistoryScanDurationNanos += safeElapsed;
+        state.maxCustomerHistoryScanNanos = Math.max(
+                state.maxCustomerHistoryScanNanos, safeElapsed);
+    }
+
     public static Snapshot finish() {
         State state = CURRENT.get();
         CURRENT.remove();
@@ -74,7 +88,8 @@ public final class RequestPerformanceContext {
                     Operation.NONE,
                     0, 0, 0,
                     0, 0, 0,
-                    0, 0, 0, 0, 0);
+                    0, 0, 0, 0, 0,
+                    0, 0, 0, 0);
         }
         return new Snapshot(
                 state.operation,
@@ -88,13 +103,18 @@ public final class RequestPerformanceContext {
                 state.fileSnapshotCacheMisses,
                 state.fileSnapshotScanCount,
                 state.fileSnapshotScanDurationNanos,
-                state.maxFileSnapshotScanNanos);
+                state.maxFileSnapshotScanNanos,
+                state.customerHistoryScanCount,
+                state.customerHistoryRecordFileCount,
+                state.customerHistoryScanDurationNanos,
+                state.maxCustomerHistoryScanNanos);
     }
 
     public enum Operation {
         NONE("none"),
         TROUBLESHOOTING_SUMMARY_SEARCH("troubleshooting.summarySearch"),
-        TROUBLESHOOTING_CONTENT_SEARCH("troubleshooting.contentSearch");
+        TROUBLESHOOTING_CONTENT_SEARCH("troubleshooting.contentSearch"),
+        CUSTOMER_HISTORY_LIST("customerHistory.list");
 
         private final String logValue;
 
@@ -119,7 +139,11 @@ public final class RequestPerformanceContext {
             int fileSnapshotCacheMisses,
             int fileSnapshotScanCount,
             long fileSnapshotScanDurationNanos,
-            long maxFileSnapshotScanNanos) {
+            long maxFileSnapshotScanNanos,
+            int customerHistoryScanCount,
+            int customerHistoryRecordFileCount,
+            long customerHistoryScanDurationNanos,
+            long maxCustomerHistoryScanNanos) {
     }
 
     private static final class State {
@@ -135,5 +159,9 @@ public final class RequestPerformanceContext {
         private int fileSnapshotScanCount;
         private long fileSnapshotScanDurationNanos;
         private long maxFileSnapshotScanNanos;
+        private int customerHistoryScanCount;
+        private int customerHistoryRecordFileCount;
+        private long customerHistoryScanDurationNanos;
+        private long maxCustomerHistoryScanNanos;
     }
 }

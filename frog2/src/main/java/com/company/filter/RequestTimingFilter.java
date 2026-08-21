@@ -89,6 +89,10 @@ public final class RequestTimingFilter implements Filter {
                         performance.fileSnapshotScanCount(),
                         performance.fileSnapshotScanDurationNanos(),
                         performance.maxFileSnapshotScanNanos(),
+                        performance.customerHistoryScanCount(),
+                        performance.customerHistoryRecordFileCount(),
+                        performance.customerHistoryScanDurationNanos(),
+                        performance.maxCustomerHistoryScanNanos(),
                         elapsedNanos >= slowRequestNanos));
             }
         } finally {
@@ -102,7 +106,7 @@ public final class RequestTimingFilter implements Filter {
 
     private static void writeLog(RequestEvent event) {
         String message =
-                "{} requestId={} method={} path={} status={} durationMs={} operation={} sqlCount={} sqlDurationMs={} maxSqlMs={} dbAcquireCount={} dbAcquireDurationMs={} maxDbAcquireMs={} fileCacheHits={} fileCacheMisses={} fileScanCount={} fileScanDurationMs={} maxFileScanMs={}";
+                "{} requestId={} method={} path={} status={} durationMs={} operation={} sqlCount={} sqlDurationMs={} maxSqlMs={} dbAcquireCount={} dbAcquireDurationMs={} maxDbAcquireMs={} fileCacheHits={} fileCacheMisses={} fileScanCount={} fileScanDurationMs={} maxFileScanMs={} customerHistoryScanCount={} customerHistoryRecordFiles={} customerHistoryScanDurationMs={} maxCustomerHistoryScanMs={}";
         Object[] values = {
                 event.slow() ? "Slow HTTP request" : "HTTP request completed",
                 event.requestId(),
@@ -121,7 +125,11 @@ public final class RequestTimingFilter implements Filter {
                 event.fileSnapshotCacheMisses(),
                 event.fileSnapshotScanCount(),
                 millis(event.fileSnapshotScanDurationNanos()),
-                millis(event.maxFileSnapshotScanNanos())
+                millis(event.maxFileSnapshotScanNanos()),
+                event.customerHistoryScanCount(),
+                event.customerHistoryRecordFileCount(),
+                millis(event.customerHistoryScanDurationNanos()),
+                millis(event.maxCustomerHistoryScanNanos())
         };
         if (event.slow()) {
             logger.warn(message, values);
@@ -189,6 +197,10 @@ public final class RequestTimingFilter implements Filter {
             int fileSnapshotScanCount,
             long fileSnapshotScanDurationNanos,
             long maxFileSnapshotScanNanos,
+            int customerHistoryScanCount,
+            int customerHistoryRecordFileCount,
+            long customerHistoryScanDurationNanos,
+            long maxCustomerHistoryScanNanos,
             boolean slow) {
     }
 }

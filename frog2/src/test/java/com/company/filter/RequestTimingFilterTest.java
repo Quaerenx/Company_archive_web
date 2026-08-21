@@ -32,6 +32,7 @@ class RequestTimingFilterTest {
             RequestPerformanceContext.recordDbAcquisition(3_000_000);
             RequestPerformanceContext.recordFileSnapshotCacheMiss();
             RequestPerformanceContext.recordFileSnapshotScan(5_000_000);
+            RequestPerformanceContext.recordCustomerHistoryScan(92, 6_000_000);
         };
 
         filter.doFilter(request, response, chain);
@@ -51,6 +52,9 @@ class RequestTimingFilterTest {
         assertEquals(1, event.fileSnapshotCacheMisses());
         assertEquals(1, event.fileSnapshotScanCount());
         assertEquals(5_000_000, event.fileSnapshotScanDurationNanos());
+        assertEquals(1, event.customerHistoryScanCount());
+        assertEquals(92, event.customerHistoryRecordFileCount());
+        assertEquals(6_000_000, event.customerHistoryScanDurationNanos());
         assertTrue(event.slow());
     }
 

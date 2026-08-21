@@ -1,6 +1,7 @@
 package com.company.customerhistory;
 
 import com.company.model.PageResult;
+import com.company.performance.RequestPerformanceContext;
 import com.company.util.Pagination;
 import java.io.IOException;
 import java.io.Reader;
@@ -71,6 +72,8 @@ public final class CustomerHistoryRepository {
         String normalizedCustomer = normalizeOptional(customerName);
         CustomerHistoryCategory category = normalizeCategory(categoryCode);
         String normalizedQuery = normalizeQuery(query);
+        RequestPerformanceContext.markOperation(
+                RequestPerformanceContext.Operation.CUSTOMER_HISTORY_LIST);
 
         lock.readLock().lock();
         try {
@@ -209,18 +212,25 @@ public final class CustomerHistoryRepository {
             return List.of();
         }
         ensureSafeDirectory(records);
+        long startedAt = System.nanoTime();
+        int recordFileCount = 0;
         List<CustomerHistoryRecord> result = new ArrayList<>();
         try (Stream<Path> paths = Files.list(records)) {
-            for (Path path : paths
+            List<Path> recordFiles = paths
                     .filter(candidate -> candidate.getFileName().toString().endsWith(FILE_SUFFIX))
                     .sorted()
-                    .toList()) {
+                    .toList();
+            recordFileCount = recordFiles.size();
+            for (Path path : recordFiles) {
                 ensureSafeRecordFile(path);
                 result.add(readRecord(path));
             }
             return result;
         } catch (IOException exception) {
             throw storageFailure("고객사 히스토리를 읽을 수 없습니다.", exception);
+        } finally {
+            RequestPerformanceContext.recordCustomerHistoryScan(
+                    recordFileCount, System.nanoTime() - startedAt);
         }
     }
 
