@@ -23,7 +23,7 @@ class DarkCanvasVisualRegressionContractTest {
                     .toList();
         }
 
-        assertEquals(25, authenticatedPages.size(), "authenticated view inventory changed");
+        assertEquals(27, authenticatedPages.size(), "authenticated view inventory changed");
         for (Path page : authenticatedPages) {
             String jsp = read(page);
             assertEquals(1, occurrences(jsp, "content-shell"), page.toString());

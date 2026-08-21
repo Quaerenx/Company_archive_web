@@ -1,6 +1,7 @@
 package com.company.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
@@ -40,8 +41,8 @@ class DaoInjectedConnectionBehaviorTest {
         jdbc.enqueue(customerRow("Acme"));
         CustomerDAO dao = new CustomerDAO(jdbc::open);
 
-        List<CustomerDTO> customers = dao.getAllCustomers(
-                "manager_name", "DESC", "maintenance");
+        List<CustomerDTO> customers = dao.getMaintenanceCustomers(
+                "manager_name", "DESC");
         CustomerDTO customer = dao.getCustomerByName("Acme");
 
         assertEquals("Acme", customers.getFirst().getCustomerName());
@@ -53,6 +54,20 @@ class DaoInjectedConnectionBehaviorTest {
         assertTrue(jdbc.statements.get(0).sql.endsWith(
                 "ORDER BY d.main_manager DESC"));
         assertEquals("Acme", jdbc.statements.get(1).parameters.get(1));
+    }
+
+    @Test
+    void activeMaintenanceCustomerValidationUsesTheCustomerType() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(customerRow("Maintenance", "정기점검 계약 고객사"));
+        jdbc.enqueue(customerRow("General", "일반 고객사"));
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+
+        assertTrue(dao.isActiveMaintenanceCustomer("Maintenance"));
+        assertFalse(dao.isActiveMaintenanceCustomer("General"));
+
+        assertEquals(2, jdbc.openCount);
+        assertEquals(2, jdbc.closeCount);
     }
 
     @Test
@@ -92,6 +107,11 @@ class DaoInjectedConnectionBehaviorTest {
     }
 
     private static java.util.Map<String, Object> customerRow(String name) {
+        return customerRow(name, "정기점검 계약 고객사");
+    }
+
+    private static java.util.Map<String, Object> customerRow(
+            String name, String customerType) {
         return PaginationJdbcFixture.row(
                 "customer_name", name,
                 "vertica_version", "23.4",
@@ -103,7 +123,7 @@ class DaoInjectedConnectionBehaviorTest {
                 "main_manager", "Alice",
                 "sub_manager", "Bob",
                 "db_name", "archive",
-                "customer_type", "정기점검 계약 고객사");
+                "customer_type", customerType);
     }
 
     private static CustomerDTO customer(String name) {

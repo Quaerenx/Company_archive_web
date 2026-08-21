@@ -90,6 +90,18 @@ public class CustomerDAO {
         return getAllCustomers(sortField, sortDirection, "all");
     }
 
+    public List<CustomerDTO> getMaintenanceCustomers(
+            String sortField, String sortDirection) {
+        return getAllCustomers(
+                sortField, sortDirection, MAINTENANCE_FILTER);
+    }
+
+    public boolean isActiveMaintenanceCustomer(String customerName) {
+        CustomerDTO customer = getCustomerByName(customerName);
+        return customer != null
+                && MAINTENANCE_CUSTOMER_TYPE.equals(customer.getCustomerType());
+    }
+
     public List<MaintenanceCustomerAssignment> getMaintenanceCustomerAssignments() {
         return getMaintenanceCustomerAssignments(YearMonth.now());
     }

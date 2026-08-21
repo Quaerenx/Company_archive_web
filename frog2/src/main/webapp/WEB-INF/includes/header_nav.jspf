@@ -14,6 +14,8 @@
 <c:set var="navVmHostsPrefix" value="${navVmHostsPath}/" />
 <c:set var="navCustomersPath" value="${pageContext.request.contextPath}/customers" />
 <c:set var="navCustomersPrefix" value="${navCustomersPath}/" />
+<c:set var="navCustomerHistoryPath" value="${pageContext.request.contextPath}/customer-history" />
+<c:set var="navCustomerHistoryPrefix" value="${navCustomerHistoryPath}/" />
 <c:set var="navMaintenancePath" value="${pageContext.request.contextPath}/maintenance" />
 <c:set var="navMaintenancePrefix" value="${navMaintenancePath}/" />
 <c:set var="navMeetingPath" value="${pageContext.request.contextPath}/meeting" />
@@ -36,6 +38,9 @@
                || fn:startsWith(navRequestUri, navVmHostsPrefix)}" />
 <c:set var="navCustomersCurrent"
        value="${navRequestUri eq navCustomersPath || fn:startsWith(navRequestUri, navCustomersPrefix)}" />
+<c:set var="navCustomerHistoryCurrent"
+       value="${navRequestUri eq navCustomerHistoryPath
+               || fn:startsWith(navRequestUri, navCustomerHistoryPrefix)}" />
 <c:set var="navMaintenanceCurrent"
        value="${navRequestUri eq navMaintenancePath || fn:startsWith(navRequestUri, navMaintenancePrefix)}" />
 <c:set var="navMeetingCurrent"
@@ -51,7 +56,7 @@
 <c:set var="navMyPageCurrent"
        value="${navRequestUri eq navMyPagePath || fn:startsWith(navRequestUri, navMyPagePrefix)}" />
 <c:set var="navCustomerSectionCurrent"
-       value="${navCustomersCurrent || navMaintenanceCurrent}" />
+       value="${navCustomersCurrent || navCustomerHistoryCurrent || navMaintenanceCurrent}" />
 <c:set var="navResourceSectionCurrent"
        value="${navMeetingCurrent || navFileRepositoryCurrent || navTroubleshootingCurrent}" />
 
@@ -121,6 +126,14 @@
                                    aria-current="${navMaintenanceCurrent ? 'page' : 'false'}">
                                     <i class="fas fa-clipboard-check mr-2" aria-hidden="true"></i>
                                     정기점검 이력
+                                </a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/customer-history"
+                                   class="${navCustomerHistoryCurrent ? 'active' : ''}"
+                                   aria-current="${navCustomerHistoryCurrent ? 'page' : 'false'}">
+                                    <i class="fas fa-history mr-2" aria-hidden="true"></i>
+                                    고객사 히스토리
                                 </a>
                             </li>
                         </ul>

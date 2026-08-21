@@ -149,6 +149,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>CustomerHistoryServlet</servlet-name>
+        <servlet-class>com.company.controller.CustomerHistoryServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CustomerHistoryServlet</servlet-name>
+        <url-pattern>/customer-history</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>MaintenanceServlet</servlet-name>
         <servlet-class>com.company.controller.MaintenanceServlet</servlet-class>
     </servlet>

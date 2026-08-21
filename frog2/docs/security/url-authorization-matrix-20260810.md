@@ -1,7 +1,7 @@
 # Archive URL authorization matrix
 
 Status: verified against `WEB-INF/web.xml`, filters, and Servlet handlers on
-2026-08-10. This document records the accepted behavior; it does not introduce
+2026-08-20. This document records the accepted behavior; it does not introduce
 a new role model.
 
 ## Global rules
@@ -28,6 +28,9 @@ a new role model.
 | `/dashboard` | GET | Authenticated | Shared dashboard read | No | None |
 | `/customers` list/detail/edit/add forms and JSON actions | GET | Authenticated | Shared customer read | No | None |
 | `/customers` `add`, `update`, `delete`, `saveDetail` | POST | Authenticated | Customer mutation | Yes | Accepted policy permits all authenticated users; dev read-only still blocks DB writes |
+| `/customer-history` list/add/edit forms | GET | Authenticated | Shared major-work history read | No | All authenticated users may read; no maintenance data is included |
+| `/customer-history` `add` | POST | Authenticated | External history-file creation | Yes | Stable creator `userId` comes only from the session |
+| `/customer-history` `update`, `delete` | POST | Authenticated | Owner-scoped external history-file mutation | Yes | Record ID and stable creator `userId` are checked atomically in the repository |
 | `/maintenance` cards/history/add form | GET | Authenticated | Shared maintenance read | No | Edit form is exposed only to the stable creator `userId` |
 | `/maintenance` `add` | POST | Authenticated | Create maintenance record | Yes | Creator comes only from the session `userId` |
 | `/maintenance` `update`, `delete` | POST | Authenticated | Owner-scoped mutation | Yes | Object ID and stable creator `userId` are matched in the mutation |
