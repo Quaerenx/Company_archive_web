@@ -44,6 +44,8 @@ class PageShellContractTest {
             "troubleshooting/troubleshooting_edit.jsp",
             "troubleshooting/troubleshooting_list.jsp",
             "troubleshooting/troubleshooting_view.jsp",
+            "customer-history/customer_history_form.jsp",
+            "customer-history/customer_history_list.jsp",
             "vm_hosts/list.jsp",
             "WEB-INF/views/filerepo/list.jsp",
             "WEB-INF/views/filerepo/upload.jsp");

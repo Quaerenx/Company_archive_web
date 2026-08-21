@@ -38,6 +38,7 @@ class DevelopmentServerSmokeTest {
             "maintenance",
             "meeting",
             "troubleshooting",
+            "customer-history",
             "mypage",
             "vm-hosts",
             "file-repository");
@@ -45,6 +46,7 @@ class DevelopmentServerSmokeTest {
             "customers",
             "meeting",
             "troubleshooting",
+            "customer-history",
             "mypage",
             "vm-hosts",
             "file-repository");
@@ -92,6 +94,12 @@ class DevelopmentServerSmokeTest {
         assertTrue(header(css, "Content-Type").startsWith("text/css"));
         assertTrue(header(css, "Cache-Control").contains("public"));
         assertFalse(css.body().isBlank());
+
+        assertHealthyAsset("resources/js/ui-system.js", "javascript");
+        assertHealthyAsset("favicon.svg", "image/svg+xml");
+        assertHealthyAsset(
+                "resources/images/archive-compact-horizontal.svg",
+                "image/svg+xml");
     }
 
     @Test
@@ -113,11 +121,16 @@ class DevelopmentServerSmokeTest {
     @Test
     @Order(3)
     void authenticatedUserCanOpenCoreReadOnlyPages() throws Exception {
+        Assumptions.assumeTrue(
+                Boolean.getBoolean("frog2.e2e.authenticated"),
+                "Run e2eAuthenticatedSmoke to enable the login POST check");
         String userId = System.getenv("FROG2_E2E_USER_ID");
         String password = System.getenv("FROG2_E2E_PASSWORD");
-        Assumptions.assumeTrue(
-                userId != null && !userId.isBlank() && password != null && !password.isEmpty(),
-                "Set FROG2_E2E_USER_ID and FROG2_E2E_PASSWORD to run authenticated smoke checks");
+        if (userId == null || userId.isBlank()
+                || password == null || password.isEmpty()) {
+            throw new IllegalStateException(
+                    "Authenticated smoke requires both E2E credential environment variables");
+        }
 
         HttpResponse<String> loginPage = get("login", "text/html");
         Matcher csrf = CSRF_INPUT.matcher(loginPage.body());
@@ -187,6 +200,17 @@ class DevelopmentServerSmokeTest {
         return client.send(
                 request,
                 HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    private static void assertHealthyAsset(
+            String relativePath, String expectedContentType) throws Exception {
+        HttpResponse<String> response = get(relativePath, expectedContentType);
+        assertEquals(200, response.statusCode(), relativePath);
+        assertTrue(header(response, "Content-Type").contains(expectedContentType),
+                relativePath);
+        assertTrue(header(response, "Cache-Control").contains("public"),
+                relativePath);
+        assertFalse(response.body().isBlank(), relativePath);
     }
 
     private static String header(HttpResponse<?> response, String name) {

@@ -40,7 +40,13 @@ The default local target is `http://127.0.0.1:18081/frog2/`.
 ./gradlew e2eSmoke
 ```
 
-The public login, static-asset, redirect, and JSON authentication-boundary checks require no credentials. The authenticated read-only navigation check runs only when the execution environment securely provides both `FROG2_E2E_USER_ID` and `FROG2_E2E_PASSWORD`. Do not place those values in source control, shell scripts, Gradle files, or command-line arguments.
+The default smoke task performs only public GET and authentication-boundary checks and never submits the login form. Authenticated read-only navigation is deliberately separated:
+
+```bash
+./gradlew e2eAuthenticatedSmoke
+```
+
+The authenticated task requires both `FROG2_E2E_USER_ID` and `FROG2_E2E_PASSWORD` in the execution environment. Do not place those values in source control, shell scripts, Gradle files, or command-line arguments.
 
 Remote targets are rejected unless the run explicitly sets `-Dfrog2.e2e.allowRemote=true` together with `-Dfrog2.e2e.baseUrl=...`.
 

@@ -67,11 +67,42 @@ tasks.named('test') {
 }
 
 tasks.register('e2eSmoke', Test) {
-    description = 'Runs read-only HTTP smoke tests against a running Frog2 server.'
+    description = 'Runs GET-only HTTP smoke tests against a running Frog2 server.'
     group = 'verification'
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     shouldRunAfter tasks.named('test')
+    outputs.upToDateWhen { false }
+    systemProperty 'frog2.e2e.authenticated', 'false'
+    for (String propertyName : [
+            'frog2.e2e.baseUrl', 'frog2.e2e.allowRemote'
+    ]) {
+        String value = providers.systemProperty(propertyName).orNull
+        if (value != null) {
+            systemProperty propertyName, value
+        }
+    }
+    useJUnitPlatform {
+        includeTags 'e2e'
+    }
+}
+
+tasks.register('e2eAuthenticatedSmoke', Test) {
+    description = 'Runs authenticated read-only navigation smoke tests against Frog2.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+    outputs.upToDateWhen { false }
+    systemProperty 'frog2.e2e.authenticated', 'true'
+    for (String propertyName : [
+            'frog2.e2e.baseUrl', 'frog2.e2e.allowRemote'
+    ]) {
+        String value = providers.systemProperty(propertyName).orNull
+        if (value != null) {
+            systemProperty propertyName, value
+        }
+    }
     useJUnitPlatform {
         includeTags 'e2e'
     }
@@ -180,8 +211,63 @@ tasks.register('verifyWarContents') {
     }
 }
 
+def firstPartyJavaScript = files(
+        fileTree('src/main/webapp/resources/js') {
+            include '**/*.js'
+        },
+        fileTree('src/tools') {
+            include '**/*.mjs'
+        })
+def javaScriptSyntaxTasks = firstPartyJavaScript.files
+        .sort { left, right -> left.path <=> right.path }
+        .collect { source ->
+            String relativePath = projectDir.toPath()
+                    .relativize(source.toPath())
+                    .toString()
+            String taskSuffix = relativePath
+                    .split('[^A-Za-z0-9]+')
+                    .findAll { !it.isBlank() }
+                    .collect { it.capitalize() }
+                    .join('')
+            tasks.register("checkJavaScriptSyntax${taskSuffix}", Exec) {
+                group = 'verification'
+                description = "Checks JavaScript syntax: ${relativePath}"
+                inputs.file(source)
+                outputs.upToDateWhen { false }
+                commandLine 'node', '--check', source.absolutePath
+            }
+        }
+
+tasks.register('checkJavaScriptSyntax') {
+    description = 'Checks syntax for all first-party JavaScript modules.'
+    group = 'verification'
+    dependsOn javaScriptSyntaxTasks
+}
+
+def javaScriptBehaviorTests = fileTree('src/test/java') {
+    include '**/*.behavior.test.js'
+}
+
+tasks.register('testJavaScript', Exec) {
+    description = 'Runs first-party JavaScript behavior tests with Node.js.'
+    group = 'verification'
+    inputs.files(javaScriptBehaviorTests)
+    outputs.upToDateWhen { false }
+    commandLine(['node', '--test'] + javaScriptBehaviorTests.files
+            .sort { left, right -> left.path <=> right.path }
+            .collect { it.absolutePath })
+}
+
+tasks.register('frontendCheck') {
+    description = 'Runs JavaScript syntax and behavior verification.'
+    group = 'verification'
+    dependsOn tasks.named('checkJavaScriptSyntax')
+    dependsOn tasks.named('testJavaScript')
+}
+
 tasks.named('check') {
     dependsOn tasks.named('verifyWarContents')
+    dependsOn tasks.named('frontendCheck')
 }
 
 tasks.named('war') {

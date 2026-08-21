@@ -131,6 +131,11 @@ if [ ! -f "$BASELINE_ROOT/manifest.sha256" ]; then
     exit 2
 fi
 
+(
+    cd "$BASELINE_ROOT"
+    sha256sum -c manifest.sha256 >/dev/null
+)
+
 capture_all "$CURRENT_ROOT"
 failed=0
 for baseline in "$BASELINE_ROOT"/*.png; do

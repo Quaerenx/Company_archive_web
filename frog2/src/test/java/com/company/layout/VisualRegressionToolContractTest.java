@@ -13,7 +13,7 @@ class VisualRegressionToolContractTest {
     private static final Path TOOLS = Path.of("src/tools");
 
     @Test
-    void routeManifestCoversNineReleaseScreensWithoutPersistingDetailIdentifiers()
+    void routeManifestCoversReleaseScreensWithoutPersistingDetailIdentifiers()
             throws Exception {
         List<String> lines = Files.readAllLines(
                 TOOLS.resolve("visual-regression-routes.tsv"));
@@ -30,6 +30,7 @@ class VisualRegressionToolContractTest {
                 "maintenance-history",
                 "meeting",
                 "troubleshooting",
+                "customer-history",
                 "file-repository",
                 "mypage"), names);
         assertTrue(lines.stream().anyMatch(
