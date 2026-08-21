@@ -9,6 +9,18 @@ plugins {
 group = 'com.company'
 version = '2.0.0-SNAPSHOT'
 
+def sha256 = { File input ->
+    MessageDigest digest = MessageDigest.getInstance('SHA-256')
+    input.withInputStream { stream ->
+        byte[] buffer = new byte[8192]
+        int read
+        while ((read = stream.read(buffer)) != -1) {
+            digest.update(buffer, 0, read)
+        }
+    }
+    digest.digest().encodeHex().toString()
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(22)
@@ -161,21 +173,61 @@ def allowedWarLibraries = [
 tasks.register('verifyVerticaDriver') {
     inputs.file(verticaDriver)
     doLast {
-        def digest = MessageDigest.getInstance('SHA-256')
-                .digest(verticaDriver.asFile.bytes)
-                .encodeHex()
-                .toString()
+        def digest = sha256(verticaDriver.asFile)
         if (digest != verticaDriverSha256) {
             throw new GradleException("Unexpected Vertica JDBC checksum: ${digest}")
         }
     }
 }
 
+def packagedWar = tasks.named('war')
+def verifyDevelopmentDeployment = tasks.register(
+        'verifyDevelopmentDeployment') {
+    description = 'Verifies that the development deployment matches the current WAR.'
+    group = 'verification'
+    dependsOn packagedWar
+    inputs.file(packagedWar.flatMap { it.archiveFile })
+    outputs.upToDateWhen { false }
+    doLast {
+        String deployedPath = providers.systemProperty(
+                'frog2.e2e.deployedWar')
+                .getOrElse('/opt/tomcat-dev/webapps/frog2.war')
+        File deployedWar = file(deployedPath).canonicalFile
+        File productionWar = file(
+                '/opt/tomcat/webapps/frog2.war').canonicalFile
+        if (deployedWar == productionWar) {
+            throw new GradleException(
+                    'Production WAR cannot be used for development E2E verification')
+        }
+        if (!deployedWar.isFile()) {
+            throw new GradleException(
+                    "Development WAR is unavailable: ${deployedWar}")
+        }
+
+        File currentWar = packagedWar.get()
+                .archiveFile.get().asFile
+        String currentHash = sha256(currentWar)
+        String deployedHash = sha256(deployedWar)
+        if (currentHash != deployedHash) {
+            throw new GradleException(
+                    'Development deployment does not match the current build. '
+                            + "built=${currentHash}, deployed=${deployedHash}")
+        }
+    }
+}
+
+tasks.named('e2eSmoke') {
+    dependsOn verifyDevelopmentDeployment
+}
+
+tasks.named('e2eAuthenticatedSmoke') {
+    dependsOn verifyDevelopmentDeployment
+}
+
 tasks.named('classes') {
     dependsOn tasks.named('verifyVerticaDriver')
 }
 
-def packagedWar = tasks.named('war')
 tasks.register('verifyWarContents') {
     dependsOn packagedWar
     inputs.file(packagedWar.flatMap { it.archiveFile })

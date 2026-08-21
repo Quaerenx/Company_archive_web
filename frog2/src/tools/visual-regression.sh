@@ -45,7 +45,7 @@ if [ ! -f "$ROUTE_MANIFEST" ]; then
     exit 2
 fi
 
-for command_name in geckodriver node compare identify sha256sum; do
+for command_name in geckodriver node compare identify sha256sum diff; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
         echo "Required command is unavailable: $command_name" >&2
         exit 2
@@ -115,9 +115,41 @@ capture_all() {
     identify "$destination"/*.png >/dev/null
 }
 
+expected_capture_names() {
+    while IFS=$'\t' read -r route_name route_path route_access; do
+        if [ -z "$route_name" ]; then
+            continue
+        fi
+        for viewport in \
+                360x900 \
+                390x900 \
+                768x1024 \
+                1024x900 \
+                1440x1000; do
+            printf '%s-%s.png\n' "$route_name" "$viewport"
+        done
+    done < "$ROUTE_MANIFEST"
+}
+
+verify_capture_set() {
+    capture_root="$1"
+    capture_label="$2"
+    expected_list="$WORK_ROOT/${capture_label}-expected.txt"
+    actual_list="$WORK_ROOT/${capture_label}-actual.txt"
+
+    expected_capture_names | sort > "$expected_list"
+    find "$capture_root" -maxdepth 1 -type f -name '*.png' \
+        -printf '%f\n' | sort > "$actual_list"
+    if ! diff -u "$expected_list" "$actual_list"; then
+        echo "Unexpected ${capture_label} capture set: $capture_root" >&2
+        exit 2
+    fi
+}
+
 if [ "$MODE" = "baseline" ]; then
     mkdir -p "$BASELINE_ROOT"
     capture_all "$BASELINE_ROOT"
+    verify_capture_set "$BASELINE_ROOT" baseline
     (
         cd "$BASELINE_ROOT"
         sha256sum ./*.png > manifest.sha256
@@ -131,12 +163,14 @@ if [ ! -f "$BASELINE_ROOT/manifest.sha256" ]; then
     exit 2
 fi
 
+verify_capture_set "$BASELINE_ROOT" baseline
 (
     cd "$BASELINE_ROOT"
     sha256sum -c manifest.sha256 >/dev/null
 )
 
 capture_all "$CURRENT_ROOT"
+verify_capture_set "$CURRENT_ROOT" current
 failed=0
 for baseline in "$BASELINE_ROOT"/*.png; do
     name="$(basename "$baseline")"

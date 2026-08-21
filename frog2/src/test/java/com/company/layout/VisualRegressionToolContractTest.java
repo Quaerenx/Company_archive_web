@@ -83,4 +83,26 @@ class VisualRegressionToolContractTest {
         assertTrue(capture.contains("capture-metrics.json"));
         assertFalse(capture.contains("e2ePassword" + "}"));
     }
+
+    @Test
+    void shellRequiresTheExactTenRouteByFiveViewportCaptureSet()
+            throws Exception {
+        String shell = Files.readString(
+                TOOLS.resolve("visual-regression.sh"));
+
+        assertTrue(shell.contains("expected_capture_names()"));
+        assertTrue(shell.contains(
+                "verify_capture_set \"$BASELINE_ROOT\" baseline"));
+        assertTrue(shell.contains(
+                "verify_capture_set \"$CURRENT_ROOT\" current"));
+        assertTrue(shell.contains("diff -u \"$expected_list\" \"$actual_list\""));
+        for (String viewport : List.of(
+                "360x900",
+                "390x900",
+                "768x1024",
+                "1024x900",
+                "1440x1000")) {
+            assertTrue(shell.contains(viewport), viewport);
+        }
+    }
 }
