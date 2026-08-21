@@ -15,12 +15,8 @@ import com.company.util.Pagination;
 import com.company.util.SearchQueryPolicy;
 import com.company.performance.RequestPerformanceContext;
 import com.company.performance.RequestPerformanceContext.Operation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TroubleshootingDAO {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(TroubleshootingDAO.class);
     private static final String TABLE_NAME = "troubleshooting";
     private static final String CREATOR_USER_ID_COLUMN = "creator_user_id";
     private static final String SUMMARY_COLUMNS =
@@ -140,13 +136,7 @@ public class TroubleshootingDAO {
     }
 
     public TroubleshootingDTO getTroubleshootingById(int id) {
-        TroubleshootingDTO ts = null;
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = connectionProvider.getConnection();
+        try (Connection conn = connectionProvider.getConnection()) {
             boolean hasCreatorUserId = hasCreatorUserId(conn);
             String sql = "SELECT id, title, customer_name, customer_manager, occurrence_date, "
                     + "work_personnel, work_period, creator, create_date, support_type, "
@@ -154,102 +144,103 @@ public class TroubleshootingDAO {
                     + "script_content, note, updated_date"
                     + (hasCreatorUserId ? ", creator_user_id " : " ")
                     + "FROM troubleshooting WHERE id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, id);
-            rs = pstmt.executeQuery();
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, id);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (!rs.next()) {
+                        return null;
+                    }
+                    TroubleshootingDTO ts = new TroubleshootingDTO();
+                    ts.setId(rs.getInt("id"));
+                    ts.setTitle(rs.getString("title"));
+                    ts.setCustomerName(rs.getString("customer_name"));
+                    ts.setCustomerManager(rs.getString("customer_manager"));
 
-            if (rs.next()) {
-                ts = new TroubleshootingDTO();
-                ts.setId(rs.getInt("id"));
-                ts.setTitle(rs.getString("title"));
-                ts.setCustomerName(rs.getString("customer_name"));
-                ts.setCustomerManager(rs.getString("customer_manager"));
+                    Timestamp occurrenceTs =
+                            rs.getTimestamp("occurrence_date");
+                    if (occurrenceTs != null) {
+                        ts.setOccurrenceDate(new java.util.Date(
+                                occurrenceTs.getTime()));
+                    }
 
-                Timestamp occurrenceTs = rs.getTimestamp("occurrence_date");
-                if (occurrenceTs != null) {
-                    ts.setOccurrenceDate(new java.util.Date(occurrenceTs.getTime()));
-                }
+                    ts.setWorkPersonnel(rs.getString("work_personnel"));
+                    ts.setWorkPeriod(rs.getString("work_period"));
+                    ts.setCreator(rs.getString("creator"));
+                    if (hasCreatorUserId) {
+                        ts.setCreatorUserId(
+                                rs.getString(CREATOR_USER_ID_COLUMN));
+                    }
 
-                ts.setWorkPersonnel(rs.getString("work_personnel"));
-                ts.setWorkPeriod(rs.getString("work_period"));
-                ts.setCreator(rs.getString("creator"));
-                if (hasCreatorUserId) {
-                    ts.setCreatorUserId(rs.getString(CREATOR_USER_ID_COLUMN));
-                }
+                    Timestamp createTs = rs.getTimestamp("create_date");
+                    if (createTs != null) {
+                        ts.setCreateDate(new java.util.Date(
+                                createTs.getTime()));
+                    }
 
-                Timestamp createTs = rs.getTimestamp("create_date");
-                if (createTs != null) {
-                    ts.setCreateDate(new java.util.Date(createTs.getTime()));
-                }
+                    ts.setSupportType(rs.getString("support_type"));
+                    ts.setCaseOpenYn(rs.getString("case_open_yn"));
+                    ts.setOverview(rs.getString("overview"));
+                    ts.setCauseAnalysis(rs.getString("cause_analysis"));
+                    ts.setErrorContent(rs.getString("error_content"));
+                    ts.setActionTaken(rs.getString("action_taken"));
+                    ts.setScriptContent(rs.getString("script_content"));
+                    ts.setNote(rs.getString("note"));
 
-                ts.setSupportType(rs.getString("support_type"));
-                ts.setCaseOpenYn(rs.getString("case_open_yn"));
-                ts.setOverview(rs.getString("overview"));
-                ts.setCauseAnalysis(rs.getString("cause_analysis"));
-                ts.setErrorContent(rs.getString("error_content"));
-                ts.setActionTaken(rs.getString("action_taken"));
-                ts.setScriptContent(rs.getString("script_content"));
-                ts.setNote(rs.getString("note"));
-
-                Timestamp updatedTs = rs.getTimestamp("updated_date");
-                if (updatedTs != null) {
-                    ts.setUpdatedDate(new java.util.Date(updatedTs.getTime()));
+                    Timestamp updatedTs = rs.getTimestamp("updated_date");
+                    if (updatedTs != null) {
+                        ts.setUpdatedDate(new java.util.Date(
+                                updatedTs.getTime()));
+                    }
+                    return ts;
                 }
             }
         } catch (SQLException e) {
             throw DataAccessException.from("load troubleshooting", e);
-        } finally {
-            close(rs, pstmt, conn);
         }
-
-        return ts;
     }
 
     public boolean addTroubleshooting(TroubleshootingDTO ts) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = connectionProvider.getConnection();
+        try (Connection conn = connectionProvider.getConnection()) {
             if (!hasCreatorUserId(conn) || isBlank(ts.getCreatorUserId())) {
                 return false;
             }
-            String sql = "INSERT INTO troubleshooting (" +
-                        "title, customer_name, customer_manager, occurrence_date, work_personnel, " +
-                        "work_period, creator_user_id, creator, support_type, case_open_yn, overview, " +
-                        "cause_analysis, error_content, action_taken, script_content, note" +
-                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO troubleshooting ("
+                    + "title, customer_name, customer_manager, "
+                    + "occurrence_date, work_personnel, work_period, "
+                    + "creator_user_id, creator, support_type, case_open_yn, "
+                    + "overview, cause_analysis, error_content, "
+                    + "action_taken, script_content, note) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-            pstmt = conn.prepareStatement(sql);
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, ts.getTitle());
+                pstmt.setString(2, ts.getCustomerName());
+                setStringOrNull(pstmt, 3, ts.getCustomerManager());
 
-            pstmt.setString(1, ts.getTitle());
-            pstmt.setString(2, ts.getCustomerName());
-            setStringOrNull(pstmt, 3, ts.getCustomerManager());
+                if (ts.getOccurrenceDate() != null) {
+                    pstmt.setTimestamp(4, new Timestamp(
+                            ts.getOccurrenceDate().getTime()));
+                } else {
+                    pstmt.setNull(4, Types.TIMESTAMP);
+                }
 
-            if (ts.getOccurrenceDate() != null) {
-                pstmt.setTimestamp(4, new Timestamp(ts.getOccurrenceDate().getTime()));
-            } else {
-                pstmt.setNull(4, Types.TIMESTAMP);
+                setStringOrNull(pstmt, 5, ts.getWorkPersonnel());
+                setStringOrNull(pstmt, 6, ts.getWorkPeriod());
+                pstmt.setString(7, ts.getCreatorUserId().trim());
+                pstmt.setString(8, ts.getCreator());
+                setStringOrNull(pstmt, 9, ts.getSupportType());
+                setStringOrNull(pstmt, 10, ts.getCaseOpenYn());
+                setStringOrNull(pstmt, 11, ts.getOverview());
+                setStringOrNull(pstmt, 12, ts.getCauseAnalysis());
+                setStringOrNull(pstmt, 13, ts.getErrorContent());
+                setStringOrNull(pstmt, 14, ts.getActionTaken());
+                setStringOrNull(pstmt, 15, ts.getScriptContent());
+                setStringOrNull(pstmt, 16, ts.getNote());
+
+                return pstmt.executeUpdate() > 0;
             }
-
-            setStringOrNull(pstmt, 5, ts.getWorkPersonnel());
-            setStringOrNull(pstmt, 6, ts.getWorkPeriod());
-            pstmt.setString(7, ts.getCreatorUserId().trim());
-            pstmt.setString(8, ts.getCreator());
-            setStringOrNull(pstmt, 9, ts.getSupportType());
-            setStringOrNull(pstmt, 10, ts.getCaseOpenYn());
-            setStringOrNull(pstmt, 11, ts.getOverview());
-            setStringOrNull(pstmt, 12, ts.getCauseAnalysis());
-            setStringOrNull(pstmt, 13, ts.getErrorContent());
-            setStringOrNull(pstmt, 14, ts.getActionTaken());
-            setStringOrNull(pstmt, 15, ts.getScriptContent());
-            setStringOrNull(pstmt, 16, ts.getNote());
-
-            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             throw DataAccessException.from("add troubleshooting", e);
-        } finally {
-            close(pstmt, conn);
         }
     }
 
@@ -258,51 +249,48 @@ public class TroubleshootingDAO {
         if (isBlank(creatorUserId)) {
             return false;
         }
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = connectionProvider.getConnection();
+        try (Connection conn = connectionProvider.getConnection()) {
             if (!hasCreatorUserId(conn)) {
                 return false;
             }
-            String sql = "UPDATE troubleshooting SET " +
-                        "title = ?, customer_name = ?, customer_manager = ?, occurrence_date = ?, " +
-                        "work_personnel = ?, work_period = ?, support_type = ?, case_open_yn = ?, " +
-                        "overview = ?, cause_analysis = ?, error_content = ?, action_taken = ?, " +
-                        "script_content = ?, note = ?, updated_date = NOW() " +
-                        "WHERE id = ? AND creator_user_id = ?";
+            String sql = "UPDATE troubleshooting SET "
+                    + "title = ?, customer_name = ?, customer_manager = ?, "
+                    + "occurrence_date = ?, work_personnel = ?, "
+                    + "work_period = ?, support_type = ?, case_open_yn = ?, "
+                    + "overview = ?, cause_analysis = ?, error_content = ?, "
+                    + "action_taken = ?, script_content = ?, note = ?, "
+                    + "updated_date = NOW() "
+                    + "WHERE id = ? AND creator_user_id = ?";
 
-            pstmt = conn.prepareStatement(sql);
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, ts.getTitle());
+                pstmt.setString(2, ts.getCustomerName());
+                setStringOrNull(pstmt, 3, ts.getCustomerManager());
 
-            pstmt.setString(1, ts.getTitle());
-            pstmt.setString(2, ts.getCustomerName());
-            setStringOrNull(pstmt, 3, ts.getCustomerManager());
+                if (ts.getOccurrenceDate() != null) {
+                    pstmt.setTimestamp(4, new Timestamp(
+                            ts.getOccurrenceDate().getTime()));
+                } else {
+                    pstmt.setNull(4, Types.TIMESTAMP);
+                }
 
-            if (ts.getOccurrenceDate() != null) {
-                pstmt.setTimestamp(4, new Timestamp(ts.getOccurrenceDate().getTime()));
-            } else {
-                pstmt.setNull(4, Types.TIMESTAMP);
+                setStringOrNull(pstmt, 5, ts.getWorkPersonnel());
+                setStringOrNull(pstmt, 6, ts.getWorkPeriod());
+                setStringOrNull(pstmt, 7, ts.getSupportType());
+                setStringOrNull(pstmt, 8, ts.getCaseOpenYn());
+                setStringOrNull(pstmt, 9, ts.getOverview());
+                setStringOrNull(pstmt, 10, ts.getCauseAnalysis());
+                setStringOrNull(pstmt, 11, ts.getErrorContent());
+                setStringOrNull(pstmt, 12, ts.getActionTaken());
+                setStringOrNull(pstmt, 13, ts.getScriptContent());
+                setStringOrNull(pstmt, 14, ts.getNote());
+                pstmt.setInt(15, ts.getId());
+                pstmt.setString(16, creatorUserId.trim());
+
+                return pstmt.executeUpdate() > 0;
             }
-
-            setStringOrNull(pstmt, 5, ts.getWorkPersonnel());
-            setStringOrNull(pstmt, 6, ts.getWorkPeriod());
-            setStringOrNull(pstmt, 7, ts.getSupportType());
-            setStringOrNull(pstmt, 8, ts.getCaseOpenYn());
-            setStringOrNull(pstmt, 9, ts.getOverview());
-            setStringOrNull(pstmt, 10, ts.getCauseAnalysis());
-            setStringOrNull(pstmt, 11, ts.getErrorContent());
-            setStringOrNull(pstmt, 12, ts.getActionTaken());
-            setStringOrNull(pstmt, 13, ts.getScriptContent());
-            setStringOrNull(pstmt, 14, ts.getNote());
-            pstmt.setInt(15, ts.getId());
-            pstmt.setString(16, creatorUserId.trim());
-
-            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             throw DataAccessException.from("update troubleshooting", e);
-        } finally {
-            close(pstmt, conn);
         }
     }
 
@@ -310,25 +298,20 @@ public class TroubleshootingDAO {
         if (isBlank(creatorUserId)) {
             return false;
         }
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = connectionProvider.getConnection();
+        try (Connection conn = connectionProvider.getConnection()) {
             if (!hasCreatorUserId(conn)) {
                 return false;
             }
             String sql = "DELETE FROM troubleshooting "
                     + "WHERE id = ? AND creator_user_id = ?";
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, id);
-            pstmt.setString(2, creatorUserId.trim());
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, id);
+                pstmt.setString(2, creatorUserId.trim());
 
-            return pstmt.executeUpdate() > 0;
+                return pstmt.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             throw DataAccessException.from("delete troubleshooting", e);
-        } finally {
-            close(pstmt, conn);
         }
     }
 
@@ -501,21 +484,6 @@ public class TroubleshootingDAO {
 
     private record SummaryRows(
             List<TroubleshootingDTO> items, int totalCount) {
-    }
-
-    private static void close(AutoCloseable... resources) {
-        for (AutoCloseable resource : resources) {
-            if (resource == null) {
-                continue;
-            }
-            try {
-                resource.close();
-            } catch (Exception exception) {
-                LOGGER.warn(
-                        "Troubleshooting JDBC resource cleanup failed",
-                        exception);
-            }
-        }
     }
 
     // 빈 문자열을 NULL로 처리하는 헬퍼 메서드

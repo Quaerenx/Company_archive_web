@@ -23,6 +23,21 @@ import jakarta.servlet.http.HttpSession;
 public class MeetingServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private final MeetingRequestMapper requestMapper = new MeetingRequestMapper();
+    private final MeetingRecordDAO meetingDAO;
+    private final MeetingCommentDAO commentDAO;
+
+    public MeetingServlet() {
+        this(new MeetingRecordDAO(), new MeetingCommentDAO());
+    }
+
+    MeetingServlet(
+            MeetingRecordDAO meetingDAO,
+            MeetingCommentDAO commentDAO) {
+        this.meetingDAO = Objects.requireNonNull(
+                meetingDAO, "meetingDAO");
+        this.commentDAO = Objects.requireNonNull(
+                commentDAO, "commentDAO");
+    }
 
     @Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -43,7 +58,6 @@ public class MeetingServlet extends HttpServlet {
         if ("list".equals(viewType)) {
             // 회의록 목록 (페이징 처리)
             int requestedPage = requestMapper.requestedPage(request);
-            MeetingRecordDAO meetingDAO = new MeetingRecordDAO();
             int totalCount = meetingDAO.getTotalCount();
             int totalPages = MeetingRequestMapper.totalPages(
                     totalCount, MeetingRecordDAO.getPageSize());
@@ -69,7 +83,6 @@ public class MeetingServlet extends HttpServlet {
                 return;
             }
 
-            MeetingRecordDAO meetingDAO = new MeetingRecordDAO();
             MeetingRecordDTO meeting = meetingDAO.getMeetingRecord(meetingId);
 
             if (meeting != null) {
@@ -82,7 +95,6 @@ public class MeetingServlet extends HttpServlet {
                     sendBadRequest(request, response, exception);
                     return;
                 }
-                MeetingCommentDAO commentDAO = new MeetingCommentDAO();
                 MeetingCommentPage commentPage = commentDAO.getCommentPage(
                         meetingId, commentBefore, MeetingCommentDAO.PAGE_SIZE);
                 List<MeetingCommentDTO> comments = commentPage.getComments();
@@ -112,7 +124,7 @@ public class MeetingServlet extends HttpServlet {
                 return;
             }
 
-            MeetingRecordDTO meeting = new MeetingRecordDAO().getMeetingRecord(meetingId);
+            MeetingRecordDTO meeting = meetingDAO.getMeetingRecord(meetingId);
             if (meeting != null) {
                 // 상세 조회 결과에 포함된 작성자 ID를 재사용해 추가 SELECT를 피한다.
                 if (Objects.equals(meeting.getAuthorId(), user.getUserId())) {
@@ -153,7 +165,7 @@ public class MeetingServlet extends HttpServlet {
                 return;
             }
 
-            boolean success = new MeetingRecordDAO().addMeetingRecord(meeting);
+            boolean success = meetingDAO.addMeetingRecord(meeting);
             if (success) {
                 session.setAttribute("message", "회의록이 성공적으로 등록되었습니다.");
             } else {
@@ -171,7 +183,6 @@ public class MeetingServlet extends HttpServlet {
             }
 
             long meetingId = meeting.getMeetingId();
-            MeetingRecordDAO meetingDAO = new MeetingRecordDAO();
             boolean success = meetingDAO.updateMeetingRecordForAuthor(
                     meeting, user.getUserId());
             if (success) {
@@ -193,7 +204,6 @@ public class MeetingServlet extends HttpServlet {
                 return;
             }
 
-            MeetingRecordDAO meetingDAO = new MeetingRecordDAO();
             boolean success = meetingDAO.deleteMeetingRecordForAuthor(
                     meetingId, user.getUserId());
             if (success) {

@@ -26,14 +26,23 @@ public class TroubleshootingServlet extends HttpServlet {
     private final TroubleshootingRequestMapper requestMapper =
             new TroubleshootingRequestMapper();
     private final TroubleshootingDAO troubleshootingDAO;
+    private final CustomerDAO customerDAO;
 
     public TroubleshootingServlet() {
-        this(new TroubleshootingDAO());
+        this(new TroubleshootingDAO(), new CustomerDAO());
     }
 
     TroubleshootingServlet(TroubleshootingDAO troubleshootingDAO) {
+        this(troubleshootingDAO, new CustomerDAO());
+    }
+
+    TroubleshootingServlet(
+            TroubleshootingDAO troubleshootingDAO,
+            CustomerDAO customerDAO) {
         this.troubleshootingDAO = Objects.requireNonNull(
                 troubleshootingDAO, "troubleshootingDAO");
+        this.customerDAO = Objects.requireNonNull(
+                customerDAO, "customerDAO");
     }
 
     @Override
@@ -86,7 +95,6 @@ public class TroubleshootingServlet extends HttpServlet {
 
         } else if ("add".equals(viewType)) {
             // 등록 폼
-            CustomerDAO customerDAO = new CustomerDAO();
             List<CustomerDTO> customerList = customerDAO.getAllCustomers("", "ASC");
             request.setAttribute("customerList", customerList);
             request.setAttribute("viewType", "add");
@@ -131,7 +139,6 @@ public class TroubleshootingServlet extends HttpServlet {
                     troubleshootingDAO.getTroubleshootingById(id);
             if (troubleshooting != null) {
                 if (isOwner(troubleshooting, user)) {
-                    CustomerDAO customerDAO = new CustomerDAO();
                     List<CustomerDTO> customerList =
                             customerDAO.getAllCustomers("", "ASC");
 

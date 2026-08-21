@@ -10,9 +10,19 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Objects;
 
 public class CommentServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private final MeetingCommentDAO commentDAO;
+
+    public CommentServlet() {
+        this(new MeetingCommentDAO());
+    }
+
+    CommentServlet(MeetingCommentDAO commentDAO) {
+        this.commentDAO = Objects.requireNonNull(commentDAO, "commentDAO");
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -28,7 +38,6 @@ public class CommentServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        MeetingCommentDAO commentDAO = new MeetingCommentDAO();
         if ("add".equals(action)) {
             handleAddComment(request, response, user, commentDAO);
         } else if ("update".equals(action)) {

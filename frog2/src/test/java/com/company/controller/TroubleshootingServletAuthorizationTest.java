@@ -3,8 +3,11 @@ package com.company.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.company.model.CustomerDAO;
+import com.company.model.CustomerDTO;
 import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
 import com.company.model.PageResult;
@@ -20,6 +23,28 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class TroubleshootingServletAuthorizationTest {
+    @Test
+    void addFormUsesTheInjectedCustomerDao() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        CustomerDTO customer = new CustomerDTO();
+        customer.setCustomerName("Acme");
+        customerDAO.customers = List.of(customer);
+        TroubleshootingServlet servlet = new TroubleshootingServlet(
+                new StubTroubleshootingDAO(), customerDAO);
+        RequestFixture request =
+                new RequestFixture(user("owner-1", "Owner"), "GET");
+        request.parameters.put("view", "add");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(1, customerDAO.calls);
+        assertSame(customerDAO.customers,
+                request.attributes.get("customerList"));
+        assertEquals(
+                "/troubleshooting/troubleshooting_add.jsp",
+                request.forwardedPath);
+    }
+
     @Test
     void listUsesBoundedPageAndExposesPaginationMetadata()
             throws Exception {
@@ -230,6 +255,18 @@ class TroubleshootingServletAuthorizationTest {
                 int id, String creatorUserId) {
             lastDeleteOwnerId = creatorUserId;
             return mutationSucceeds;
+        }
+    }
+
+    private static final class StubCustomerDAO extends CustomerDAO {
+        private List<CustomerDTO> customers = List.of();
+        private int calls;
+
+        @Override
+        public List<CustomerDTO> getAllCustomers(
+                String sortField, String sortDirection) {
+            calls++;
+            return customers;
         }
     }
 

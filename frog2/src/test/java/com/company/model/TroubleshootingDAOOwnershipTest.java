@@ -31,6 +31,8 @@ class TroubleshootingDAOOwnershipTest {
                 "work_period, creator_user_id, creator, support_type"));
         assertEquals("owner-1", insert.parameters.get(7));
         assertEquals("Same Name", insert.parameters.get(8));
+        assertEquals(1, jdbc.statementCloseCount);
+        assertEquals(1, jdbc.closeCount);
     }
 
     @Test
@@ -58,6 +60,8 @@ class TroubleshootingDAOOwnershipTest {
                 delete.sql);
         assertEquals(7, delete.parameters.get(1));
         assertEquals("owner-1", delete.parameters.get(2));
+        assertEquals(2, jdbc.statementCloseCount);
+        assertEquals(2, jdbc.closeCount);
     }
 
     @Test
@@ -95,6 +99,8 @@ class TroubleshootingDAOOwnershipTest {
         assertTrue(jdbc.statements.getFirst().sql.contains(
                 "updated_date, creator_user_id "
                         + "FROM troubleshooting WHERE id = ?"));
+        assertEquals(1, jdbc.statementCloseCount);
+        assertEquals(1, jdbc.closeCount);
     }
 
     private static TroubleshootingDTO troubleshooting() {
@@ -112,6 +118,7 @@ class TroubleshootingDAOOwnershipTest {
         private final boolean columnAvailable;
         private int openCount;
         private int closeCount;
+        private int statementCloseCount;
         private Map<String, Object> queryRow;
 
         private FakeJdbc(boolean columnAvailable) {
@@ -163,7 +170,10 @@ class TroubleshootingDAOOwnershipTest {
                         }
                         case "executeUpdate" -> 1;
                         case "executeQuery" -> resultSet(queryRow);
-                        case "close" -> null;
+                        case "close" -> {
+                            statementCloseCount++;
+                            yield null;
+                        }
                         default -> defaultValue(call.getReturnType());
                     });
         }
