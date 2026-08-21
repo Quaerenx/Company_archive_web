@@ -90,31 +90,20 @@ public class MeetingCommentDAO {
     }
 
     public boolean addComment(MeetingCommentDTO comment) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        boolean success = false;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "INSERT INTO meeting_comments (meeting_id, content, author_id, author_name) " +
-                        "VALUES (?, ?, ?, ?)";
-
-            pstmt = conn.prepareStatement(sql);
+        String sql = "INSERT INTO meeting_comments "
+                + "(meeting_id, content, author_id, author_name) "
+                + "VALUES (?, ?, ?, ?)";
+        try (Connection conn = connectionProvider.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, comment.getMeetingId());
             pstmt.setString(2, comment.getContent());
             pstmt.setString(3, comment.getAuthorId());
             pstmt.setString(4, comment.getAuthorName());
 
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
         }
-
-        return success;
     }
 
     public boolean updateCommentForAuthor(

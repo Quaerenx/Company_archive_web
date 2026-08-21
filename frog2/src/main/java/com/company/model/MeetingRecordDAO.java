@@ -29,78 +29,55 @@ public class MeetingRecordDAO {
 
     public List<MeetingRecordDTO> getMeetingRecords(int page) {
         List<MeetingRecordDTO> records = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-            pstmt = conn.prepareStatement(LIST_SQL);
+        try (Connection conn = connectionProvider.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(LIST_SQL)) {
             pstmt.setInt(1, PAGE_SIZE);
             pstmt.setInt(2, offsetForPage(page));
-            rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    MeetingRecordDTO record = new MeetingRecordDTO();
+                    record.setMeetingId(rs.getLong("meeting_id"));
+                    record.setTitle(rs.getString("title"));
+                    record.setMeetingType(rs.getString("meeting_type"));
+                    record.setMeetingDatetime(rs.getTimestamp("meeting_datetime"));
+                    record.setAuthorName(rs.getString("author_name"));
 
-            while (rs.next()) {
-                MeetingRecordDTO record = new MeetingRecordDTO();
-                record.setMeetingId(rs.getLong("meeting_id"));
-                record.setTitle(rs.getString("title"));
-                record.setMeetingType(rs.getString("meeting_type"));
-                record.setMeetingDatetime(rs.getTimestamp("meeting_datetime"));
-                record.setAuthorName(rs.getString("author_name"));
-
-                records.add(record);
+                    records.add(record);
+                }
             }
-        } catch (SQLException  e) {
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
         }
 
         return records;
     }
 
     public int getTotalCount() {
-        int count = 0;
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "SELECT COUNT(*) FROM meeting_records";
-            pstmt = conn.prepareStatement(sql);
-            rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                count = rs.getInt(1);
+        String sql = "SELECT COUNT(*) FROM meeting_records";
+        try (Connection conn = connectionProvider.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                ResultSet rs = pstmt.executeQuery()) {
+            if (!rs.next()) {
+                return 0;
             }
-        } catch (SQLException  e) {
+            return rs.getInt(1);
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
         }
-
-        return count;
     }
 
     public MeetingRecordDTO getMeetingRecord(Long meetingId) {
-        MeetingRecordDTO record = null;
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DBConnection.getConnection();
-
-            String selectSql = "SELECT meeting_id, title, meeting_datetime, meeting_type, "
-                    + "content, author_id, author_name, view_count, created_at, updated_at "
-                    + "FROM meeting_records WHERE meeting_id = ?";
-            pstmt = conn.prepareStatement(selectSql);
+        String selectSql = "SELECT meeting_id, title, meeting_datetime, meeting_type, "
+                + "content, author_id, author_name, view_count, created_at, updated_at "
+                + "FROM meeting_records WHERE meeting_id = ?";
+        try (Connection conn = connectionProvider.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
             pstmt.setLong(1, meetingId);
-            rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                record = new MeetingRecordDTO();
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                MeetingRecordDTO record = new MeetingRecordDTO();
                 record.setMeetingId(rs.getLong("meeting_id"));
                 record.setTitle(rs.getString("title"));
                 record.setMeetingDatetime(rs.getTimestamp("meeting_datetime"));
@@ -111,27 +88,19 @@ public class MeetingRecordDAO {
                 record.setViewCount(rs.getInt("view_count"));
                 record.setCreatedAt(rs.getTimestamp("created_at"));
                 record.setUpdatedAt(rs.getTimestamp("updated_at"));
+                return record;
             }
-        } catch (SQLException  e) {
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
         }
-
-        return record;
     }
 
     public boolean addMeetingRecord(MeetingRecordDTO record) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        boolean success = false;
-
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "INSERT INTO meeting_records (title, meeting_datetime, meeting_type, content, author_id, author_name) " +
-                        "VALUES (?, ?, ?, ?, ?, ?)";
-
-            pstmt = conn.prepareStatement(sql);
+        String sql = "INSERT INTO meeting_records "
+                + "(title, meeting_datetime, meeting_type, content, author_id, author_name) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection conn = connectionProvider.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, record.getTitle());
             pstmt.setTimestamp(2, record.getMeetingDatetime());
             pstmt.setString(3, record.getMeetingType());
@@ -139,16 +108,10 @@ public class MeetingRecordDAO {
             pstmt.setString(5, record.getAuthorId());
             pstmt.setString(6, record.getAuthorName());
 
-            int rowsAffected = pstmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-        } catch (SQLException  e) {
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
             throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(pstmt, conn);
         }
-
-        return success;
     }
 
     public boolean updateMeetingRecordForAuthor(

@@ -15,7 +15,11 @@ class DaoConnectionProviderContractTest {
     void injectableDaosNeverBypassTheirConnectionProvider()
             throws Exception {
         for (String file : new String[] {
-                "MaintenanceRecordDAO.java", "CustomerDAO.java"
+                "MaintenanceRecordDAO.java",
+                "CustomerDAO.java",
+                "MeetingRecordDAO.java",
+                "MeetingCommentDAO.java",
+                "UserVmHostDAO.java"
         }) {
             String source = Files.readString(MODEL_SOURCE.resolve(file));
 

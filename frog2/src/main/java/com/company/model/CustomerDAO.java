@@ -369,17 +369,9 @@ public class CustomerDAO {
                     + "node_count = ?, license_info = ?, main_manager = ?, sub_manager = ?, said = ?, customer_type = ? "
                     + "WHERE customer_name = ? AND is_deleted = 1";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                setStringOrNull(statement, 1, customer.getDbName());
-                setStringOrNull(statement, 2, customer.getVerticaVersion());
-                setStringOrNull(statement, 3, customer.getMode());
-                setStringOrNull(statement, 4, customer.getOs());
-                setStringOrNull(statement, 5, customer.getNodes());
-                setStringOrNull(statement, 6, customer.getLicenseSize());
-                setStringOrNull(statement, 7, customer.getManagerName());
-                setStringOrNull(statement, 8, customer.getSubManagerName());
-                setStringOrNull(statement, 9, customer.getSaid());
-                setStringOrNull(statement, 10, customer.getCustomerType());
-                statement.setString(11, customer.getCustomerName());
+                int nextParameter = bindMutableCustomerFields(
+                        statement, 1, customer);
+                statement.setString(nextParameter, customer.getCustomerName());
                 return statement.executeUpdate() > 0;
             }
         } catch (SQLException  e) {
@@ -394,16 +386,7 @@ public class CustomerDAO {
                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, customer.getCustomerName());
-                setStringOrNull(statement, 2, customer.getDbName());
-                setStringOrNull(statement, 3, customer.getVerticaVersion());
-                setStringOrNull(statement, 4, customer.getMode());
-                setStringOrNull(statement, 5, customer.getOs());
-                setStringOrNull(statement, 6, customer.getNodes());
-                setStringOrNull(statement, 7, customer.getLicenseSize());
-                setStringOrNull(statement, 8, customer.getManagerName());
-                setStringOrNull(statement, 9, customer.getSubManagerName());
-                setStringOrNull(statement, 10, customer.getSaid());
-                setStringOrNull(statement, 11, customer.getCustomerType());
+                bindMutableCustomerFields(statement, 2, customer);
                 return statement.executeUpdate() > 0;
             }
         } catch (SQLException  e) {
@@ -425,7 +408,24 @@ public class CustomerDAO {
         }
     }
 
-    // 빈 문자열을 NULL로 처리하는 헬퍼 메서드
+    private int bindMutableCustomerFields(
+            PreparedStatement statement,
+            int startIndex,
+            CustomerDTO customer) throws SQLException {
+        int parameter = startIndex;
+        setStringOrNull(statement, parameter++, customer.getDbName());
+        setStringOrNull(statement, parameter++, customer.getVerticaVersion());
+        setStringOrNull(statement, parameter++, customer.getMode());
+        setStringOrNull(statement, parameter++, customer.getOs());
+        setStringOrNull(statement, parameter++, customer.getNodes());
+        setStringOrNull(statement, parameter++, customer.getLicenseSize());
+        setStringOrNull(statement, parameter++, customer.getManagerName());
+        setStringOrNull(statement, parameter++, customer.getSubManagerName());
+        setStringOrNull(statement, parameter++, customer.getSaid());
+        setStringOrNull(statement, parameter++, customer.getCustomerType());
+        return parameter;
+    }
+
     private static CustomerDTO mapCustomer(ResultSet resultSet)
             throws SQLException {
         CustomerDTO customer = new CustomerDTO();

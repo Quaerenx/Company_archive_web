@@ -2,9 +2,11 @@ package com.company.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -91,6 +93,105 @@ class DaoInjectedConnectionBehaviorTest {
                 "INSERT INTO vertica_customer_detail"));
         assertTrue(jdbc.statements.get(2).sql.contains(
                 "SET is_deleted = 0"));
+        assertEquals("archive", jdbc.statements.get(0).parameters.get(1));
+        assertEquals("정기점검 계약 고객사",
+                jdbc.statements.get(0).parameters.get(10));
+        assertEquals("Acme", jdbc.statements.get(0).parameters.get(11));
+        assertEquals("Acme", jdbc.statements.get(1).parameters.get(1));
+        assertEquals("archive", jdbc.statements.get(1).parameters.get(2));
+        assertEquals("정기점검 계약 고객사",
+                jdbc.statements.get(1).parameters.get(11));
+    }
+
+    @Test
+    void meetingRecordReadsAndCreateUseInjectedConnections() {
+        Timestamp meetingTime = Timestamp.valueOf("2026-08-22 09:30:00");
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(meetingRow(17L, meetingTime));
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 1));
+        jdbc.enqueue(meetingDetailRow(17L, meetingTime));
+        jdbc.enqueueUpdate(1);
+        MeetingRecordDAO dao = new MeetingRecordDAO(jdbc::open);
+
+        List<MeetingRecordDTO> records = dao.getMeetingRecords(1);
+        int count = dao.getTotalCount();
+        MeetingRecordDTO detail = dao.getMeetingRecord(17L);
+        assertTrue(dao.addMeetingRecord(meetingRecord(meetingTime)));
+
+        assertEquals(17L, records.getFirst().getMeetingId());
+        assertEquals(1, count);
+        assertEquals("Meeting detail", detail.getContent());
+        assertEquals(4, jdbc.openCount);
+        assertEquals(4, jdbc.closeCount);
+        assertEquals(MeetingRecordDAO.getPageSize(),
+                jdbc.statements.get(0).parameters.get(1));
+        assertEquals(0, jdbc.statements.get(0).parameters.get(2));
+        assertEquals(17L, jdbc.statements.get(2).parameters.get(1));
+        assertTrue(jdbc.statements.get(3).sql.startsWith(
+                "INSERT INTO meeting_records"));
+    }
+
+    @Test
+    void meetingCommentCreateUsesInjectedConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueueUpdate(1);
+        MeetingCommentDAO dao = new MeetingCommentDAO(jdbc::open);
+        MeetingCommentDTO comment = new MeetingCommentDTO();
+        comment.setMeetingId(17L);
+        comment.setContent("Follow-up");
+        comment.setAuthorId("user-17");
+        comment.setAuthorName("Alice");
+
+        assertTrue(dao.addComment(comment));
+
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+        assertEquals(17L, jdbc.statements.getFirst().parameters.get(1));
+        assertEquals("Follow-up", jdbc.statements.getFirst().parameters.get(2));
+    }
+
+    @Test
+    void userVmHostReadsAndDeleteUseInjectedConnections() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(userVmHostRow("192.168.40.17"));
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 1));
+        jdbc.enqueue(userVmHostRow("192.168.40.17"));
+        jdbc.enqueueUpdate(1);
+        UserVmHostDAO dao = new UserVmHostDAO(jdbc::open);
+
+        List<UserVmHostDTO> hosts = dao.getActiveHostsByOwner("user-17");
+        int count = dao.getActiveHostCountByOwner("user-17");
+        UserVmHostDTO host = dao.getHostByIpAndOwner(
+                "192.168.40.17", "user-17");
+        boolean deleted = dao.deleteByIpAndOwner(
+                "192.168.40.17", "user-17");
+
+        assertEquals("192.168.40.17", hosts.getFirst().getIp());
+        assertEquals(1, count);
+        assertEquals("Test host", host.getPurpose());
+        assertTrue(deleted);
+        assertEquals(4, jdbc.openCount);
+        assertEquals(4, jdbc.closeCount);
+    }
+
+    @Test
+    void userVmHostInsertKeepsAllChecksOnOneInjectedConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 0));
+        jdbc.enqueueUpdate(1);
+        UserVmHostDAO dao = new UserVmHostDAO(jdbc::open);
+        UserVmHostDTO host = userVmHost("192.168.40.18");
+
+        assertNull(dao.save(host, null));
+
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+        assertEquals(3, jdbc.statements.size());
+        assertTrue(jdbc.statements.get(0).sql.contains("WHERE ip = ?"));
+        assertTrue(jdbc.statements.get(1).sql.startsWith("SELECT COUNT(*)"));
+        assertTrue(jdbc.statements.get(2).sql.startsWith(
+                "INSERT INTO user_vm_hosts"));
     }
 
     private static java.util.Map<String, Object> maintenanceRow(
@@ -140,5 +241,69 @@ class DaoInjectedConnectionBehaviorTest {
         customer.setSaid("SAID");
         customer.setCustomerType("정기점검 계약 고객사");
         return customer;
+    }
+
+    private static java.util.Map<String, Object> meetingRow(
+            long id, Timestamp meetingTime) {
+        return PaginationJdbcFixture.row(
+                "meeting_id", id,
+                "title", "Weekly meeting",
+                "meeting_type", "weekly",
+                "author_name", "Alice",
+                "meeting_datetime", meetingTime);
+    }
+
+    private static java.util.Map<String, Object> meetingDetailRow(
+            long id, Timestamp meetingTime) {
+        return PaginationJdbcFixture.row(
+                "meeting_id", id,
+                "title", "Weekly meeting",
+                "meeting_datetime", meetingTime,
+                "meeting_type", "weekly",
+                "content", "Meeting detail",
+                "author_id", "user-17",
+                "author_name", "Alice",
+                "view_count", 0,
+                "created_at", meetingTime,
+                "updated_at", meetingTime);
+    }
+
+    private static MeetingRecordDTO meetingRecord(Timestamp meetingTime) {
+        MeetingRecordDTO record = new MeetingRecordDTO();
+        record.setTitle("Weekly meeting");
+        record.setMeetingDatetime(meetingTime);
+        record.setMeetingType("weekly");
+        record.setContent("Meeting detail");
+        record.setAuthorId("user-17");
+        record.setAuthorName("Alice");
+        return record;
+    }
+
+    private static java.util.Map<String, Object> userVmHostRow(String ip) {
+        Timestamp now = Timestamp.valueOf("2026-08-22 10:00:00");
+        return PaginationJdbcFixture.row(
+                "ip", ip,
+                "owner_user_id", "user-17",
+                "owner_user_name", "Alice",
+                "purpose", "Test host",
+                "os_info", "Linux",
+                "vertica_version", "23.4",
+                "remote_host", "node-a",
+                "note", null,
+                "status", "ACTIVE",
+                "created_at", now,
+                "updated_at", now);
+    }
+
+    private static UserVmHostDTO userVmHost(String ip) {
+        UserVmHostDTO host = new UserVmHostDTO();
+        host.setIp(ip);
+        host.setOwnerUserId("user-17");
+        host.setOwnerUserName("Alice");
+        host.setPurpose("Test host");
+        host.setOsInfo("Linux");
+        host.setVerticaVersion("23.4");
+        host.setRemoteHost("node-a");
+        return host;
     }
 }
