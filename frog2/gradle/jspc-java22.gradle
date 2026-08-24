@@ -3,7 +3,7 @@ import java.util.jar.JarFile
 def jspcCatalinaHome = providers.gradleProperty('frog2JspcCatalinaHome')
         .orElse('/opt/tomcat-dev-home/current')
 def expectedJasperVersion = providers.gradleProperty('frog2JspcJasperVersion')
-        .orElse('10.1.57')
+        .orElse('10.1.59')
 def jspcRoot = layout.buildDirectory.dir('jspc')
 def jspcWebapp = jspcRoot.map { it.dir('webapp') }
 def jspcGeneratedSources = jspcRoot.map { it.dir('generated') }

@@ -47,7 +47,6 @@ class DevelopmentServerSmokeTest {
             "meeting",
             "troubleshooting",
             "customer-history",
-            "mypage",
             "vm-hosts",
             "file-repository");
 

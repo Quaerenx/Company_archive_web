@@ -4,8 +4,8 @@
 
 Detect unintended changes to the authenticated Archive layout after shared CSS edits.
 The baseline covers login, dashboard, customer list and detail, maintenance history,
-meetings, troubleshooting, file repository, and my page at 360, 390, 768, 1024,
-and 1440 pixel widths.
+meetings, troubleshooting, customer history, file repository, and my page at 360,
+390, 768, 1024, and 1440 pixel widths.
 
 ## Safety contract
 
@@ -69,7 +69,7 @@ failure disappear.
 
 ## Current status
 
-The route manifest and comparison runner cover 45 views: nine release screens at five
+The route manifest and comparison runner cover 50 views: ten release screens at five
 widths. `capture-metrics.json` records only route aliases, viewport dimensions,
 document scroll width, and console error counts. Baselines are stored outside Git and
 should be created only from a reviewed development deployment.

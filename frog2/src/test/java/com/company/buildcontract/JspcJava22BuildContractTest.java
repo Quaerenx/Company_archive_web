@@ -25,7 +25,7 @@ class JspcJava22BuildContractTest {
         assertTrue(jspcBuild.contains("tasks.register('generateJspSources', JavaExec)"));
         assertTrue(jspcBuild.contains("mainClass = 'org.apache.jasper.JspC'"));
         assertTrue(jspcBuild.contains("orElse('/opt/tomcat-dev-home/current')"));
-        assertTrue(jspcBuild.contains("orElse('10.1.57')"));
+        assertTrue(jspcBuild.contains("orElse('10.1.59')"));
         assertFalse(
                 jspcBuild.contains("environmentVariable('CATALINA_HOME')"),
                 "JspC must not silently select the production Tomcat from CATALINA_HOME");
