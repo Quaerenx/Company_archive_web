@@ -17,8 +17,18 @@
         <c:param name="view" value="add"/>
         <c:param name="customerName" value="${customerName}"/>
     </c:url>
+    <c:url value="/customers" var="customerDetailUrl">
+        <c:param name="view" value="detail" />
+        <c:param name="customerName" value="${customerName}" />
+    </c:url>
     <t:pageHeader>
-        <jsp:attribute name="title"><i class="fas fa-building"></i> <c:out value="${customerName}" /></jsp:attribute>
+        <jsp:attribute name="title">
+            <a class="maintenance-customer-title-link"
+               href="<c:out value='${customerDetailUrl}' />">
+                <i class="fas fa-building" aria-hidden="true"></i>
+                <span><c:out value="${customerName}" /></span>
+            </a>
+        </jsp:attribute>
         <jsp:attribute name="subtitle">
             <c:if test="${not empty customer}">
                 <!-- <span class="detail-item"><i class="fas fa-calendar"></i> 도입년도: ${customer.firstIntroductionYear}</span>  -->
@@ -227,7 +237,6 @@
                                 <th scope="col">이전 대비</th>
                                 <th scope="col" class="history-col-inspector">점검자</th>
                                 <th scope="col" class="history-col-note">점검 내용</th>
-                                <th scope="col"><span class="sr-only">상세</span></th>
                             </tr>
                         </thead>
                         <c:forEach var="row" items="${historyRows}">
@@ -246,18 +255,21 @@
                                 </c:otherwise>
                             </c:choose>
                             <tbody class="history-record-group">
-                                <tr class="history-summary-row">
+                                <tr class="history-summary-row" data-ui-disclosure-row>
                                     <th class="history-date-cell" scope="row">
-                                        <a class="history-date-link"
-                                           href="<c:out value='${maintenanceEditUrl}' />">
+                                        <button type="button"
+                                                class="history-row-toggle"
+                                                data-ui-disclosure-toggle
+                                                aria-expanded="false"
+                                                aria-controls="${row.detailId}"
+                                                aria-label="${inspectionDateLabel} 정기점검 상세">
                                             <c:choose>
                                                 <c:when test="${not empty row.record.inspectionDate}">
                                                     <fmt:formatDate value="${row.record.inspectionDate}" pattern="yyyy.MM.dd" />
                                                 </c:when>
                                                 <c:otherwise>—</c:otherwise>
                                             </c:choose>
-                                            <span class="sr-only">정기점검 이력 수정</span>
-                                        </a>
+                                        </button>
                                     </th>
                                     <td class="history-version-cell">
                                         <c:choose>
@@ -311,90 +323,81 @@
                                     <td class="history-note-summary-cell history-col-note">
                                         <c:out value="${row.noteSummary}" />
                                     </td>
-                                    <td class="history-detail-toggle-cell">
-                                        <button type="button"
-                                                class="history-detail-toggle"
-                                                data-history-toggle
-                                                aria-expanded="false"
-                                                aria-controls="${row.detailId}"
-                                                aria-label="${inspectionDateLabel} 정기점검 상세 펼치기"
-                                                data-expand-label="${inspectionDateLabel} 정기점검 상세 펼치기"
-                                                data-collapse-label="${inspectionDateLabel} 정기점검 상세 접기">
-                                            <i class="fas fa-chevron-down history-detail-toggle__icon" aria-hidden="true"></i>
-                                        </button>
-                                    </td>
                                 </tr>
                                 <tr id="${row.detailId}" class="history-detail-row" hidden>
-                                    <td class="history-detail-cell" colspan="7">
-                                        <div class="history-detail-content">
-                                            <section class="history-detail-section history-detail-summary"
-                                                     aria-label="라이선스 요약">
-                                                <h3>라이선스 요약</h3>
-                                                <dl class="history-detail-metrics">
-                                                    <div>
-                                                        <dt>라이선스 사용량</dt>
-                                                        <dd>
-                                                            <c:choose>
-                                                                <c:when test="${not empty row.usedTerabytes and not empty row.capacityTerabytes}">
-                                                                    <c:out value="${row.usedTerabytes}" /> / <c:out value="${row.capacityTerabytes}" /> TB
-                                                                </c:when>
-                                                                <c:when test="${not empty row.usedTerabytes}">
-                                                                    <c:out value="${row.usedTerabytes}" /> TB
-                                                                </c:when>
-                                                                <c:when test="${not empty row.capacityTerabytes}">
-                                                                    한도 <c:out value="${row.capacityTerabytes}" /> TB
-                                                                </c:when>
-                                                                <c:otherwise>—</c:otherwise>
-                                                            </c:choose>
-                                                        </dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt>라이선스 사용률</dt>
-                                                        <dd><c:out value="${row.usagePercentage}" default="—" /><c:if test="${not empty row.usagePercentage}">%</c:if></dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt>전월 사용률</dt>
-                                                        <dd><c:out value="${row.previousUsagePercentage}" default="—" /><c:if test="${not empty row.previousUsagePercentage}">%</c:if></dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt>전월 대비</dt>
-                                                        <dd><c:out value="${row.deltaLabel}" /></dd>
-                                                    </div>
-                                                </dl>
-                                            </section>
-                                            <div class="history-detail-lower">
-                                                <section class="history-detail-section history-detail-note-section">
-                                                    <h3>점검 메모</h3>
-                                                    <div class="history-detail-note"><c:choose><c:when test="${not empty row.record.note}"><c:out value="${row.record.note}" /></c:when><c:otherwise>특이사항 없음</c:otherwise></c:choose></div>
-                                                </section>
-                                                <section class="history-detail-section history-detail-meta-section">
-                                                    <h3>등록 정보</h3>
-                                                    <dl class="history-detail-meta">
+                                    <td class="history-detail-cell" colspan="6">
+                                        <div class="history-detail-motion"
+                                             data-ui-disclosure-content>
+                                            <div class="history-detail-content">
+                                                <section class="history-detail-section history-detail-summary"
+                                                         aria-label="라이선스 요약">
+                                                    <h3>라이선스 요약</h3>
+                                                    <dl class="history-detail-metrics">
                                                         <div>
-                                                            <dt>점검자</dt>
-                                                            <dd><c:out value="${row.record.inspectorName}" default="—" /></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt>등록 일시</dt>
+                                                            <dt>라이선스 사용량</dt>
                                                             <dd>
                                                                 <c:choose>
-                                                                    <c:when test="${not empty row.record.createdAt}">
-                                                                        <fmt:formatDate value="${row.record.createdAt}" pattern="yyyy.MM.dd HH:mm" />
+                                                                    <c:when test="${not empty row.usedTerabytes and not empty row.capacityTerabytes}">
+                                                                        <c:out value="${row.usedTerabytes}" /> / <c:out value="${row.capacityTerabytes}" /> TB
+                                                                    </c:when>
+                                                                    <c:when test="${not empty row.usedTerabytes}">
+                                                                        <c:out value="${row.usedTerabytes}" /> TB
+                                                                    </c:when>
+                                                                    <c:when test="${not empty row.capacityTerabytes}">
+                                                                        한도 <c:out value="${row.capacityTerabytes}" /> TB
                                                                     </c:when>
                                                                     <c:otherwise>—</c:otherwise>
                                                                 </c:choose>
                                                             </dd>
                                                         </div>
-                                                        <c:if test="${not empty row.record.updatedAt}">
-                                                            <div>
-                                                                <dt>수정 일시</dt>
-                                                                <dd><fmt:formatDate value="${row.record.updatedAt}" pattern="yyyy.MM.dd HH:mm" /></dd>
-                                                            </div>
-                                                        </c:if>
+                                                        <div>
+                                                            <dt>라이선스 사용률</dt>
+                                                            <dd><c:out value="${row.usagePercentage}" default="—" /><c:if test="${not empty row.usagePercentage}">%</c:if></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt>전월 사용률</dt>
+                                                            <dd><c:out value="${row.previousUsagePercentage}" default="—" /><c:if test="${not empty row.previousUsagePercentage}">%</c:if></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt>전월 대비</dt>
+                                                            <dd><c:out value="${row.deltaLabel}" /></dd>
+                                                        </div>
                                                     </dl>
-                                                    <a class="ui-button button--secondary button--sm"
-                                                       href="<c:out value='${maintenanceEditUrl}' />">이력 수정</a>
                                                 </section>
+                                                <div class="history-detail-lower">
+                                                    <section class="history-detail-section history-detail-note-section">
+                                                        <h3>점검 메모</h3>
+                                                        <div class="history-detail-note"><c:choose><c:when test="${not empty row.record.note}"><c:out value="${row.record.note}" /></c:when><c:otherwise>특이사항 없음</c:otherwise></c:choose></div>
+                                                    </section>
+                                                    <section class="history-detail-section history-detail-meta-section">
+                                                        <h3>등록 정보</h3>
+                                                        <dl class="history-detail-meta">
+                                                            <div>
+                                                                <dt>점검자</dt>
+                                                                <dd><c:out value="${row.record.inspectorName}" default="—" /></dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt>등록 일시</dt>
+                                                                <dd>
+                                                                    <c:choose>
+                                                                        <c:when test="${not empty row.record.createdAt}">
+                                                                            <fmt:formatDate value="${row.record.createdAt}" pattern="yyyy.MM.dd HH:mm" />
+                                                                        </c:when>
+                                                                        <c:otherwise>—</c:otherwise>
+                                                                    </c:choose>
+                                                                </dd>
+                                                            </div>
+                                                            <c:if test="${not empty row.record.updatedAt}">
+                                                                <div>
+                                                                    <dt>수정 일시</dt>
+                                                                    <dd><fmt:formatDate value="${row.record.updatedAt}" pattern="yyyy.MM.dd HH:mm" /></dd>
+                                                                </div>
+                                                            </c:if>
+                                                        </dl>
+                                                        <a class="ui-button button--secondary button--sm"
+                                                           href="<c:out value='${maintenanceEditUrl}' />">이력 수정</a>
+                                                    </section>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>

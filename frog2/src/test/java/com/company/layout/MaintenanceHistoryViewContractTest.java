@@ -25,6 +25,14 @@ class MaintenanceHistoryViewContractTest {
         assertTrue(page.contains(
                 "name=\"customerName\" value=\"${fn:escapeXml(customerName)}\""));
         assertTrue(page.contains(
+                "<c:url value=\"/customers\" var=\"customerDetailUrl\">"));
+        assertTrue(page.contains(
+                "<c:param name=\"view\" value=\"detail\" />"));
+        assertTrue(page.contains(
+                "class=\"maintenance-customer-title-link\""));
+        assertTrue(page.contains(
+                "href=\"<c:out value='${customerDetailUrl}' />\""));
+        assertTrue(page.contains(
                 "class=\"history-filter-form ui-table-toolbar ui-form ui-form--compact\""));
         assertTrue(page.contains("name=\"historyYear\""));
         assertTrue(page.contains("name=\"historyVersion\""));

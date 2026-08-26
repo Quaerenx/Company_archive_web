@@ -126,6 +126,12 @@ class LoginViewContractTest {
                         + "border-color:\\s*var\\(--color-login-field-border\\);[^}]*"
                         + "border-radius:\\s*var\\(--radius-xl\\);[^}]*"
                         + "min-block-size:\\s*52px;.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page #userId\\s*\\{[^}]*"
+                        + "font-family:\\s*var\\(--font-base\\);[^}]*"
+                        + "font-weight:\\s*500;[^}]*"
+                        + "letter-spacing:\\s*-0\\.01em;.*"));
+        assertFalse(styles.contains(".login-page #password {"));
         assertTrue(styles.contains(
                 ".login-page #loginForm .form-group > input:focus-visible {"));
         assertTrue(styles.matches(

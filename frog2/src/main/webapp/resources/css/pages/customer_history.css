@@ -137,40 +137,12 @@ body.page-customer-history .customer-history-table .col--status {
     transition: background-color var(--motion-fast) var(--motion-ease);
 }
 
-.customer-history-summary-row > td:first-child {
-    position: relative;
-}
-
-.customer-history-summary-row > td:first-child::before {
-    background: var(--color-divider);
-    border-radius: var(--radius-pill);
-    content: "";
-    inline-size: 2px;
-    inset-block: var(--space-8);
-    inset-inline-start: var(--space-4);
-    pointer-events: none;
-    position: absolute;
-    transition:
-        background-color var(--motion-fast) var(--motion-ease),
-        inline-size var(--motion-fast) var(--motion-ease);
-}
-
 .customer-history-summary-row:hover:not(.is-expanded) > td {
     background: var(--color-surface-hover);
 }
 
-.customer-history-summary-row:hover:not(.is-expanded) > td:first-child::before {
-    background: var(--color-border-strong);
-}
-
 .customer-history-summary-row:focus-within:not(.is-expanded) > td {
     background: var(--color-surface-selected);
-}
-
-.customer-history-summary-row:focus-within > td:first-child::before,
-.customer-history-summary-row.is-expanded > td:first-child::before {
-    background: var(--color-primary);
-    inline-size: 3px;
 }
 
 .customer-history-summary-row.is-expanded > td {
@@ -198,21 +170,7 @@ body.page-customer-history .customer-history-table .col--status {
 
 .customer-history-detail-row > td {
     background: var(--color-surface);
-    border-block-end: 1px solid var(--color-border);
-    border-block-start: 1px solid var(--color-border);
     padding: 0;
-    position: relative;
-}
-
-.customer-history-detail-row > td::before {
-    background: var(--color-primary);
-    border-radius: var(--radius-pill);
-    content: "";
-    inline-size: 3px;
-    inset-block: var(--space-8);
-    inset-inline-start: var(--space-4);
-    pointer-events: none;
-    position: absolute;
 }
 
 .customer-history-detail-row:hover > td {
@@ -220,6 +178,8 @@ body.page-customer-history .customer-history-table .col--status {
 }
 
 .customer-history-detail {
+    border-block-end: 1px solid var(--color-border);
+    border-block-start: 1px solid var(--color-border);
     display: grid;
     gap: var(--space-16);
     margin: 0;
@@ -437,37 +397,6 @@ body.page-customer-history .customer-history-table .col--status {
         gap: var(--space-8) var(--space-12);
         grid-template-columns: minmax(0, 1fr) auto;
         padding: var(--space-12);
-        position: relative;
-    }
-
-    body.page-customer-history .customer-history-summary-row::before {
-        background: var(--color-divider);
-        border-radius: var(--radius-pill);
-        content: "";
-        inline-size: 2px;
-        inset-block: var(--space-12);
-        inset-inline-start: var(--space-4);
-        pointer-events: none;
-        position: absolute;
-        transition:
-            background-color var(--motion-fast) var(--motion-ease),
-            inline-size var(--motion-fast) var(--motion-ease);
-    }
-
-    body.page-customer-history
-    .customer-history-summary-row:hover:not(.is-expanded)::before {
-        background: var(--color-border-strong);
-    }
-
-    body.page-customer-history .customer-history-summary-row:focus-within::before,
-    body.page-customer-history .customer-history-summary-row.is-expanded::before {
-        background: var(--color-primary);
-        inline-size: 3px;
-    }
-
-    body.page-customer-history
-    .customer-history-summary-row > td:first-child::before {
-        content: none;
     }
 
     body.page-customer-history .customer-history-table

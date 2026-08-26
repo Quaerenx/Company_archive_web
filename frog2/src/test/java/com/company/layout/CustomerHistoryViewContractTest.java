@@ -27,6 +27,7 @@ class CustomerHistoryViewContractTest {
         assertTrue(list.contains("<button type=\"button\""));
         assertTrue(list.contains("data-ui-disclosure-row"));
         assertTrue(list.contains("data-ui-disclosure-toggle"));
+        assertTrue(list.contains("data-ui-disclosure-content"));
         assertTrue(list.contains("aria-expanded=\"false\""));
         assertTrue(list.contains(
                 "<c:out value='${history.title}' /> 이력 상세"));
@@ -44,6 +45,8 @@ class CustomerHistoryViewContractTest {
         assertTrue(sharedScript.contains("[data-ui-disclosure-row]"));
         assertTrue(sharedScript.contains("[data-ui-disclosure-toggle]"));
         assertTrue(sharedScript.contains("toggleDisclosure"));
+        assertTrue(sharedScript.contains("animateDisclosure"));
+        assertTrue(sharedScript.contains("prefers-reduced-motion: reduce"));
         assertTrue(list.contains("data-ui-scroll-region"));
         assertTrue(list.contains(
                 "data-ui-scroll-label=\"고객사 히스토리 표\""));
@@ -99,18 +102,24 @@ class CustomerHistoryViewContractTest {
                 "body.page-customer-history .customer-history-table\n"
                         + "    .customer-history-summary-row > td"));
         assertTrue(styles.contains(".customer-history-summary-row > td"));
-        assertTrue(styles.contains(
+        assertFalse(styles.contains(
                 ".customer-history-summary-row > td:first-child::before"));
-        assertTrue(styles.contains(
+        assertFalse(styles.contains(
                 ".customer-history-summary-row:hover:not(.is-expanded) > td:first-child::before"));
-        assertTrue(styles.contains(
+        assertFalse(styles.contains(
                 ".customer-history-summary-row:focus-within > td:first-child::before"));
-        assertTrue(styles.contains("inset-inline-start: var(--space-4);"));
-        assertTrue(styles.contains(".customer-history-detail-row > td::before"));
-        assertTrue(styles.contains(".customer-history-summary-row::before"));
+        assertFalse(styles.contains(".customer-history-detail-row > td::before"));
+        assertFalse(styles.contains(".customer-history-summary-row::before"));
         assertFalse(styles.contains("box-shadow: inset"));
         assertTrue(styles.contains(
                 "border-block-start: 1px solid var(--color-border);"));
+        assertTrue(read("customer-history/customer_history_list.jsp").contains(
+                "class=\"customer-history-detail-motion\"\n"
+                        + "                                             data-ui-disclosure-content"));
+        assertFalse(styles.contains(
+                ".customer-history-detail-row > td {\n"
+                        + "    background: var(--color-surface);\n"
+                        + "    border-block-end"));
         assertTrue(styles.contains(".customer-history-detail-row:not([hidden])"));
         assertFalse(styles.contains("min-inline-size: 788px"));
         assertFalse(styles.contains(".customer-history-detail-toggle-icon"));

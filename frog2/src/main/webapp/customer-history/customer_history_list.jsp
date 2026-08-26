@@ -164,16 +164,19 @@
                                     class="customer-history-detail-row"
                                     hidden>
                                     <td colspan="5">
-                                        <dl class="customer-history-detail">
-                                            <div>
-                                                <dt>작업 내용</dt>
-                                                <dd><strong><c:out value="${history.title}" /></strong></dd>
-                                            </div>
-                                            <div>
-                                                <dt>조치사항</dt>
-                                                <dd><c:out value="${history.actionSummary}" /></dd>
-                                            </div>
-                                        </dl>
+                                        <div class="customer-history-detail-motion"
+                                             data-ui-disclosure-content>
+                                            <dl class="customer-history-detail">
+                                                <div>
+                                                    <dt>작업 내용</dt>
+                                                    <dd><strong><c:out value="${history.title}" /></strong></dd>
+                                                </div>
+                                                <div>
+                                                    <dt>조치사항</dt>
+                                                    <dd><c:out value="${history.actionSummary}" /></dd>
+                                                </div>
+                                            </dl>
+                                        </div>
                                     </td>
                                 </tr>
                             </c:forEach>

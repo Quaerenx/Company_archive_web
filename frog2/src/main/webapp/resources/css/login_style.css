@@ -112,6 +112,12 @@ body.login-page::after {
     padding-block: var(--space-20) var(--space-4);
 }
 
+.login-page #userId {
+    font-family: var(--font-base);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
 .login-page #loginForm .form-group > input:focus-visible {
     background: var(--color-login-field-focus);
     border-color: var(--color-login-action);

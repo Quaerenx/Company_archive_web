@@ -131,14 +131,8 @@ class MaintenanceFormAssetContractTest {
     void historyScriptSkipsChartRenderingWhenVendorIsUnavailable() throws Exception {
         String history = Files.readString(PAGE_SCRIPTS.resolve("maintenance_history.js"));
 
-        assertTrue(history.contains("function initializeHistoryDisclosures()"));
-        assertTrue(history.indexOf("initializeHistoryDisclosures();")
-                < history.indexOf("if (!usageSeries || usageSeries.length === 0) return;"));
-        assertTrue(history.contains("closest('[data-history-toggle]')"));
-        assertTrue(history.contains("getAttribute('aria-controls')"));
-        assertTrue(history.contains("detail.hidden = expanded"));
-        assertTrue(history.contains(
-                "toggle.setAttribute('aria-expanded', String(!expanded))"));
+        assertFalse(history.contains("initializeHistoryDisclosures"));
+        assertFalse(history.contains("data-history-toggle"));
         assertTrue(history.contains("typeof window.Chart !== 'function'"));
         assertTrue(history.contains("new window.Chart("));
         assertTrue(history.contains("usage: cssColor('--color-chart-usage')"));
@@ -177,7 +171,7 @@ class MaintenanceFormAssetContractTest {
 
         assertTrue(comparisonTable.contains(
                 "<caption class=\"sr-only\">"));
-        assertEquals(7, countOccurrences(
+        assertEquals(6, countOccurrences(
                 comparisonTable, "<th scope=\"col\""));
         assertTrue(comparisonTable.contains("점검일"));
         assertTrue(comparisonTable.contains("이전 대비"));
@@ -186,7 +180,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "<tbody class=\"history-record-group\">"));
         assertTrue(comparisonTable.contains(
-                "<tr class=\"history-summary-row\">"));
+                "<tr class=\"history-summary-row\" data-ui-disclosure-row>"));
         assertTrue(comparisonTable.contains(
                 "scope=\"row\""));
         assertTrue(comparisonTable.contains(
@@ -194,7 +188,13 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "<c:out value=\"${row.noteSummary}\" />"));
         assertTrue(comparisonTable.contains(
-                "data-history-toggle"));
+                "data-ui-disclosure-toggle"));
+        assertTrue(comparisonTable.contains(
+                "data-ui-disclosure-content"));
+        assertTrue(comparisonTable.contains(
+                "class=\"history-detail-motion\""));
+        assertTrue(comparisonTable.contains(
+                "class=\"history-detail-content\""));
         assertTrue(comparisonTable.contains("type=\"button\""));
         assertTrue(comparisonTable.contains("aria-expanded=\"false\""));
         assertTrue(comparisonTable.contains(
@@ -202,7 +202,10 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "<tr id=\"${row.detailId}\" class=\"history-detail-row\" hidden>"));
         assertTrue(comparisonTable.contains(
-                "<td class=\"history-detail-cell\" colspan=\"7\">"));
+                "<td class=\"history-detail-cell\" colspan=\"6\">"));
+        assertFalse(comparisonTable.contains("data-history-toggle"));
+        assertFalse(comparisonTable.contains("fa-chevron-down"));
+        assertFalse(comparisonTable.contains("history-detail-toggle-cell"));
         assertTrue(comparisonTable.contains(
                 "class=\"history-detail-metrics\""));
         assertTrue(comparisonTable.contains(
@@ -233,7 +236,7 @@ class MaintenanceFormAssetContractTest {
         String page = readWebapp("maintenance/maintenance_history.jsp");
 
         int detailStart = page.indexOf(
-                "<div class=\"history-detail-content\">");
+                "<div class=\"history-detail-content\"");
         int detailEnd = page.indexOf("</td>", detailStart);
         assertTrue(detailStart >= 0);
         assertTrue(detailEnd > detailStart);
@@ -337,6 +340,14 @@ class MaintenanceFormAssetContractTest {
                 ".maintenance-history .history-summary-row"));
         assertTrue(styles.contains(
                 "block-size: 60px;"));
+        assertTrue(styles.contains("cursor: pointer;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-row-toggle"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-license-cell"));
+        assertTrue(styles.contains("text-align: center;"));
+        assertTrue(styles.contains("text-align: left;"));
+        assertFalse(styles.contains(".history-detail-toggle__icon"));
         assertTrue(styles.contains(
                 ".maintenance-history .history-detail-cell"));
         assertTrue(styles.contains(

@@ -56,6 +56,29 @@ class StyleDeclaration {
     }
 }
 
+class FakeAnimation {
+    constructor(keyframes, options) {
+        this.cancelled = false;
+        this.keyframes = keyframes;
+        this.oncancel = null;
+        this.onfinish = null;
+        this.options = options;
+    }
+
+    cancel() {
+        this.cancelled = true;
+        if (typeof this.oncancel === 'function') {
+            this.oncancel();
+        }
+    }
+
+    finish() {
+        if (typeof this.onfinish === 'function') {
+            this.onfinish();
+        }
+    }
+}
+
 class FakeElement extends Element {
     constructor(document, options = {}) {
         super();
@@ -68,14 +91,23 @@ class FakeElement extends Element {
         this.isConnected = options.isConnected !== false;
         this.parentRow = options.parentRow || null;
         this.parentDisclosureRow = options.parentDisclosureRow || null;
+        this.disclosureContent = options.disclosureContent || null;
         this.disclosureToggle = options.disclosureToggle || null;
         this.interactive = options.interactive === true;
         this.workSurface = options.workSurface || null;
+        this.scrollHeight = options.scrollHeight || 0;
         this.scrollWidth = options.scrollWidth || 0;
         this.clientWidth = options.clientWidth || 0;
-        this.bounds = options.bounds || { bottom: 0 };
+        this.bounds = options.bounds || { bottom: 0, height: 0 };
         this.hidden = options.hidden === true;
         this.style = new StyleDeclaration();
+        this.animations = [];
+    }
+
+    animate(keyframes, options) {
+        const animation = new FakeAnimation(keyframes, options);
+        this.animations.push(animation);
+        return animation;
     }
 
     closest(selector) {
@@ -122,6 +154,9 @@ class FakeElement extends Element {
         }
         if (selector === '[data-ui-disclosure-toggle]') {
             return this.disclosureToggle;
+        }
+        if (selector === '[data-ui-disclosure-content]') {
+            return this.disclosureContent;
         }
         return null;
     }
@@ -255,6 +290,12 @@ function createHarness(options = {}) {
                 }
             };
         },
+        matchMedia(query) {
+            return {
+                matches: options.reducedMotion === true
+                    && query === '(prefers-reduced-motion: reduce)'
+            };
+        },
         location: {
             assign(url) {
                 assignedLocations.push(url);
@@ -333,6 +374,28 @@ function clickEvent(target) {
         shiftKey: false,
         target
     };
+}
+
+function createAnimatedDisclosureHarness(options = {}) {
+    const harness = createHarness(options);
+    const content = new FakeElement(harness.document, { scrollHeight: 144 });
+    const detail = new FakeElement(harness.document, {
+        disclosureContent: content,
+        hidden: true
+    });
+    const row = new FakeElement(harness.document, {
+        dataset: { uiDisclosureRow: '' }
+    });
+    const toggle = new FakeElement(harness.document, {
+        dataset: { uiDisclosureToggle: '' },
+        parentDisclosureRow: row
+    });
+    row.disclosureToggle = toggle;
+    toggle.disclosureToggle = toggle;
+    toggle.setAttribute('aria-controls', 'animated-history-detail');
+    toggle.setAttribute('aria-expanded', 'false');
+    harness.elementsById.set('animated-history-detail', detail);
+    return { content, detail, harness, row, toggle };
 }
 
 test('dialog traps Tab, closes on Escape, and restores opener focus', () => {
@@ -441,6 +504,128 @@ test('shared disclosure keeps detail, row state, and accessible state in sync', 
     assert.equal(detail.hidden, true);
     assert.equal(row.classList.contains('is-expanded'), false);
     assert.deepEqual(harness.assignedLocations, []);
+});
+
+test('shared disclosure animates open and close before hiding the detail', () => {
+    const { content, detail, harness, row, toggle }
+        = createAnimatedDisclosureHarness();
+
+    harness.document.dispatch('click', clickEvent(toggle));
+
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    assert.equal(row.classList.contains('is-expanded'), true);
+    assert.equal(detail.hidden, false);
+    assert.equal(detail.getAttribute('aria-hidden'), null);
+    assert.equal(detail.getAttribute('inert'), null);
+    assert.equal(content.animations.length, 1);
+    const opening = content.animations[0];
+    assert.deepEqual(JSON.parse(JSON.stringify(opening.keyframes)), [
+        {
+            height: '0px',
+            opacity: 0,
+            overflow: 'hidden'
+        },
+        {
+            height: '144px',
+            opacity: 1,
+            overflow: 'hidden'
+        }
+    ]);
+    assert.equal(opening.options.duration, 180);
+    assert.equal(opening.options.easing, 'cubic-bezier(0.42, 0, 0.58, 1)');
+    assert.equal(opening.options.fill, 'both');
+    opening.finish();
+    assert.equal(detail.hidden, false);
+    assert.equal(opening.cancelled, true);
+
+    harness.document.dispatch('click', clickEvent(toggle));
+
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(row.classList.contains('is-expanded'), false);
+    assert.equal(detail.hidden, false);
+    assert.equal(detail.getAttribute('aria-hidden'), 'true');
+    assert.equal(detail.getAttribute('inert'), '');
+    assert.equal(content.animations.length, 2);
+    const closing = content.animations[1];
+    assert.deepEqual(JSON.parse(JSON.stringify(closing.keyframes)), [
+        {
+            height: '144px',
+            opacity: 1,
+            overflow: 'hidden'
+        },
+        {
+            height: '0px',
+            opacity: 0,
+            overflow: 'hidden'
+        }
+    ]);
+    assert.equal(closing.options.fill, 'both');
+    closing.finish();
+    assert.equal(detail.hidden, true);
+    assert.equal(detail.getAttribute('aria-hidden'), 'true');
+    assert.equal(detail.getAttribute('inert'), '');
+    assert.equal(closing.cancelled, true);
+});
+
+test('shared disclosure skips animation when reduced motion is requested', () => {
+    const { content, detail, harness, row, toggle }
+        = createAnimatedDisclosureHarness({ reducedMotion: true });
+
+    harness.document.dispatch('click', clickEvent(toggle));
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    assert.equal(row.classList.contains('is-expanded'), true);
+    assert.equal(detail.hidden, false);
+    assert.equal(detail.getAttribute('aria-hidden'), null);
+    assert.equal(detail.getAttribute('inert'), null);
+    assert.equal(content.animations.length, 0);
+
+    harness.document.dispatch('click', clickEvent(toggle));
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(row.classList.contains('is-expanded'), false);
+    assert.equal(detail.hidden, true);
+    assert.equal(detail.getAttribute('aria-hidden'), 'true');
+    assert.equal(detail.getAttribute('inert'), '');
+    assert.equal(content.animations.length, 0);
+});
+
+test('shared disclosure cancels rapid reversals and ignores stale finishes', () => {
+    const { content, detail, harness, toggle }
+        = createAnimatedDisclosureHarness();
+
+    harness.document.dispatch('click', clickEvent(toggle));
+    const firstOpen = content.animations[0];
+
+    content.bounds = { bottom: 72, height: 72 };
+    harness.document.dispatch('click', clickEvent(toggle));
+    const firstClose = content.animations[1];
+    assert.equal(firstOpen.cancelled, true);
+    assert.equal(firstClose.keyframes[0].height, '72px');
+    assert.equal(firstClose.keyframes[0].opacity, 0.5);
+
+    content.bounds = { bottom: 36, height: 36 };
+    harness.document.dispatch('click', clickEvent(toggle));
+    const latestOpen = content.animations[2];
+    assert.equal(firstClose.cancelled, true);
+    assert.equal(latestOpen.keyframes[0].height, '36px');
+    assert.equal(latestOpen.keyframes[0].opacity, 0.25);
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    assert.equal(detail.hidden, false);
+
+    firstOpen.finish();
+    firstClose.finish();
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    assert.equal(detail.hidden, false);
+    assert.equal(detail.getAttribute('aria-hidden'), null);
+
+    harness.document.dispatch('click', clickEvent(toggle));
+    const latestClose = content.animations[3];
+    assert.equal(latestOpen.cancelled, true);
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(detail.hidden, false);
+
+    latestClose.finish();
+    assert.equal(detail.hidden, true);
+    assert.equal(detail.getAttribute('aria-hidden'), 'true');
 });
 
 test('shared disclosure row ignores controls, modified clicks, and selected text', () => {

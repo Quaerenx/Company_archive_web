@@ -74,7 +74,7 @@ class CarbonIconUsageContractTest {
         assertTrue(maintenanceCards.contains(".maintenance-management .customer-name i { color: currentColor;"));
         assertFalse(maintenanceHistory.contains(
                 ".maintenance-history .inspection-date i"));
-        assertTrue(maintenanceHistory.contains(
+        assertFalse(maintenanceHistory.contains(
                 ".maintenance-history .history-detail-toggle__icon"));
         assertTrue(maintenanceHistory.contains("color: currentColor;"));
     }

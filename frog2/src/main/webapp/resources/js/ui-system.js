@@ -475,6 +475,107 @@
         );
     }
 
+    var disclosureAnimations = new WeakMap();
+
+    function prefersReducedDisclosureMotion() {
+        return typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function finishDisclosureImmediately(detail, expanded) {
+        detail.hidden = !expanded;
+        if (expanded) {
+            detail.removeAttribute('aria-hidden');
+            detail.removeAttribute('inert');
+        } else {
+            detail.setAttribute('aria-hidden', 'true');
+            detail.setAttribute('inert', '');
+        }
+    }
+
+    function animateDisclosure(detail, toggle, expanded) {
+        var content = detail.querySelector('[data-ui-disclosure-content]');
+        var runningAnimation = disclosureAnimations.get(detail);
+        var interruptedHeight = null;
+        if (runningAnimation) {
+            if (content && typeof content.getBoundingClientRect === 'function') {
+                var interruptedRect = content.getBoundingClientRect();
+                if (interruptedRect && Number.isFinite(interruptedRect.height)) {
+                    interruptedHeight = Math.max(0, interruptedRect.height);
+                }
+            }
+            runningAnimation.cancel();
+            disclosureAnimations.delete(detail);
+        }
+
+        if (!content || typeof content.animate !== 'function'
+                || prefersReducedDisclosureMotion()) {
+            finishDisclosureImmediately(detail, expanded);
+            return;
+        }
+
+        detail.hidden = false;
+        if (expanded) {
+            detail.removeAttribute('aria-hidden');
+            detail.removeAttribute('inert');
+        } else {
+            detail.setAttribute('aria-hidden', 'true');
+            detail.setAttribute('inert', '');
+        }
+
+        var contentHeight = content.scrollHeight;
+        if (!Number.isFinite(contentHeight) || contentHeight <= 0) {
+            finishDisclosureImmediately(detail, expanded);
+            return;
+        }
+
+        var targetHeight = expanded ? contentHeight : 0;
+        var startHeight = interruptedHeight === null
+            ? (expanded ? 0 : contentHeight)
+            : Math.min(interruptedHeight, contentHeight);
+        var startOpacity = contentHeight > 0 ? startHeight / contentHeight : 0;
+        var startFrame = {
+            height: startHeight + 'px',
+            opacity: startOpacity,
+            overflow: 'hidden'
+        };
+        var endFrame = {
+            height: targetHeight + 'px',
+            opacity: expanded ? 1 : 0,
+            overflow: 'hidden'
+        };
+        var animation;
+        try {
+            animation = content.animate(
+                [startFrame, endFrame],
+                {
+                    duration: 180,
+                    easing: 'cubic-bezier(0.42, 0, 0.58, 1)',
+                    fill: 'both'
+                }
+            );
+        } catch (error) {
+            finishDisclosureImmediately(detail, expanded);
+            return;
+        }
+
+        disclosureAnimations.set(detail, animation);
+        animation.onfinish = function () {
+            if (disclosureAnimations.get(detail) !== animation) {
+                return;
+            }
+            disclosureAnimations.delete(detail);
+            var stillExpanded = toggle.getAttribute('aria-expanded') === 'true';
+            finishDisclosureImmediately(detail, stillExpanded);
+            animation.cancel();
+        };
+        animation.oncancel = function () {
+            if (disclosureAnimations.get(detail) === animation) {
+                disclosureAnimations.delete(detail);
+            }
+        };
+    }
+
     function toggleDisclosure(toggle) {
         var detailId = toggle.getAttribute('aria-controls');
         var detail = detailId ? document.getElementById(detailId) : null;
@@ -484,7 +585,7 @@
 
         var expanded = toggle.getAttribute('aria-expanded') !== 'true';
         toggle.setAttribute('aria-expanded', String(expanded));
-        detail.hidden = !expanded;
+        animateDisclosure(detail, toggle, expanded);
 
         var row = toggle.closest('[data-ui-disclosure-row]');
         if (row) {
