@@ -98,13 +98,13 @@ class DashboardViewContractTest {
         assertTrue(styles.contains(".maintenance-assignee-customer::before"));
         assertTrue(styles.contains("background: var(--color-success);"));
         assertTrue(styles.contains(".maintenance-assignee-customer--due::before"));
-        assertTrue(styles.contains("background: var(--color-border-strong);"));
         String completedPoint = cssRule(
                 styles,
                 ".dashboard-page .maintenance-assignee-customer::before");
         String pendingPoint = cssRule(
                 styles,
                 ".dashboard-page .maintenance-assignee-customer--due::before");
+        assertTrue(pendingPoint.contains("background: var(--color-text-muted);"));
         assertFalse(completedPoint.contains("border:"));
         assertFalse(pendingPoint.contains("border:"));
         assertTrue(completedPoint.contains("block-size: 6px;"));
@@ -114,8 +114,8 @@ class DashboardViewContractTest {
                 styles,
                 ".dashboard-page .maintenance-assignee-frequency");
         assertTrue(frequency.contains("margin-inline-start: auto;"));
-        assertTrue(frequency.contains("background: var(--color-surface);"));
-        assertTrue(frequency.contains("border: 1px solid var(--color-border);"));
+        assertTrue(frequency.contains("background: transparent;"));
+        assertTrue(frequency.contains("border: 0;"));
         assertTrue(frequency.contains("white-space: nowrap;"));
         String monthHeader = cssRule(
                 sharedStyles,
@@ -124,10 +124,32 @@ class DashboardViewContractTest {
                 "border-block-end: 1px solid var(--color-divider);"));
         String monthBoard = cssRule(
                 sharedStyles,
-                ".ui-system :where(.ui-work-surface, .table-container)");
+                ".ui-system .ui-work-surface");
         assertTrue(monthBoard.contains("background: var(--color-surface);"));
-        assertTrue(monthBoard.contains("border: 1px solid var(--color-border);"));
-        assertTrue(monthBoard.contains("border-radius: var(--radius-lg);"));
+        assertTrue(monthBoard.contains(
+                "border: 1px solid var(--color-surface-edge);"));
+        assertTrue(monthBoard.contains("box-shadow: var(--shadow-sm);"));
+        assertTrue(sharedStyles.contains(
+                ".ui-system :where(.ui-work-surface, .table-container)"));
+        assertTrue(page.contains("maintenance-status-legend"));
+        assertTrue(page.contains("<ul class=\"maintenance-status-legend\""));
+        assertTrue(page.contains("aria-label=\"정기점검 상태 범례\""));
+        assertTrue(page.contains(
+                "<li class=\"maintenance-status-legend__item maintenance-status-legend__item--done\""));
+        assertTrue(page.contains(
+                "<li class=\"maintenance-status-legend__item maintenance-status-legend__item--due\""));
+        assertTrue(page.contains(
+                "<li class=\"maintenance-status-legend__frequency\">분기</li>"));
+        String statusLegend = cssRule(
+                styles,
+                ".dashboard-page .maintenance-status-legend");
+        assertTrue(statusLegend.contains("list-style: none;"));
+        assertTrue(statusLegend.contains("padding: 0;"));
+        String legendFrequency = cssRule(
+                styles,
+                ".dashboard-page .maintenance-status-legend__frequency");
+        assertTrue(legendFrequency.contains("background: transparent;"));
+        assertTrue(legendFrequency.contains("border: 0;"));
         assertTrue(page.contains(
                 "ui-work-surface ui-work-surface--padded"));
         assertTrue(sharedStyles.contains(

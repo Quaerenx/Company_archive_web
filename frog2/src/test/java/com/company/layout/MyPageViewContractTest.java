@@ -11,6 +11,8 @@ class MyPageViewContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
     private static final Path MY_PAGE_SERVLET =
             Path.of("src/main/java/com/company/controller/MyPageServlet.java");
+    private static final Path MY_PAGE_QUERY_SERVICE =
+            Path.of("src/main/java/com/company/controller/MyPageQueryService.java");
     private static final Path VM_HOST_SERVLET =
             Path.of("src/main/java/com/company/controller/UserVmHostServlet.java");
 
@@ -123,17 +125,18 @@ class MyPageViewContractTest {
     void controllerLoadsFiveRecentItemsAndDefersTheHostList()
             throws Exception {
         String controller = Files.readString(MY_PAGE_SERVLET);
+        String queryService = Files.readString(MY_PAGE_QUERY_SERVICE);
 
         assertTrue(controller.contains("RECENT_ACTIVITY_LIMIT = 5"));
         assertTrue(controller.contains("HOSTS_SECTION.equals(section)"));
-        assertTrue(controller.contains(
-                "userVmHostDAO.getActiveHostsByOwner(user.getUserId())"));
-        assertTrue(controller.contains(
-                "userVmHostDAO.getActiveHostCountByOwner(user.getUserId())"));
+        assertTrue(queryService.contains(
+                "userVmHostDAO.getActiveHostsByOwner(userId)"));
+        assertTrue(queryService.contains(
+                "userVmHostDAO.getActiveHostCountByOwner(userId)"));
         assertTrue(controller.contains("recentMaintenanceRecords"));
         assertTrue(controller.contains("recentTroubleshootings"));
-        assertTrue(controller.contains(
-                "user.getUserId(), 1, RECENT_ACTIVITY_LIMIT"));
+        assertTrue(controller.contains("queryService.loadOverview("));
+        assertTrue(queryService.contains("userId, 1, recentActivityLimit"));
         assertFalse(controller.contains("Pagination.requestedPage("));
         assertFalse(controller.contains(
                 "request.getParameter(\"maintenancePage\")"));

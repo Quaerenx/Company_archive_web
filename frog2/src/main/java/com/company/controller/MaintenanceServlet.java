@@ -1,6 +1,5 @@
 package com.company.controller;
 
-import com.company.util.LicenseUsageSeriesBuilder;
 import com.company.util.StrictDateParser;
 import java.io.IOException;
 import java.sql.Date;
@@ -125,31 +124,11 @@ public class MaintenanceServlet extends HttpServlet {
                                 historyPage,
                                 HISTORY_PAGE_SIZE,
                                 historyFilter);
-                List<MaintenanceRecordDTO> records = page.items();
-                // 라이선스 사용률 시리즈
-                List<Map<String, Object>> usageSeries = LicenseUsageSeriesBuilder.build(records);
-                List<MaintenanceHistoryRowView> historyRows =
-                        MaintenanceHistoryRowView.fromRecords(records);
-
                 // 고객사 기본 정보 조회
                 CustomerDTO customer = customerDAO.getCustomerByName(customerName);
-
-                request.setAttribute("records", records);
-                request.setAttribute("historyRows", historyRows);
-                request.setAttribute("usageSeries", usageSeries);
-                request.setAttribute("customer", customer);
-                request.setAttribute("customerName", customerName);
-                request.setAttribute("currentPage", page.page());
-                request.setAttribute("pageSize", page.pageSize());
-                request.setAttribute("totalPages", page.totalPages());
-                request.setAttribute("totalCount", page.totalCount());
-                request.setAttribute("historyYear", historyFilter.year());
-                request.setAttribute(
-                        "historyVersion", historyFilter.version());
-                request.setAttribute("historyQuery", historyFilter.query());
-                request.setAttribute(
-                        "historyFiltersActive", historyFilter.hasFilters());
-                request.setAttribute("viewType", "history");
+                MaintenanceHistoryViewData.from(
+                        page, historyFilter, customer, customerName)
+                        .expose(request);
                 request.getRequestDispatcher("/maintenance/maintenance_history.jsp").forward(request, response);
             } else {
                 response.sendRedirect("maintenance?view=cards");

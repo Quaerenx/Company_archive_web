@@ -188,6 +188,31 @@ class FileRepositoryServiceTest {
     }
 
     @Test
+    void staleCursorFallsBackToTheLastNonEmptyPage() throws Exception {
+        for (String name : List.of("Echo", "alpha", "delta", "Bravo", "charlie")) {
+            Files.createDirectory(root.resolve(name));
+        }
+
+        FileRepositoryListing first = service.list("", null, 2);
+        FileRepositoryListing second = service.list("", first.getNextCursor(), 2);
+        String staleCursor = second.getNextCursor();
+
+        Files.delete(root.resolve("Echo"));
+        Files.setLastModifiedTime(
+                root,
+                FileTime.fromMillis(System.currentTimeMillis() + 2_000));
+
+        FileRepositoryListing recovered = service.list("", staleCursor, 2);
+
+        assertEquals(List.of("charlie", "delta"), names(recovered));
+        assertEquals(2, recovered.getCurrentPage());
+        assertEquals(2, recovered.getTotalPages());
+        assertEquals(4, recovered.getTotalCount());
+        assertTrue(recovered.isHasPrevious());
+        assertFalse(recovered.isHasNext());
+    }
+
+    @Test
     void directorySnapshotRefreshesOnlyAfterTheDirectoryChanges()
             throws Exception {
         Files.createDirectory(root.resolve("alpha"));

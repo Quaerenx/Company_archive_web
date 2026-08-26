@@ -59,13 +59,6 @@ class MeetingRequestMapperTest {
         assertEquals(1, mapper.requestedPage(request(Map.of("page", "-1"))));
         assertEquals(Integer.MAX_VALUE,
                 mapper.requestedPage(request(Map.of("page", "999999999999"))));
-
-        assertEquals(0, MeetingRequestMapper.totalPages(0, 20));
-        assertEquals(3, MeetingRequestMapper.totalPages(41, 20));
-        assertEquals(107_374_183,
-                MeetingRequestMapper.totalPages(Integer.MAX_VALUE, 20));
-        assertEquals(1, MeetingRequestMapper.clampPage(Integer.MAX_VALUE, 0));
-        assertEquals(3, MeetingRequestMapper.clampPage(Integer.MAX_VALUE, 3));
     }
 
     @Test

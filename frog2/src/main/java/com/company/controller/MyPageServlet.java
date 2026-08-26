@@ -8,17 +8,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import com.company.model.MaintenanceRecordDAO;
-import com.company.model.MaintenanceRecordDTO;
 import com.company.model.MonthlyCustomerResponseDAO;
 import com.company.model.MonthlyCustomerResponseDTO;
-import com.company.model.PageResult;
-import com.company.model.TroubleshootingDAO;
-import com.company.model.TroubleshootingDTO;
 import com.company.model.UserDAO;
 import com.company.model.UserDTO;
-import com.company.model.UserVmHostDAO;
-import com.company.model.UserVmHostDTO;
 import com.company.security.PasswordPolicy;
 import com.company.security.SessionPrincipal;
 
@@ -102,45 +95,47 @@ public class MyPageServlet extends HttpServlet {
     // 마이페이지 메인 화면
     static void renderMainPage(HttpServletRequest request, HttpServletResponse response, UserDTO user)
             throws ServletException, IOException {
-        UserDAO userDAO = new UserDAO();
-        UserDTO userInfo = userDAO.getUserById(user.getUserId());
-        UserVmHostDAO userVmHostDAO = new UserVmHostDAO();
-        int vmHostLimit = userVmHostDAO.getMaxHostsPerUser();
-        String section = resolveSection(request);
+        renderMainPage(
+                request,
+                response,
+                user,
+                new MyPageQueryService());
+    }
 
-        request.setAttribute("userInfo", userInfo);
+    static void renderMainPage(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user,
+            MyPageQueryService queryService)
+            throws ServletException, IOException {
+        String section = resolveSection(request);
+        MyPageQueryService.ViewData viewData = HOSTS_SECTION.equals(section)
+                ? queryService.loadHosts(user.getUserId())
+                : queryService.loadOverview(
+                        user.getUserId(), RECENT_ACTIVITY_LIMIT);
+
+        request.setAttribute("userInfo", viewData.user());
         request.setAttribute("myPageSection", section);
-        request.setAttribute("vmHostLimit", vmHostLimit);
+        request.setAttribute("vmHostLimit", viewData.vmHostLimit());
+        exposeHostSummary(
+                request,
+                viewData.vmHostLimit(),
+                viewData.vmHostCount());
 
         if (HOSTS_SECTION.equals(section)) {
-            List<UserVmHostDTO> vmHosts =
-                    userVmHostDAO.getActiveHostsByOwner(user.getUserId());
-            exposeHostSummary(request, vmHostLimit, vmHosts.size());
-            request.setAttribute("vmHosts", vmHosts);
+            request.setAttribute("vmHosts", viewData.vmHosts());
         } else {
-            MaintenanceRecordDAO maintenanceDAO = new MaintenanceRecordDAO();
-            PageResult<MaintenanceRecordDTO> maintenancePage =
-                    maintenanceDAO.getMaintenanceRecordsByOwner(
-                            user.getUserId(), 1, RECENT_ACTIVITY_LIMIT);
-
-            TroubleshootingDAO troubleshootingDAO = new TroubleshootingDAO();
-            PageResult<TroubleshootingDTO> troubleshootingPage =
-                    troubleshootingDAO.getTroubleshootingPageByOwner(
-                            user.getUserId(), 1, RECENT_ACTIVITY_LIMIT);
-
             request.setAttribute(
-                    "recentMaintenanceRecords", maintenancePage.items());
+                    "recentMaintenanceRecords",
+                    viewData.recentMaintenanceRecords());
             request.setAttribute(
-                    "recentTroubleshootings", troubleshootingPage.items());
+                    "recentTroubleshootings",
+                    viewData.recentTroubleshootings());
             request.setAttribute(
-                    "maintenanceCount", maintenancePage.totalCount());
+                    "maintenanceCount", viewData.maintenanceCount());
             request.setAttribute(
                     "troubleshootingCount",
-                    troubleshootingPage.totalCount());
-
-            int vmHostCount =
-                    userVmHostDAO.getActiveHostCountByOwner(user.getUserId());
-            exposeHostSummary(request, vmHostLimit, vmHostCount);
+                    viewData.troubleshootingCount());
         }
 
         request.getRequestDispatcher("/mypage/mypage.jsp").forward(request, response);

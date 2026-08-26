@@ -5,73 +5,71 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Objects;
 
 import com.company.util.DBConnection;
 
 public class VerticaEosDAO {
+    private static final VerticaEosCapabilityCache APPLICATION_CAPABILITIES =
+            new VerticaEosCapabilityCache();
+    private final JdbcConnectionProvider connectionProvider;
+    private final VerticaEosCapabilityCache capabilities;
+
+    public VerticaEosDAO() {
+        this(DBConnection::getConnection, APPLICATION_CAPABILITIES);
+    }
+
+    VerticaEosDAO(JdbcConnectionProvider connectionProvider) {
+        this(connectionProvider, new VerticaEosCapabilityCache());
+    }
+
+    VerticaEosDAO(
+            JdbcConnectionProvider connectionProvider,
+            VerticaEosCapabilityCache capabilities) {
+        this.connectionProvider = Objects.requireNonNull(
+                connectionProvider, "connectionProvider");
+        this.capabilities = Objects.requireNonNull(
+                capabilities, "capabilities");
+    }
 
     public java.util.Date findEosDateByVersion(String versionText) {
         if (versionText == null || versionText.trim().isEmpty()) {
             return null;
         }
 
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        try {
-            conn = DBConnection.getConnection();
-
-            // Prefer the public schema when more than one legacy table exists.
-            String schemaDetectSql = "SELECT table_schema FROM v_catalog.tables " +
-                "WHERE lower(table_name) = 'vertica_eos' ORDER BY CASE lower(table_schema) WHEN 'public' THEN 0 ELSE 1 END LIMIT 1";
-            pstmt = conn.prepareStatement(schemaDetectSql);
-            rs = pstmt.executeQuery();
-            String schemaName = null;
-            if (rs.next()) {
-                schemaName = rs.getString(1);
+        try (Connection connection = connectionProvider.getConnection()) {
+            VerticaEosCapabilityCache.Capability capability =
+                    capabilities.resolve(connection);
+            if (capability == null) {
+                return null;
             }
-            DBConnection.close(rs, pstmt);
 
-            String qualifiedTable = (schemaName != null && !schemaName.isEmpty())
-                ? ("\"" + schemaName + "\".\"vertica_eos\"")
-                : "vertica_eos";
-
-            // Deployed schemas use one of these two version column names.
-            String[] candidateCols = new String[] { "vertica_version", "version" };
-            for (String col : candidateCols) {
-                String quotedCol = "\"" + col + "\"";
-                String sql =
-                    "SELECT end_of_service_date, 1 AS p FROM " + qualifiedTable + " WHERE " + quotedCol + " = ? " +
-                    "UNION ALL " +
-                    "SELECT end_of_service_date, 2 AS p FROM " + qualifiedTable + " WHERE ? ILIKE ('%' || " + quotedCol + " || '%') " +
-                    "ORDER BY p, LENGTH(" + quotedCol + ") DESC " +
-                    "LIMIT 1";
-
-                try {
-                    pstmt = conn.prepareStatement(sql);
-                } catch (SQLException prepareEx) {
-                    // A missing candidate column is expected on one supported schema.
-                    DBConnection.close(pstmt);
-                    continue;
-                }
-
-                pstmt.setString(1, versionText.trim());
-                pstmt.setString(2, versionText.trim());
-                rs = pstmt.executeQuery();
-                if (rs.next()) {
-                    Timestamp eosTs = rs.getTimestamp(1);
-                    if (eosTs != null) {
-                        return new java.util.Date(eosTs.getTime());
+            String column = capability.versionColumn();
+            String sql = "SELECT end_of_service_date, 1 AS priority, "
+                    + "LENGTH(" + column + ") AS match_length FROM "
+                    + capability.qualifiedTable() + " WHERE " + column + " = ? "
+                    + "UNION ALL "
+                    + "SELECT end_of_service_date, 2 AS priority, "
+                    + "LENGTH(" + column + ") AS match_length FROM "
+                    + capability.qualifiedTable()
+                    + " WHERE ? ILIKE ('%' || " + column + " || '%') "
+                    + "ORDER BY priority, match_length DESC LIMIT 1";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                String normalizedVersion = versionText.trim();
+                statement.setString(1, normalizedVersion);
+                statement.setString(2, normalizedVersion);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        return null;
                     }
+                    Timestamp eosTimestamp = resultSet.getTimestamp(1);
+                    return eosTimestamp == null
+                            ? null
+                            : new java.util.Date(eosTimestamp.getTime());
                 }
-                DBConnection.close(rs, pstmt);
             }
-        } catch (SQLException  e) {
-            throw DataAccessException.from(e);
-        } finally {
-            DBConnection.close(rs, pstmt, conn);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(exception);
         }
-        return null;
     }
 }
-

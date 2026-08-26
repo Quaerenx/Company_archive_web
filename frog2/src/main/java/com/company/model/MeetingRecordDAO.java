@@ -9,13 +9,15 @@ import java.util.List;
 import java.util.Objects;
 
 import com.company.util.DBConnection;
+import com.company.util.Pagination;
 
 public class MeetingRecordDAO {
     private static final int PAGE_SIZE = 20;
     static final String LIST_SQL =
-            "SELECT meeting_id, title, meeting_type, author_name, meeting_datetime "
+            "SELECT meeting_id, title, meeting_type, author_name, meeting_datetime, "
+                    + "COUNT(*) OVER () AS total_count "
                     + "FROM meeting_records "
-                    + "ORDER BY meeting_datetime DESC LIMIT ? OFFSET ?";
+                    + "ORDER BY meeting_datetime DESC, meeting_id DESC LIMIT ? OFFSET ?";
     private final JdbcConnectionProvider connectionProvider;
 
     public MeetingRecordDAO() {
@@ -28,39 +30,61 @@ public class MeetingRecordDAO {
     }
 
     public List<MeetingRecordDTO> getMeetingRecords(int page) {
-        List<MeetingRecordDTO> records = new ArrayList<>();
-        try (Connection conn = connectionProvider.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(LIST_SQL)) {
-            pstmt.setInt(1, PAGE_SIZE);
-            pstmt.setInt(2, offsetForPage(page));
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    MeetingRecordDTO record = new MeetingRecordDTO();
-                    record.setMeetingId(rs.getLong("meeting_id"));
-                    record.setTitle(rs.getString("title"));
-                    record.setMeetingType(rs.getString("meeting_type"));
-                    record.setMeetingDatetime(rs.getTimestamp("meeting_datetime"));
-                    record.setAuthorName(rs.getString("author_name"));
-
-                    records.add(record);
-                }
-            }
+        try (Connection conn = connectionProvider.getConnection()) {
+            return loadMeetingRows(conn, page).items();
         } catch (SQLException e) {
             throw DataAccessException.from(e);
         }
+    }
 
-        return records;
+    public PageResult<MeetingRecordDTO> getMeetingPage(int requestedPage) {
+        int page = Math.max(1, requestedPage);
+        try (Connection connection = connectionProvider.getConnection()) {
+            MeetingRows rows;
+            try {
+                rows = loadMeetingRows(connection, page);
+            } catch (ArithmeticException exception) {
+                rows = new MeetingRows(List.of(), 0);
+            }
+
+            if (!rows.items().isEmpty() || page == 1) {
+                return new PageResult<>(
+                        rows.items(), rows.totalCount(), page, PAGE_SIZE);
+            }
+
+            int totalCount = countMeetingRecords(connection);
+            int correctedPage = Pagination.clampPage(
+                    page, Pagination.totalPages(totalCount, PAGE_SIZE));
+            if (totalCount == 0) {
+                return new PageResult<>(List.of(), 0, correctedPage, PAGE_SIZE);
+            }
+            MeetingRows correctedRows = loadMeetingRows(
+                    connection, correctedPage);
+            if (correctedRows.items().isEmpty()) {
+                int refreshedCount = countMeetingRecords(connection);
+                if (refreshedCount == 0) {
+                    return new PageResult<>(List.of(), 0, 1, PAGE_SIZE);
+                }
+                int refreshedPage = Pagination.clampPage(
+                        correctedPage,
+                        Pagination.totalPages(refreshedCount, PAGE_SIZE));
+                correctedRows = loadMeetingRows(connection, refreshedPage);
+                if (correctedRows.items().isEmpty()) {
+                    return new PageResult<>(List.of(), 0, 1, PAGE_SIZE);
+                }
+                correctedPage = refreshedPage;
+            }
+            return new PageResult<>(
+                    correctedRows.items(), correctedRows.totalCount(),
+                    correctedPage, PAGE_SIZE);
+        } catch (SQLException exception) {
+            throw DataAccessException.from("load meeting page", exception);
+        }
     }
 
     public int getTotalCount() {
-        String sql = "SELECT COUNT(*) FROM meeting_records";
-        try (Connection conn = connectionProvider.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                ResultSet rs = pstmt.executeQuery()) {
-            if (!rs.next()) {
-                return 0;
-            }
-            return rs.getInt(1);
+        try (Connection connection = connectionProvider.getConnection()) {
+            return countMeetingRecords(connection);
         } catch (SQLException e) {
             throw DataAccessException.from(e);
         }
@@ -163,9 +187,50 @@ public class MeetingRecordDAO {
     }
 
     static int offsetForPage(int page) {
-        if (page < 1) {
-            throw new IllegalArgumentException("Page must be positive.");
+        return Pagination.offset(page, PAGE_SIZE);
+    }
+
+    private static MeetingRows loadMeetingRows(
+            Connection connection, int page) throws SQLException {
+        List<MeetingRecordDTO> records = new ArrayList<>();
+        int totalCount = 0;
+        try (PreparedStatement statement =
+                connection.prepareStatement(LIST_SQL)) {
+            statement.setInt(1, PAGE_SIZE);
+            statement.setInt(2, offsetForPage(page));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    if (records.isEmpty()) {
+                        totalCount = resultSet.getInt("total_count");
+                    }
+                    records.add(mapListRow(resultSet));
+                }
+            }
         }
-        return Math.multiplyExact(page - 1, PAGE_SIZE);
+        return new MeetingRows(records, totalCount);
+    }
+
+    private static int countMeetingRecords(Connection connection)
+            throws SQLException {
+        String sql = "SELECT COUNT(*) FROM meeting_records";
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+                ResultSet resultSet = statement.executeQuery()) {
+            return resultSet.next() ? resultSet.getInt(1) : 0;
+        }
+    }
+
+    private static MeetingRecordDTO mapListRow(ResultSet resultSet)
+            throws SQLException {
+        MeetingRecordDTO record = new MeetingRecordDTO();
+        record.setMeetingId(resultSet.getLong("meeting_id"));
+        record.setTitle(resultSet.getString("title"));
+        record.setMeetingType(resultSet.getString("meeting_type"));
+        record.setMeetingDatetime(resultSet.getTimestamp("meeting_datetime"));
+        record.setAuthorName(resultSet.getString("author_name"));
+        return record;
+    }
+
+    private record MeetingRows(
+            List<MeetingRecordDTO> items, int totalCount) {
     }
 }

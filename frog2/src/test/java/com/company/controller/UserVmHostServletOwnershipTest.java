@@ -70,10 +70,38 @@ class UserVmHostServletOwnershipTest {
                 response.redirect);
     }
 
+    @Test
+    void postRejectsMissingAction() throws Exception {
+        StubUserVmHostDAO dao = new StubUserVmHostDAO();
+        UserVmHostServlet servlet = new UserVmHostServlet(dao);
+        RequestFixture request = new RequestFixture();
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.status);
+        assertEquals(0, dao.deleteCalls);
+    }
+
+    @Test
+    void postRejectsUnknownAction() throws Exception {
+        StubUserVmHostDAO dao = new StubUserVmHostDAO();
+        UserVmHostServlet servlet = new UserVmHostServlet(dao);
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("action", "remove-all");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.status);
+        assertEquals(0, dao.deleteCalls);
+    }
+
     private static final class StubUserVmHostDAO extends UserVmHostDAO {
         private String lastEditOwnerId;
         private String lastListOwnerId;
         private String lastDeleteOwnerId;
+        private int deleteCalls;
 
         @Override
         public UserVmHostDTO getHostByIpAndOwner(
@@ -91,6 +119,7 @@ class UserVmHostServletOwnershipTest {
         @Override
         public boolean deleteByIpAndOwner(String ip, String ownerUserId) {
             lastDeleteOwnerId = ownerUserId;
+            deleteCalls++;
             return true;
         }
     }
@@ -148,6 +177,7 @@ class UserVmHostServletOwnershipTest {
 
     private static final class ResponseFixture {
         private String redirect;
+        private int status;
 
         private HttpServletResponse proxy() {
             return (HttpServletResponse) Proxy.newProxyInstance(
@@ -156,6 +186,10 @@ class UserVmHostServletOwnershipTest {
                     (ignored, call, args) -> switch (call.getName()) {
                         case "sendRedirect" -> {
                             redirect = (String) args[0];
+                            yield null;
+                        }
+                        case "sendError" -> {
+                            status = (Integer) args[0];
                             yield null;
                         }
                         default -> defaultValue(call.getReturnType());

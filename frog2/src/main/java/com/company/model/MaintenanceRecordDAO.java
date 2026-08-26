@@ -16,6 +16,9 @@ import com.company.util.DBConnection;
 public class MaintenanceRecordDAO {
     private static final String TABLE_NAME = "maintenance_records";
     private static final String CREATOR_USER_ID_COLUMN = "created_by_user_id";
+    private static final String LICENSE_SIZE_COLUMN = "license_size_gb";
+    private static final String LICENSE_USAGE_PCT_COLUMN = "license_usage_pct";
+    private static final String LICENSE_USAGE_SIZE_COLUMN = "license_usage_size";
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
             new SchemaCapabilityCache();
     private static final String BASE_SELECT_COLUMNS =
@@ -47,12 +50,11 @@ public class MaintenanceRecordDAO {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
-            if (!columnExists(conn, TABLE_NAME, CREATOR_USER_ID_COLUMN)) {
+            if (!hasOwnershipColumn(conn)) {
                 return false;
             }
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
+            MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(conn)
+                    .withCreatorUserId();
 
             List<String> cols = new ArrayList<>();
             cols.add("customer_name");
@@ -62,10 +64,10 @@ public class MaintenanceRecordDAO {
             cols.add("vertica_version");
             cols.add("note");
 
-            if (hasSize) cols.add("license_size_gb");
-            if (hasUsageSize) cols.add("license_usage_size");
-            if (hasUsagePct) {
-                cols.add("license_usage_pct");
+            if (schema.hasLicenseSize()) cols.add(LICENSE_SIZE_COLUMN);
+            if (schema.hasLicenseUsageSize()) cols.add(LICENSE_USAGE_SIZE_COLUMN);
+            if (schema.hasLicenseUsagePct()) {
+                cols.add(LICENSE_USAGE_PCT_COLUMN);
             }
 
             StringBuilder sb = new StringBuilder();
@@ -86,9 +88,15 @@ public class MaintenanceRecordDAO {
                 pstmt.setDate(idx++, record.getInspectionDate());
                 setStringOrNull(pstmt, idx++, record.getVerticaVersion());
                 setStringOrNull(pstmt, idx++, record.getNote());
-                if (hasSize) setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
-                if (hasUsageSize) setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
-                if (hasUsagePct) setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                if (schema.hasLicenseSize()) {
+                    setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
+                }
+                if (schema.hasLicenseUsageSize()) {
+                    setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
+                }
+                if (schema.hasLicenseUsagePct()) {
+                    setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                }
                 return pstmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -104,19 +112,18 @@ public class MaintenanceRecordDAO {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
-            if (!columnExists(conn, TABLE_NAME, CREATOR_USER_ID_COLUMN)) {
+            if (!hasOwnershipColumn(conn)) {
                 return false;
             }
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
+            MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(conn)
+                    .withCreatorUserId();
 
             StringBuilder sb = new StringBuilder();
             sb.append("UPDATE maintenance_records SET ");
             sb.append("customer_name = ?, inspector_name = ?, inspection_date = ?, vertica_version = ?, note = ?");
-            if (hasSize) sb.append(", license_size_gb = ?");
-            if (hasUsageSize) sb.append(", license_usage_size = ?");
-            if (hasUsagePct) sb.append(", license_usage_pct = ?");
+            if (schema.hasLicenseSize()) sb.append(", license_size_gb = ?");
+            if (schema.hasLicenseUsageSize()) sb.append(", license_usage_size = ?");
+            if (schema.hasLicenseUsagePct()) sb.append(", license_usage_pct = ?");
             sb.append(", updated_at = statement_timestamp() ");
             sb.append("WHERE maintenance_id = ? AND created_by_user_id = ?");
 
@@ -127,9 +134,15 @@ public class MaintenanceRecordDAO {
                 pstmt.setDate(idx++, record.getInspectionDate());
                 setStringOrNull(pstmt, idx++, record.getVerticaVersion());
                 setStringOrNull(pstmt, idx++, record.getNote());
-                if (hasSize) setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
-                if (hasUsageSize) setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
-                if (hasUsagePct) setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                if (schema.hasLicenseSize()) {
+                    setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
+                }
+                if (schema.hasLicenseUsageSize()) {
+                    setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
+                }
+                if (schema.hasLicenseUsagePct()) {
+                    setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                }
                 pstmt.setLong(idx++, record.getMaintenanceId());
                 pstmt.setString(idx, creatorUserId.trim());
                 return pstmt.executeUpdate() > 0;
@@ -145,7 +158,7 @@ public class MaintenanceRecordDAO {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
-            if (!columnExists(conn, TABLE_NAME, CREATOR_USER_ID_COLUMN)) {
+            if (!hasOwnershipColumn(conn)) {
                 return false;
             }
             String sql = "DELETE FROM maintenance_records "
@@ -162,25 +175,15 @@ public class MaintenanceRecordDAO {
 
     public MaintenanceRecordDTO getMaintenanceRecordById(Long maintenanceId) {
         try (Connection conn = connectionProvider.getConnection()) {
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
-            boolean hasCreatorUserId = columnExists(
-                    conn, TABLE_NAME, CREATOR_USER_ID_COLUMN);
+            MaintenanceSchemaProfile schema = loadSchemaProfile(conn);
 
-            String sql = "SELECT " + selectColumns(
-                    hasSize, hasUsagePct, hasUsageSize, hasCreatorUserId)
+            String sql = "SELECT " + selectColumns(schema)
                     + " FROM maintenance_records WHERE maintenance_id = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setLong(1, maintenanceId);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
-                        return mapRowToDto(
-                                rs,
-                                hasSize,
-                                hasUsagePct,
-                                hasUsageSize,
-                                hasCreatorUserId);
+                        return mapRowToDto(rs, schema);
                     }
                 }
             }
@@ -209,14 +212,7 @@ public class MaintenanceRecordDAO {
             return MaintenanceFormHistoryContext.empty();
         }
         try (Connection connection = connectionProvider.getConnection()) {
-            boolean hasSize = columnExists(
-                    connection, TABLE_NAME, "license_size_gb");
-            boolean hasUsagePct = columnExists(
-                    connection, TABLE_NAME, "license_usage_pct");
-            boolean hasUsageSize = columnExists(
-                    connection, TABLE_NAME, "license_usage_size");
-            boolean hasCreatorUserId = columnExists(
-                    connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
+            MaintenanceSchemaProfile schema = loadSchemaProfile(connection);
             Date monthStart = inspectionDate == null
                     ? null
                     : Date.valueOf(inspectionDate.toLocalDate()
@@ -231,10 +227,7 @@ public class MaintenanceRecordDAO {
                     monthStart,
                     null,
                     excludedMaintenanceId,
-                    hasSize,
-                    hasUsagePct,
-                    hasUsageSize,
-                    hasCreatorUserId);
+                    schema);
             MaintenanceRecordDTO duplicate = monthStart == null
                     ? null
                     : loadFormContextRecord(
@@ -243,10 +236,7 @@ public class MaintenanceRecordDAO {
                             monthStart,
                             nextMonthStart,
                             excludedMaintenanceId,
-                            hasSize,
-                            hasUsagePct,
-                            hasUsageSize,
-                            hasCreatorUserId);
+                            schema);
             return new MaintenanceFormHistoryContext(previous, duplicate);
         } catch (SQLException exception) {
             throw DataAccessException.from(
@@ -260,16 +250,9 @@ public class MaintenanceRecordDAO {
             Date rangeStart,
             Date rangeEnd,
             Long excludedMaintenanceId,
-            boolean hasSize,
-            boolean hasUsagePct,
-            boolean hasUsageSize,
-            boolean hasCreatorUserId) throws SQLException {
+            MaintenanceSchemaProfile schema) throws SQLException {
         StringBuilder sql = new StringBuilder("SELECT ")
-                .append(selectColumns(
-                        hasSize,
-                        hasUsagePct,
-                        hasUsageSize,
-                        hasCreatorUserId))
+                .append(selectColumns(schema))
                 .append(" FROM maintenance_records WHERE customer_name = ?");
         if (rangeStart != null && rangeEnd == null) {
             sql.append(" AND inspection_date < ?");
@@ -299,12 +282,7 @@ public class MaintenanceRecordDAO {
                 if (!resultSet.next()) {
                     return null;
                 }
-                return mapRowToDto(
-                        resultSet,
-                        hasSize,
-                        hasUsagePct,
-                        hasUsageSize,
-                        hasCreatorUserId);
+                return mapRowToDto(resultSet, schema);
             }
         }
     }
@@ -321,14 +299,7 @@ public class MaintenanceRecordDAO {
         }
 
         try (Connection connection = connectionProvider.getConnection()) {
-            boolean hasSize = columnExists(
-                    connection, TABLE_NAME, "license_size_gb");
-            boolean hasUsagePct = columnExists(
-                    connection, TABLE_NAME, "license_usage_pct");
-            boolean hasUsageSize = columnExists(
-                    connection, TABLE_NAME, "license_usage_size");
-            boolean hasCreatorUserId = columnExists(
-                    connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
+            MaintenanceSchemaProfile schema = loadSchemaProfile(connection);
             int page = Math.max(1, requestedPage);
             CustomerHistoryRows rows;
             try {
@@ -338,10 +309,7 @@ public class MaintenanceRecordDAO {
                         page,
                         pageSize,
                         filter,
-                        hasSize,
-                        hasUsagePct,
-                        hasUsageSize,
-                        hasCreatorUserId);
+                        schema);
             } catch (ArithmeticException exception) {
                 rows = new CustomerHistoryRows(List.of(), 0);
             }
@@ -365,10 +333,7 @@ public class MaintenanceRecordDAO {
                     correctedPage,
                     pageSize,
                     filter,
-                    hasSize,
-                    hasUsagePct,
-                    hasUsageSize,
-                    hasCreatorUserId);
+                    schema);
             return new PageResult<>(
                     correctedRows.items(),
                     correctedRows.totalCount(),
@@ -386,16 +351,9 @@ public class MaintenanceRecordDAO {
             int page,
             int pageSize,
             MaintenanceHistoryFilter filter,
-            boolean hasSize,
-            boolean hasUsagePct,
-            boolean hasUsageSize,
-            boolean hasCreatorUserId) throws SQLException {
+            MaintenanceSchemaProfile schema) throws SQLException {
         String sql = "SELECT "
-                + selectColumns(
-                        hasSize,
-                        hasUsagePct,
-                        hasUsageSize,
-                        hasCreatorUserId)
+                + selectColumns(schema)
                 + ", COUNT(*) OVER () AS total_count "
                 + "FROM maintenance_records WHERE "
                 + customerHistoryPredicate(filter) + " "
@@ -413,12 +371,7 @@ public class MaintenanceRecordDAO {
                     if (records.isEmpty()) {
                         totalCount = resultSet.getInt("total_count");
                     }
-                    records.add(mapRowToDto(
-                            resultSet,
-                            hasSize,
-                            hasUsagePct,
-                            hasUsageSize,
-                            hasCreatorUserId));
+                    records.add(mapRowToDto(resultSet, schema));
                 }
             }
         }
@@ -487,11 +440,9 @@ public class MaintenanceRecordDAO {
     public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
         List<MaintenanceRecordDTO> records = new ArrayList<>();
         try (Connection conn = connectionProvider.getConnection()) {
-            boolean hasSize = columnExists(conn, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(conn, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(conn, "maintenance_records", "license_usage_size");
+            MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(conn);
 
-            String sql = "SELECT " + selectColumns(hasSize, hasUsagePct, hasUsageSize)
+            String sql = "SELECT " + selectColumns(schema)
                     + " FROM maintenance_records " +
                     "WHERE inspection_date >= ? AND inspection_date < ? " +
                     "ORDER BY inspection_date ASC, customer_name ASC";
@@ -500,8 +451,7 @@ public class MaintenanceRecordDAO {
                 pstmt.setDate(2, endDate);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     while (rs.next()) {
-                        records.add(mapRowToDto(
-                                rs, hasSize, hasUsagePct, hasUsageSize));
+                        records.add(mapRowToDto(rs, schema));
                     }
                 }
             }
@@ -520,19 +470,12 @@ public class MaintenanceRecordDAO {
         }
     }
 
-    private MaintenanceRecordDTO mapRowToDto(ResultSet rs, boolean hasSize, boolean hasUsagePct, boolean hasUsageSize) throws SQLException {
-        return mapRowToDto(rs, hasSize, hasUsagePct, hasUsageSize, false);
-    }
-
     private MaintenanceRecordDTO mapRowToDto(
             ResultSet rs,
-            boolean hasSize,
-            boolean hasUsagePct,
-            boolean hasUsageSize,
-            boolean hasCreatorUserId) throws SQLException {
+            MaintenanceSchemaProfile schema) throws SQLException {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
         record.setMaintenanceId(rs.getLong("maintenance_id"));
-        if (hasCreatorUserId) {
+        if (schema.hasCreatorUserId()) {
             record.setCreatorUserId(rs.getString(CREATOR_USER_ID_COLUMN));
         }
         record.setCustomerName(rs.getString("customer_name"));
@@ -543,14 +486,14 @@ public class MaintenanceRecordDAO {
         record.setCreatedAt(rs.getTimestamp("created_at"));
         record.setUpdatedAt(rs.getTimestamp("updated_at"));
 
-        if (hasSize) {
-            record.setLicenseSizeGb(rs.getString("license_size_gb"));
+        if (schema.hasLicenseSize()) {
+            record.setLicenseSizeGb(rs.getString(LICENSE_SIZE_COLUMN));
         }
-        if (hasUsageSize) {
-            record.setLicenseUsageSize(rs.getString("license_usage_size"));
+        if (schema.hasLicenseUsageSize()) {
+            record.setLicenseUsageSize(rs.getString(LICENSE_USAGE_SIZE_COLUMN));
         }
-        if (hasUsagePct) {
-            record.setLicenseUsagePct(rs.getString("license_usage_pct"));
+        if (schema.hasLicenseUsagePct()) {
+            record.setLicenseUsagePct(rs.getString(LICENSE_USAGE_PCT_COLUMN));
         }
 
         return record;
@@ -560,28 +503,44 @@ public class MaintenanceRecordDAO {
         return schemaCapabilities.columnExists(conn, tableName, columnName);
     }
 
-    private static String selectColumns(
-            boolean hasSize, boolean hasUsagePct, boolean hasUsageSize) {
-        return selectColumns(hasSize, hasUsagePct, hasUsageSize, false);
+    private boolean hasOwnershipColumn(Connection connection) {
+        return columnExists(
+                connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
     }
 
-    private static String selectColumns(
-            boolean hasSize,
-            boolean hasUsagePct,
-            boolean hasUsageSize,
-            boolean hasCreatorUserId) {
+    private MaintenanceSchemaProfile loadLicenseSchemaProfile(
+            Connection connection) {
+        return new MaintenanceSchemaProfile(
+                false,
+                columnExists(connection, TABLE_NAME, LICENSE_SIZE_COLUMN),
+                columnExists(
+                        connection, TABLE_NAME, LICENSE_USAGE_PCT_COLUMN),
+                columnExists(
+                        connection, TABLE_NAME, LICENSE_USAGE_SIZE_COLUMN));
+    }
+
+    private MaintenanceSchemaProfile loadSchemaProfile(
+            Connection connection) {
+        MaintenanceSchemaProfile licenseProfile =
+                loadLicenseSchemaProfile(connection);
+        return hasOwnershipColumn(connection)
+                ? licenseProfile.withCreatorUserId()
+                : licenseProfile;
+    }
+
+    private static String selectColumns(MaintenanceSchemaProfile schema) {
         StringBuilder columns = new StringBuilder(BASE_SELECT_COLUMNS);
-        if (hasCreatorUserId) {
+        if (schema.hasCreatorUserId()) {
             columns.append(", ").append(CREATOR_USER_ID_COLUMN);
         }
-        if (hasSize) {
-            columns.append(", license_size_gb");
+        if (schema.hasLicenseSize()) {
+            columns.append(", ").append(LICENSE_SIZE_COLUMN);
         }
-        if (hasUsageSize) {
-            columns.append(", license_usage_size");
+        if (schema.hasLicenseUsageSize()) {
+            columns.append(", ").append(LICENSE_USAGE_SIZE_COLUMN);
         }
-        if (hasUsagePct) {
-            columns.append(", license_usage_pct");
+        if (schema.hasLicenseUsagePct()) {
+            columns.append(", ").append(LICENSE_USAGE_PCT_COLUMN);
         }
         return columns.toString();
     }
@@ -596,17 +555,11 @@ public class MaintenanceRecordDAO {
         }
 
         try (Connection connection = connectionProvider.getConnection()) {
-            boolean hasCreatorUserId = columnExists(
-                    connection, TABLE_NAME, CREATOR_USER_ID_COLUMN);
-            if (!hasCreatorUserId) {
+            if (!hasOwnershipColumn(connection)) {
                 return new PageResult<>(List.of(), 0, 1, pageSize);
             }
-            boolean hasSize = columnExists(
-                    connection, "maintenance_records", "license_size_gb");
-            boolean hasUsagePct = columnExists(
-                    connection, "maintenance_records", "license_usage_pct");
-            boolean hasUsageSize = columnExists(
-                    connection, "maintenance_records", "license_usage_size");
+            MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(
+                    connection).withCreatorUserId();
 
             String ownerColumn = CREATOR_USER_ID_COLUMN;
             String ownerValue = creatorUserId.trim();
@@ -628,11 +581,7 @@ public class MaintenanceRecordDAO {
             }
 
             String itemSql = "SELECT "
-                    + selectColumns(
-                            hasSize,
-                            hasUsagePct,
-                            hasUsageSize,
-                            hasCreatorUserId)
+                    + selectColumns(schema)
                     + " FROM maintenance_records WHERE "
                     + ownerColumn + " = ? "
                     + "ORDER BY CASE WHEN inspection_date IS NULL "
@@ -647,12 +596,7 @@ public class MaintenanceRecordDAO {
                         3, Pagination.offset(page, pageSize));
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
-                        records.add(mapRowToDto(
-                                resultSet,
-                                hasSize,
-                                hasUsagePct,
-                                hasUsageSize,
-                                hasCreatorUserId));
+                        records.add(mapRowToDto(resultSet, schema));
                     }
                 }
             }
@@ -670,6 +614,22 @@ public class MaintenanceRecordDAO {
 
     private record CustomerHistoryRows(
             List<MaintenanceRecordDTO> items, int totalCount) {
+    }
+
+    private record MaintenanceSchemaProfile(
+            boolean hasCreatorUserId,
+            boolean hasLicenseSize,
+            boolean hasLicenseUsagePct,
+            boolean hasLicenseUsageSize) {
+        MaintenanceSchemaProfile withCreatorUserId() {
+            return hasCreatorUserId
+                    ? this
+                    : new MaintenanceSchemaProfile(
+                            true,
+                            hasLicenseSize,
+                            hasLicenseUsagePct,
+                            hasLicenseUsageSize);
+        }
     }
 
 }

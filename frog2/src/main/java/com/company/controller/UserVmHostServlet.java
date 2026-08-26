@@ -18,6 +18,7 @@ public class UserVmHostServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     private final UserVmHostDAO userVmHostDAO;
+    private final UserVmHostService userVmHostService;
 
     public UserVmHostServlet() {
         this(new UserVmHostDAO());
@@ -26,6 +27,7 @@ public class UserVmHostServlet extends HttpServlet {
     UserVmHostServlet(UserVmHostDAO userVmHostDAO) {
         this.userVmHostDAO = Objects.requireNonNull(
                 userVmHostDAO, "userVmHostDAO");
+        this.userVmHostService = new UserVmHostService(userVmHostDAO);
     }
 
     @Override
@@ -58,6 +60,10 @@ public class UserVmHostServlet extends HttpServlet {
         String returnTo = trim(request.getParameter("returnTo"));
         boolean myPageRequest = "mypage".equals(returnTo);
         String action = trim(request.getParameter("action"));
+        if (!"save".equals(action) && !"delete".equals(action)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
         if ("delete".equals(action)) {
             userVmHostDAO.deleteByIpAndOwner(trim(request.getParameter("ip")), user.getUserId());
             if (myPageRequest) {
@@ -79,8 +85,10 @@ public class UserVmHostServlet extends HttpServlet {
         dto.setNote(trim(request.getParameter("note")));
 
         String originalIp = trim(request.getParameter("originalIp"));
-        String errorMessage = userVmHostDAO.save(dto, originalIp);
-        if (errorMessage != null) {
+        UserVmHostService.SaveResult result =
+                userVmHostService.save(dto, originalIp);
+        if (result != UserVmHostService.SaveResult.SAVED) {
+            String errorMessage = saveErrorMessage(result);
             if (myPageRequest) {
                 renderMyPage(request, response, user, dto, originalIp, errorMessage);
                 return;
@@ -95,6 +103,21 @@ public class UserVmHostServlet extends HttpServlet {
         } else {
             response.sendRedirect(request.getContextPath() + "/vm-hosts?result=saved");
         }
+    }
+
+    private String saveErrorMessage(UserVmHostService.SaveResult result) {
+        return switch (result) {
+            case USER_REQUIRED -> "사용자 정보가 없습니다. 다시 로그인해 주세요.";
+            case INVALID_IP -> "IP는 192.168.40.1 ~ 192.168.40.254 범위만 등록할 수 있습니다.";
+            case PURPOSE_REQUIRED -> "사용 목적은 필수입니다.";
+            case HOST_NOT_FOUND -> "수정 대상 호스트를 찾을 수 없습니다.";
+            case DUPLICATE_OWN_IP -> "이미 등록한 IP입니다.";
+            case DUPLICATE_OTHER_IP -> "이미 다른 사용자가 등록한 IP입니다.";
+            case HOST_LIMIT_REACHED -> "사용자당 VM 호스트는 최대 20개까지만 등록할 수 있습니다.";
+            case WRITE_FAILED -> "호스트 정보를 저장하지 못했습니다. 다시 시도해 주세요.";
+            case SAVED -> throw new IllegalArgumentException(
+                    "SAVED does not have an error message");
+        };
     }
 
     private void renderPage(HttpServletRequest request, HttpServletResponse response, UserDTO user, UserVmHostDTO editHost)

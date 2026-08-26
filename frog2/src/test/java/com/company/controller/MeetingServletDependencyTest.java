@@ -9,6 +9,7 @@ import com.company.model.MeetingCommentDTO;
 import com.company.model.MeetingCommentPage;
 import com.company.model.MeetingRecordDAO;
 import com.company.model.MeetingRecordDTO;
+import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +28,6 @@ class MeetingServletDependencyTest {
     void listUsesTheInjectedMeetingDao() throws Exception {
         StubMeetingRecordDAO meetingDAO = new StubMeetingRecordDAO();
         MeetingRecordDTO meeting = meeting(7L);
-        meetingDAO.totalCount = 1;
         meetingDAO.records = List.of(meeting);
         MeetingServlet servlet = new MeetingServlet(
                 meetingDAO, new StubMeetingCommentDAO());
@@ -36,9 +36,8 @@ class MeetingServletDependencyTest {
 
         servlet.doGet(request.proxy(), new ResponseFixture().proxy());
 
-        assertEquals(1, meetingDAO.countCalls);
-        assertEquals(1, meetingDAO.listCalls);
-        assertSame(meetingDAO.records,
+        assertEquals(1, meetingDAO.pageCalls);
+        assertEquals(meetingDAO.records,
                 request.attributes.get("meetingList"));
         assertEquals("/meeting/meeting_list.jsp", request.forwardedPath);
     }
@@ -96,23 +95,15 @@ class MeetingServletDependencyTest {
 
     private static final class StubMeetingRecordDAO
             extends MeetingRecordDAO {
-        private int totalCount;
         private List<MeetingRecordDTO> records = List.of();
         private MeetingRecordDTO detail;
-        private int countCalls;
-        private int listCalls;
+        private int pageCalls;
         private long lastDetailId;
 
         @Override
-        public int getTotalCount() {
-            countCalls++;
-            return totalCount;
-        }
-
-        @Override
-        public List<MeetingRecordDTO> getMeetingRecords(int page) {
-            listCalls++;
-            return records;
+        public PageResult<MeetingRecordDTO> getMeetingPage(int requestedPage) {
+            pageCalls++;
+            return new PageResult<>(records, records.size(), 1, getPageSize());
         }
 
         @Override

@@ -23,6 +23,9 @@ class VmHostViewContractTest {
         assertFalse(page.contains("<style>"));
         assertFalse(page.contains("style=\""));
         assertFalse(page.contains("onsubmit="));
+        assertTrue(page.contains("<c:when test=\"${not empty vmHosts}\">"));
+        assertTrue(page.contains("vm-host-empty ui-empty-state"));
+        assertFalse(page.contains("colspan=\"8\""));
 
         String behavior = page.contains("/resources/js/pages/vm_hosts.js")
                 ? read("resources/js/pages/vm_hosts.js")

@@ -44,8 +44,12 @@ class RuntimePerformanceContractTest {
                 .collect(Collectors.toSet());
 
         assertEquals(
-                Set.of("meeting_id", "title", "meeting_type", "author_name", "meeting_datetime"),
+                Set.of(
+                        "meeting_id", "title", "meeting_type", "author_name",
+                        "meeting_datetime", "count(*) over () as total_count"),
                 columns);
+        assertTrue(sql.contains(
+                "order by meeting_datetime desc, meeting_id desc limit ? offset ?"), sql);
         assertFalse(sql.contains("meeting_comments"), sql);
         assertFalse(sql.contains("content"), sql);
     }

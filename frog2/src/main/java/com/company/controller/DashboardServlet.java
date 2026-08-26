@@ -4,6 +4,7 @@ import com.company.util.LicenseRiskPolicy;
 import com.company.util.LicenseSummaryFormatter;
 import java.io.IOException;
 import java.sql.Date;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -32,18 +33,30 @@ public class DashboardServlet extends HttpServlet {
 
     private final MaintenanceRecordDAO maintenanceRecordDAO;
     private final CustomerDAO customerDAO;
+    private final Clock clock;
     private static final DateTimeFormatter MONTH_PARAM_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM");
     private static final DateTimeFormatter MONTH_LABEL_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM");
 
     public DashboardServlet() {
-        this(new MaintenanceRecordDAO(), new CustomerDAO());
+        this(
+                new MaintenanceRecordDAO(),
+                new CustomerDAO(),
+                Clock.systemDefaultZone());
     }
 
     DashboardServlet(
             MaintenanceRecordDAO maintenanceRecordDAO,
             CustomerDAO customerDAO) {
+        this(maintenanceRecordDAO, customerDAO, Clock.systemDefaultZone());
+    }
+
+    DashboardServlet(
+            MaintenanceRecordDAO maintenanceRecordDAO,
+            CustomerDAO customerDAO,
+            Clock clock) {
         this.maintenanceRecordDAO = maintenanceRecordDAO;
         this.customerDAO = customerDAO;
+        this.clock = clock;
     }
 
     @Override
@@ -57,9 +70,9 @@ public class DashboardServlet extends HttpServlet {
         YearMonth selectedMonth = parseMaintenanceMonth(request.getParameter("maintenanceMonth"));
         LocalDate monthStart = selectedMonth.atDay(1);
         LocalDate nextMonthStart = selectedMonth.plusMonths(1).atDay(1);
-        LocalDate today = LocalDate.now();
-        List<MonthlyMaintenanceCard> monthlyMaintenanceCards =
-                buildMonthlyMaintenanceCards(
+        LocalDate today = LocalDate.now(clock);
+        Map<String, CustomerMonthState> stateByCustomer =
+                buildCustomerMonthStates(
                         maintenanceRecordDAO.getMaintenanceRecordsByMonth(
                                 Date.valueOf(monthStart),
                                 Date.valueOf(nextMonthStart)),
@@ -69,7 +82,7 @@ public class DashboardServlet extends HttpServlet {
         List<MaintenanceAssigneeGroup> monthlyMaintenanceAssigneeGroups =
                 buildMaintenanceAssigneeGroups(
                         allAssignments,
-                        monthlyMaintenanceCards,
+                        stateByCustomer,
                         selectedMonth);
 
         request.setAttribute("maintenanceMonthParam", selectedMonth.format(MONTH_PARAM_FORMATTER));
@@ -82,7 +95,7 @@ public class DashboardServlet extends HttpServlet {
     }
 
     private YearMonth parseMaintenanceMonth(String rawMonth) {
-        YearMonth currentMonth = YearMonth.now();
+        YearMonth currentMonth = YearMonth.now(clock);
         YearMonth previousMonth = currentMonth.minusMonths(1);
 
         if (rawMonth == null || rawMonth.trim().isEmpty()) {
@@ -102,7 +115,7 @@ public class DashboardServlet extends HttpServlet {
 
     private List<MonthTab> buildMaintenanceMonthTabs(YearMonth selectedMonth) {
         List<MonthTab> tabs = new ArrayList<>();
-        YearMonth currentMonth = YearMonth.now();
+        YearMonth currentMonth = YearMonth.now(clock);
         YearMonth previousMonth = currentMonth.minusMonths(1);
 
         tabs.add(new MonthTab(
@@ -116,64 +129,45 @@ public class DashboardServlet extends HttpServlet {
         return tabs;
     }
 
-    private List<MonthlyMaintenanceCard> buildMonthlyMaintenanceCards(List<MaintenanceRecordDTO> records, LocalDate today) {
-        List<MonthlyMaintenanceCard> cards = new ArrayList<>();
+    private Map<String, CustomerMonthState> buildCustomerMonthStates(
+            List<MaintenanceRecordDTO> records, LocalDate today) {
+        Map<String, CustomerMonthState> stateByCustomer =
+                new LinkedHashMap<>();
         if (records == null) {
-            return cards;
+            return stateByCustomer;
         }
 
         for (MaintenanceRecordDTO record : records) {
-            LocalDate inspectionDate = null;
-            if (record.getInspectionDate() != null) {
-                inspectionDate = record.getInspectionDate().toLocalDate();
+            String customerName = normalizedName(record.getCustomerName());
+            if (customerName.isEmpty()) {
+                continue;
             }
-
+            LocalDate inspectionDate = record.getInspectionDate() == null
+                    ? null
+                    : record.getInspectionDate().toLocalDate();
             LicenseRiskPolicy.Level licenseRiskLevel =
                     LicenseSummaryFormatter.resolveUsageRiskLevel(record);
             boolean licenseRisk = licenseRiskLevel
                     == LicenseRiskPolicy.Level.WARNING
                     || licenseRiskLevel == LicenseRiskPolicy.Level.RISK;
-            String statusCode = "done";
-            String statusLabel = "완료";
-            if (inspectionDate != null && inspectionDate.isAfter(today)) {
-                statusCode = "due";
-                statusLabel = "예정";
+            boolean completed = inspectionDate == null
+                    || !inspectionDate.isAfter(today);
+            CustomerMonthState state = stateByCustomer.computeIfAbsent(
+                    customerName,
+                    ignored -> new CustomerMonthState());
+            state.done = state.done || completed;
+            state.licenseRisk = state.licenseRisk || licenseRisk;
+            if (!isMissingValue(record.getInspectorName())) {
+                state.inspectorName = record.getInspectorName().trim();
             }
-
-            cards.add(new MonthlyMaintenanceCard(
-                    valueOrDash(record.getCustomerName()),
-                    formatDate(inspectionDate),
-                    valueOrDash(record.getVerticaVersion()),
-                    valueOrDash(LicenseSummaryFormatter.format(record)),
-                    valueOrDash(record.getNote()),
-                    valueOrDash(record.getInspectorName()),
-                    statusCode,
-                    statusLabel,
-                    licenseRisk));
         }
-        return cards;
+        return stateByCustomer;
     }
 
     private List<MaintenanceAssigneeGroup> buildMaintenanceAssigneeGroups(
             List<MaintenanceCustomerAssignment> assignments,
-            List<MonthlyMaintenanceCard> cards,
+            Map<String, CustomerMonthState> stateByCustomer,
             YearMonth selectedMonth) {
-        Map<String, CustomerMonthState> stateByCustomer = new LinkedHashMap<>();
-        for (MonthlyMaintenanceCard card : cards) {
-            String customerName = normalizedName(card.getCustomerName());
-            if (customerName.isEmpty()) {
-                continue;
-            }
-            CustomerMonthState state = stateByCustomer.computeIfAbsent(
-                    customerName,
-                    ignored -> new CustomerMonthState());
-            state.done = state.done || "done".equals(card.getStatusCode());
-            state.licenseRisk = state.licenseRisk || card.isLicenseRisk();
-            if (!isMissingValue(card.getInspectorName())) {
-                state.inspectorName = card.getInspectorName().trim();
-            }
-        }
-
         Map<String, List<MonthlyMaintenanceCustomer>> customersByManager =
                 new LinkedHashMap<>();
         Map<String, MaintenanceCustomerAssignment> assignmentByCustomer =
@@ -257,42 +251,6 @@ public class DashboardServlet extends HttpServlet {
         return normalizedName(value).isEmpty();
     }
 
-    private String formatDate(LocalDate date) {
-        return date == null ? "-" : date.toString();
-    }
-
-    private String valueOrDash(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return "-";
-        }
-        return value.trim();
-    }
-
-
-    public static class MenuItem {
-        private final String title;
-        private final String url;
-        private final String icon;
-
-        public MenuItem(String title, String url, String icon) {
-            this.title = title;
-            this.url = url;
-            this.icon = icon;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public String getIcon() {
-            return icon;
-        }
-    }
-
     public static class MonthTab {
         private final String label;
         private final String value;
@@ -314,68 +272,6 @@ public class DashboardServlet extends HttpServlet {
 
         public boolean isActive() {
             return active;
-        }
-    }
-
-    public static class MonthlyMaintenanceCard {
-        private final String customerName;
-        private final String inspectionDate;
-        private final String verticaVersion;
-        private final String licenseSummary;
-        private final String note;
-        private final String inspectorName;
-        private final String statusCode;
-        private final String statusLabel;
-        private final boolean licenseRisk;
-
-        public MonthlyMaintenanceCard(String customerName, String inspectionDate, String verticaVersion,
-                String licenseSummary, String note, String inspectorName, String statusCode, String statusLabel,
-                boolean licenseRisk) {
-            this.customerName = customerName;
-            this.inspectionDate = inspectionDate;
-            this.verticaVersion = verticaVersion;
-            this.licenseSummary = licenseSummary;
-            this.note = note;
-            this.inspectorName = inspectorName;
-            this.statusCode = statusCode;
-            this.statusLabel = statusLabel;
-            this.licenseRisk = licenseRisk;
-        }
-
-        public String getCustomerName() {
-            return customerName;
-        }
-
-        public String getInspectionDate() {
-            return inspectionDate;
-        }
-
-        public String getVerticaVersion() {
-            return verticaVersion;
-        }
-
-        public String getLicenseSummary() {
-            return licenseSummary;
-        }
-
-        public String getNote() {
-            return note;
-        }
-
-        public String getInspectorName() {
-            return inspectorName;
-        }
-
-        public String getStatusCode() {
-            return statusCode;
-        }
-
-        public String getStatusLabel() {
-            return statusLabel;
-        }
-
-        public boolean isLicenseRisk() {
-            return licenseRisk;
         }
     }
 

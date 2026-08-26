@@ -9,6 +9,7 @@ import com.company.model.MeetingCommentDTO;
 import com.company.model.MeetingCommentPage;
 import com.company.model.MeetingRecordDAO;
 import com.company.model.MeetingRecordDTO;
+import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
 import com.company.web.ApplicationError;
@@ -58,18 +59,13 @@ public class MeetingServlet extends HttpServlet {
         if ("list".equals(viewType)) {
             // 회의록 목록 (페이징 처리)
             int requestedPage = requestMapper.requestedPage(request);
-            int totalCount = meetingDAO.getTotalCount();
-            int totalPages = MeetingRequestMapper.totalPages(
-                    totalCount, MeetingRecordDAO.getPageSize());
-            int page = MeetingRequestMapper.clampPage(requestedPage, totalPages);
-            List<MeetingRecordDTO> meetingList = totalCount == 0
-                    ? List.of()
-                    : meetingDAO.getMeetingRecords(page);
+            PageResult<MeetingRecordDTO> meetingPage =
+                    meetingDAO.getMeetingPage(requestedPage);
 
-            request.setAttribute("meetingList", meetingList);
-            request.setAttribute("currentPage", page);
-            request.setAttribute("totalPages", totalPages);
-            request.setAttribute("totalCount", totalCount);
+            request.setAttribute("meetingList", meetingPage.items());
+            request.setAttribute("currentPage", meetingPage.page());
+            request.setAttribute("totalPages", meetingPage.totalPages());
+            request.setAttribute("totalCount", meetingPage.totalCount());
             request.setAttribute("viewType", "list");
             request.getRequestDispatcher("/meeting/meeting_list.jsp").forward(request, response);
 

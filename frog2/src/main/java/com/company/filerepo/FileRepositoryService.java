@@ -106,6 +106,10 @@ public final class FileRepositoryService {
         DirectorySnapshot snapshot = directorySnapshot(directory);
         List<Candidate> candidates = snapshot.candidates();
         int startIndex = firstCandidateAfter(candidates, cursor);
+        if (cursor != null && startIndex >= candidates.size()
+                && !candidates.isEmpty()) {
+            startIndex = ((candidates.size() - 1) / pageSize) * pageSize;
+        }
         int endIndex = Math.min(startIndex + pageSize, candidates.size());
         List<Candidate> visible = candidates.subList(startIndex, endIndex);
         boolean hasPrevious = startIndex > 0;

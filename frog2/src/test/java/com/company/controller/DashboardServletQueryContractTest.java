@@ -15,8 +15,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.lang.reflect.Proxy;
 import java.sql.Date;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,10 +27,14 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class DashboardServletQueryContractTest {
+    private static final Clock FIXED_CLOCK = Clock.fixed(
+            Instant.parse("2026-08-24T03:00:00Z"),
+            ZoneId.of("Asia/Seoul"));
+
     @Test
     void dashboardLoadsOnlyMaintenanceSummaryAndViewContract() throws Exception {
         StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
         maintenanceDAO.records = List.of(
                 maintenanceRecord("past-low", today.minusDays(1), "40"),
                 maintenanceRecord("future-low", today.plusDays(1), "40"),
@@ -42,7 +49,8 @@ class DashboardServletQueryContractTest {
                 new MaintenanceCustomerAssignment("pending-only", "Manager B"));
         DashboardServlet servlet = new DashboardServlet(
                 maintenanceDAO,
-                customerDAO);
+                customerDAO,
+                FIXED_CLOCK);
         RequestFixture request = new RequestFixture();
         ResponseFixture response = new ResponseFixture();
 
@@ -79,7 +87,7 @@ class DashboardServletQueryContractTest {
     @Test
     void recordOnlyQuarterlyCustomerKeepsItsConfiguredFrequencyLabel()
             throws Exception {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
         YearMonth currentMonth = YearMonth.from(today);
         StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
         maintenanceDAO.records = List.of(
@@ -96,7 +104,7 @@ class DashboardServletQueryContractTest {
                                 null,
                                 true)));
         DashboardServlet servlet = new DashboardServlet(
-                maintenanceDAO, customerDAO);
+                maintenanceDAO, customerDAO, FIXED_CLOCK);
         RequestFixture request = new RequestFixture();
 
         servlet.doGet(request.proxy(), new ResponseFixture().proxy());
@@ -112,6 +120,37 @@ class DashboardServletQueryContractTest {
                 groups.getFirst().getCustomers().getFirst();
         assertEquals("quarterly-extra", customer.getCustomerName());
         assertEquals(true, customer.isQuarterly());
+        assertEquals(true, customer.isLicenseRisk());
+    }
+
+    @Test
+    void multipleRecordsCombineCompletionAndLicenseRiskForOneCustomer()
+            throws Exception {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
+        maintenanceDAO.records = List.of(
+                maintenanceRecord("mixed-state", today.plusDays(2), "40"),
+                maintenanceRecord("mixed-state", today.minusDays(2), "40"),
+                maintenanceRecord("mixed-state", today.plusDays(1), "95"));
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.assignments = List.of(
+                new MaintenanceCustomerAssignment(
+                        "mixed-state", "Manager C"));
+        DashboardServlet servlet = new DashboardServlet(
+                maintenanceDAO, customerDAO, FIXED_CLOCK);
+        RequestFixture request = new RequestFixture();
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        @SuppressWarnings("unchecked")
+        List<DashboardServlet.MaintenanceAssigneeGroup> groups =
+                (List<DashboardServlet.MaintenanceAssigneeGroup>)
+                        request.attributes.get(
+                                "monthlyMaintenanceAssigneeGroups");
+        DashboardServlet.MonthlyMaintenanceCustomer customer =
+                groups.getFirst().getCustomers().getFirst();
+        assertEquals("mixed-state", customer.getCustomerName());
+        assertEquals(true, customer.isDone());
         assertEquals(true, customer.isLicenseRisk());
     }
 

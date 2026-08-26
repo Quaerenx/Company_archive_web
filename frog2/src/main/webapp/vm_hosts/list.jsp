@@ -109,32 +109,29 @@
           </div>
         </section>
 
-        <section class="vm-panel">
+        <section class="vm-panel" data-ui-table-surface>
           <div class="vm-panel-header"><i class="fas fa-list"></i> 등록된 호스트 목록</div>
           <div class="vm-panel-body">
-            <div class="vm-table-wrap ui-table-wrap"
-                 data-ui-scroll-region
-                 data-ui-scroll-label="개인 호스트 표">
-              <table class="vm-table ui-table">
-                <caption class="sr-only">개인 호스트 목록</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">IP</th>
-                    <th scope="col">목적</th>
-                    <th scope="col">OS</th>
-                    <th scope="col">VERTICA-ver</th>
-                    <th scope="col">원격지</th>
-                    <th scope="col">비고</th>
-                    <th scope="col">수정일</th>
-                    <th scope="col">작업</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <c:choose>
-                    <c:when test="${empty vmHosts}">
-                      <tr><td colspan="8">등록된 VM 호스트가 없습니다.</td></tr>
-                    </c:when>
-                    <c:otherwise>
+            <c:choose>
+              <c:when test="${not empty vmHosts}">
+                <div class="vm-table-wrap ui-table-wrap"
+                     data-ui-scroll-region
+                     data-ui-scroll-label="개인 호스트 표">
+                  <table class="vm-table ui-table">
+                    <caption class="sr-only">개인 호스트 목록</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">IP</th>
+                        <th scope="col">목적</th>
+                        <th scope="col">OS</th>
+                        <th scope="col">VERTICA-ver</th>
+                        <th scope="col">원격지</th>
+                        <th scope="col">비고</th>
+                        <th scope="col">수정일</th>
+                        <th scope="col">작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       <c:forEach var="host" items="${vmHosts}">
                         <tr>
                           <td><strong><c:out value="${host.ip}"/></strong></td>
@@ -159,7 +156,7 @@
                                     method="post"
                                     action="${pageContext.request.contextPath}/vm-hosts"
                                     data-ui-submit-lock="auto">
-                                  <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
+                                <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
                                 <input type="hidden" name="action" value="delete" />
                                 <input type="hidden" name="ip" value="<c:out value='${host.ip}'/>" />
                                 <button class="vm-btn-danger ui-button button--danger button--sm"
@@ -170,15 +167,22 @@
                           </td>
                         </tr>
                       </c:forEach>
-                    </c:otherwise>
-                  </c:choose>
-                </tbody>
-              </table>
-            </div>
-            <t:tableFooter itemLabel="VM 호스트"
-                           currentPage="1"
-                           totalPages="1"
-                           paginationLabel="VM 호스트 페이지" />
+                    </tbody>
+                  </table>
+                </div>
+                <t:tableFooter itemLabel="VM 호스트"
+                               currentPage="1"
+                               totalPages="1"
+                               paginationLabel="VM 호스트 페이지" />
+              </c:when>
+              <c:otherwise>
+                <div class="vm-host-empty ui-empty-state">
+                  <i class="fas fa-server" aria-hidden="true"></i>
+                  <strong>등록된 VM 호스트가 없습니다.</strong>
+                  <span>왼쪽 입력 영역에서 첫 호스트를 등록할 수 있습니다.</span>
+                </div>
+              </c:otherwise>
+            </c:choose>
           </div>
         </section>
       </div>

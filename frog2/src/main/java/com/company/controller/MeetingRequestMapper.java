@@ -3,6 +3,7 @@ package com.company.controller;
 import com.company.model.MeetingRecordDTO;
 import com.company.model.UserDTO;
 import com.company.util.StrictDateParser;
+import com.company.util.Pagination;
 import jakarta.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.util.Set;
@@ -60,33 +61,7 @@ final class MeetingRequestMapper {
     }
 
     int requestedPage(HttpServletRequest request) {
-        String value = trimmed(request.getParameter("page"));
-        if (value == null) {
-            return 1;
-        }
-        try {
-            long page = Long.parseLong(value);
-            if (page < 1) {
-                return 1;
-            }
-            return page > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) page;
-        } catch (NumberFormatException exception) {
-            return 1;
-        }
-    }
-
-    static int totalPages(int totalCount, int pageSize) {
-        if (totalCount < 0 || pageSize <= 0) {
-            throw new IllegalArgumentException("Pagination values must be positive.");
-        }
-        return totalCount == 0 ? 0 : ((totalCount - 1) / pageSize) + 1;
-    }
-
-    static int clampPage(int requestedPage, int totalPages) {
-        if (totalPages <= 0) {
-            return 1;
-        }
-        return Math.min(Math.max(requestedPage, 1), totalPages);
+        return Pagination.requestedPage(request.getParameter("page"));
     }
 
     private MeetingRecordDTO mapForm(HttpServletRequest request) {

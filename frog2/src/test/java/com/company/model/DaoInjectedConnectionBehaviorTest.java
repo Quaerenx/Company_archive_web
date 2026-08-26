@@ -175,7 +175,19 @@ class DaoInjectedConnectionBehaviorTest {
     }
 
     @Test
-    void userVmHostInsertKeepsAllChecksOnOneInjectedConnection() {
+    void userVmHostDeleteRequiresExactlyOneAffectedRow() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueueUpdate(2);
+        UserVmHostDAO dao = new UserVmHostDAO(jdbc::open);
+
+        assertFalse(dao.deleteByIpAndOwner(
+                "192.168.40.17", "user-17"));
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void userVmHostSaveKeepsChecksAndInsertOnOneConnection() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue();
         jdbc.enqueue(PaginationJdbcFixture.row("count", 0));
@@ -183,7 +195,9 @@ class DaoInjectedConnectionBehaviorTest {
         UserVmHostDAO dao = new UserVmHostDAO(jdbc::open);
         UserVmHostDTO host = userVmHost("192.168.40.18");
 
-        assertNull(dao.save(host, null));
+        assertEquals(
+                UserVmHostDAO.MutationResult.SAVED,
+                dao.saveNormalized(host, null));
 
         assertEquals(1, jdbc.openCount);
         assertEquals(1, jdbc.closeCount);
@@ -192,6 +206,52 @@ class DaoInjectedConnectionBehaviorTest {
         assertTrue(jdbc.statements.get(1).sql.startsWith("SELECT COUNT(*)"));
         assertTrue(jdbc.statements.get(2).sql.startsWith(
                 "INSERT INTO user_vm_hosts"));
+    }
+
+    @Test
+    void userVmHostWritesReportZeroAffectedRows() {
+        PaginationJdbcFixture insertJdbc = new PaginationJdbcFixture();
+        insertJdbc.enqueue();
+        insertJdbc.enqueue(PaginationJdbcFixture.row("count", 0));
+        insertJdbc.enqueueUpdate(0);
+        UserVmHostDAO insertDao = new UserVmHostDAO(insertJdbc::open);
+        UserVmHostDTO host = userVmHost("192.168.40.18");
+
+        assertEquals(
+                UserVmHostDAO.MutationResult.WRITE_FAILED,
+                insertDao.saveNormalized(host, null));
+
+        PaginationJdbcFixture updateJdbc = new PaginationJdbcFixture();
+        updateJdbc.enqueue(userVmHostRow("192.168.40.17"));
+        updateJdbc.enqueue(userVmHostRow("192.168.40.17"));
+        updateJdbc.enqueueUpdate(0);
+        UserVmHostDAO updateDao = new UserVmHostDAO(updateJdbc::open);
+        UserVmHostDTO updatedHost = userVmHost("192.168.40.17");
+
+        assertEquals(
+                UserVmHostDAO.MutationResult.WRITE_FAILED,
+                updateDao.saveNormalized(
+                        updatedHost, "192.168.40.17"));
+        assertEquals(1, updateJdbc.openCount);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    void userVmHostLegacySaveAdapterKeepsTheOriginalContract() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 0));
+        jdbc.enqueueUpdate(1);
+        UserVmHostDAO dao = new UserVmHostDAO(jdbc::open);
+
+        assertNull(dao.save(userVmHost("192.168.40.18"), null));
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+
+        assertEquals(
+                "IP는 192.168.40.1 ~ 192.168.40.254 범위만 등록할 수 있습니다.",
+                dao.save(userVmHost("10.0.0.1"), null));
+        assertEquals(1, jdbc.openCount);
     }
 
     private static java.util.Map<String, Object> maintenanceRow(
