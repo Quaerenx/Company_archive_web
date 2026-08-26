@@ -1,3 +1,4 @@
+import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.zip.ZipFile
 
@@ -192,13 +193,38 @@ def verifyDevelopmentDeployment = tasks.register(
         String deployedPath = providers.systemProperty(
                 'frog2.e2e.deployedWar')
                 .getOrElse('/opt/tomcat-dev/webapps/frog2.war')
-        File deployedWar = file(deployedPath).canonicalFile
-        File productionWar = file(
-                '/opt/tomcat/webapps/frog2.war').canonicalFile
-        if (deployedWar == productionWar) {
+        File configuredDevelopmentBase = file('/opt/tomcat-dev')
+        Path developmentBasePath = configuredDevelopmentBase.toPath()
+                .toAbsolutePath().normalize()
+        Path canonicalDevelopmentBase = configuredDevelopmentBase
+                .canonicalFile.toPath()
+        if (developmentBasePath != canonicalDevelopmentBase) {
             throw new GradleException(
-                    'Production WAR cannot be used for development E2E verification')
+                    'Development CATALINA_BASE must not be a symbolic link or aliased path')
         }
+
+        Path configuredWarPath = Path.of(deployedPath)
+        if (!configuredWarPath.isAbsolute()) {
+            throw new GradleException(
+                    'Development WAR path must be absolute')
+        }
+        File configuredWar = configuredWarPath.toFile()
+        Path normalizedWarPath = configuredWarPath
+                .toAbsolutePath().normalize()
+        Path canonicalWarPath = configuredWar.canonicalFile.toPath()
+        if (configuredWarPath != normalizedWarPath
+                || normalizedWarPath != canonicalWarPath) {
+            throw new GradleException(
+                    'Development WAR path must not contain symbolic links or aliases')
+        }
+        if (canonicalWarPath == canonicalDevelopmentBase
+                || !canonicalWarPath.startsWith(canonicalDevelopmentBase)
+                || !canonicalWarPath.fileName.toString().endsWith('.war')) {
+            throw new GradleException(
+                    'Development WAR must be a .war file inside /opt/tomcat-dev')
+        }
+
+        File deployedWar = canonicalWarPath.toFile()
         if (!deployedWar.isFile()) {
             throw new GradleException(
                     "Development WAR is unavailable: ${deployedWar}")

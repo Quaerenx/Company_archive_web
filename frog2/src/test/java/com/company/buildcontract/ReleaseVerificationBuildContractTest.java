@@ -1,5 +1,6 @@
 package com.company.buildcontract;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -17,7 +18,20 @@ class ReleaseVerificationBuildContractTest {
         assertTrue(build.contains(
                 "'/opt/tomcat-dev/webapps/frog2.war'"));
         assertTrue(build.contains(
-                "'Production WAR cannot be used for development E2E verification'"));
+                "File configuredDevelopmentBase = file('/opt/tomcat-dev')"));
+        assertTrue(build.contains(
+                "if (!configuredWarPath.isAbsolute())"));
+        assertTrue(build.contains(
+                "if (configuredWarPath != normalizedWarPath\n"
+                        + "                || normalizedWarPath != canonicalWarPath)"));
+        assertTrue(build.contains(
+                "!canonicalWarPath.startsWith(canonicalDevelopmentBase)"));
+        assertTrue(build.contains(
+                "'Development WAR must be a .war file inside /opt/tomcat-dev'"));
+        assertTrue(build.contains(
+                "'Development WAR path must not contain symbolic links or aliases'"));
+        assertFalse(build.contains(
+                "'/opt/tomcat/webapps/frog2.war'"));
         assertTrue(build.contains(
                 "tasks.named('e2eSmoke') {\n"
                         + "    dependsOn verifyDevelopmentDeployment"));
