@@ -1,34 +1,54 @@
 package com.company.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class CustomerDAOSoftDeleteContractTest {
-    private static final Pattern ACTIVE_CUSTOMER_PREDICATE = Pattern.compile(
-            "WHERE\\s+(?:d\\.)?customer_name\\s*=\\s*\\?\\s+AND\\s+"
-                    + "(?:d\\.)?is_deleted\\s*=\\s*1");
+    private static final Pattern RAW_SOFT_DELETE_LITERAL = Pattern.compile(
+            "is_deleted\\s*=\\s*[01]");
 
     @Test
-    void singleReadUpdateAndDeleteOnlyTargetActiveCustomers() throws Exception {
+    void namesTheLegacyActiveAndDeletedFlagSemantics() throws Exception {
         String source = Files.readString(
                 Path.of("src/main/java/com/company/model/CustomerDAO.java"));
 
-        assertEquals(
-                3,
-                occurrences(source, ACTIVE_CUSTOMER_PREDICATE));
+        assertTrue(source.contains(
+                "private static final int ACTIVE_FLAG = 1;"));
+        assertTrue(source.contains(
+                "private static final int DELETED_FLAG = 0;"));
+        assertFalse(RAW_SOFT_DELETE_LITERAL.matcher(source).find());
     }
 
-    private static int occurrences(String value, Pattern pattern) {
-        int count = 0;
-        Matcher matcher = pattern.matcher(value);
-        while (matcher.find()) {
-            count++;
-        }
-        return count;
+    @Test
+    void readUpdateInsertAndDeleteKeepTheExistingFlagContract() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueueUpdate(1);
+        jdbc.enqueueUpdate(1);
+        jdbc.enqueueUpdate(1);
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerDTO customer = new CustomerDTO();
+        customer.setCustomerName("Acme");
+
+        dao.getCustomerByName("Acme");
+        assertTrue(dao.updateCustomer(customer));
+        assertTrue(dao.addCustomer(customer));
+        assertTrue(dao.deleteCustomer("Acme"));
+
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "d.is_deleted = 1"));
+        assertTrue(jdbc.statements.get(1).sql.contains(
+                "is_deleted = 1"));
+        assertTrue(jdbc.statements.get(2).sql.endsWith(
+                "?, 1)"));
+        assertTrue(jdbc.statements.get(3).sql.contains(
+                "SET is_deleted = 0"));
+        assertTrue(jdbc.statements.get(3).sql.contains(
+                "AND is_deleted = 1"));
     }
 }

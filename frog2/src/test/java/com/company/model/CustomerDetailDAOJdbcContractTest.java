@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLNonTransientException;
@@ -292,6 +293,7 @@ class CustomerDetailDAOJdbcContractTest {
                     new Class<?>[] {Connection.class},
                     (ignored, call, args) -> switch (call.getName()) {
                         case "prepareStatement" -> statement((String) args[0]);
+                        case "getMetaData" -> metadata();
                         case "getAutoCommit" -> autoCommit;
                         case "setAutoCommit" -> {
                             autoCommit = (Boolean) args[0];
@@ -311,6 +313,16 @@ class CustomerDetailDAOJdbcContractTest {
                             yield null;
                         }
                         case "isClosed" -> false;
+                        default -> defaultValue(call.getReturnType());
+                    });
+        }
+
+        private static DatabaseMetaData metadata() {
+            return (DatabaseMetaData) Proxy.newProxyInstance(
+                    DatabaseMetaData.class.getClassLoader(),
+                    new Class<?>[] {DatabaseMetaData.class},
+                    (ignored, call, args) -> switch (call.getName()) {
+                        case "getColumns" -> resultSet(false);
                         default -> defaultValue(call.getReturnType());
                     });
         }

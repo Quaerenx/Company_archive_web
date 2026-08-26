@@ -3,8 +3,11 @@ package com.company.listener;
 import com.company.model.DataAccessException;
 import com.company.model.DatabaseSchemaReadiness;
 import com.company.util.DBConnection;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import java.util.List;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,8 +18,11 @@ import org.slf4j.LoggerFactory;
  */
 public class AppLifecycleListener implements ServletContextListener {
     public static final String SCHEMA_READY_ATTRIBUTE = "frog2.schemaReady";
+    public static final String SCHEMA_STATUS_ATTRIBUTE = "frog2.schemaStatus";
     public static final String SCHEMA_MISSING_ATTRIBUTE =
             "frog2.schemaMissingRequirements";
+    public static final String SCHEMA_OPTIONAL_MISSING_ATTRIBUTE =
+            "frog2.schemaOptionalMissingRequirements";
     private static final Logger logger = LoggerFactory.getLogger(AppLifecycleListener.class);
     
     @Override
@@ -29,14 +35,26 @@ public class AppLifecycleListener implements ServletContextListener {
         // Connection Pool 통계 출력
         logger.info("Connection Pool 상태: {}", DBConnection.getPoolStats());
 
+        publishSchemaReadiness(
+                sce.getServletContext(), DatabaseSchemaReadiness::inspect);
+    }
+
+    static void publishSchemaReadiness(
+            ServletContext context,
+            Supplier<DatabaseSchemaReadiness.Report> inspection) {
         try {
-            DatabaseSchemaReadiness.Report report =
-                    DatabaseSchemaReadiness.inspect();
-            sce.getServletContext().setAttribute(
-                    SCHEMA_READY_ATTRIBUTE, report.ready());
-            sce.getServletContext().setAttribute(
-                    SCHEMA_MISSING_ATTRIBUTE,
-                    report.missingRequirements());
+            DatabaseSchemaReadiness.Report report = inspection.get();
+            context.setAttribute(SCHEMA_READY_ATTRIBUTE, report.ready());
+            context.setAttribute(
+                    SCHEMA_STATUS_ATTRIBUTE,
+                    report.ready()
+                            ? SchemaStatus.READY
+                            : SchemaStatus.INCOMPATIBLE);
+            context.setAttribute(
+                    SCHEMA_MISSING_ATTRIBUTE, report.missingRequirements());
+            context.setAttribute(
+                    SCHEMA_OPTIONAL_MISSING_ATTRIBUTE,
+                    report.missingOptionalRequirements());
             if (report.ready()) {
                 logger.info("Database schema readiness check passed");
             } else {
@@ -44,15 +62,28 @@ public class AppLifecycleListener implements ServletContextListener {
                         "Database schema readiness check failed: {}",
                         report.missingRequirements());
             }
+            if (!report.missingOptionalRequirements().isEmpty()) {
+                logger.warn(
+                        "Optional database schema capabilities are missing: {}",
+                        report.missingOptionalRequirements());
+            }
         } catch (DataAccessException exception) {
-            sce.getServletContext().setAttribute(
-                    SCHEMA_READY_ATTRIBUTE, false);
-            sce.getServletContext().setAttribute(
-                    SCHEMA_MISSING_ATTRIBUTE, java.util.List.of());
+            context.setAttribute(SCHEMA_READY_ATTRIBUTE, false);
+            context.setAttribute(
+                    SCHEMA_STATUS_ATTRIBUTE, SchemaStatus.UNAVAILABLE);
+            context.setAttribute(SCHEMA_MISSING_ATTRIBUTE, List.of());
+            context.setAttribute(
+                    SCHEMA_OPTIONAL_MISSING_ATTRIBUTE, List.of());
             logger.error(
                     "Database schema readiness could not be inspected",
                     exception);
         }
+    }
+
+    public enum SchemaStatus {
+        READY,
+        INCOMPATIBLE,
+        UNAVAILABLE
     }
     
     @Override

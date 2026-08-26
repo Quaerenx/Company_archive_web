@@ -2,6 +2,8 @@ package com.company.controller;
 
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDTO;
+import com.company.model.UserDTO;
+import com.company.security.SessionPrincipal;
 import com.company.web.JsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,15 +32,20 @@ final class CustomerCommandController {
             HttpServletResponse response,
             HttpSession session) throws IOException {
         String action = request.getParameter("action");
+        UserDTO principal = SessionPrincipal.from(session);
+        String actorUserId = principal == null ? null : principal.getUserId();
         if ("saveDetail".equals(action)) {
-            saveDetail(request, response, session);
+            saveDetail(request, response, session, actorUserId);
             return;
         }
 
         switch (action == null ? "" : action) {
-            case "update" -> updateCustomer(request, response, session);
-            case "add" -> addCustomer(request, response, session);
-            case "delete" -> deleteCustomer(request, response, session);
+            case "update" -> updateCustomer(
+                    request, response, session, actorUserId);
+            case "add" -> addCustomer(
+                    request, response, session, actorUserId);
+            case "delete" -> deleteCustomer(
+                    request, response, session, actorUserId);
             default -> response.sendRedirect("customers?view=list");
         }
     }
@@ -46,11 +53,12 @@ final class CustomerCommandController {
     private void updateCustomer(
             HttpServletRequest request,
             HttpServletResponse response,
-            HttpSession session) throws IOException {
+            HttpSession session,
+            String actorUserId) throws IOException {
         CustomerDTO customer = mapper.mapCustomer(request);
         setResultMessage(
                 session,
-                service.updateCustomer(customer),
+                service.updateCustomer(customer, actorUserId),
                 "고객사 정보가 성공적으로 업데이트되었습니다.",
                 "고객사 정보 업데이트 중 오류가 발생했습니다.");
         response.sendRedirect("customers?view=list");
@@ -59,11 +67,12 @@ final class CustomerCommandController {
     private void addCustomer(
             HttpServletRequest request,
             HttpServletResponse response,
-            HttpSession session) throws IOException {
+            HttpSession session,
+            String actorUserId) throws IOException {
         CustomerDTO customer = mapper.mapCustomer(request);
         setResultMessage(
                 session,
-                service.addCustomer(customer),
+                service.addCustomer(customer, actorUserId),
                 "새 고객사가 성공적으로 추가되었습니다.",
                 "고객사 추가 중 오류가 발생했습니다.");
         response.sendRedirect("customers?view=list");
@@ -72,10 +81,12 @@ final class CustomerCommandController {
     private void deleteCustomer(
             HttpServletRequest request,
             HttpServletResponse response,
-            HttpSession session) throws IOException {
+            HttpSession session,
+            String actorUserId) throws IOException {
         setResultMessage(
                 session,
-                service.deleteCustomer(request.getParameter("customer_name")),
+                service.deleteCustomer(
+                        request.getParameter("customer_name"), actorUserId),
                 "고객사가 성공적으로 삭제되었습니다.",
                 "고객사 삭제 중 오류가 발생했습니다.");
         response.sendRedirect("customers?view=list");
@@ -84,7 +95,8 @@ final class CustomerCommandController {
     private void saveDetail(
             HttpServletRequest request,
             HttpServletResponse response,
-            HttpSession session) throws IOException {
+            HttpSession session,
+            String actorUserId) throws IOException {
         CustomerEnvironment environment;
         try {
             environment = mapper.environment(request);
@@ -99,7 +111,8 @@ final class CustomerCommandController {
             CustomerDetailDTO detail = mapper.mapCustomerDetail(request);
             setResultMessage(
                     session,
-                    service.saveCustomerDetail(environment, detail),
+                    service.saveCustomerDetail(
+                            environment, detail, actorUserId),
                     "상세정보가 성공적으로 저장되었습니다.",
                     "상세정보 저장 중 오류가 발생했습니다.");
 

@@ -27,7 +27,8 @@ class DatabaseMigrationInventoryTest {
                         "V20260730_05__add_troubleshooting_creator_user_id.sql",
                         "V20260731_06__add_activity_creator_user_ids.sql",
                         "V20260804_07__create_customer_maintenance_schedule.sql",
-                        "V20260804_08__set_konkuk_hospital_quarterly_schedule.sql"),
+                        "V20260804_08__set_konkuk_hospital_quarterly_schedule.sql",
+                        "V20260825_09__add_customer_audit_columns.sql"),
                 sqlFileNames(DATABASE_ROOT.resolve("migration")));
     }
 

@@ -8,7 +8,7 @@
 
     <context-param>
         <param-name>frog2AssetVersion</param-name>
-        <param-value>20260818-cool-mist-1</param-value>
+        <param-value>20260826-release-candidate-1</param-value>
     </context-param>
 
     <session-config>
@@ -110,6 +110,15 @@
     </filter>
     <filter-mapping>
         <filter-name>CsrfFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>SchemaReadinessFilter</filter-name>
+        <filter-class>com.company.filter.SchemaReadinessFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>SchemaReadinessFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 

@@ -9,6 +9,8 @@ import java.sql.Timestamp;
 import java.util.Objects;
 
 public class CustomerDetailDAO {
+    private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
+            new SchemaCapabilityCache();
     private static final String COLUMNS =
             "customer_name, system_name, customer_manager, si_company, si_manager, creator, create_date, "
                     + "main_manager, sub_manager, install_date, introduction_year, db_name, db_mode, "
@@ -33,13 +35,22 @@ public class CustomerDetailDAO {
                     + "db_encryption = ?, cdc_tool = ?, eos_date = ?, customer_type = ?, note = ?";
 
     private final JdbcConnectionProvider connectionProvider;
+    private final SchemaCapabilityCache schemaCapabilities;
 
     public CustomerDetailDAO() {
-        this(DBConnection::getConnection);
+        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES);
     }
 
     CustomerDetailDAO(JdbcConnectionProvider connectionProvider) {
+        this(connectionProvider, new SchemaCapabilityCache());
+    }
+
+    CustomerDetailDAO(
+            JdbcConnectionProvider connectionProvider,
+            SchemaCapabilityCache schemaCapabilities) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider");
+        this.schemaCapabilities = Objects.requireNonNull(
+                schemaCapabilities, "schemaCapabilities");
     }
 
     public CustomerDetailDTO getCustomerDetail(String customerName) {
@@ -56,12 +67,17 @@ public class CustomerDetailDAO {
 
     public CustomerDetailSet getCustomerDetails(String customerName) {
         try (Connection connection = connectionProvider.getConnection()) {
+            boolean auditAvailable = CustomerAuditSupport.isAvailable(
+                    connection, schemaCapabilities);
             String sql = "SELECT 'prod' AS detail_environment, " + COLUMNS
+                    + auditProjection(auditAvailable)
                     + " FROM vertica_customer_detail "
                     + "WHERE customer_name = ? AND is_deleted = 1 "
                     + "UNION ALL SELECT 'stg' AS detail_environment, " + COLUMNS
+                    + emptyAuditProjection()
                     + " FROM vertica_customer_detail_stg WHERE customer_name = ? "
                     + "UNION ALL SELECT 'dev' AS detail_environment, " + COLUMNS
+                    + emptyAuditProjection()
                     + " FROM vertica_customer_detail_dev WHERE customer_name = ?";
             CustomerDetailDTO production = null;
             CustomerDetailDTO staging = null;
@@ -90,22 +106,34 @@ public class CustomerDetailDAO {
     }
 
     public boolean saveOrUpdateCustomerDetail(CustomerDetailDTO detail) {
-        return saveOrUpdate(CustomerDetailEnvironment.PROD, detail);
+        return saveOrUpdateCustomerDetail(detail, null);
+    }
+
+    public boolean saveOrUpdateCustomerDetail(
+            CustomerDetailDTO detail, String actorUserId) {
+        return saveOrUpdate(
+                CustomerDetailEnvironment.PROD, detail, actorUserId);
     }
 
     public boolean saveOrUpdateCustomerDetailStg(CustomerDetailDTO detail) {
-        return saveOrUpdate(CustomerDetailEnvironment.STAGING, detail);
+        return saveOrUpdate(
+                CustomerDetailEnvironment.STAGING, detail, null);
     }
 
     public boolean saveOrUpdateCustomerDetailDev(CustomerDetailDTO detail) {
-        return saveOrUpdate(CustomerDetailEnvironment.DEVELOPMENT, detail);
+        return saveOrUpdate(
+                CustomerDetailEnvironment.DEVELOPMENT, detail, null);
     }
 
 
     private CustomerDetailDTO getCustomerDetail(
             CustomerDetailEnvironment environment, String customerName) {
         try (Connection connection = connectionProvider.getConnection()) {
-            return find(connection, environment, customerName);
+            boolean auditAvailable = environment == CustomerDetailEnvironment.PROD
+                    && CustomerAuditSupport.isAvailable(
+                            connection, schemaCapabilities);
+            return find(
+                    connection, environment, customerName, auditAvailable);
         } catch (SQLException exception) {
             throw DataAccessException.from("load customer detail", exception);
         }
@@ -114,8 +142,11 @@ public class CustomerDetailDAO {
     private CustomerDetailDTO find(
             Connection connection,
             CustomerDetailEnvironment environment,
-            String customerName) throws SQLException {
-        String sql = "SELECT " + COLUMNS + " FROM " + environment.tableName()
+            String customerName,
+            boolean auditAvailable) throws SQLException {
+        String sql = "SELECT " + COLUMNS
+                + auditProjection(auditAvailable)
+                + " FROM " + environment.tableName()
                 + " WHERE customer_name = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, customerName);
@@ -126,9 +157,14 @@ public class CustomerDetailDAO {
     }
 
     private boolean saveOrUpdate(
-            CustomerDetailEnvironment environment, CustomerDetailDTO detail) {
+            CustomerDetailEnvironment environment,
+            CustomerDetailDTO detail,
+            String actorUserId) {
         Objects.requireNonNull(detail, "detail");
         try (Connection connection = connectionProvider.getConnection()) {
+            boolean auditAvailable = environment == CustomerDetailEnvironment.PROD
+                    && CustomerAuditSupport.shouldAuditWrite(
+                            connection, schemaCapabilities, actorUserId);
             boolean originalAutoCommit = connection.getAutoCommit();
             Throwable primaryFailure = null;
             try {
@@ -138,8 +174,12 @@ public class CustomerDetailDAO {
 
                 boolean exists = exists(connection, environment, detail.getCustomerName());
                 boolean changed = exists
-                        ? update(connection, environment, detail)
-                        : insert(connection, environment, detail);
+                        ? update(
+                                connection, environment, detail,
+                                actorUserId, auditAvailable)
+                        : insert(
+                                connection, environment, detail,
+                                actorUserId, auditAvailable);
                 connection.commit();
                 return changed;
             } catch (SQLException | RuntimeException exception) {
@@ -172,13 +212,24 @@ public class CustomerDetailDAO {
     private boolean insert(
             Connection connection,
             CustomerDetailEnvironment environment,
-            CustomerDetailDTO detail) throws SQLException {
-        String sql = "INSERT INTO " + environment.tableName() + " (" + COLUMNS
-                + ") VALUES (" + INSERT_PLACEHOLDERS + ")";
+            CustomerDetailDTO detail,
+            String actorUserId,
+            boolean auditAvailable) throws SQLException {
+        String columns = COLUMNS;
+        String values = INSERT_PLACEHOLDERS;
+        if (auditAvailable) {
+            columns += ", updated_at, updated_by";
+            values += ", CURRENT_TIMESTAMP, ?";
+        }
+        String sql = "INSERT INTO " + environment.tableName() + " (" + columns
+                + ") VALUES (" + values + ")";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, detail.getCustomerName());
             int nextIndex = bindMutableFields(statement, detail, 2);
             requireNextIndex(nextIndex);
+            if (auditAvailable) {
+                statement.setString(nextIndex, actorUserId.trim());
+            }
             return statement.executeUpdate() > 0;
         }
     }
@@ -186,13 +237,22 @@ public class CustomerDetailDAO {
     private boolean update(
             Connection connection,
             CustomerDetailEnvironment environment,
-            CustomerDetailDTO detail) throws SQLException {
-        String sql = "UPDATE " + environment.tableName() + " SET " + UPDATE_ASSIGNMENTS
+            CustomerDetailDTO detail,
+            String actorUserId,
+            boolean auditAvailable) throws SQLException {
+        String assignments = UPDATE_ASSIGNMENTS;
+        if (auditAvailable) {
+            assignments += ", updated_at = CURRENT_TIMESTAMP, updated_by = ?";
+        }
+        String sql = "UPDATE " + environment.tableName() + " SET " + assignments
                 + " WHERE customer_name = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int nextIndex = bindMutableFields(statement, detail, 1);
+            if (auditAvailable) {
+                statement.setString(nextIndex++, actorUserId.trim());
+            }
             statement.setString(nextIndex, detail.getCustomerName());
-            requireNextIndex(nextIndex + 1);
+            requireNextIndex(nextIndex + (auditAvailable ? 0 : 1));
             return statement.executeUpdate() > 0;
         }
     }
@@ -335,7 +395,20 @@ public class CustomerDetailDAO {
         detail.setEosDate(toDate(resultSet.getTimestamp("eos_date")));
         detail.setCustomerType(resultSet.getString("customer_type"));
         detail.setNote(resultSet.getString("note"));
+        detail.setUpdatedAt(toDate(resultSet.getTimestamp("audit_updated_at")));
+        detail.setUpdatedBy(resultSet.getString("audit_updated_by"));
         return detail;
+    }
+
+    private static String auditProjection(boolean auditAvailable) {
+        return auditAvailable
+                ? ", updated_at AS audit_updated_at, updated_by AS audit_updated_by"
+                : emptyAuditProjection();
+    }
+
+    private static String emptyAuditProjection() {
+        return ", CAST(NULL AS TIMESTAMP) AS audit_updated_at, "
+                + "CAST(NULL AS VARCHAR(100)) AS audit_updated_by";
     }
 
     private static java.util.Date toDate(Timestamp timestamp) {

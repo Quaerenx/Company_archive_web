@@ -1,6 +1,6 @@
 # Archive migration manifest and deployment ledger
 
-Date: 2026-08-10
+Last updated: 2026-08-25
 Status: procedure only; no migration executed and no ledger table created
 
 ## Immutable migration rule
@@ -50,5 +50,11 @@ Keep the actual ledger in the approved deployment record system, not in applicat
 - `V20260731_06` leaves ownership columns nullable. The application now fails owner-scoped reads and writes closed when those columns are absent; legacy display names are not authorization keys.
 - `V20260804_07` can be considered ready only when all schedule columns required by the code exist, not merely `interval_months`.
 - `V20260720_01` is ready only when the complete `user_vm_hosts` column contract exists, not merely its ownership column.
+- `V20260825_09` adds nullable audit evidence without backfilling existing
+  rows. Validate all four column types before application and export audit
+  values before any rollback that drops the columns. Quiesce all application
+  nodes for the four statements: a partial schema is intentionally treated as
+  incompatible, and a complete schema rejects writes without a stable actor.
 - Metadata readiness intentionally does not inspect customer rows, backfill completeness, primary keys or check constraints. Those remain approved preflight/post-check items; startup does not perform data queries.
-- No migration was executed or changed during this remediation.
+- No migration was executed during this remediation. `V20260825_09` was added
+  as a review-only artifact and is not an application startup input.

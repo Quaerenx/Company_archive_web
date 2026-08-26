@@ -62,6 +62,8 @@ public class CustomerDetailDTO {
     private Date eosDate;
     private String customerType;
     private String note;
+    private Date updatedAt;
+    private String updatedBy;
 
     // 기본 생성자
     public CustomerDetailDTO() {}
@@ -457,5 +459,21 @@ public class CustomerDetailDTO {
 
     public void setSystemName(String systemName) {
         this.systemName = systemName;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }

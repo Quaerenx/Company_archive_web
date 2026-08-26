@@ -185,4 +185,5 @@ public class CustomerDTO {
     public void setCustomerType(String customerType) {
         this.customerType = customerType;
     }
+
 }

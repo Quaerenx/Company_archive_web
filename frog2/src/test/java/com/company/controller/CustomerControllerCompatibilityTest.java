@@ -123,10 +123,12 @@ class CustomerControllerCompatibilityTest {
         RequestFixture add = new RequestFixture();
         add.parameters.put("action", "add");
         add.parameters.put("customer_name", "Acme");
+        add.parameters.put("actorUserId", "forged-user");
         ResponseFixture addResponse = new ResponseFixture();
         servlet.doPost(add.proxy(), addResponse.proxy());
 
         assertEquals("Acme", customerDAO.added.getCustomerName());
+        assertEquals("tester", customerDAO.lastActorUserId);
         assertEquals("customers?view=list", addResponse.redirect);
         assertTrue(add.sessionAttributes.containsKey("message"));
 
@@ -188,6 +190,7 @@ class CustomerControllerCompatibilityTest {
         servlet.doPost(request.proxy(), response.proxy());
 
         assertEquals(List.of("prod:Acme"), detailDAO.writes);
+        assertEquals("tester", detailDAO.lastActorUserId);
         assertEquals(
                 "customers?view=detail&customerName=Acme&env=prod",
                 response.redirect);
@@ -272,6 +275,7 @@ class CustomerControllerCompatibilityTest {
         private String lastFilter;
         private String lastQuery;
         private String lastCustomerName;
+        private String lastActorUserId;
         private int lastPage;
         private int lastPageSize;
 
@@ -311,13 +315,31 @@ class CustomerControllerCompatibilityTest {
         }
 
         @Override
+        public boolean addCustomer(CustomerDTO customer, String actorUserId) {
+            lastActorUserId = actorUserId;
+            return addCustomer(customer);
+        }
+
+        @Override
         public boolean updateCustomer(CustomerDTO customer) {
             return true;
         }
 
         @Override
+        public boolean updateCustomer(CustomerDTO customer, String actorUserId) {
+            lastActorUserId = actorUserId;
+            return updateCustomer(customer);
+        }
+
+        @Override
         public boolean deleteCustomer(String customerName) {
             return true;
+        }
+
+        @Override
+        public boolean deleteCustomer(String customerName, String actorUserId) {
+            lastActorUserId = actorUserId;
+            return deleteCustomer(customerName);
         }
     }
 
@@ -327,6 +349,7 @@ class CustomerControllerCompatibilityTest {
         private final CustomerDetailDTO development = new CustomerDetailDTO();
         private final List<String> reads = new ArrayList<>();
         private final List<String> writes = new ArrayList<>();
+        private String lastActorUserId;
 
         @Override
         public CustomerDetailDTO getCustomerDetail(String customerName) {
@@ -356,6 +379,14 @@ class CustomerControllerCompatibilityTest {
 
         @Override
         public boolean saveOrUpdateCustomerDetail(CustomerDetailDTO detail) {
+            writes.add("prod:" + detail.getCustomerName());
+            return true;
+        }
+
+        @Override
+        public boolean saveOrUpdateCustomerDetail(
+                CustomerDetailDTO detail, String actorUserId) {
+            lastActorUserId = actorUserId;
             writes.add("prod:" + detail.getCustomerName());
             return true;
         }

@@ -23,15 +23,34 @@ final class CustomerCommandService {
         return customerDAO.updateCustomer(customer);
     }
 
+    boolean updateCustomer(CustomerDTO customer, String actorUserId) {
+        return customerDAO.updateCustomer(customer, actorUserId);
+    }
+
     boolean addCustomer(CustomerDTO customer) {
         return customerDAO.addCustomer(customer);
+    }
+
+    boolean addCustomer(CustomerDTO customer, String actorUserId) {
+        return customerDAO.addCustomer(customer, actorUserId);
     }
 
     boolean deleteCustomer(String customerName) {
         return customerDAO.deleteCustomer(customerName);
     }
 
+    boolean deleteCustomer(String customerName, String actorUserId) {
+        return customerDAO.deleteCustomer(customerName, actorUserId);
+    }
+
     boolean saveCustomerDetail(CustomerEnvironment environment, CustomerDetailDTO detail) {
+        return saveCustomerDetail(environment, detail, null);
+    }
+
+    boolean saveCustomerDetail(
+            CustomerEnvironment environment,
+            CustomerDetailDTO detail,
+            String actorUserId) {
         Objects.requireNonNull(environment, "environment");
         Objects.requireNonNull(detail, "detail");
         if (customerDAO.getCustomerByName(detail.getCustomerName()) == null) {
@@ -39,7 +58,8 @@ final class CustomerCommandService {
         }
 
         return switch (environment) {
-            case PROD -> detailDAO.saveOrUpdateCustomerDetail(detail);
+            case PROD -> detailDAO.saveOrUpdateCustomerDetail(
+                    detail, actorUserId);
             case STAGING -> detailDAO.saveOrUpdateCustomerDetailStg(detail);
             case DEVELOPMENT -> detailDAO.saveOrUpdateCustomerDetailDev(detail);
         };

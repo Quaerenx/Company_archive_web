@@ -25,11 +25,27 @@ Active schema contracts:
 - `V20260804_08__set_konkuk_hospital_quarterly_schedule.sql`: reviewed
   business override for 건국대병원. It sets a three-month interval anchored
   to March, so the due months are March, June, September, and December.
+- `V20260825_09__add_customer_audit_columns.sql`: nullable customer-master
+  audit columns. Existing rows are not backfilled because an inferred actor or
+  timestamp would create false provenance. Application writes use the columns
+  only when the complete four-column capability is present.
 
 At startup the application performs a read-only metadata readiness check for
-the active schema contracts. It never executes migration SQL. Missing
-capabilities are logged and ownership-sensitive writes fail closed until the
-corresponding migration has been reviewed and applied separately.
+the active schema contracts. It never executes migration SQL. Required
+capabilities include the baseline maintenance license detail columns
+`license_size_gb` and `license_usage_size`; the legacy user department column
+is optional. Missing required capabilities return HTTP 503 from database-backed
+routes, while missing optional capabilities are logged without blocking
+requests. Database connectivity failures are tracked separately from an
+incompatible schema.
+
+Migration 09 is an optional rolling capability and does not block application
+startup while all four columns are absent. A one-to-three-column partial state
+is incompatible and blocks customer-detail reads and every customer-master
+write. Once all four columns exist, writes require a nonblank stable session
+user ID and never fall back to unaudited SQL. Quiesce every application node,
+apply all four columns together, and restart each node so its metadata cache
+observes the complete capability before requests resume.
 
 Until migration 07 is applied, the dashboard intentionally treats every
 maintenance-contract customer as monthly. Review the inferred quarterly rows

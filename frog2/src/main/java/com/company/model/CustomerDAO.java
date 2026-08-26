@@ -16,6 +16,8 @@ import com.company.util.Pagination;
 import com.company.util.SearchQueryPolicy;
 
 public class CustomerDAO {
+    private static final int ACTIVE_FLAG = 1;
+    private static final int DELETED_FLAG = 0;
     private static final String MAINTENANCE_SCHEDULE_TABLE =
             "customer_maintenance_schedule";
     private static final String MAINTENANCE_SCHEDULE_CAPABILITY =
@@ -66,7 +68,7 @@ public class CustomerDAO {
                     : "ASC";
             String sql = "SELECT " + CUSTOMER_COLUMNS
                     + " FROM vertica_customer_detail d "
-                    + "WHERE d.is_deleted = 1";
+                    + "WHERE d.is_deleted = " + ACTIVE_FLAG;
             if (MAINTENANCE_FILTER.equals(filter)) {
                 sql += " AND d.customer_type = '정기점검 계약 고객사'";
             }
@@ -143,7 +145,8 @@ public class CustomerDAO {
                 + scheduleColumns
                 + "FROM vertica_customer_detail d "
                 + scheduleJoin
-                + "WHERE d.is_deleted = 1 AND d.customer_type = ? "
+                + "WHERE d.is_deleted = " + ACTIVE_FLAG
+                + " AND d.customer_type = ? "
                 + "ORDER BY CASE WHEN d.main_manager IS NULL "
                 + "OR TRIM(d.main_manager) = '' THEN 1 ELSE 0 END, "
                 + "d.main_manager ASC, d.customer_name ASC";
@@ -216,7 +219,7 @@ public class CustomerDAO {
                             + MAINTENANCE_CUSTOMER_TYPE
                             + "' THEN 1 ELSE 0 END), 0) AS maintenance_count "
                             + "FROM vertica_customer_detail d "
-                            + "WHERE d.is_deleted = 1";
+                            + "WHERE d.is_deleted = " + ACTIVE_FLAG;
             try (PreparedStatement statement =
                             connection.prepareStatement(countSql)) {
                 try (ResultSet resultSet = statement.executeQuery()) {
@@ -235,7 +238,7 @@ public class CustomerDAO {
             String itemSql = "SELECT " + CUSTOMER_COLUMNS
                     + ", COUNT(*) OVER () AS result_count"
                     + " FROM vertica_customer_detail d "
-                    + "WHERE d.is_deleted = 1 AND "
+                    + "WHERE d.is_deleted = " + ACTIVE_FLAG + " AND "
                     + selectionPredicate
                     + " ORDER BY "
                     + sortColumn(sortField)
@@ -331,7 +334,8 @@ public class CustomerDAO {
             String selectionPredicate,
             String query) throws SQLException {
         String sql = "SELECT COUNT(*) FROM vertica_customer_detail d "
-                + "WHERE d.is_deleted = 1 AND " + selectionPredicate;
+                + "WHERE d.is_deleted = " + ACTIVE_FLAG + " AND "
+                + selectionPredicate;
         try (PreparedStatement statement =
                         connection.prepareStatement(sql)) {
             bindSearch(statement, 1, query);
@@ -350,7 +354,8 @@ public class CustomerDAO {
         try (Connection connection = connectionProvider.getConnection()) {
             String sql = "SELECT " + CUSTOMER_COLUMNS
                     + " FROM vertica_customer_detail d "
-                    + "WHERE d.customer_name = ? AND d.is_deleted = 1";
+                    + "WHERE d.customer_name = ? AND d.is_deleted = "
+                    + ACTIVE_FLAG;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, customerName);
                 try (ResultSet resultSet = statement.executeQuery()) {
@@ -364,13 +369,26 @@ public class CustomerDAO {
 
     // 고객사 정보 업데이트 (상세 테이블 기준)
     public boolean updateCustomer(CustomerDTO customer) {
+        return updateCustomer(customer, null);
+    }
+
+    public boolean updateCustomer(CustomerDTO customer, String actorUserId) {
         try (Connection connection = connectionProvider.getConnection()) {
+            boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
+                    connection, schemaCapabilities, actorUserId);
             String sql = "UPDATE vertica_customer_detail SET db_name = ?, vertica_version = ?, db_mode = ?, os_info = ?, "
                     + "node_count = ?, license_info = ?, main_manager = ?, sub_manager = ?, said = ?, customer_type = ? "
-                    + "WHERE customer_name = ? AND is_deleted = 1";
+                    + (auditAvailable
+                            ? ", updated_at = CURRENT_TIMESTAMP, updated_by = ? "
+                            : "")
+                    + "WHERE customer_name = ? AND is_deleted = "
+                    + ACTIVE_FLAG;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int nextParameter = bindMutableCustomerFields(
                         statement, 1, customer);
+                if (auditAvailable) {
+                    statement.setString(nextParameter++, actorUserId.trim());
+                }
                 statement.setString(nextParameter, customer.getCustomerName());
                 return statement.executeUpdate() > 0;
             }
@@ -381,12 +399,29 @@ public class CustomerDAO {
 
     // 새 고객사 추가 (상세 테이블에 삽입)
     public boolean addCustomer(CustomerDTO customer) {
+        return addCustomer(customer, null);
+    }
+
+    public boolean addCustomer(CustomerDTO customer, String actorUserId) {
         try (Connection connection = connectionProvider.getConnection()) {
-            String sql = "INSERT INTO vertica_customer_detail (customer_name, db_name, vertica_version, db_mode, os_info, node_count, license_info, main_manager, sub_manager, said, customer_type, is_deleted) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+            boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
+                    connection, schemaCapabilities, actorUserId);
+            String columns = "customer_name, db_name, vertica_version, db_mode, os_info, node_count, license_info, main_manager, sub_manager, said, customer_type, is_deleted";
+            String values = "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+                    + ACTIVE_FLAG;
+            if (auditAvailable) {
+                columns += ", updated_at, updated_by";
+                values += ", CURRENT_TIMESTAMP, ?";
+            }
+            String sql = "INSERT INTO vertica_customer_detail (" + columns
+                    + ") VALUES (" + values + ")";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, customer.getCustomerName());
-                bindMutableCustomerFields(statement, 2, customer);
+                int nextParameter = bindMutableCustomerFields(
+                        statement, 2, customer);
+                if (auditAvailable) {
+                    statement.setString(nextParameter, actorUserId.trim());
+                }
                 return statement.executeUpdate() > 0;
             }
         } catch (SQLException  e) {
@@ -396,11 +431,27 @@ public class CustomerDAO {
 
     // 고객사 삭제 (상세 테이블에서 비활성)
     public boolean deleteCustomer(String customerName) {
+        return deleteCustomer(customerName, null);
+    }
+
+    public boolean deleteCustomer(String customerName, String actorUserId) {
         try (Connection connection = connectionProvider.getConnection()) {
-            String sql = "UPDATE vertica_customer_detail SET is_deleted = 0 "
-                    + "WHERE customer_name = ? AND is_deleted = 1";
+            boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
+                    connection, schemaCapabilities, actorUserId);
+            String sql = "UPDATE vertica_customer_detail SET is_deleted = "
+                    + DELETED_FLAG
+                    + (auditAvailable
+                            ? ", deleted_at = CURRENT_TIMESTAMP, deleted_by = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ? "
+                            : " ")
+                    + "WHERE customer_name = ? "
+                    + "AND is_deleted = " + ACTIVE_FLAG;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, customerName);
+                int nextParameter = 1;
+                if (auditAvailable) {
+                    statement.setString(nextParameter++, actorUserId.trim());
+                    statement.setString(nextParameter++, actorUserId.trim());
+                }
+                statement.setString(nextParameter, customerName);
                 return statement.executeUpdate() > 0;
             }
         } catch (SQLException  e) {
