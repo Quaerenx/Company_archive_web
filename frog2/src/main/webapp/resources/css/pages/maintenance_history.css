@@ -60,22 +60,7 @@
 }
 
 .maintenance-history .history-filter-field input {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font: inherit;
-    min-block-size: var(--control-height-sm);
     min-width: 0;
-    padding: var(--space-8) var(--space-12);
-    width: 100%;
-}
-
-.maintenance-history .history-filter-field input:focus-visible {
-    border-color: var(--color-focus);
-    box-shadow: 0 0 0 3px var(--color-focus-ring);
-    outline: 2px solid var(--color-focus);
-    outline-offset: 1px;
 }
 
 .maintenance-history .history-filter-actions {
@@ -86,7 +71,6 @@
 
 .maintenance-history .history-scroll-hint {
     color: var(--color-text-muted);
-    display: none;
     font-size: var(--font-size-xs);
     margin: 0;
     padding: var(--space-8) var(--space-16) 0;
@@ -117,7 +101,7 @@
 
 .maintenance-history .history-comparison-table thead th {
     background: var(--color-surface-subtle);
-    border-bottom: 1px solid var(--color-border-strong);
+    border-bottom: 1px solid var(--color-border);
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
     font-weight: 600;
@@ -339,7 +323,7 @@
 
 .maintenance-history .history-detail-cell {
     background: var(--color-surface-subtle);
-    border-bottom: 1px solid var(--color-border-strong);
+    border-bottom: 1px solid var(--color-border);
     padding: var(--space-16) var(--space-20) var(--space-20);
 }
 
@@ -456,7 +440,7 @@
 }
 
 .maintenance-history .empty-history i {
-    color: var(--color-border-strong);
+    color: var(--color-icon);
     font-size: var(--illustration-icon-size-xl);
     margin-bottom: var(--space-16);
     opacity: 0.5;
@@ -585,10 +569,6 @@
 
     .maintenance-history .history-comparison-table {
         min-width: 600px;
-    }
-
-    .maintenance-history .history-scroll-hint {
-        display: block;
     }
 
     .maintenance-history .history-detail-summary,

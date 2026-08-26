@@ -32,7 +32,7 @@ class AmbientBackgroundContractTest {
         String script = read("resources/js/ambient-background.js");
 
         assertTrue(tokens.contains("--palette-ambient: #E8EDF2;"));
-        assertTrue(tokens.contains("--palette-surface: #FAFBFC;"));
+        assertTrue(tokens.contains("--palette-surface: #FCFCFD;"));
         assertTrue(tokens.contains("--palette-border: #D5DCE3;"));
         assertTrue(tokens.contains(
                 "--color-navigation-surface: rgba(252, 252, 253, 0.94);"));

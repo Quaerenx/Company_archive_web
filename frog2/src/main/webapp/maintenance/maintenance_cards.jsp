@@ -89,10 +89,10 @@
             </c:forEach>
         </c:when>
         <c:otherwise>
-            <div class="empty-state">
-                <i class="fas fa-users"></i>
-                <div>등록된 고객사 정보가 없습니다.</div>
-                <p>먼저 고객사 정보를 등록해주세요.</p>
+            <div class="maintenance-cards-empty ui-empty-state">
+                <i class="fas fa-users" aria-hidden="true"></i>
+                <strong>등록된 고객사 정보가 없습니다.</strong>
+                <span>먼저 고객사 정보를 등록해 주세요.</span>
             </div>
         </c:otherwise>
     </c:choose>

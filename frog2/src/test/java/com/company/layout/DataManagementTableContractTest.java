@@ -53,6 +53,21 @@ class DataManagementTableContractTest {
         assertTrue(troubleshooting.contains("col--customer"));
         assertTrue(fileRepository.contains("col--description"));
         assertTrue(fileRepository.contains("col--numeric"));
+        assertTrue(fileRepository.contains("directoryEmpty"));
+        assertTrue(fileRepository.contains(
+                "directoryEmpty\" value=\"${listing.totalCount eq 0}"));
+        assertFalse(fileRepository.contains("rootDirectoryEmpty"));
+        assertTrue(fileRepository.contains("file-empty-state ui-empty-state"));
+        assertTrue(fileRepository.contains("<c:if test=\"${not directoryEmpty}\">"));
+        assertTrue(fileRepository.contains("등록된 파일이 없습니다."));
+        assertTrue(fileRepository.contains("이 폴더는 비어 있습니다."));
+        assertFalse(fileRepository.contains("role=\"status\""));
+        int emptyBranch = fileRepository.indexOf(
+                "<c:when test=\"${directoryEmpty}\">");
+        int tableFooter = fileRepository.indexOf("<t:tableFooter");
+        assertTrue(emptyBranch >= 0);
+        assertTrue(tableFooter >= 0);
+        assertTrue(emptyBranch < tableFooter);
     }
 
     @Test

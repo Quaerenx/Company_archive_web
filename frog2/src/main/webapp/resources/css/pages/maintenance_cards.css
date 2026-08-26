@@ -47,12 +47,12 @@
         font-style: italic;
         background: var(--color-surface);
         border-radius: var(--radius-lg);
-        border: 1px dashed var(--color-border-strong);
+        border: 1px dashed var(--color-border);
     }
 
     .maintenance-management .empty-state i {
         font-size: var(--illustration-icon-size-md);
-        color: var(--color-border-strong);
+        color: var(--color-icon);
         margin-bottom: var(--space-16);
         opacity: 0.5;
     }

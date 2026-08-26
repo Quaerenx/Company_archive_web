@@ -59,6 +59,11 @@ body {
     outline-offset: 2px;
 }
 
+/* The main element is a skip-link target, not an interactive control. */
+.ui-system .app-main:focus {
+    outline: none;
+}
+
 .text-measure,
 .prose {
     max-inline-size: var(--measure-readable);
@@ -188,7 +193,7 @@ body {
 /* 푸터 컨테이너 폭/패딩 (헤더와 동일 톤) */
 .main-footer .container {
     width: 100%;
-    max-width: 1200px;
+    max-width: var(--page-content-max-width);
     margin: 0 auto;
     padding: var(--space-12) var(--space-20);
 }

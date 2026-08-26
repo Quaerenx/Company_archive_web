@@ -254,9 +254,11 @@ class DesignAssetConsolidationTest {
         assertTrue(orderedPageSlot.contains("delims=\",\""));
 
         Map<String, String> expectedPageScripts = new LinkedHashMap<>();
-        expectedPageScripts.put("maintenance/maintenance_add.jsp", "/resources/js/pages/maintenance_form.js");
+        expectedPageScripts.put("maintenance/maintenance_add.jsp",
+                "/resources/js/pages/maintenance_calendar.js,/resources/js/pages/maintenance_form.js");
         expectedPageScripts.put("maintenance/maintenance_cards.jsp", "/resources/js/pages/maintenance_cards.js");
-        expectedPageScripts.put("maintenance/maintenance_edit.jsp", "/resources/js/pages/maintenance_form.js");
+        expectedPageScripts.put("maintenance/maintenance_edit.jsp",
+                "/resources/js/pages/maintenance_calendar.js,/resources/js/pages/maintenance_form.js");
         expectedPageScripts.put("maintenance/maintenance_history.jsp", "/resources/js/pages/maintenance_history.js");
         expectedPageScripts.put("meeting/meeting_edit.jsp", "/resources/js/pages/meeting_form.js");
         expectedPageScripts.put("meeting/meeting_view.jsp", "/resources/js/pages/meeting_view.js");
@@ -277,7 +279,7 @@ class DesignAssetConsolidationTest {
         String history = readWebapp("maintenance/maintenance_history.jsp");
         assertEquals("${pageContext.request.contextPath}"
                         + "/resources/vendor/chart.js/4.4.4/chart.umd.min.js"
-                        + "?v=${frog2AssetVersion}",
+                        + "?v=${initParam.frog2AssetVersion}",
                 declaredValue(history, "vendorScript"));
     }
 

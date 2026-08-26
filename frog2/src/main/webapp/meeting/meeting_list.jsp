@@ -97,15 +97,10 @@
                                paginationLabel="회의록 페이지" />
             </c:when>
             <c:otherwise>
-                <div class="empty-state">
-                    <i class="fas fa-clipboard"></i>
-                    <h3>등록된 회의록이 없습니다</h3>
-                    <p>첫 번째 회의록을 작성해보세요.</p>
-                    <a href="${pageContext.request.contextPath}/meeting?view=write"
-                       class="ui-button button--secondary button--md">
-                        <i class="fas fa-pen"></i>
-                        회의록 작성하기
-                    </a>
+                <div class="meeting-list-empty ui-empty-state">
+                    <i class="fas fa-clipboard" aria-hidden="true"></i>
+                    <strong>등록된 회의록이 없습니다</strong>
+                    <span>첫 번째 회의록을 작성해보세요.</span>
                 </div>
             </c:otherwise>
         </c:choose>

@@ -19,6 +19,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -120,6 +122,11 @@ public final class CustomerHistoryServlet extends HttpServlet {
         request.setAttribute("customerName", customerName);
         request.setAttribute("category", category);
         request.setAttribute("q", query);
+        request.setAttribute(
+                "hasActiveFilters",
+                !customerName.isEmpty()
+                        || (!category.isEmpty() && !"all".equalsIgnoreCase(category))
+                        || !query.isEmpty());
         request.setAttribute("currentUserId", user.getUserId());
         setReferenceData(request);
         request.getRequestDispatcher(
@@ -135,6 +142,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
         request.setAttribute("formStatus", CustomerHistoryStatus.COMPLETED.getCode());
         request.setAttribute("formCustomerName", valueOrDefault(
                 request.getParameter("customerName"), "").strip());
+        exposeListReturnState(request);
         setReferenceData(request);
         forwardForm(request, response);
     }
@@ -172,6 +180,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
         request.setAttribute("formTitle", record.getTitle());
         request.setAttribute("formActionSummary", record.getActionSummary());
         request.setAttribute("formStatus", record.getStatus().getCode());
+        exposeListReturnState(request);
         setReferenceData(request);
         forwardForm(request, response);
     }
@@ -188,7 +197,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
                 user.getUserId(),
                 valueOrDefault(user.getUserName(), user.getUserId()));
         session.setAttribute("message", "고객사 히스토리가 등록되었습니다.");
-        response.sendRedirect(request.getContextPath() + "/customer-history");
+        redirectToList(request, response);
     }
 
     private void update(
@@ -219,7 +228,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
             return;
         }
         session.setAttribute("message", "고객사 히스토리가 수정되었습니다.");
-        response.sendRedirect(request.getContextPath() + "/customer-history");
+        redirectToList(request, response);
     }
 
     private void delete(
@@ -248,7 +257,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
             return;
         }
         session.setAttribute("message", "고객사 히스토리가 삭제되었습니다.");
-        response.sendRedirect(request.getContextPath() + "/customer-history");
+        redirectToList(request, response);
     }
 
     private void showInvalidForm(
@@ -265,6 +274,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
         request.setAttribute("formActionSummary", request.getParameter("actionSummary"));
         request.setAttribute("formStatus", request.getParameter("status"));
         request.setAttribute("formError", message);
+        exposeListReturnState(request);
         setReferenceData(request);
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         forwardForm(request, response);
@@ -302,6 +312,21 @@ public final class CustomerHistoryServlet extends HttpServlet {
                 .forward(request, response);
     }
 
+    private static void exposeListReturnState(HttpServletRequest request) {
+        ListReturnState state = ListReturnState.from(request);
+        request.setAttribute("formReturnCustomerName", state.customerName());
+        request.setAttribute("formReturnCategory", state.category());
+        request.setAttribute("formReturnQ", state.query());
+        request.setAttribute("formReturnPage", state.page());
+        request.setAttribute("returnListUrl", state.toUrl(request.getContextPath()));
+    }
+
+    private static void redirectToList(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        response.sendRedirect(ListReturnState.from(request).toUrl(request.getContextPath()));
+    }
+
     private static void sendBadRequest(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -327,5 +352,63 @@ public final class CustomerHistoryServlet extends HttpServlet {
 
     private static String valueOrDefault(String value, String fallback) {
         return value == null ? fallback : value;
+    }
+
+    private record ListReturnState(
+            String customerName,
+            String category,
+            String query,
+            int page) {
+        private static ListReturnState from(HttpServletRequest request) {
+            return new ListReturnState(
+                    normalizeText(
+                            request.getParameter("returnCustomerName"),
+                            CustomerHistoryDraft.MAX_CUSTOMER_NAME_LENGTH),
+                    normalizeCategory(request.getParameter("returnCategory")),
+                    normalizeText(request.getParameter("returnQ"), 100),
+                    Pagination.requestedPage(request.getParameter("returnPage")));
+        }
+
+        private String toUrl(String contextPath) {
+            StringBuilder url = new StringBuilder(contextPath)
+                    .append("/customer-history");
+            appendParameter(url, "customerName", customerName);
+            if (!"all".equals(category)) {
+                appendParameter(url, "category", category);
+            }
+            appendParameter(url, "q", query);
+            if (page > 1) {
+                appendParameter(url, "page", Integer.toString(page));
+            }
+            return url.toString();
+        }
+
+        private static String normalizeCategory(String value) {
+            String normalized = valueOrDefault(value, "all").strip();
+            if (normalized.isEmpty() || "all".equalsIgnoreCase(normalized)) {
+                return "all";
+            }
+            try {
+                return CustomerHistoryCategory.fromCode(normalized).getCode();
+            } catch (IllegalArgumentException exception) {
+                return "all";
+            }
+        }
+
+        private static String normalizeText(String value, int maximumLength) {
+            String normalized = valueOrDefault(value, "").strip();
+            return normalized.length() <= maximumLength ? normalized : "";
+        }
+
+        private static void appendParameter(
+                StringBuilder url, String name, String value) {
+            if (value.isEmpty()) {
+                return;
+            }
+            url.append(url.indexOf("?") < 0 ? '?' : '&')
+                    .append(name)
+                    .append('=')
+                    .append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+        }
     }
 }

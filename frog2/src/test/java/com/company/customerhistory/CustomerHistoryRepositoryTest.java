@@ -159,6 +159,46 @@ class CustomerHistoryRepositoryTest {
         assertTrue(performance.customerHistoryScanDurationNanos() >= 0);
     }
 
+    @Test
+    void repeatedListsReuseSnapshotAndWritesInvalidateIt() {
+        Path root = temporaryDirectory.resolve("history");
+        CustomerHistoryRepository repository =
+                new CustomerHistoryRepository(root, CLOCK);
+        repository.create(
+                draft("고객사", "첫 작업", "첫 작업 완료"),
+                "owner-id",
+                "담당자");
+
+        RequestPerformanceContext.begin();
+        PageResult<CustomerHistoryRecord> first = repository.findPage(
+                "", "all", "", 1, 20);
+        RequestPerformanceContext.Snapshot firstPerformance =
+                RequestPerformanceContext.finish();
+        RequestPerformanceContext.begin();
+        PageResult<CustomerHistoryRecord> cached = repository.findPage(
+                "", "all", "", 1, 20);
+        RequestPerformanceContext.Snapshot cachedPerformance =
+                RequestPerformanceContext.finish();
+
+        repository.create(
+                draft("고객사", "두 번째 작업", "두 번째 작업 완료"),
+                "owner-id",
+                "담당자");
+        RequestPerformanceContext.begin();
+        PageResult<CustomerHistoryRecord> refreshed = repository.findPage(
+                "", "all", "", 1, 20);
+        RequestPerformanceContext.Snapshot refreshedPerformance =
+                RequestPerformanceContext.finish();
+
+        assertEquals(1, first.totalCount());
+        assertEquals(1, firstPerformance.customerHistoryScanCount());
+        assertEquals(1, cached.totalCount());
+        assertEquals(0, cachedPerformance.customerHistoryScanCount());
+        assertEquals(2, refreshed.totalCount());
+        assertEquals(1, refreshedPerformance.customerHistoryScanCount());
+        assertEquals(2, refreshedPerformance.customerHistoryRecordFileCount());
+    }
+
     private static CustomerHistoryDraft draft(
             String customerName, String title, String action) {
         return new CustomerHistoryDraft(

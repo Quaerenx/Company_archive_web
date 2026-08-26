@@ -80,6 +80,16 @@ class TroubleshootingViewContractTest {
         assertTrue(page.contains("<t:tableFooter"));
         assertTrue(page.contains("troubleshootingPreviousPageUrl"));
         assertTrue(page.contains("troubleshootingNextPageUrl"));
+        int rowsBranch = page.indexOf(
+                "<c:when test=\"${not empty troubleshootingList}\">");
+        int footer = page.indexOf("<t:tableFooter", rowsBranch);
+        int emptyState = page.indexOf(
+                "troubleshooting-empty ui-empty-state", rowsBranch);
+        int rowsBranchEnd = page.lastIndexOf("</c:when>", emptyState);
+        assertTrue(rowsBranch >= 0);
+        assertTrue(footer > rowsBranch);
+        assertTrue(rowsBranchEnd > footer);
+        assertTrue(emptyState > rowsBranchEnd);
         assertFalse(page.contains("ui-pagination"));
         assertFalse(page.contains("aria-current=\"page\""));
         assertTrue(page.contains("data-detail-url="));

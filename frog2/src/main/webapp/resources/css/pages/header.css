@@ -300,7 +300,7 @@
 .quick-nav-dialog {
     animation: quick-nav-dialog-in var(--motion-base) var(--motion-ease);
     background: var(--color-surface-elevated);
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--color-surface-edge);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
     color: var(--color-text);
@@ -450,7 +450,7 @@
 
 .quick-nav-help kbd {
     background: var(--color-surface);
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--color-surface-edge);
     border-block-end-width: 2px;
     border-radius: var(--radius-sm);
     color: var(--color-text);

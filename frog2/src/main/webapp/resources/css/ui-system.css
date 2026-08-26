@@ -31,12 +31,21 @@ body.ui-system .content-shell {
  * layers, not recreate their border, radius, or spacing contract.
  */
 .ui-system :where(.ui-work-surface, .table-container) {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    box-shadow: none;
     min-inline-size: 0;
     overflow: hidden;
+}
+
+.ui-system .ui-work-surface {
+    background: var(--color-surface);
+    border: 1px solid var(--color-surface-edge);
+    box-shadow: var(--shadow-sm);
+}
+
+.ui-system .table-container:not(.ui-work-surface) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: none;
 }
 
 .ui-system .ui-work-surface--padded {
@@ -330,6 +339,16 @@ body.ui-system .content-shell {
         border-color var(--motion-fast) var(--motion-ease),
         box-shadow var(--motion-fast) var(--motion-ease),
         background-color var(--motion-fast) var(--motion-ease);
+}
+
+/* Compact, opt-in controls for dense filter/tool rows. */
+.ui-system form.ui-form--compact :is(
+    input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select,
+    .ui-control
+) {
+    min-block-size: var(--control-height-sm);
+    padding: var(--space-8) var(--space-12);
 }
 
 .ui-system form.ui-form textarea {
@@ -679,15 +698,19 @@ body.ui-system .content-shell {
 /* One mouse-row affordance; the real link in each row remains the keyboard path. */
 .ui-system .ui-data-row[data-detail-url] {
     cursor: pointer;
-    transition: background-color var(--motion-fast) var(--motion-ease);
+    transition:
+        background-color var(--motion-fast) var(--motion-ease),
+        box-shadow var(--motion-fast) var(--motion-ease);
 }
 
 .ui-system .ui-data-row[data-detail-url]:hover {
-    background: var(--color-surface-subtle);
+    background: var(--color-primary-subtle);
+    box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .ui-system .ui-data-row[data-detail-url]:focus-within {
     background: var(--color-surface-selected);
+    box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .ui-system .ui-table-wrap {
@@ -736,12 +759,45 @@ body.ui-system .content-shell {
     font-weight: 600;
 }
 
+/*
+ * Sticky headers are enabled only after JavaScript confirms that the table
+ * does not need horizontal scrolling. This avoids competing scroll
+ * containers on narrow screens while keeping long desktop lists readable.
+ */
+@media (min-width: 769px) {
+    .ui-system .is-table-sticky-ready {
+        overflow: visible;
+    }
+
+    .ui-system .is-table-sticky-ready
+    .ui-table-wrap[data-ui-scrollable="false"] {
+        overflow: visible;
+    }
+
+    .ui-system .is-table-sticky-ready
+    .ui-table-wrap[data-ui-scrollable="false"]
+    .ui-table thead th {
+        box-shadow: var(--shadow-table-sticky);
+        position: sticky;
+        top: var(--table-sticky-offset, 0px);
+        z-index: var(--z-table-sticky);
+    }
+}
+
+@supports (overflow: clip) {
+    @media (min-width: 769px) {
+        .ui-system .is-table-sticky-ready {
+            overflow: clip;
+        }
+    }
+}
+
 .ui-system .ui-table tbody tr {
     transition: background-color var(--motion-fast) var(--motion-ease);
 }
 
-.ui-system .ui-table tbody tr:is(:hover, :focus-within) {
-    background: var(--color-surface-hover);
+.ui-system .ui-table tbody tr:focus-within {
+    background: var(--color-surface-selected);
 }
 
 /*
@@ -763,10 +819,7 @@ body.ui-system .content-shell {
 
 .ui-system .ui-data-table thead th {
     line-height: var(--line-height-tight);
-    position: sticky;
-    top: 0;
     white-space: nowrap;
-    z-index: var(--z-table-sticky);
 }
 
 .ui-system .ui-data-table :is(.col--date, .col--type, .col--author, .col--numeric) {
@@ -831,6 +884,30 @@ body.ui-system .content-shell {
     line-height: var(--line-height-base);
     padding: var(--space-32) var(--space-20);
     text-align: center;
+}
+
+.ui-system .ui-empty-state {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    justify-content: center;
+    min-block-size: 220px;
+}
+
+.ui-system .ui-empty-state > i {
+    color: var(--color-icon);
+    font-size: var(--icon-size-xl);
+}
+
+.ui-system .ui-empty-state > strong {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+}
+
+.ui-system .ui-empty-state > .ui-button {
+    margin-block-start: var(--space-8);
 }
 
 body.ui-dialog-open {
@@ -992,6 +1069,14 @@ body.ui-dialog-open {
     .ui-system .button--sm,
     .ui-system .ui-toast__close {
         min-block-size: 44px;
+    }
+
+    .ui-system form.ui-form--compact :is(
+        input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+        select,
+        .ui-control
+    ) {
+        min-block-size: var(--control-height-md);
     }
 }
 

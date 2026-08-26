@@ -27,6 +27,10 @@ class MonthlyResponseViewContractTest {
         assertTrue(page.contains("class=\"response-reason\""));
         assertTrue(page.contains("class=\"response-action-content\" hidden"));
         assertTrue(page.contains("class=\"response-note\" hidden"));
+        assertTrue(page.contains(
+                "${responseDateValue} ${responseEntry.customerName} 응대 기록 수정"));
+        assertTrue(page.contains(
+                "${responseDateValue} ${responseEntry.customerName} 응대 기록 삭제"));
 
         String behavior = page.contains("/resources/js/pages/monthly_customer_response.js")
                 ? read("resources/js/pages/monthly_customer_response.js")

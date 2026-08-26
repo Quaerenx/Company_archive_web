@@ -93,8 +93,8 @@
 .fw-bolder { font-weight: 600; }
 .fw-normal,
 .font-weight-normal { font-weight: 400; }
-.fw-light { font-weight: 300; }
-.fw-lighter { font-weight: lighter; }
+.fw-light { font-weight: 400; }
+.fw-lighter { font-weight: 400; }
 .fst-italic { font-style: italic; }
 .fst-normal { font-style: normal; }
 .text-lowercase { text-transform: lowercase; }

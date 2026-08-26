@@ -84,9 +84,21 @@
     const maintenanceId = document.querySelector(
         'input[name="maintenance_id"]');
     let contextController = null;
-    let visibleCalendarMonth = null;
     let initialFormState = '';
     let submitting = false;
+    const calendarController = window.Frog2MaintenanceCalendar.create({
+        calendar: inlineCalendar,
+        dateField: inspectionDateField,
+        document,
+        grid: calendarGrid,
+        monthLabel: calendarMonthLabel,
+        nextButton: calendarNextButton,
+        onChange: refreshFormContext,
+        previousButton: calendarPreviousButton,
+        root,
+        selectedDateLabel,
+        todayButton: calendarTodayButton
+    });
 
     initialize();
 
@@ -98,10 +110,6 @@
         }
         if (customerField && customerField.tagName === 'SELECT') {
             customerField.addEventListener('change', refreshFormContext);
-        }
-        if (inspectionDateField) {
-            inspectionDateField.addEventListener(
-                'change', handleInspectionDateChange);
         }
         [licenseSizeField, licenseUsageField].forEach(function(field) {
             if (field) field.addEventListener('input', calculateLicensePercentage);
@@ -124,7 +132,7 @@
         }
         window.addEventListener('beforeunload', warnAboutUnsavedChanges);
 
-        initializeInlineCalendar();
+        calendarController.initialize();
         renderFixedVersion();
         renderFixedCapacity();
         calculateLicensePercentage();
@@ -137,262 +145,6 @@
         if (event.target instanceof HTMLElement) {
             event.target.dataset.userModified = 'true';
         }
-    }
-
-    function initializeInlineCalendar() {
-        if (!inspectionDateField || !inlineCalendar || !calendarGrid
-                || !calendarMonthLabel) return;
-
-        const selectedDate = parseCalendarDate(inspectionDateField.value);
-        const initialDate = selectedDate || startOfCalendarDay(new Date());
-        visibleCalendarMonth = startOfCalendarMonth(initialDate);
-        inlineCalendar.hidden = false;
-
-        calendarGrid.addEventListener('click', function(event) {
-            const button = event.target.closest('[data-calendar-date]');
-            if (!button || !calendarGrid.contains(button)) return;
-            selectCalendarDate(button.dataset.calendarDate, true);
-        });
-        calendarGrid.addEventListener('keydown', handleCalendarKeydown);
-        if (calendarPreviousButton) {
-            calendarPreviousButton.addEventListener('click', function() {
-                changeVisibleCalendarMonth(-1);
-            });
-        }
-        if (calendarNextButton) {
-            calendarNextButton.addEventListener('click', function() {
-                changeVisibleCalendarMonth(1);
-            });
-        }
-        if (calendarTodayButton) {
-            calendarTodayButton.addEventListener('click', function() {
-                const today = startOfCalendarDay(new Date());
-                selectCalendarDate(formatCalendarValue(today), true);
-                focusCalendarDate(today);
-            });
-        }
-        renderInlineCalendar();
-        enableInlineCalendarMode();
-    }
-
-    function enableInlineCalendarMode() {
-        inspectionDateField.type = 'hidden';
-        root.classList.add('is-calendar-enhanced');
-    }
-
-    function handleInspectionDateChange() {
-        const selectedDate = parseCalendarDate(inspectionDateField.value);
-        if (selectedDate) {
-            visibleCalendarMonth = startOfCalendarMonth(selectedDate);
-        }
-        renderInlineCalendar();
-        refreshFormContext();
-    }
-
-    function changeVisibleCalendarMonth(offset) {
-        if (!visibleCalendarMonth) return;
-        const targetMonth = new Date(
-            visibleCalendarMonth.getFullYear(),
-            visibleCalendarMonth.getMonth() + offset,
-            1);
-        if (!isSupportedCalendarYear(targetMonth)) return;
-        visibleCalendarMonth = targetMonth;
-        renderInlineCalendar();
-    }
-
-    function renderInlineCalendar(preferredFocusValue) {
-        if (!visibleCalendarMonth || !calendarGrid || !calendarMonthLabel) {
-            return;
-        }
-        const year = visibleCalendarMonth.getFullYear();
-        const month = visibleCalendarMonth.getMonth();
-        const selectedValue = normalizedValue(inspectionDateField.value);
-        const todayValue = formatCalendarValue(startOfCalendarDay(new Date()));
-        const firstWeekday = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const preferredValue = preferredFocusValue
-            || calendarFocusValue(year, month, selectedValue, todayValue);
-        const fragment = document.createDocumentFragment();
-
-        calendarMonthLabel.textContent = year + '년 ' + (month + 1) + '월';
-        calendarGrid.replaceChildren();
-
-        for (let rowIndex = 0; rowIndex < 6; rowIndex += 1) {
-            const row = document.createElement('div');
-            row.className = 'maintenance-calendar-row';
-            row.setAttribute('role', 'row');
-            for (let columnIndex = 0; columnIndex < 7; columnIndex += 1) {
-                const cellIndex = rowIndex * 7 + columnIndex;
-                const dayNumber = cellIndex - firstWeekday + 1;
-                const cell = document.createElement('span');
-                cell.className = 'maintenance-calendar-cell';
-                cell.setAttribute('role', 'gridcell');
-                if (dayNumber < 1 || dayNumber > daysInMonth) {
-                    cell.classList.add('maintenance-calendar-empty');
-                    cell.setAttribute('aria-disabled', 'true');
-                } else {
-                    const date = new Date(year, month, dayNumber);
-                    const dateValue = formatCalendarValue(date);
-                    const selected = dateValue === selectedValue;
-                    const dayButton = document.createElement('button');
-                    dayButton.type = 'button';
-                    dayButton.className = 'maintenance-calendar-day';
-                    dayButton.dataset.calendarDate = dateValue;
-                    dayButton.textContent = String(dayNumber);
-                    dayButton.tabIndex = dateValue === preferredValue ? 0 : -1;
-                    dayButton.setAttribute('aria-label', calendarDateLabel(date));
-                    cell.setAttribute('aria-selected', String(selected));
-                    if (selected) dayButton.classList.add('is-selected');
-                    if (dateValue === todayValue) {
-                        dayButton.classList.add('is-today');
-                        dayButton.setAttribute('aria-current', 'date');
-                    }
-                    cell.appendChild(dayButton);
-                }
-                row.appendChild(cell);
-            }
-            fragment.appendChild(row);
-        }
-        calendarGrid.appendChild(fragment);
-        updateSelectedDateLabel(parseCalendarDate(selectedValue));
-    }
-
-    function calendarFocusValue(year, month, selectedValue, todayValue) {
-        const selectedDate = parseCalendarDate(selectedValue);
-        if (selectedDate && selectedDate.getFullYear() === year
-                && selectedDate.getMonth() === month) {
-            return selectedValue;
-        }
-        const today = parseCalendarDate(todayValue);
-        if (today && today.getFullYear() === year && today.getMonth() === month) {
-            return todayValue;
-        }
-        return formatCalendarValue(new Date(year, month, 1));
-    }
-
-    function selectCalendarDate(dateValue, announceChange) {
-        const selectedDate = parseCalendarDate(dateValue);
-        if (!selectedDate || !inspectionDateField) return;
-        inspectionDateField.value = formatCalendarValue(selectedDate);
-        visibleCalendarMonth = startOfCalendarMonth(selectedDate);
-        inspectionDateField.dispatchEvent(new Event('input', { bubbles: true }));
-        inspectionDateField.dispatchEvent(new Event('change', { bubbles: true }));
-        if (announceChange) updateSelectedDateLabel(selectedDate);
-    }
-
-    function handleCalendarKeydown(event) {
-        const button = event.target.closest('[data-calendar-date]');
-        if (!button) return;
-        const currentDate = parseCalendarDate(button.dataset.calendarDate);
-        if (!currentDate) return;
-
-        let targetDate = null;
-        switch (event.key) {
-            case 'ArrowLeft':
-                targetDate = addCalendarDays(currentDate, -1);
-                break;
-            case 'ArrowRight':
-                targetDate = addCalendarDays(currentDate, 1);
-                break;
-            case 'ArrowUp':
-                targetDate = addCalendarDays(currentDate, -7);
-                break;
-            case 'ArrowDown':
-                targetDate = addCalendarDays(currentDate, 7);
-                break;
-            case 'Home':
-                targetDate = addCalendarDays(currentDate, -currentDate.getDay());
-                break;
-            case 'End':
-                targetDate = addCalendarDays(
-                    currentDate, 6 - currentDate.getDay());
-                break;
-            case 'PageUp':
-                targetDate = addCalendarMonths(currentDate, -1);
-                break;
-            case 'PageDown':
-                targetDate = addCalendarMonths(currentDate, 1);
-                break;
-            default:
-                return;
-        }
-        if (!isSupportedCalendarYear(targetDate)) return;
-        event.preventDefault();
-        focusCalendarDate(targetDate);
-    }
-
-    function focusCalendarDate(date) {
-        visibleCalendarMonth = startOfCalendarMonth(date);
-        const dateValue = formatCalendarValue(date);
-        renderInlineCalendar(dateValue);
-        const target = calendarGrid.querySelector(
-            '[data-calendar-date="' + dateValue + '"]');
-        if (target) target.focus();
-    }
-
-    function addCalendarDays(date, amount) {
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount);
-    }
-
-    function addCalendarMonths(date, amount) {
-        const targetMonth = new Date(
-            date.getFullYear(), date.getMonth() + amount, 1);
-        const targetDay = Math.min(
-            date.getDate(),
-            new Date(
-                targetMonth.getFullYear(),
-                targetMonth.getMonth() + 1,
-                0).getDate());
-        return new Date(
-            targetMonth.getFullYear(), targetMonth.getMonth(), targetDay);
-    }
-
-    function parseCalendarDate(value) {
-        const match = normalizedValue(value).match(
-            /^(\d{4})-(\d{2})-(\d{2})$/);
-        if (!match) return null;
-        const year = Number(match[1]);
-        const month = Number(match[2]) - 1;
-        const day = Number(match[3]);
-        const date = new Date(year, month, day);
-        if (date.getFullYear() !== year || date.getMonth() !== month
-                || date.getDate() !== day) return null;
-        return date;
-    }
-
-    function formatCalendarValue(date) {
-        return String(date.getFullYear()).padStart(4, '0')
-            + '-' + String(date.getMonth() + 1).padStart(2, '0')
-            + '-' + String(date.getDate()).padStart(2, '0');
-    }
-
-    function calendarDateLabel(date) {
-        const weekdays = [
-            '일요일', '월요일', '화요일', '수요일',
-            '목요일', '금요일', '토요일'
-        ];
-        return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 '
-            + date.getDate() + '일 ' + weekdays[date.getDay()];
-    }
-
-    function updateSelectedDateLabel(date) {
-        if (!selectedDateLabel) return;
-        selectedDateLabel.textContent = date
-            ? calendarDateLabel(date)
-            : '날짜를 선택해 주세요.';
-    }
-
-    function startOfCalendarDay(date) {
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    }
-
-    function startOfCalendarMonth(date) {
-        return new Date(date.getFullYear(), date.getMonth(), 1);
-    }
-
-    function isSupportedCalendarYear(date) {
-        const year = date && date.getFullYear();
-        return Number.isInteger(year) && year >= 1 && year <= 9999;
     }
 
     function refreshFormContext() {
@@ -540,12 +292,18 @@
         }
         if (licenseUsageField) {
             licenseUsageField.readOnly = !supportedCapacity;
-            if (supportedCapacity) {
-                licenseUsageField.removeAttribute('aria-describedby');
-            } else {
+            const describedBy = [];
+            if (!supportedCapacity) {
+                describedBy.push('maintenanceUnsupportedCapacityHelp');
+            }
+            if (document.getElementById('maintenanceLicenseUsageError')) {
+                describedBy.push('maintenanceLicenseUsageError');
+            }
+            if (describedBy.length > 0) {
                 licenseUsageField.setAttribute(
-                    'aria-describedby',
-                    'maintenanceUnsupportedCapacityHelp');
+                    'aria-describedby', describedBy.join(' '));
+            } else {
+                licenseUsageField.removeAttribute('aria-describedby');
             }
         }
     }
@@ -671,11 +429,9 @@
 
     function validateForm(event) {
         calculateLicensePercentage();
-        if (!parseCalendarDate(
-                inspectionDateField && inspectionDateField.value)) {
+        if (!calendarController.hasValidDate()) {
             event.preventDefault();
-            updateSelectedDateLabel(null);
-            focusCalendarForValidation();
+            calendarController.focusForValidation();
             return;
         }
         if (!form.checkValidity()) {
@@ -684,18 +440,6 @@
             return;
         }
         submitting = true;
-    }
-
-    function focusCalendarForValidation() {
-        const focusTarget = calendarGrid
-            && calendarGrid.querySelector('[tabindex="0"]');
-        if (focusTarget) {
-            focusTarget.focus();
-        } else if (inlineCalendar && !inlineCalendar.hidden) {
-            inlineCalendar.focus();
-        } else if (inspectionDateField) {
-            inspectionDateField.focus();
-        }
     }
 
     function warnAboutUnsavedChanges(event) {

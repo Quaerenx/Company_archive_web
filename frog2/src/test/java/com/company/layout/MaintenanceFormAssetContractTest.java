@@ -20,8 +20,14 @@ class MaintenanceFormAssetContractTest {
         String fields = readWebapp(
                 "WEB-INF/includes/maintenance_form_fields.jspf");
 
+        assertTrue(add.contains("/resources/js/pages/maintenance_calendar.js,"));
+        assertTrue(edit.contains("/resources/js/pages/maintenance_calendar.js,"));
         assertTrue(add.contains("/resources/js/pages/maintenance_form.js"));
         assertTrue(edit.contains("/resources/js/pages/maintenance_form.js"));
+        assertTrue(add.indexOf("maintenance_calendar.js")
+                < add.indexOf("maintenance_form.js"));
+        assertTrue(edit.indexOf("maintenance_calendar.js")
+                < edit.indexOf("maintenance_form.js"));
         assertTrue(add.contains("data-maintenance-form-mode=\"add\""));
         assertTrue(edit.contains("data-maintenance-form-mode=\"edit\""));
         assertEquals(1, countOccurrences(add, "id=\"maintenanceForm\""));
@@ -66,8 +72,10 @@ class MaintenanceFormAssetContractTest {
     }
 
     @Test
-    void sharedScriptPreservesModeSpecificBehaviorAndFailsClosed() throws Exception {
+    void splitScriptsPreserveModeSpecificBehaviorAndCalendarContract() throws Exception {
         String script = Files.readString(PAGE_SCRIPTS.resolve("maintenance_form.js"));
+        String calendar = Files.readString(
+                PAGE_SCRIPTS.resolve("maintenance_calendar.js"));
 
         assertTrue(script.contains("(function()"));
         assertTrue(script.contains("getElementById('maintenanceForm')"));
@@ -97,20 +105,20 @@ class MaintenanceFormAssetContractTest {
         assertTrue(script.contains("insertNoteTemplate"));
         assertTrue(script.contains("autoResizeNote"));
         assertTrue(script.contains("정말 삭제하시겠습니까?"));
-        assertTrue(script.contains("initializeInlineCalendar"));
-        assertTrue(script.contains("enableInlineCalendarMode"));
-        assertTrue(script.contains("inspectionDateField.type = 'hidden'"));
-        assertTrue(script.contains(
+        assertTrue(script.contains("Frog2MaintenanceCalendar.create"));
+        assertTrue(script.contains("calendarController.initialize()"));
+        assertTrue(calendar.contains("dateField.type = 'hidden'"));
+        assertTrue(calendar.contains(
                 "root.classList.add('is-calendar-enhanced')"));
-        assertTrue(script.contains("focusCalendarForValidation"));
-        assertTrue(script.contains("parseCalendarDate("));
-        assertTrue(script.contains("renderInlineCalendar"));
-        assertTrue(script.contains("selectCalendarDate"));
-        assertTrue(script.contains("case 'ArrowLeft':"));
-        assertTrue(script.contains("case 'ArrowRight':"));
-        assertTrue(script.contains("case 'ArrowUp':"));
-        assertTrue(script.contains("case 'ArrowDown':"));
-        assertTrue(script.contains("aria-selected"));
+        assertTrue(script.contains("calendarController.focusForValidation()"));
+        assertTrue(calendar.contains("function parseDate("));
+        assertTrue(calendar.contains("function render("));
+        assertTrue(calendar.contains("function selectDate("));
+        assertTrue(calendar.contains("case 'ArrowLeft':"));
+        assertTrue(calendar.contains("case 'ArrowRight':"));
+        assertTrue(calendar.contains("case 'ArrowUp':"));
+        assertTrue(calendar.contains("case 'ArrowDown':"));
+        assertTrue(calendar.contains("aria-selected"));
     }
 
     @Test
@@ -153,7 +161,7 @@ class MaintenanceFormAssetContractTest {
         assertFalse(history.contains("item.animate"));
         assertFalse(history.contains("item.addEventListener('click'"));
         assertTrue(readWebapp("maintenance/maintenance_history.jsp")
-                .contains("<table class=\"history-comparison-table\""));
+                .contains("<table class=\"history-comparison-table ui-table ui-data-table\""));
     }
 
     @Test
@@ -161,7 +169,7 @@ class MaintenanceFormAssetContractTest {
             throws Exception {
         String page = readWebapp("maintenance/maintenance_history.jsp");
         int tableStart = page.indexOf(
-                "<table class=\"history-comparison-table\"");
+                "<table class=\"history-comparison-table ui-table ui-data-table\"");
         int tableEnd = page.indexOf("</table>", tableStart);
         assertTrue(tableStart >= 0);
         assertTrue(tableEnd > tableStart);
@@ -209,8 +217,12 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains("수정 일시"));
         assertFalse(comparisonTable.contains("rowspan=\"2\""));
         assertFalse(comparisonTable.contains("history-note-row"));
-        assertTrue(page.contains("class=\"history-table-scroll\""));
-        assertTrue(page.contains("tabindex=\"0\""));
+        assertTrue(page.contains(
+                "class=\"history-table-scroll ui-table-wrap\""));
+        assertTrue(page.contains("data-ui-scroll-region"));
+        assertTrue(page.contains(
+                "data-ui-scroll-hint-id=\"historyScrollHint\""));
+        assertFalse(page.contains("tabindex=\"0\""));
         assertTrue(page.contains("class=\"history-scroll-hint\""));
         assertFalse(page.contains("<a class=\"history-item\""));
     }

@@ -25,12 +25,12 @@ class MinimalPaletteContractTest {
             "(?i)\\b(?:rgb|hsl)a?\\s*\\(");
 
     @Test
-    void globalLightThemeUsesExactlyTheApprovedEighteenOpaqueColors() throws Exception {
+    void globalLightThemeUsesExactlyTheApprovedNineteenOpaqueColors() throws Exception {
         String tokens = read("resources/css/tokens.css");
         Map<String, String> palette = palette(tokens);
 
         assertEquals(expectedLight(), palette);
-        assertEquals(18, palette.size());
+        assertEquals(19, palette.size());
 
         Set<String> opaqueColors = new LinkedHashSet<>();
         Matcher matcher = OPAQUE_COLOR.matcher(tokens);
@@ -57,6 +57,28 @@ class MinimalPaletteContractTest {
                 "--color-chart-capacity: var(--palette-border-strong);"));
         assertFalse(tokens.contains(
                 "--color-chart-capacity: var(--palette-warning);"));
+        int enhancementStart = tokens.indexOf(
+                "@supports (color: color-mix(in srgb, black, white))");
+        int enhancementEnd = tokens.indexOf(
+                "/* IBM Plex Sans KR", enhancementStart);
+        assertTrue(enhancementStart > 0);
+        assertTrue(enhancementEnd > enhancementStart);
+
+        String fallbackTokens = tokens.substring(0, enhancementStart);
+        String enhancedTokens = tokens.substring(enhancementStart, enhancementEnd);
+        assertTrue(fallbackTokens.contains(
+                "--color-success-hover: var(--palette-success);"));
+        assertTrue(fallbackTokens.contains(
+                "--color-danger-hover: var(--palette-danger);"));
+        assertTrue(fallbackTokens.contains(
+                "--color-warning-hover: var(--palette-warning);"));
+        assertTrue(fallbackTokens.contains(
+                "--color-surface-edge: var(--palette-surface-edge);"));
+        assertFalse(fallbackTokens.contains("color-mix("));
+        assertTrue(enhancedTokens.contains("--color-success-hover: color-mix("));
+        assertTrue(enhancedTokens.contains("--color-danger-hover: color-mix("));
+        assertTrue(enhancedTokens.contains("--color-warning-hover: color-mix("));
+        assertFalse(enhancedTokens.contains("--color-surface-edge: color-mix("));
     }
 
     @Test
@@ -83,6 +105,34 @@ class MinimalPaletteContractTest {
                 assertFalse(source.contains("--pilot-"), path.toString());
             }
         }
+    }
+
+    @Test
+    void decorativeSurfacesAndInteractiveControlsUseDifferentBorderTiers()
+            throws Exception {
+        String tokens = read("resources/css/tokens.css");
+        String shared = read("resources/css/ui-system.css");
+        String header = read("resources/css/pages/header.css");
+        String dashboard = read("resources/css/pages/dashboard.css");
+        String history = read("resources/css/pages/maintenance_history.css");
+
+        assertTrue(tokens.contains("--palette-surface-edge: #AFB8C1;"));
+        assertTrue(tokens.contains(
+                "--color-surface-edge: var(--palette-surface-edge);"));
+        assertTrue(tokens.contains(
+                "--color-border-strong: var(--palette-border-strong);"));
+        assertTrue(shared.contains(
+                "border: 1px solid var(--color-surface-edge);"));
+        assertTrue(shared.contains(
+                ".ui-system .button--secondary"));
+        assertTrue(shared.contains(
+                "border-color: var(--color-border-strong);"));
+        assertTrue(header.contains(
+                "border: 1px solid var(--color-surface-edge);"));
+        assertTrue(dashboard.contains(
+                "border: 1px dashed var(--color-border);"));
+        assertTrue(history.contains(
+                "border-bottom: 1px solid var(--color-border);"));
     }
 
     @Test
@@ -127,9 +177,11 @@ class MinimalPaletteContractTest {
     }
 
     @Test
-    void normalDashboardSurfacesAreFlatWhileOverlaysKeepElevation() throws Exception {
+    void normalDashboardSurfacesUseSharedDepthWhileOverlaysKeepStrongerElevation()
+            throws Exception {
         String page = read("dashboard.jsp");
         String styles = read("resources/css/pages/dashboard.css");
+        String sharedStyles = read("resources/css/ui-system.css");
         String myPageStyles = read("resources/css/pages/mypage_hosts.css");
 
         assertTrue(page.contains("pageBodyClass\" value=\"page-1050 dashboard-page\""));
@@ -137,9 +189,11 @@ class MinimalPaletteContractTest {
         assertFalse(page.contains("maintenance-kpi-section"));
         assertFalse(styles.contains(".maintenance-kpi-"));
         assertTrue(styles.contains(".dashboard-page .maintenance-month-board {"));
-        assertTrue(styles.contains("background: var(--color-surface);"));
-        assertTrue(styles.contains("border: 1px solid var(--color-border);"));
-        assertTrue(styles.contains("box-shadow: none;"));
+        assertTrue(sharedStyles.contains(".ui-system .ui-work-surface {"));
+        assertTrue(sharedStyles.contains("background: var(--color-surface);"));
+        assertTrue(sharedStyles.contains(
+                "border: 1px solid var(--color-surface-edge);"));
+        assertTrue(sharedStyles.contains("box-shadow: var(--shadow-sm);"));
         assertTrue(styles.contains("outline: 2px solid var(--color-primary);"));
         assertTrue(styles.contains("border-color: var(--color-border-strong);"));
         assertTrue(myPageStyles.contains(".page-mypage .vm-modal"));
@@ -184,15 +238,15 @@ class MinimalPaletteContractTest {
 
     private static Map<String, String> expectedLight() {
         return expected(
-                "#EFF2F5", "#E8EDF2", "#FAFBFC", "#EEF1F4", "#D5DCE3", "#87919B",
-                "#20252B", "#47535F", "#5B6672", "#E7EDF2", "#455F7A",
+                "#EFF2F5", "#E8EDF2", "#FCFCFD", "#E4E9EE", "#D5DCE3", "#AFB8C1", "#87919B",
+                "#20252B", "#47535F", "#5B6672", "#DFE8F0", "#455F7A",
                 "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#D4A900",
                 "#FFF1F1", "#B64B4B");
     }
 
     private static Map<String, String> expected(String... values) {
         String[] roles = {
-                "canvas", "ambient", "surface", "surface-muted", "border", "border-strong",
+                "canvas", "ambient", "surface", "surface-muted", "border", "surface-edge", "border-strong",
                 "text-strong", "text", "text-muted", "brand-subtle", "brand",
                 "brand-hover", "success-subtle", "success", "warning-subtle",
                 "warning", "danger-subtle", "danger"

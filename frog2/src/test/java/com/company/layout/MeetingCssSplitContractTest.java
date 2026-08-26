@@ -79,6 +79,9 @@ class MeetingCssSplitContractTest {
                     "/resources/css/pages/customers.css"), entry.getKey());
             assertTrue(page.contains("content-management"), entry.getKey());
         }
+
+        assertTrue(Files.notExists(CSS.resolve("meeting.css")));
+        assertTrue(Files.notExists(CSS.resolve("meeting_list_layout.css")));
     }
 
     @Test
@@ -112,6 +115,12 @@ class MeetingCssSplitContractTest {
                 .contains(".ui-data-row[data-detail-url]"));
         assertTrue(list.contains(".meeting-row-meta"));
         assertTrue(list.contains("@media (max-width: 768px)"));
+        assertTrue(list.contains(
+                ".meeting-list-table td.meeting-datetime-cell"));
+        assertTrue(list.contains(
+                ".meeting-list-table td.meeting-type-cell"));
+        assertTrue(list.contains(
+                ".meeting-list-table td.meeting-author-cell"));
     }
 
     private static String readCss(String fileName) throws Exception {

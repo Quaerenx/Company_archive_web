@@ -36,14 +36,14 @@
                 <span class="upload-area-icon" aria-hidden="true"><i class="fas fa-file-upload"></i></span>
                 <span class="upload-area-text">파일을 선택하세요</span>
                 <span class="upload-area-hint">PDF, 문서, 스프레드시트, 안전한 이미지·압축·텍스트 파일</span>
+                <input id="upload-files"
+                       class="file-input"
+                       type="file"
+                       name="uploadFiles"
+                       multiple
+                       required
+                       accept=".pdf,.txt,.log,.csv,.png,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.7z,.rar,.gz,.tar">
             </label>
-            <input id="upload-files"
-                   class="file-input"
-                   type="file"
-                   name="uploadFiles"
-                   multiple
-                   required
-                   accept=".pdf,.txt,.log,.csv,.png,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.7z,.rar,.gz,.tar">
 
             <div id="selected-files" class="file-list" aria-live="polite"></div>
             <p id="upload-status"

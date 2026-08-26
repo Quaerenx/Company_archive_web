@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CustomerPaginationViewContractTest {
@@ -32,7 +33,37 @@ class CustomerPaginationViewContractTest {
         assertTrue(behavior.contains("currentQuery"));
         assertTrue(behavior.contains("currentPageSize"));
         assertFalse(behavior.contains("row.classList.add('hidden')"));
+        assertFalse(behavior.contains("initializeRows"));
+        assertFalse(behavior.contains("animationDelay"));
+        assertFalse(behavior.contains("data-toggle"));
+        assertFalse(behavior.contains("mouseenter"));
         assertFalse(page.contains("data-search-text="));
+        assertTrue(page.contains("<nav class=\"filter-toggle\""));
+        assertTrue(page.contains("aria-label=\"고객사 목록 범위\""));
+        assertTrue(page.contains("var=\"maintenanceFilterUrl\""));
+        assertTrue(page.contains("var=\"allFilterUrl\""));
+        int maintenanceFilterStart = page.indexOf(
+                "<c:url var=\"maintenanceFilterUrl\"");
+        int allFilterStart = page.indexOf(
+                "<c:url var=\"allFilterUrl\"");
+        String maintenanceFilter = page.substring(
+                maintenanceFilterStart, allFilterStart);
+        String allFilter = page.substring(
+                allFilterStart, page.indexOf("<div class=\"table-container", allFilterStart));
+        for (String parameter : List.of(
+                "sortField", "sortDirection", "q", "pageSize")) {
+            assertTrue(maintenanceFilter.contains(
+                    "<c:param name=\"" + parameter + "\""), parameter);
+            assertTrue(allFilter.contains(
+                    "<c:param name=\"" + parameter + "\""), parameter);
+        }
+        assertTrue(page.contains(
+                "<a href=\"<c:out value='${maintenanceFilterUrl}' />\""));
+        assertTrue(page.contains(
+                "<a href=\"<c:out value='${allFilterUrl}' />\""));
+        assertTrue(page.contains("aria-current=\"${filter == 'maintenance'"));
+        assertFalse(page.contains("js-customer-filter"));
+        assertFalse(behavior.contains("initializeFilters"));
     }
 
     @Test
@@ -76,7 +107,7 @@ class CustomerPaginationViewContractTest {
     }
 
     @Test
-    void keepsTableFooterMinimalAndVisibleForEveryPageCount() throws Exception {
+    void keepsTableFooterMinimalAndOnlyShowsItWithCustomerRows() throws Exception {
         String page = Files.readString(WEBAPP.resolve("customers/customers_list.jsp"));
         String tag = Files.readString(WEBAPP.resolve("WEB-INF/tags/tableFooter.tag"));
         String styles = Files.readString(WEBAPP.resolve("resources/css/ui-system.css"));
@@ -85,6 +116,16 @@ class CustomerPaginationViewContractTest {
         assertFalse(page.contains("totalCount="));
         assertTrue(page.contains("itemLabel=\"고객사\""));
         assertTrue(page.contains("totalPages=\"${totalPages}\""));
+        int rowsBranch = page.indexOf(
+                "<c:when test=\"${not empty customerList}\">");
+        int footer = page.indexOf("<t:tableFooter", rowsBranch);
+        int emptyState = page.indexOf(
+                "customer-list-empty ui-empty-state", rowsBranch);
+        int rowsBranchEnd = page.lastIndexOf("</c:when>", emptyState);
+        assertTrue(rowsBranch >= 0);
+        assertTrue(footer > rowsBranch);
+        assertTrue(rowsBranchEnd > footer);
+        assertTrue(emptyState > rowsBranchEnd);
         assertFalse(page.contains("totalPages > 1"));
         assertFalse(page.contains("<c:forEach begin=\"${startPage}\""));
         assertFalse(page.contains("aria-current=\"page\""));

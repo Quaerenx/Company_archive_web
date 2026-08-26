@@ -77,8 +77,9 @@
     <div class="form-group">
         <c:choose>
             <c:when test="${troubleshootingFormMode == 'edit'}">
-                <label>작성자</label>
-                <input type="text" value="<c:out value='${troubleshooting.creator}' />" readonly
+                <label for="troubleshooting_creator_display">작성자</label>
+                <input type="text" id="troubleshooting_creator_display"
+                       value="<c:out value='${troubleshooting.creator}' />" readonly
                        class="bg-light text-muted">
             </c:when>
             <c:otherwise>

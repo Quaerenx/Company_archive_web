@@ -104,6 +104,13 @@ class CssLayoutStructureTest {
         assertTrue(detail.contains("/resources/css/pages/customer_detail.css"));
         assertTrue(detail.contains("data-context-path="));
         assertFalse(detail.contains("style=\""));
+
+        String detailEditScript = Files.readString(
+                WEBAPP.resolve("resources/js/pages/customer_detail_edit.js"));
+        assertFalse(detailEditScript.contains("toISOString()"));
+        assertTrue(detailEditScript.contains("getFullYear()"));
+        assertTrue(detailEditScript.contains("getMonth() + 1"));
+        assertTrue(detailEditScript.contains("getDate()"));
     }
 
     @Test
@@ -299,7 +306,10 @@ class CssLayoutStructureTest {
         assertFalse(styles.contains(".dashboard-page .maintenance-kpi-"));
         assertTrue(styles.contains(".dashboard-page .maintenance-month-board"));
         assertFalse(styles.contains(".dashboard-page .vm-modal-backdrop"));
-        assertTrue(styles.contains("border: 1px solid var(--color-border);"));
+        String sharedStyles = Files.readString(CSS.resolve("ui-system.css"));
+        assertTrue(sharedStyles.contains(
+                "border: 1px solid var(--color-surface-edge);"));
+        assertTrue(sharedStyles.contains("box-shadow: var(--shadow-sm);"));
 
         assertExternalized(
                 "mypage/mypage.jsp",

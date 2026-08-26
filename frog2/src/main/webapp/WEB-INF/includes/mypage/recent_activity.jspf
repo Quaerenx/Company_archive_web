@@ -52,7 +52,9 @@
                     </ul>
                 </c:when>
                 <c:otherwise>
-                    <p class="mypage-empty-state">최근 정기점검 기록이 없습니다.</p>
+                    <div class="mypage-recent-empty ui-empty-state">
+                        <strong>최근 정기점검 기록이 없습니다.</strong>
+                    </div>
                 </c:otherwise>
             </c:choose>
         </section>
@@ -92,7 +94,9 @@
                     </ul>
                 </c:when>
                 <c:otherwise>
-                    <p class="mypage-empty-state">최근 트러블슈팅 기록이 없습니다.</p>
+                    <div class="mypage-recent-empty ui-empty-state">
+                        <strong>최근 트러블슈팅 기록이 없습니다.</strong>
+                    </div>
                 </c:otherwise>
             </c:choose>
         </section>

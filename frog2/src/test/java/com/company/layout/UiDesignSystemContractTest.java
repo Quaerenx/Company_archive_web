@@ -32,6 +32,7 @@ class UiDesignSystemContractTest {
                 "--color-text:",
                 "--color-text-muted:",
                 "--color-border:",
+                "--color-surface-edge:",
                 "--color-border-strong:",
                 "--color-surface:",
                 "--color-surface-muted:",
@@ -48,6 +49,13 @@ class UiDesignSystemContractTest {
         assertTrue(tokens.contains("'Noto Sans KR'"));
         assertTrue(tokens.contains("'Apple SD Gothic Neo'"));
         assertTrue(tokens.contains("'Malgun Gothic'"));
+        assertTrue(tokens.contains(
+                "--color-surface-hover: var(--palette-surface-muted);"));
+        assertTrue(tokens.contains(
+                "--color-surface-selected: var(--palette-brand-subtle);"));
+        assertTrue(tokens.contains(
+                "--color-surface-edge: var(--palette-surface-edge);"));
+        assertFalse(tokens.contains("--color-surface-edge: color-mix("));
 
         String styles = read("resources/css/ui-system.css");
         for (String selector : List.of(
@@ -122,6 +130,12 @@ class UiDesignSystemContractTest {
         assertTrue(styles.matches(
                 "(?s).*form\\.ui-form :is\\(\\.form-group > label, \\.ui-label\\)"
                         + "\\s*\\{[^}]*font-weight:\\s*500;.*"));
+        assertFalse(read("resources/css/pages/maintenance.css")
+                .contains("font-weight: 650"));
+        assertFalse(read("resources/css/utilities.css")
+                .contains("font-weight: 300"));
+        assertFalse(read("resources/css/utilities.css")
+                .contains("font-weight: lighter"));
 
         for (String pageStyle : List.of(
                 "resources/css/components.css",
@@ -149,13 +163,43 @@ class UiDesignSystemContractTest {
         String script = read("resources/js/ui-system.js");
 
         assertTrue(styles.contains(":where(.ui-work-surface, .table-container)"));
+        assertTrue(styles.contains(
+                ".ui-system .table-container:not(.ui-work-surface)"));
+        assertFalse(styles.contains(".ui-system .table-container {"));
         assertTrue(styles.contains(".ui-section-header--flush"));
         assertTrue(styles.contains(".ui-section-body--flush"));
+        assertTrue(styles.contains("@media (min-width: 769px)"));
+        assertTrue(styles.contains(".ui-system .is-table-sticky-ready"));
+        assertTrue(styles.contains("@supports (overflow: clip)"));
+        assertTrue(styles.contains(
+                ".ui-table-wrap[data-ui-scrollable=\"false\"]"));
+        assertTrue(styles.contains(
+                "top: var(--table-sticky-offset, 0px);"));
+        assertTrue(styles.contains("z-index: var(--z-table-sticky);"));
+        assertTrue(styles.contains(
+                "box-shadow: var(--shadow-table-sticky);"));
+        assertTrue(read("resources/css/tokens.css").contains(
+                "--shadow-table-sticky:"));
+        assertTrue(styles.contains(
+                ".ui-data-row[data-detail-url]:hover {\n"
+                        + "    background: var(--color-primary-subtle);"));
+        assertFalse(styles.contains(
+                ".ui-table tbody tr:hover {"));
+        assertFalse(styles.matches(
+                "(?s).*\\.ui-data-table thead th\\s*\\{[^}]*position:\\s*sticky;.*"));
         assertTrue(script.contains(".ui-data-row[data-detail-url]"));
+        assertTrue(script.contains("--table-sticky-offset"));
+        assertTrue(script.contains("is-table-sticky-ready"));
+        assertTrue(script.contains(
+                ".ui-work-surface, [data-ui-table-surface]"));
+        assertTrue(script.contains("region.dataset.uiScrollable"));
+        assertTrue(script.contains("!scrollable"));
         assertTrue(script.contains("window.location.assign(row.dataset.detailUrl)"));
         assertTrue(script.contains("event.defaultPrevented"));
         assertTrue(script.contains("window.getSelection()"));
-        assertTrue(script.contains("!selection.isCollapsed"));
+        assertTrue(script.contains("selection.isCollapsed"));
+        assertTrue(script.contains("selection.containsNode(element, true)"));
+        assertTrue(script.contains("element.contains(selection.anchorNode)"));
         assertTrue(script.contains("isSelectingText"));
         assertTrue(script.contains("row.getAttribute('aria-disabled') === 'true'"));
 
@@ -168,6 +212,14 @@ class UiDesignSystemContractTest {
             assertTrue(source.contains("data-detail-url"), page);
         }
 
+        assertTrue(read("customers/customers_list.jsp").contains(
+                "table-container customer-list-panel ui-work-surface"));
+        for (String page : List.of(
+                "meeting/meeting_list.jsp",
+                "troubleshooting/troubleshooting_list.jsp")) {
+            assertTrue(read(page).contains("table-container ui-work-surface"), page);
+        }
+
         for (String page : List.of(
                 "dashboard.jsp",
                 "customers/customers_detail.jsp",
@@ -177,6 +229,13 @@ class UiDesignSystemContractTest {
                 "WEB-INF/views/filerepo/list.jsp",
                 "mypage/mypage.jsp")) {
             assertTrue(read(page).contains("ui-work-surface"), page);
+        }
+
+        for (String page : List.of(
+                "mypage/monthly_customer_response.jsp",
+                "vm_hosts/list.jsp",
+                "WEB-INF/includes/mypage/host_manager.jspf")) {
+            assertTrue(read(page).contains("data-ui-table-surface"), page);
         }
     }
 
@@ -332,8 +391,10 @@ class UiDesignSystemContractTest {
         assertTrue(monthly.contains("class=\"data-table ui-table\""));
         assertTrue(monthly.contains("class=\"table-responsive ui-table-wrap\""));
         assertTrue(monthly.contains("id=\"responseForm\""));
-        assertTrue(monthly.contains("aria-label=\"응대 기록 수정\""));
-        assertTrue(monthly.contains("aria-label=\"응대 기록 삭제\""));
+        assertTrue(monthly.contains(
+                "${responseDateValue} ${responseEntry.customerName} 응대 기록 수정"));
+        assertTrue(monthly.contains(
+                "${responseDateValue} ${responseEntry.customerName} 응대 기록 삭제"));
 
         String vmHosts = read("vm_hosts/list.jsp");
         assertTrue(vmHosts.contains("class=\"vm-form ui-form\""));

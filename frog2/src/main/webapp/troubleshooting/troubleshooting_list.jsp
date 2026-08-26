@@ -54,6 +54,8 @@
                         data-busy-label="검색 중">검색</button>
             </form>
         </div>
+        <c:choose>
+            <c:when test="${not empty troubleshootingList}">
         <div class="table-wrapper ui-table-wrap"
              data-ui-scroll-region
              data-ui-scroll-label="트러블슈팅 표">
@@ -97,19 +99,6 @@
                     </tr>
                 </c:forEach>
 
-                <c:if test="${empty troubleshootingList}">
-                    <tr>
-                        <td colspan="4" class="empty-state">
-                            <i class="fas fa-tools"></i>
-                            <div>
-                                <c:choose>
-                                    <c:when test="${not empty q}">검색 결과가 없습니다.</c:when>
-                                    <c:otherwise>등록된 트러블 슈팅이 없습니다.</c:otherwise>
-                                </c:choose>
-                            </div>
-                        </td>
-                    </tr>
-                </c:if>
             </tbody>
         </table>
         </div>
@@ -137,6 +126,19 @@
                        previousUrl="${troubleshootingPreviousPageUrl}"
                        nextUrl="${troubleshootingNextPageUrl}"
                        paginationLabel="트러블슈팅 페이지" />
+            </c:when>
+            <c:otherwise>
+                <div class="troubleshooting-empty ui-empty-state">
+                    <i class="fas fa-tools" aria-hidden="true"></i>
+                    <strong>
+                        <c:choose>
+                            <c:when test="${not empty q}">검색 결과가 없습니다.</c:when>
+                            <c:otherwise>등록된 트러블 슈팅이 없습니다.</c:otherwise>
+                        </c:choose>
+                    </strong>
+                </div>
+            </c:otherwise>
+        </c:choose>
     </div>
 
 

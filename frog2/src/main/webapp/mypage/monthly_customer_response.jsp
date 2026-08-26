@@ -85,7 +85,7 @@
 
     <!-- 월별 응대 데이터 -->
     <c:if test="${not empty monthlyResponses}">
-    <div class="results-card">
+    <div class="results-card" data-ui-table-surface>
         <div class="results-header">
             <h3>
                 <i class="fas fa-calendar-check"></i>
@@ -130,12 +130,12 @@
                                 <textarea class="response-note" hidden><c:out value="${responseEntry.note}" /></textarea>
                                 <button type="button"
                                         class="btn-icon btn-edit ui-button button--secondary button--sm ui-touch-target"
-                                        aria-label="응대 기록 수정">
+                                        aria-label="<c:out value='${responseDateValue} ${responseEntry.customerName} 응대 기록 수정' />">
                                     <i class="fas fa-edit" aria-hidden="true"></i>
                                 </button>
                                 <button type="button"
                                         class="btn-icon btn-delete ui-button button--danger button--sm ui-touch-target"
-                                        aria-label="응대 기록 삭제">
+                                        aria-label="<c:out value='${responseDateValue} ${responseEntry.customerName} 응대 기록 삭제' />">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -166,13 +166,14 @@
                 <i class="fas fa-plus"></i> 추가
             </button>
         </div>
-        <div class="empty-state">
-            <i class="fas fa-inbox"></i>
-            <p><c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월에는 고객 응대 기록이 없습니다.</p>
+        <div class="monthly-response-empty ui-empty-state">
+            <i class="fas fa-inbox" aria-hidden="true"></i>
+            <strong>고객 응대 기록이 없습니다.</strong>
+            <span><c:out value="${selectedYear}" />년 <c:out value="${selectedMonth}" />월에 등록된 기록이 없습니다.</span>
             <button type="button"
                     class="ui-button button--secondary button--md"
                     data-monthly-action="add">
-                <i class="fas fa-plus"></i> 첫 응대 기록 추가
+                <i class="fas fa-plus" aria-hidden="true"></i> 첫 응대 기록 추가
             </button>
         </div>
     </div>

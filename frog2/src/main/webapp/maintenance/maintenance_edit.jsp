@@ -5,7 +5,7 @@
 <c:set var="pageTitle" value="정기점검 이력 수정" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
 <c:set var="pageCss" value="/resources/css/pages/maintenance.css" scope="request" />
-<c:set var="pageScript" value="/resources/js/pages/maintenance_form.js" scope="request" />
+<c:set var="pageScript" value="/resources/js/pages/maintenance_calendar.js,/resources/js/pages/maintenance_form.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
@@ -72,13 +72,15 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label>등록일시</label>
-                    <input type="text" value="<fmt:formatDate value='${record.createdAt}' pattern='yyyy-MM-dd HH:mm:ss'/>" 
+                    <label for="maintenanceCreatedAt">등록일시</label>
+                    <input type="text" id="maintenanceCreatedAt"
+                           value="<fmt:formatDate value='${record.createdAt}' pattern='yyyy-MM-dd HH:mm:ss'/>"
                            readonly class="readonly-field">
                 </div>
                 <div class="form-group">
-                    <label>수정일시</label>
-                    <input type="text" value="<fmt:formatDate value='${record.updatedAt}' pattern='yyyy-MM-dd HH:mm:ss'/>" 
+                    <label for="maintenanceUpdatedAt">수정일시</label>
+                    <input type="text" id="maintenanceUpdatedAt"
+                           value="<fmt:formatDate value='${record.updatedAt}' pattern='yyyy-MM-dd HH:mm:ss'/>"
                            readonly class="readonly-field">
                 </div>
             </div>

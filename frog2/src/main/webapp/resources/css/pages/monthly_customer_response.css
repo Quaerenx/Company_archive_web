@@ -307,7 +307,7 @@
     }
 
     .monthly-response-page .results-header .ui-button,
-    .monthly-response-page .empty-state .ui-button {
+    .monthly-response-page .monthly-response-empty .ui-button {
         width: 100%;
         justify-content: center;
     }

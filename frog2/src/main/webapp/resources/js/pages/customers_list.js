@@ -15,9 +15,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         updateSortIcons();
-        initializeRows();
         initializeSearch();
-        initializeFilters();
         initializeSortLinks();
     });
 
@@ -29,21 +27,6 @@
             icon.classList.remove('fa-sort');
             icon.classList.add(currentSortDirection === 'ASC' ? 'fa-sort-up' : 'fa-sort-down');
         });
-    }
-
-    function initializeRows() {
-        document.querySelectorAll('.customer-table tbody tr').forEach(function(row, index) {
-            row.style.animationDelay = (index * 0.05) + 's';
-        });
-
-        document.querySelectorAll('.customer-table td[title]').forEach(function(cell) {
-            cell.addEventListener('mouseenter', function() {
-                if (this.offsetWidth < this.scrollWidth) {
-                    this.setAttribute('data-toggle', 'tooltip');
-                }
-            });
-        });
-
     }
 
     function initializeSearch() {
@@ -58,18 +41,6 @@
         clearButton.addEventListener('click', function() {
             searchInput.value = '';
             searchForm.requestSubmit();
-        });
-    }
-
-    function initializeFilters() {
-        document.querySelectorAll('.js-customer-filter[data-filter]').forEach(function(button) {
-            button.addEventListener('click', function() {
-                navigateToList(
-                        button.getAttribute('data-filter'),
-                        currentSortField,
-                        currentSortDirection,
-                        currentQuery);
-            });
         });
     }
 

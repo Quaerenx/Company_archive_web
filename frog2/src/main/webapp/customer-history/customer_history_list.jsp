@@ -5,7 +5,17 @@
 <c:set var="pageTitle" value="고객사 히스토리" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-customer-history" scope="request" />
 <c:set var="pageCss" value="/resources/css/pages/customer_history.css" scope="request" />
+<c:set var="pageScript" value="/resources/js/pages/customer_history.js" scope="request" />
 <%@ include file="/includes/header.jsp" %>
+
+<c:url var="addHistoryUrl" value="/customer-history">
+    <c:param name="view" value="add" />
+    <c:param name="customerName" value="${customerName}" />
+    <c:param name="returnCustomerName" value="${customerName}" />
+    <c:param name="returnCategory" value="${category}" />
+    <c:param name="returnQ" value="${q}" />
+    <c:param name="returnPage" value="${currentPage}" />
+</c:url>
 
 <div class="customer-history content-shell">
     <t:pageHeader>
@@ -17,7 +27,7 @@
             주요 장애, 업그레이드, 증설 등 고객사 작업 이력을 관리합니다.
         </jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/customer-history?view=add"
+            <a href="<c:out value='${addHistoryUrl}' />"
                class="ui-button button--primary button--md">
                 <i class="fas fa-plus" aria-hidden="true"></i>
                 이력 등록
@@ -30,7 +40,7 @@
     <section class="customer-history-panel ui-work-surface"
              aria-labelledby="customer-history-list-title">
         <h2 id="customer-history-list-title" class="sr-only">고객사 작업 이력 목록</h2>
-        <form class="customer-history-filter-form ui-table-toolbar ui-form"
+        <form class="customer-history-filter-form ui-table-toolbar ui-form ui-form--compact"
               method="get"
               action="${pageContext.request.contextPath}/customer-history"
               data-ui-submit-lock="auto">
@@ -67,13 +77,15 @@
                        autocomplete="off"
                        placeholder="이력 또는 조치사항 검색">
             </label>
-            <button type="submit"
-                    class="ui-button button--secondary button--md customer-history-search-button"
-                    data-busy-label="검색 중">검색</button>
-            <c:if test="${not empty customerName || (not empty category && category ne 'all') || not empty q}">
-                <a href="${pageContext.request.contextPath}/customer-history"
-                   class="ui-button button--ghost button--md">초기화</a>
-            </c:if>
+            <div class="customer-history-filter-actions">
+                <button type="submit"
+                        class="ui-button button--secondary button--sm customer-history-search-button"
+                        data-busy-label="검색 중">검색</button>
+                <c:if test="${not empty customerName || (not empty category && category ne 'all') || not empty q}">
+                    <a href="${pageContext.request.contextPath}/customer-history"
+                       class="ui-button button--ghost button--sm">초기화</a>
+                </c:if>
+            </div>
         </form>
 
         <c:choose>
@@ -97,8 +109,13 @@
                                 <c:url var="editHistoryUrl" value="/customer-history">
                                     <c:param name="view" value="edit" />
                                     <c:param name="id" value="${history.id}" />
+                                    <c:param name="returnCustomerName" value="${customerName}" />
+                                    <c:param name="returnCategory" value="${category}" />
+                                    <c:param name="returnQ" value="${q}" />
+                                    <c:param name="returnPage" value="${currentPage}" />
                                 </c:url>
-                                <tr>
+                                <tr class="customer-history-summary-row"
+                                    data-ui-disclosure-row>
                                     <td class="col--date">
                                         <time datetime="<c:out value='${history.workDate}' />">
                                             <c:out value="${history.workDate}" />
@@ -113,12 +130,19 @@
                                         </span>
                                     </td>
                                     <td class="col--work">
-                                        <div class="customer-history-work">
-                                            <strong><c:out value="${history.title}" /></strong>
-                                            <c:if test="${history.actionSummary ne history.title}">
-                                                <span><c:out value="${history.actionSummary}" /></span>
-                                            </c:if>
-                                        </div>
+                                        <button type="button"
+                                                class="customer-history-detail-toggle"
+                                                data-ui-disclosure-toggle
+                                                aria-expanded="false"
+                                                aria-controls="customer-history-detail-<c:out value='${history.id}' />"
+                                                aria-label="<c:out value='${history.customerName}' /> <c:out value='${history.workDate}' /> <c:out value='${history.title}' /> 이력 상세">
+                                            <span class="customer-history-work" aria-hidden="true">
+                                                <strong><c:out value="${history.title}" /></strong>
+                                                <c:if test="${history.actionSummary ne history.title}">
+                                                    <span><c:out value="${history.actionSummary}" /></span>
+                                                </c:if>
+                                            </span>
+                                        </button>
                                     </td>
                                     <td class="col--status">
                                         <div class="customer-history-status-actions">
@@ -134,6 +158,22 @@
                                                 </a>
                                             </c:if>
                                         </div>
+                                    </td>
+                                </tr>
+                                <tr id="customer-history-detail-<c:out value='${history.id}' />"
+                                    class="customer-history-detail-row"
+                                    hidden>
+                                    <td colspan="5">
+                                        <dl class="customer-history-detail">
+                                            <div>
+                                                <dt>작업 내용</dt>
+                                                <dd><strong><c:out value="${history.title}" /></strong></dd>
+                                            </div>
+                                            <div>
+                                                <dt>조치사항</dt>
+                                                <dd><c:out value="${history.actionSummary}" /></dd>
+                                            </div>
+                                        </dl>
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -165,10 +205,21 @@
                                paginationLabel="고객사 히스토리 페이지" />
             </c:when>
             <c:otherwise>
-                <div class="customer-history-empty">
-                    <i class="fas fa-history" aria-hidden="true"></i>
-                    <strong>등록된 작업 이력이 없습니다.</strong>
-                    <span>주요 장애, 업그레이드 또는 증설 작업부터 기록해 보세요.</span>
+                <div class="customer-history-empty ui-empty-state">
+                    <c:choose>
+                        <c:when test="${hasActiveFilters}">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <strong>조건에 맞는 이력이 없습니다.</strong>
+                            <span>검색 조건을 바꾸거나 초기화해 주세요.</span>
+                            <a href="${pageContext.request.contextPath}/customer-history"
+                               class="ui-button button--secondary button--md">검색 초기화</a>
+                        </c:when>
+                        <c:otherwise>
+                            <i class="fas fa-history" aria-hidden="true"></i>
+                            <strong>등록된 작업 이력이 없습니다.</strong>
+                            <span>주요 장애, 업그레이드 또는 증설 작업부터 기록해 보세요.</span>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
             </c:otherwise>
         </c:choose>

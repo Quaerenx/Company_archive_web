@@ -24,7 +24,8 @@ class MaintenanceHistoryViewContractTest {
         assertTrue(page.contains("name=\"historyPage\""));
         assertTrue(page.contains(
                 "name=\"customerName\" value=\"${fn:escapeXml(customerName)}\""));
-        assertTrue(page.contains("class=\"history-filter-form\""));
+        assertTrue(page.contains(
+                "class=\"history-filter-form ui-table-toolbar ui-form ui-form--compact\""));
         assertTrue(page.contains("name=\"historyYear\""));
         assertTrue(page.contains("name=\"historyVersion\""));
         assertTrue(page.contains("name=\"historyQuery\""));
@@ -36,6 +37,63 @@ class MaintenanceHistoryViewContractTest {
                 "<c:param name=\"historyQuery\" value=\"${historyQuery}\" />"));
         assertTrue(page.contains("<t:tableFooter"));
         assertTrue(page.contains("paginationLabel=\"정기점검 이력 페이지\""));
+        int rowsBranch = page.indexOf(
+                "<c:when test=\"${not empty historyRows}\">");
+        int footer = page.indexOf("<t:tableFooter", rowsBranch);
+        int emptyState = page.indexOf(
+                "empty-history ui-empty-state", rowsBranch);
+        int rowsBranchEnd = page.lastIndexOf("</c:when>", emptyState);
+        assertTrue(rowsBranch >= 0);
+        assertTrue(footer > rowsBranch);
+        assertTrue(rowsBranchEnd > footer);
+        assertTrue(emptyState > rowsBranchEnd);
+        assertTrue(page.contains(
+                "class=\"history-table-scroll ui-table-wrap\""));
+        assertTrue(page.contains("id=\"historyScrollHint\" hidden"));
+        assertTrue(page.contains("data-ui-scroll-region"));
+        assertTrue(page.contains(
+                "data-ui-scroll-label=\"정기점검 이력 비교표\""));
+        assertTrue(page.contains(
+                "data-ui-scroll-hint-id=\"historyScrollHint\""));
+        assertFalse(page.contains("aria-describedby=\"historyScrollHint\""));
+        assertFalse(page.contains(
+                "class=\"history-table-scroll ui-table-wrap\"\n"
+                        + "                     role=\"region\""));
+        assertTrue(page.contains(
+                "class=\"history-comparison-table ui-table ui-data-table\""));
+
+        String uiStyles = Files.readString(Path.of(
+                "src/main/webapp/resources/css/ui-system.css"));
+        assertTrue(uiStyles.contains(
+                "form.ui-form--compact :is("));
+        String uiScript = Files.readString(Path.of(
+                "src/main/webapp/resources/js/ui-system.js"));
+        assertTrue(uiScript.contains("uiScrollHintId"));
+        assertTrue(uiScript.contains("hint.hidden = !scrollable"));
+        String historyStyles = Files.readString(Path.of(
+                "src/main/webapp/resources/css/pages/maintenance_history.css"));
+        assertFalse(historyStyles.matches(
+                "(?s).*\\.history-scroll-hint\\s*\\{[^}]*display:\\s*none;.*"));
+    }
+
+    @Test
+    void vendorScriptDoesNotDependOnHeaderIncludeInitialization()
+            throws Exception {
+        String page = Files.readString(HISTORY);
+        String vendorScript = "<c:set var=\"vendorScript\"";
+        int vendorScriptIndex = page.indexOf(vendorScript);
+        int headerIncludeIndex = page.indexOf(
+                "<%@ include file=\"/includes/header.jsp\" %>");
+
+        assertTrue(vendorScriptIndex >= 0);
+        assertTrue(headerIncludeIndex > vendorScriptIndex);
+        String vendorScriptDeclaration = page.substring(
+                vendorScriptIndex,
+                page.indexOf("/>", vendorScriptIndex) + 2);
+        assertTrue(vendorScriptDeclaration.contains(
+                "?v=${initParam.frog2AssetVersion}"));
+        assertFalse(vendorScriptDeclaration.contains(
+                "?v=${frog2AssetVersion}"));
     }
 
     @Test

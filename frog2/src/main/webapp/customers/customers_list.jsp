@@ -21,16 +21,36 @@
     </t:pageHeader>
 
     <t:flashMessages />
+    <c:url var="maintenanceFilterUrl" value="/customers">
+        <c:param name="view" value="list" />
+        <c:param name="filter" value="maintenance" />
+        <c:param name="sortField" value="${sortField}" />
+        <c:param name="sortDirection" value="${sortDirection}" />
+        <c:param name="q" value="${q}" />
+        <c:param name="pageSize" value="${pageSize}" />
+    </c:url>
+    <c:url var="allFilterUrl" value="/customers">
+        <c:param name="view" value="list" />
+        <c:param name="filter" value="all" />
+        <c:param name="sortField" value="${sortField}" />
+        <c:param name="sortDirection" value="${sortDirection}" />
+        <c:param name="q" value="${q}" />
+        <c:param name="pageSize" value="${pageSize}" />
+    </c:url>
     <div class="table-container customer-list-panel ui-work-surface">
       <div class="customer-list-toolbar">
-        <div class="filter-toggle">
-            <button type="button" class="filter-btn ui-touch-target ${filter == 'maintenance' ? 'active' : ''} js-customer-filter" data-filter="maintenance">
+        <nav class="filter-toggle" aria-label="고객사 목록 범위">
+            <a href="<c:out value='${maintenanceFilterUrl}' />"
+               class="filter-btn ui-touch-target"
+               aria-current="${filter == 'maintenance' ? 'page' : 'false'}">
                 정기점검 <span class="filter-btn__count"><c:out value="${maintenanceCount}" /></span>
-            </button>
-            <button type="button" class="filter-btn ui-touch-target ${filter == 'all' ? 'active' : ''} js-customer-filter" data-filter="all">
+            </a>
+            <a href="<c:out value='${allFilterUrl}' />"
+               class="filter-btn ui-touch-target"
+               aria-current="${filter == 'all' ? 'page' : 'false'}">
                 전체 <span class="filter-btn__count"><c:out value="${totalCount}" /></span>
-            </button>
-        </div>
+            </a>
+        </nav>
         <form class="search-container ui-form"
               id="customer-search-form"
               method="get"
@@ -86,6 +106,8 @@
     <c:url var="saidSortUrl" value="/customers"><c:param name="view" value="list"/><c:param name="filter" value="${filter}"/><c:param name="sortField" value="said"/><c:param name="sortDirection" value="${nextSaidDirection}"/><c:param name="q" value="${q}"/><c:param name="pageSize" value="${pageSize}"/></c:url>
     <c:url var="managerSortUrl" value="/customers"><c:param name="view" value="list"/><c:param name="filter" value="${filter}"/><c:param name="sortField" value="manager_name"/><c:param name="sortDirection" value="${nextManagerDirection}"/><c:param name="q" value="${q}"/><c:param name="pageSize" value="${pageSize}"/></c:url>
 
+        <c:choose>
+            <c:when test="${not empty customerList}">
         <div class="table-wrapper ui-table-wrap"
              data-ui-scroll-region
              data-ui-scroll-label="고객사 정보 표">
@@ -96,49 +118,49 @@
                         <th scope="col" aria-sort="${sortField eq 'customer_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${customerNameSortUrl}' />" class="js-customer-sort" data-sort-field="customer_name">
                                 고객사
-                                <i class="fas fa-sort sort-icon ${sortField == 'customer_name' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'customer_name' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
                         <th scope="col" aria-sort="${sortField eq 'vertica_version' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${versionSortUrl}' />" class="js-customer-sort" data-sort-field="vertica_version">
                                 버전
-                                <i class="fas fa-sort sort-icon ${sortField == 'vertica_version' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'vertica_version' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
                         <th scope="col" aria-sort="${sortField eq 'mode' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${modeSortUrl}' />" class="js-customer-sort" data-sort-field="mode">
                                 모드
-                                <i class="fas fa-sort sort-icon ${sortField == 'mode' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'mode' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
                         <th scope="col" aria-sort="${sortField eq 'os' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${osSortUrl}' />" class="js-customer-sort" data-sort-field="os">
                                 OS
-                                <i class="fas fa-sort sort-icon ${sortField == 'os' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'os' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
                         <th scope="col" aria-sort="${sortField eq 'nodes' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${nodesSortUrl}' />" class="js-customer-sort" data-sort-field="nodes">
                                 노드수
-                                <i class="fas fa-sort sort-icon ${sortField == 'nodes' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'nodes' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
                         <th scope="col" aria-sort="${sortField eq 'license_size' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${licenseSortUrl}' />" class="js-customer-sort" data-sort-field="license_size">
                                 라이선스
-                                <i class="fas fa-sort sort-icon ${sortField == 'license_size' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'license_size' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
                         <th scope="col" aria-sort="${sortField eq 'said' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${saidSortUrl}' />" class="js-customer-sort" data-sort-field="said">
                                 SAID
-                                <i class="fas fa-sort sort-icon ${sortField == 'said' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'said' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
                         <th scope="col" aria-sort="${sortField eq 'manager_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${managerSortUrl}' />" class="js-customer-sort" data-sort-field="manager_name">
                                 담당자
-                                <i class="fas fa-sort sort-icon ${sortField == 'manager_name' ? 'active' : ''}"></i>
+                                <i class="fas fa-sort sort-icon ${sortField == 'manager_name' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
 
@@ -172,26 +194,6 @@
                         </tr>
                     </c:forEach>
 
-                    <c:if test="${empty customerList}">
-                        <tr id="empty-state">
-                            <td colspan="8" class="empty-state">
-                                <i class="fas fa-inbox"></i>
-                                <div>
-                                    <c:choose>
-                                        <c:when test="${not empty q}">
-                                            검색 조건에 맞는 고객사가 없습니다.
-                                        </c:when>
-                                        <c:when test="${filter == 'maintenance'}">
-                                            등록된 정기점검 고객사가 없습니다.
-                                        </c:when>
-                                        <c:otherwise>
-                                            등록된 고객사 정보가 없습니다.
-                                        </c:otherwise>
-                                    </c:choose>
-                                </div>
-                            </td>
-                        </tr>
-                    </c:if>
                 </tbody>
             </table>
 
@@ -224,6 +226,26 @@
                        previousUrl="${customerPreviousPageUrl}"
                        nextUrl="${customerNextPageUrl}"
                        paginationLabel="고객사 페이지" />
+            </c:when>
+            <c:otherwise>
+                <div class="customer-list-empty ui-empty-state">
+                    <i class="fas fa-inbox" aria-hidden="true"></i>
+                    <strong>
+                        <c:choose>
+                            <c:when test="${not empty q}">
+                                검색 조건에 맞는 고객사가 없습니다.
+                            </c:when>
+                            <c:when test="${filter == 'maintenance'}">
+                                등록된 정기점검 고객사가 없습니다.
+                            </c:when>
+                            <c:otherwise>
+                                등록된 고객사 정보가 없습니다.
+                            </c:otherwise>
+                        </c:choose>
+                    </strong>
+                </div>
+            </c:otherwise>
+        </c:choose>
     </div>
     <div class="customer-secondary-action">
         <a href="${pageContext.request.contextPath}/customers?view=add"

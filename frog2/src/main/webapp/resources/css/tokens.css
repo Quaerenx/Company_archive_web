@@ -4,14 +4,15 @@
     /* Archive: Cool Gray Mist + Ink Blue. Semantic tokens below are the public API. */
     --palette-canvas: #EFF2F5;
     --palette-ambient: #E8EDF2;
-    --palette-surface: #FAFBFC;
-    --palette-surface-muted: #EEF1F4;
+    --palette-surface: #FCFCFD;
+    --palette-surface-muted: #E4E9EE;
     --palette-border: #D5DCE3;
+    --palette-surface-edge: #AFB8C1;
     --palette-border-strong: #87919B;
     --palette-text-strong: #20252B;
     --palette-text: #47535F;
     --palette-text-muted: #5B6672;
-    --palette-brand-subtle: #E7EDF2;
+    --palette-brand-subtle: #DFE8F0;
     --palette-brand: #455F7A;
     --palette-brand-hover: #344A60;
     --palette-success-subtle: #EEF6F1;
@@ -82,7 +83,9 @@
     --color-icon: var(--palette-text-muted);
     --color-icon-active: var(--palette-brand);
     --color-text-inverse: var(--palette-surface);
+    /* Decorative grouping stays quiet; interactive controls retain 3:1 edges. */
     --color-border: var(--palette-border);
+    --color-surface-edge: var(--palette-surface-edge);
     --color-border-strong: var(--palette-border-strong);
     --color-divider: var(--palette-border);
     --color-focus: var(--palette-brand);
@@ -150,7 +153,7 @@
     /* Self-hosted product typography with system fallbacks. */
     --font-base: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, Arial, sans-serif;
     --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --font-size-2xs: 0.64rem;
+    --font-size-2xs: 0.75rem;
     --font-size-xs: 0.8rem;
     --font-size-sm: 0.875rem;
     --font-size-md: 1rem;
@@ -214,7 +217,12 @@
     --illustration-icon-size-lg: 56px;
     --illustration-icon-size-xl: 64px;
 
-    --shadow-sm: none;
+    --shadow-sm:
+        0 1px 2px rgba(32, 37, 43, 0.08),
+        0 6px 16px rgba(32, 37, 43, 0.04);
+    --shadow-table-sticky:
+        0 1px 0 var(--color-border),
+        0 4px 8px rgba(32, 37, 43, 0.06);
     --shadow-md: 0 2px 6px rgba(32, 37, 43, 0.10);
     --shadow-lg: 0 12px 30px rgba(32, 37, 43, 0.16);
     --shadow-login:
@@ -232,6 +240,7 @@
     --z-local-active: 1;
     --z-local-hover: 2;
     --z-table-sticky: 10;
+    --table-sticky-offset: 0px;
     --z-header: 100;
     --z-dropdown: 200;
     --z-dialog: 1000;
@@ -247,6 +256,27 @@
     --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
     --motion-ease-in: cubic-bezier(0.42, 0, 1, 1);
     --motion-ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+/* Enhance interaction and surface depth only when color-mix is supported. */
+@supports (color: color-mix(in srgb, black, white)) {
+    :root {
+        --color-success-hover: color-mix(
+            in srgb,
+            var(--palette-success) 82%,
+            var(--palette-text-strong)
+        );
+        --color-danger-hover: color-mix(
+            in srgb,
+            var(--palette-danger) 82%,
+            var(--palette-text-strong)
+        );
+        --color-warning-hover: color-mix(
+            in srgb,
+            var(--palette-warning) 82%,
+            var(--palette-text-strong)
+        );
+    }
 }
 
 /* IBM Plex Sans KR 1.1.0 — SIL Open Font License 1.1. */

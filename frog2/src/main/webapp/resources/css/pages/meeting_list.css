@@ -78,9 +78,9 @@
         border: 0;
     }
 
-    .meeting-management .meeting-datetime-cell,
-    .meeting-management .meeting-type-cell,
-    .meeting-management .meeting-author-cell {
+    .meeting-management .meeting-list-table td.meeting-datetime-cell,
+    .meeting-management .meeting-list-table td.meeting-type-cell,
+    .meeting-management .meeting-list-table td.meeting-author-cell {
         display: none;
     }
 
@@ -104,6 +104,6 @@
     .meeting-management .meeting-row-meta span + span::before {
         content: "·";
         margin-right: var(--space-8);
-        color: var(--color-border-strong);
+        color: var(--color-divider);
     }
 }

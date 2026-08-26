@@ -40,6 +40,8 @@ class ResponsiveAccessibilityContractTest {
 
         assertTrue(uiScript.contains("function updateScrollableTableRegions()"));
         assertTrue(uiScript.contains("region.scrollWidth > region.clientWidth + 1"));
+        assertTrue(uiScript.contains(
+                ".ui-work-surface, [data-ui-table-surface]"));
         assertTrue(uiScript.contains("region.setAttribute('tabindex', '0')"));
         assertTrue(uiScript.contains("region.setAttribute('role', 'region')"));
         assertTrue(uiScript.contains("region.removeAttribute('tabindex')"));
@@ -71,6 +73,34 @@ class ResponsiveAccessibilityContractTest {
         assertTrue(ui.contains("@media (max-width: 480px)"));
         assertTrue(ui.contains("@media (max-width: 768px)"));
         assertTrue(header.contains("@media (max-width: 768px)"));
+    }
+
+    @Test
+    void compactFilterControlsRemainTouchSizedOnCoarseAndMobileViewports()
+            throws Exception {
+        String ui = read("resources/css/ui-system.css");
+        int touchRulesStart = ui.indexOf(
+                "@media (pointer: coarse), (max-width: 768px)");
+        int touchRulesEnd = ui.indexOf(
+                "@media (max-width: 768px)", touchRulesStart);
+
+        assertTrue(touchRulesStart > 0);
+        assertTrue(touchRulesEnd > touchRulesStart);
+        String touchRules = ui.substring(touchRulesStart, touchRulesEnd);
+        assertTrue(touchRules.contains("form.ui-form--compact :is("));
+        assertTrue(touchRules.contains(
+                "min-block-size: var(--control-height-md);"));
+    }
+
+    @Test
+    void skipTargetDoesNotExposeAViewportSizedBrowserOutline() throws Exception {
+        String header = read("includes/header.jsp");
+        String base = read("resources/css/base.css");
+
+        assertTrue(header.contains(
+                "<main id=\"main-content\" class=\"app-main\" tabindex=\"-1\">"));
+        assertTrue(base.contains(".ui-system .app-main:focus"));
+        assertTrue(base.contains("outline: none;"));
     }
 
     private static String read(String relativePath) throws Exception {

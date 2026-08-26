@@ -114,6 +114,44 @@
   display: none;
 }
 
+.dashboard-page .maintenance-status-legend {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--font-size-xs);
+  gap: var(--space-12);
+  justify-content: flex-end;
+  list-style: none;
+  margin: 0 0 var(--space-12);
+  padding: 0;
+}
+
+.dashboard-page .maintenance-status-legend__item {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-4);
+}
+
+.dashboard-page .maintenance-status-legend__item::before {
+  background: var(--color-success);
+  block-size: 6px;
+  border-radius: var(--radius-pill);
+  content: '';
+  inline-size: 6px;
+}
+
+.dashboard-page .maintenance-status-legend__item--due::before {
+  background: var(--color-text-muted);
+}
+
+.dashboard-page .maintenance-status-legend__frequency {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  padding: 0;
+}
+
 .dashboard-page .maintenance-assignee-grid {
   display: grid;
   gap: var(--space-16);
@@ -185,7 +223,7 @@
 }
 
 .dashboard-page .maintenance-assignee-customer--due::before {
-  background: var(--color-border-strong);
+  background: var(--color-text-muted);
 }
 
 .dashboard-page .maintenance-assignee-customer:hover {
@@ -207,9 +245,8 @@
 }
 
 .dashboard-page .maintenance-assignee-frequency {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 0;
   color: var(--color-text-muted);
   flex: 0 0 auto;
   font-size: var(--font-size-xs);
@@ -217,7 +254,7 @@
   letter-spacing: 0.01em;
   line-height: var(--line-height-ui);
   margin-inline-start: auto;
-  padding-inline: var(--space-8);
+  padding-inline: var(--space-4) 0;
   white-space: nowrap;
 }
 
@@ -232,7 +269,7 @@
 
 .dashboard-page .dashboard-state {
   align-items: center;
-  border: 1px dashed var(--color-border-strong);
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius-lg);
   color: var(--color-text-muted);
   display: flex;

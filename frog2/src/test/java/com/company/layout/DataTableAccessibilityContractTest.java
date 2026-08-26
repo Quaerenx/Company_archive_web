@@ -1,6 +1,7 @@
 package com.company.layout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -59,14 +60,22 @@ class DataTableAccessibilityContractTest {
     }
 
     @Test
-    void tableEmptyRowsSpanEveryVisibleColumn() throws Exception {
-        assertTrue(read("customers/customers_list.jsp").contains("colspan=\"8\""));
-        assertTrue(read("troubleshooting/troubleshooting_list.jsp")
-                .contains("colspan=\"4\""));
+    void standaloneEmptyStatesReplaceEmptyTableRowsWhereMigrated() throws Exception {
+        String customers = read("customers/customers_list.jsp");
+        String troubleshooting = read("troubleshooting/troubleshooting_list.jsp");
+        String hosts = read("WEB-INF/includes/mypage/host_manager.jspf");
+        String legacyHosts = read("vm_hosts/list.jsp");
+
+        assertTrue(customers.contains("customer-list-empty ui-empty-state"));
+        assertTrue(troubleshooting.contains("troubleshooting-empty ui-empty-state"));
+        assertTrue(hosts.contains("mypage-host-empty ui-empty-state"));
+        assertTrue(legacyHosts.contains("vm-host-empty ui-empty-state"));
+        assertFalse(legacyHosts.contains("colspan=\"8\""));
+    }
+
+    @Test
+    void structuralRowsStillSpanEveryVisibleColumn() throws Exception {
         assertTrue(read("WEB-INF/views/filerepo/list.jsp").contains("colspan=\"4\""));
-        assertTrue(read("WEB-INF/includes/mypage/host_manager.jspf")
-                .contains("colspan=\"7\""));
-        assertTrue(read("vm_hosts/list.jsp").contains("colspan=\"8\""));
     }
 
     private static String read(String relativePath) throws Exception {

@@ -33,7 +33,7 @@
 }
 
 /* 고객 상세 페이지 */
-.detail-section {
+.customer-detail .detail-section {
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     padding: var(--space-32);
@@ -42,42 +42,23 @@
     border: 1px solid var(--color-border);
 }
 
-.detail-section h3 {
+.customer-detail .detail-section h3 {
     color: var(--color-text-strong);
     margin-bottom: var(--space-16);
     font-size: var(--font-size-lg);
     font-weight: 600;
 }
 
-.detail-row {
-    display: flex;
-    margin-bottom: var(--space-16);
-    align-items: center;
-}
-
-.detail-label {
+.customer-detail .detail-label {
     font-weight: 600;
     color: var(--color-text);
     min-width: 120px;
     margin-right: var(--space-16);
 }
 
-.detail-value {
+.customer-detail .detail-value {
     color: var(--color-text-muted);
     flex: 1;
-}
-
-.form-section {
-    margin-bottom: var(--space-32);
-}
-
-.form-section h3 {
-    color: var(--color-text-strong);
-    margin-bottom: var(--space-16);
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    border-bottom: 2px solid var(--color-border);
-    padding-bottom: var(--space-8);
 }
 
 /* 목록 작업 영역 */
@@ -104,6 +85,9 @@
 }
 
 .filter-btn {
+    align-items: center;
+    display: inline-flex;
+    gap: var(--space-4);
     padding: var(--space-8) var(--space-16);
     border: none;
     background: transparent;
@@ -115,16 +99,17 @@
         background-color var(--motion-fast) var(--motion-ease),
         color var(--motion-fast) var(--motion-ease);
     font-size: var(--font-size-sm);
+    text-decoration: none;
     white-space: nowrap;
 }
 
-.filter-btn.active {
+.filter-btn[aria-current="page"] {
     background: var(--color-surface);
     color: var(--color-text-strong);
     box-shadow: none;
 }
 
-.filter-btn:hover:not(.active) {
+.filter-btn:hover:not([aria-current="page"]) {
     background: var(--color-surface-hover);
     color: var(--color-text);
 }
@@ -256,8 +241,18 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     flex: 0 0 auto;
     line-height: 1;
     min-inline-size: var(--indicator-icon-size);
+    opacity: 0;
+    transition:
+        color var(--motion-fast) var(--motion-ease),
+        opacity var(--motion-fast) var(--motion-ease);
 }
-.customer-table thead th .sort-icon.active { color: var(--color-text-muted); }
+.customer-table thead th a:is(:hover, :focus-visible) .sort-icon {
+    opacity: 0.65;
+}
+.customer-table thead th .sort-icon.active {
+    color: var(--color-primary);
+    opacity: 1;
+}
 /* 숫자 중심 컬럼 정렬: 노드(5), 라이선스(6) */
 .customer-table tbody td:nth-child(5),
 .customer-table tbody td:nth-child(6) { text-align: right; font-variant-numeric: tabular-nums; }
@@ -299,163 +294,6 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     text-align: center;
 }
 
-.table-header {
-    background: var(--color-surface-subtle);
-    padding: var(--space-16) var(--space-24);
-    border-bottom: 1px solid var(--color-border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.table-title {
-    font-weight: 600;
-    color: var(--color-text);
-    font-size: var(--font-size-md);
-}
-
-.table-actions {
-    display: flex;
-    gap: var(--space-8);
-}
-
-.table-action-btn {
-    padding: var(--space-8);
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition:
-        background-color var(--motion-fast) var(--motion-ease),
-        color var(--motion-fast) var(--motion-ease);
-    font-size: var(--font-size-sm);
-}
-
-.table-action-btn:hover {
-    background: var(--color-surface-subtle);
-    color: var(--color-text);
-}
-
-/* 상태 배지 */
-.status-badge {
-    display: inline-block;
-    padding: var(--space-4) var(--space-12);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-}
-
-.status-active {
-    background: var(--color-success-bg);
-    color: var(--color-success-text);
-}
-
-.status-inactive {
-    background: var(--color-danger-bg);
-    color: var(--color-danger-text);
-}
-
-.status-maintenance {
-    background: var(--color-warning-bg);
-    color: var(--color-warning-text);
-}
-
-/* 액션 버튼 */
-.action-buttons {
-    display: flex;
-    gap: var(--space-8);
-    justify-content: flex-end;
-    flex-wrap: nowrap;
-}
-
-.action-btn {
-    padding: var(--space-8);
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition:
-        background-color var(--motion-fast) var(--motion-ease),
-        color var(--motion-fast) var(--motion-ease);
-    font-size: var(--font-size-sm);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-}
-
-.action-btn:hover {
-    background: var(--color-surface-subtle);
-    color: var(--color-text);
-}
-
-/* 아이콘 크기 고정 */
-.action-btn i { font-size: var(--icon-size-sm); line-height: 1; }
-
-/* (작업 컬럼 제거됨) 마지막 컬럼 고정 스타일 삭제 */
-
-.action-btn.primary {
-    color: var(--color-primary);
-}
-
-.action-btn.primary:hover {
-    background: var(--color-surface-selected);
-    color: var(--color-primary-hover);
-}
-
-.action-btn.success {
-    color: var(--color-success);
-}
-
-.action-btn.success:hover {
-    background: var(--color-success-bg);
-    color: var(--color-success-text);
-}
-
-.action-btn.warning {
-    color: var(--color-warning-text);
-}
-
-.action-btn.warning:hover {
-    background: var(--color-warning-bg);
-    color: var(--color-warning-text);
-}
-
-.action-btn.danger {
-    color: var(--color-danger);
-}
-
-.action-btn.danger:hover {
-    background: var(--color-danger-bg);
-    color: var(--color-danger-hover);
-}
-
-/* 빈 상태 */
-.empty-state {
-    text-align: center;
-    padding: var(--space-48) var(--space-16);
-    color: var(--color-text-muted);
-}
-
-.empty-state i {
-    font-size: var(--illustration-icon-size-md);
-    color: var(--color-border-strong);
-    margin-bottom: var(--space-16);
-}
-
-.empty-state h3 {
-    color: var(--color-text);
-    margin-bottom: var(--space-8);
-}
-
-.empty-state p {
-    margin-bottom: var(--space-24);
-}
-
 /* 반응형 디자인 */
 @media (max-width: 1024px) {
     .customer-list-toolbar {
@@ -482,10 +320,6 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
         justify-content: flex-start;
     }
 
-    .table-header {
-        padding: var(--space-12) var(--space-16);
-    }
-
     .customer-table {
         font-size: var(--font-size-xs);
     }
@@ -495,16 +329,6 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
         padding: var(--space-8) var(--space-4);
     }
 
-    .action-buttons {
-        flex-direction: column;
-        gap: var(--space-4);
-    }
-
-    .action-btn {
-        width: var(--control-height-md);
-        height: var(--control-height-md);
-        font-size: var(--font-size-xs);
-    }
 }
 
 @media (max-width: 480px) {
@@ -534,17 +358,17 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     min-width: 0;
 }
 
-.header-actions {
+.customer-detail .header-actions {
     display: flex;
     gap: var(--space-16);
     align-items: center;
 }
 
-.detail-container {
+.customer-detail .detail-container {
     min-width: 0;
 }
 
-.detail-container .detail-section {
+.customer-detail .detail-container .detail-section {
     background: transparent;
     border: 0;
     border-bottom: 1px solid var(--color-border);
@@ -553,28 +377,29 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     margin-bottom: 0;
 }
 
-.detail-container .detail-section:last-child {
+.customer-detail .detail-container .detail-section:last-child {
     border-bottom: 0;
 }
 
-.detail-container .detail-section .detail-section-title {
+.customer-detail .detail-container .detail-section .detail-section-title {
     border-bottom-width: 1px;
+    margin-block-start: 0;
     margin-bottom: var(--space-12);
 }
 
-.detail-grid {
+.customer-detail .detail-grid {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
-.detail-item {
+.customer-detail .detail-item {
     align-items: center;
 }
 
-.detail-item:last-child {
+.customer-detail .detail-item:last-child {
     border-bottom: none;
 }
 
-.note-content {
+.customer-detail .note-content {
     background: var(--color-surface-subtle);
     padding: var(--space-12);
     border-radius: var(--radius-md);
@@ -585,11 +410,6 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     line-height: 1.4;
 }
 
-.empty-value {
-    color: var(--color-text-muted);
-    font-style: italic;
-}
-
 /* 반응형 디자인 */
 @media (max-width: 768px) {
     .customer-detail {
@@ -597,7 +417,7 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
         padding: var(--space-16);
     }
 
-    .header-actions {
+    .customer-detail .header-actions {
         flex-direction: column;
         align-items: stretch;
     }
@@ -605,7 +425,7 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
 }
 
 /* 입력 필드 스타일 */
-.form-control {
+.customer-detail .form-control {
     width: 100%;
     padding: var(--space-8) var(--space-12);
     font-size: var(--font-size-sm);
@@ -618,7 +438,7 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     transition: border-color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease);
 }
 
-.form-control:focus {
+.customer-detail .form-control:focus {
     color: var(--color-text);
     background-color: var(--color-surface);
     border-color: var(--color-focus);
@@ -627,28 +447,28 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     outline-offset: 1px;
 }
 
-.form-control.readonly {
+.customer-detail .form-control.readonly {
     background-color: var(--color-surface-subtle);
     border-color: var(--color-border);
     color: var(--color-text-muted);
 }
 
-select.form-control {
+.customer-detail select.form-control {
     padding-right: var(--space-32);
     background-image: none;
 }
 
-textarea.form-control {
+.customer-detail textarea.form-control {
     resize: vertical;
     min-height: 80px;
 }
 
-.note-textarea {
+.customer-detail .note-textarea {
     min-height: 100px;
 }
 
 /* 버튼 그룹 */
-.form-actions {
+.customer-detail .form-actions {
     background: var(--color-surface-subtle);
     padding: var(--space-20);
     border-top: 1px solid var(--color-border);
@@ -660,8 +480,73 @@ textarea.form-control {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-    .form-actions {
+    .customer-detail .form-actions {
         flex-direction: column;
+    }
+}
+
+/* 상세 수정은 긴 폼을 접지 않고 빠르게 이동하고 안전하게 저장한다. */
+.page-customer-detail-edit .customer-detail-edit-nav {
+    align-items: center;
+    display: flex;
+    gap: var(--space-4);
+    margin-block-end: var(--space-12);
+    min-inline-size: 0;
+    overflow-x: auto;
+    padding: var(--space-4);
+    scrollbar-width: thin;
+}
+
+.page-customer-detail-edit .customer-detail-edit-nav a {
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    flex: 0 0 auto;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    padding: var(--space-8) var(--space-12);
+    text-decoration: none;
+}
+
+.page-customer-detail-edit .customer-detail-edit-nav a:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-strong);
+}
+
+.page-customer-detail-edit .customer-detail-edit-nav a:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.page-customer-detail-edit .customer-detail-error-summary {
+    align-items: baseline;
+    gap: var(--space-8);
+    margin-block-end: var(--space-12);
+}
+
+.page-customer-detail-edit .detail-section {
+    scroll-margin-block-start: var(--space-16);
+}
+
+.page-customer-detail-edit .customer-detail-form-actions {
+    background: var(--color-surface);
+    border: 1px solid var(--color-surface-edge);
+    border-radius: var(--radius-lg);
+    bottom: var(--space-12);
+    box-shadow: var(--shadow-sm);
+    justify-content: flex-end;
+    margin-block-start: var(--space-16);
+    position: sticky;
+    z-index: var(--z-table-sticky);
+}
+
+@media (max-width: 768px) {
+    .page-customer-detail-edit .customer-detail-edit-nav {
+        margin-inline: calc(var(--space-4) * -1);
+    }
+
+    .page-customer-detail-edit .customer-detail-form-actions {
+        position: static;
     }
 }
 

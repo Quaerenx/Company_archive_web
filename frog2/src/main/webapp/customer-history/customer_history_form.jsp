@@ -19,7 +19,7 @@
             정기점검이 아닌 주요 장애, 업그레이드, 증설 작업만 기록합니다.
         </jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/customer-history"
+            <a href="<c:out value='${returnListUrl}' />"
                class="ui-button button--secondary button--sm">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i>
                 목록으로
@@ -44,6 +44,10 @@
               data-ui-submit-lock="auto">
             <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
             <input type="hidden" name="action" value="${isHistoryEdit ? 'update' : 'add'}">
+            <input type="hidden" name="returnCustomerName" value="<c:out value='${formReturnCustomerName}' />">
+            <input type="hidden" name="returnCategory" value="<c:out value='${formReturnCategory}' />">
+            <input type="hidden" name="returnQ" value="<c:out value='${formReturnQ}' />">
+            <input type="hidden" name="returnPage" value="<c:out value='${formReturnPage}' />">
             <c:if test="${isHistoryEdit}">
                 <input type="hidden" name="id" value="<c:out value='${formId}' />">
             </c:if>
@@ -113,7 +117,7 @@
             </label>
 
             <div class="ui-form-actions">
-                <a href="${pageContext.request.contextPath}/customer-history"
+                <a href="<c:out value='${returnListUrl}' />"
                    class="ui-button button--secondary button--md">취소</a>
                 <button type="submit"
                         class="ui-button button--primary button--md"
@@ -131,6 +135,10 @@
                 <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" value="<c:out value='${formId}' />">
+                <input type="hidden" name="returnCustomerName" value="<c:out value='${formReturnCustomerName}' />">
+                <input type="hidden" name="returnCategory" value="<c:out value='${formReturnCategory}' />">
+                <input type="hidden" name="returnQ" value="<c:out value='${formReturnQ}' />">
+                <input type="hidden" name="returnPage" value="<c:out value='${formReturnPage}' />">
                 <button type="submit"
                         class="ui-button button--danger button--sm">이력 삭제</button>
             </form>

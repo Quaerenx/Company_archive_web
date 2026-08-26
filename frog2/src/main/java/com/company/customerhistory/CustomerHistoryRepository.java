@@ -14,7 +14,9 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -35,6 +37,8 @@ public final class CustomerHistoryRepository {
     private static final String RECORDS_DIRECTORY = "records";
     private static final String FILE_SUFFIX = ".properties";
     private static final String FORMAT_VERSION = "1";
+    private static final long MAX_SNAPSHOT_AGE_NANOS =
+            Duration.ofSeconds(5).toNanos();
     private static final Comparator<CustomerHistoryRecord> NEWEST_FIRST =
             Comparator.comparing(CustomerHistoryRecord::getWorkDate)
                     .reversed()
@@ -46,6 +50,8 @@ public final class CustomerHistoryRepository {
     private final Path root;
     private final Clock clock;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final Object snapshotMonitor = new Object();
+    private volatile RecordSnapshot snapshot;
 
     public CustomerHistoryRepository() {
         this(CustomerHistoryConfig.repositoryRoot(), Clock.systemUTC());
@@ -83,7 +89,6 @@ public final class CustomerHistoryRepository {
                     .filter(record -> category == null
                             || record.getCategory() == category)
                     .filter(record -> matchesQuery(record, normalizedQuery))
-                    .sorted(NEWEST_FIRST)
                     .toList();
             int totalCount = matching.size();
             int totalPages = Pagination.totalPages(totalCount, pageSize);
@@ -197,6 +202,7 @@ public final class CustomerHistoryRepository {
             }
             try {
                 Files.delete(path);
+                invalidateSnapshot();
                 return MutationResult.DELETED;
             } catch (IOException exception) {
                 throw storageFailure("고객사 히스토리를 삭제할 수 없습니다.", exception);
@@ -212,6 +218,26 @@ public final class CustomerHistoryRepository {
             return List.of();
         }
         ensureSafeDirectory(records);
+        FileTime directoryModified = lastModified(records);
+        RecordSnapshot cached = snapshot;
+        if (cached != null && cached.isCurrent(directoryModified)) {
+            return cached.records();
+        }
+        synchronized (snapshotMonitor) {
+            cached = snapshot;
+            if (cached != null && cached.isCurrent(directoryModified)) {
+                return cached.records();
+            }
+            List<CustomerHistoryRecord> loaded = scanAll(records);
+            snapshot = new RecordSnapshot(
+                    directoryModified,
+                    System.nanoTime(),
+                    loaded);
+            return loaded;
+        }
+    }
+
+    private List<CustomerHistoryRecord> scanAll(Path records) {
         long startedAt = System.nanoTime();
         int recordFileCount = 0;
         List<CustomerHistoryRecord> result = new ArrayList<>();
@@ -225,7 +251,8 @@ public final class CustomerHistoryRepository {
                 ensureSafeRecordFile(path);
                 result.add(readRecord(path));
             }
-            return result;
+            result.sort(NEWEST_FIRST);
+            return List.copyOf(result);
         } catch (IOException exception) {
             throw storageFailure("고객사 히스토리를 읽을 수 없습니다.", exception);
         } finally {
@@ -293,6 +320,7 @@ public final class CustomerHistoryRepository {
                 channel.force(true);
             }
             moveAtomically(temporary, target, replace);
+            invalidateSnapshot();
         } catch (IOException exception) {
             throw storageFailure("고객사 히스토리를 저장할 수 없습니다.", exception);
         } finally {
@@ -397,6 +425,23 @@ public final class CustomerHistoryRepository {
         }
     }
 
+    private FileTime lastModified(Path directory) {
+        try {
+            return Files.getLastModifiedTime(
+                    directory, LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException exception) {
+            throw storageFailure(
+                    "고객사 히스토리 저장소 상태를 확인할 수 없습니다.",
+                    exception);
+        }
+    }
+
+    private void invalidateSnapshot() {
+        synchronized (snapshotMonitor) {
+            snapshot = null;
+        }
+    }
+
     private static boolean matchesQuery(
             CustomerHistoryRecord record, String normalizedQuery) {
         if (normalizedQuery.isEmpty()) {
@@ -474,5 +519,20 @@ public final class CustomerHistoryRepository {
         DELETED,
         NOT_FOUND,
         FORBIDDEN
+    }
+
+    private record RecordSnapshot(
+            FileTime directoryModified,
+            long loadedAtNanos,
+            List<CustomerHistoryRecord> records) {
+        private RecordSnapshot {
+            records = List.copyOf(records);
+        }
+
+        private boolean isCurrent(FileTime currentDirectoryModified) {
+            return directoryModified.equals(currentDirectoryModified)
+                    && System.nanoTime() - loadedAtNanos
+                            <= MAX_SNAPSHOT_AGE_NANOS;
+        }
     }
 }

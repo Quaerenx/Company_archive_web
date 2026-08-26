@@ -60,8 +60,21 @@
 					<i class="fas fa-arrow-left"></i> 목록으로
 				</a>
 			</div>
-		</jsp:attribute>
+        </jsp:attribute>
         <jsp:attribute name="extra">
+            <c:if test="${not empty customerDetail.updatedAt or not empty customerDetail.updatedBy}">
+                <div class="customer-audit-meta text-muted">
+                    <i class="fas fa-clock" aria-hidden="true"></i>
+                    마지막 수정
+                    <c:if test="${not empty customerDetail.updatedBy}">
+                        · <c:out value="${customerDetail.updatedBy}" />
+                    </c:if>
+                    <c:if test="${not empty customerDetail.updatedAt}">
+                        · <fmt:formatDate value="${customerDetail.updatedAt}"
+                                          pattern="yyyy-MM-dd HH:mm" />
+                    </c:if>
+                </div>
+            </c:if>
             <c:if test="${not empty verticaEosDate}">
                 <div class="alert alert-warning customer-eos-alert ui-alert ui-alert--warning"
                      role="status"

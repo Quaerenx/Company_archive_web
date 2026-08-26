@@ -3,6 +3,7 @@ package com.company.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.customerhistory.CustomerHistoryCategory;
 import com.company.customerhistory.CustomerHistoryDraft;
@@ -17,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.lang.reflect.Proxy;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -74,6 +77,7 @@ class CustomerHistoryServletTest {
                 request.forwardedPath);
         assertEquals(1, request.attributes.get("totalCount"));
         assertEquals("owner-1", request.attributes.get("currentUserId"));
+        assertEquals(true, request.attributes.get("hasActiveFilters"));
         assertEquals("테크핀 레이팅스",
                 request.attributes.get("customerName"));
         List<?> records =
@@ -109,6 +113,110 @@ class CustomerHistoryServletTest {
         assertNull(response.redirect);
     }
 
+    @Test
+    void editFormPreservesOnlyNormalizedListState() throws Exception {
+        Path repositoryRoot = temporaryDirectory.resolve("history");
+        CustomerHistoryRepository repository =
+                new CustomerHistoryRepository(repositoryRoot);
+        CustomerHistoryRecord record = repository.create(
+                draft("테크핀 레이팅스", "개발 서버 복구"),
+                "owner-1",
+                "담당자");
+        CustomerHistoryServlet servlet = new CustomerHistoryServlet(
+                repository, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "edit");
+        request.parameters.put("id", record.getId());
+        request.parameters.put("returnCustomerName", " 테크핀 레이팅스 ");
+        request.parameters.put("returnCategory", "INCIDENT");
+        request.parameters.put("returnQ", " 복구 작업 ");
+        request.parameters.put("returnPage", "4");
+        request.parameters.put("returnUrl", "https://example.invalid/");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(
+                "/customer-history/customer_history_form.jsp",
+                request.forwardedPath);
+        assertEquals("테크핀 레이팅스",
+                request.attributes.get("formReturnCustomerName"));
+        assertEquals("incident", request.attributes.get("formReturnCategory"));
+        assertEquals("복구 작업", request.attributes.get("formReturnQ"));
+        assertEquals(4, request.attributes.get("formReturnPage"));
+        assertEquals(
+                listUrl("테크핀 레이팅스", "incident", "복구 작업", 4),
+                request.attributes.get("returnListUrl"));
+        assertFalse(((String) request.attributes.get("returnListUrl"))
+                .contains("example.invalid"));
+    }
+
+    @Test
+    void invalidListStateFallsBackToTheHistoryRoot() throws Exception {
+        CustomerHistoryServlet servlet = servlet(
+                temporaryDirectory.resolve("history"));
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "add");
+        request.parameters.put("returnCustomerName", "x".repeat(201));
+        request.parameters.put("returnCategory", "not-a-category");
+        request.parameters.put("returnQ", "x".repeat(101));
+        request.parameters.put("returnPage", "not-a-page");
+        request.parameters.put("returnUrl", "https://example.invalid/");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals("", request.attributes.get("formReturnCustomerName"));
+        assertEquals("all", request.attributes.get("formReturnCategory"));
+        assertEquals("", request.attributes.get("formReturnQ"));
+        assertEquals(1, request.attributes.get("formReturnPage"));
+        assertEquals(
+                "/frog2/customer-history",
+                request.attributes.get("returnListUrl"));
+    }
+
+    @Test
+    void successfulUpdateReturnsToTheFilteredList() throws Exception {
+        Path repositoryRoot = temporaryDirectory.resolve("history");
+        CustomerHistoryRepository repository =
+                new CustomerHistoryRepository(repositoryRoot);
+        CustomerHistoryRecord record = repository.create(
+                draft("테크핀 레이팅스", "개발 서버 복구"),
+                "owner-1",
+                "담당자");
+        CustomerHistoryServlet servlet = new CustomerHistoryServlet(
+                repository, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("action", "update");
+        request.parameters.put("id", record.getId());
+        putDraft(request, "개발 서버 복구 완료");
+        putReturnState(request, 3);
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertEquals(
+                listUrl("테크핀 레이팅스", "incident", "복구", 3),
+                response.redirect);
+        assertTrue(repository.findById(record.getId()).orElseThrow()
+                .getTitle().contains("완료"));
+    }
+
+    @Test
+    void successfulAddReturnsToTheFilteredList() throws Exception {
+        Path repositoryRoot = temporaryDirectory.resolve("history");
+        CustomerHistoryServlet servlet = servlet(repositoryRoot);
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("action", "add");
+        putDraft(request, "개발 서버 복구");
+        putReturnState(request, 2);
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertEquals(
+                listUrl("테크핀 레이팅스", "incident", "복구", 2),
+                response.redirect);
+    }
+
     private CustomerHistoryServlet servlet(Path repositoryRoot) {
         return new CustomerHistoryServlet(
                 new CustomerHistoryRepository(repositoryRoot),
@@ -130,6 +238,34 @@ class CustomerHistoryServletTest {
         return new UserDTO(userId, "", "담당자", "QA");
     }
 
+    private static void putDraft(RequestFixture request, String title) {
+        request.parameters.put("customerName", "테크핀 레이팅스");
+        request.parameters.put("workDate", "2026-08-19");
+        request.parameters.put("category", "incident");
+        request.parameters.put("title", title);
+        request.parameters.put("actionSummary", "서비스 정상화");
+        request.parameters.put("status", "completed");
+    }
+
+    private static void putReturnState(RequestFixture request, int page) {
+        request.parameters.put("returnCustomerName", "테크핀 레이팅스");
+        request.parameters.put("returnCategory", "incident");
+        request.parameters.put("returnQ", "복구");
+        request.parameters.put("returnPage", Integer.toString(page));
+    }
+
+    private static String listUrl(
+            String customerName, String category, String query, int page) {
+        return "/frog2/customer-history?customerName=" + encode(customerName)
+                + "&category=" + encode(category)
+                + "&q=" + encode(query)
+                + "&page=" + page;
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
     private static final class StubCustomerDAO extends CustomerDAO {
         @Override
         public List<CustomerDTO> getMaintenanceCustomers(
@@ -137,6 +273,11 @@ class CustomerHistoryServletTest {
             CustomerDTO customer = new CustomerDTO();
             customer.setCustomerName("테크핀 레이팅스");
             return List.of(customer);
+        }
+
+        @Override
+        public boolean isActiveMaintenanceCustomer(String customerName) {
+            return "테크핀 레이팅스".equals(customerName);
         }
     }
 

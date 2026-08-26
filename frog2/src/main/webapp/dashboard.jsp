@@ -97,6 +97,11 @@
           </div>
         </c:when>
         <c:otherwise>
+          <ul class="maintenance-status-legend" aria-label="정기점검 상태 범례">
+            <li class="maintenance-status-legend__item maintenance-status-legend__item--done">완료</li>
+            <li class="maintenance-status-legend__item maintenance-status-legend__item--due">미진행</li>
+            <li class="maintenance-status-legend__frequency">분기</li>
+          </ul>
           <ul class="maintenance-assignee-grid"
               id="maintenanceRecordGrid"
               aria-label="담당자별 월간 정기점검 진행 현황">

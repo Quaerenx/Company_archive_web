@@ -6,6 +6,10 @@
     var originalButtonState = new WeakMap();
     var generatedId = 0;
     var openDialogCount = 0;
+    var tableHeaderResizeObserver = null;
+
+    var TABLE_STICKY_OFFSET_PROPERTY = '--table-sticky-offset';
+    var TABLE_STICKY_READY_CLASS = 'is-table-sticky-ready';
 
     var FOCUSABLE_SELECTOR = [
         'a[href]',
@@ -17,6 +21,17 @@
         'iframe',
         '[contenteditable="true"]',
         '[tabindex]:not([tabindex="-1"])'
+    ].join(',');
+    var INTERACTIVE_TARGET_SELECTOR = [
+        'a',
+        'button',
+        'input',
+        'select',
+        'textarea',
+        'summary',
+        '[contenteditable="true"]',
+        '[role="button"]',
+        '[role="link"]'
     ].join(',');
 
     function statusRegion() {
@@ -326,10 +341,39 @@
         });
     }
 
+    function updateTableStickyOffset() {
+        var header = document.querySelector('.main-header');
+        var root = document.documentElement;
+        if (!header || !root || !root.style) {
+            return false;
+        }
+
+        var headerBounds = header.getBoundingClientRect();
+        var headerBottom = Number.isFinite(headerBounds.bottom)
+            ? Math.max(0, Math.ceil(headerBounds.bottom))
+            : 0;
+        root.style.setProperty(TABLE_STICKY_OFFSET_PROPERTY, headerBottom + 'px');
+        return headerBottom > 0;
+    }
+
     function updateScrollableTableRegions() {
+        var stickyOffsetReady = updateTableStickyOffset();
+        document.querySelectorAll(
+            '.' + TABLE_STICKY_READY_CLASS
+        ).forEach(function (surface) {
+            surface.classList.remove(TABLE_STICKY_READY_CLASS);
+        });
+
         document.querySelectorAll('[data-ui-scroll-region]').forEach(function (region) {
             var scrollable = region.scrollWidth > region.clientWidth + 1;
             region.dataset.uiScrollable = String(scrollable);
+            updateScrollableRegionHint(region, scrollable);
+            var workSurface = region.closest(
+                '.ui-work-surface, [data-ui-table-surface]'
+            );
+            if (workSurface && stickyOffsetReady && !scrollable) {
+                workSurface.classList.add(TABLE_STICKY_READY_CLASS);
+            }
             if (scrollable) {
                 region.setAttribute('tabindex', '0');
                 region.setAttribute('role', 'region');
@@ -345,6 +389,53 @@
         });
     }
 
+    function updateScrollableRegionHint(region, scrollable) {
+        var hintId = region.dataset.uiScrollHintId;
+        if (!hintId) {
+            return;
+        }
+
+        var hint = document.getElementById(hintId);
+        if (!hint) {
+            return;
+        }
+        hint.hidden = !scrollable;
+
+        var describedBy = (region.getAttribute('aria-describedby') || '')
+            .split(/\s+/)
+            .filter(Boolean)
+            .filter(function (id) {
+                return id !== hintId;
+            });
+        if (scrollable) {
+            describedBy.push(hintId);
+        }
+        if (describedBy.length) {
+            region.setAttribute('aria-describedby', describedBy.join(' '));
+        } else {
+            region.removeAttribute('aria-describedby');
+        }
+    }
+
+    function observeTableHeaderSize() {
+        if (tableHeaderResizeObserver || typeof window.ResizeObserver !== 'function') {
+            return;
+        }
+        var header = document.querySelector('.main-header');
+        if (!header) {
+            return;
+        }
+        tableHeaderResizeObserver = new window.ResizeObserver(
+            scheduleScrollableTableRegionUpdate
+        );
+        tableHeaderResizeObserver.observe(header);
+    }
+
+    function initializeScrollableTableRegions() {
+        updateScrollableTableRegions();
+        observeTableHeaderSize();
+    }
+
     var scrollRegionFrame = 0;
     function scheduleScrollableTableRegionUpdate() {
         if (scrollRegionFrame) {
@@ -358,34 +449,86 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener(
-            'DOMContentLoaded', updateScrollableTableRegions, { once: true });
+            'DOMContentLoaded', initializeScrollableTableRegions, { once: true });
     } else {
-        updateScrollableTableRegions();
+        initializeScrollableTableRegions();
     }
-    window.addEventListener('load', updateScrollableTableRegions, { once: true });
+    window.addEventListener('load', initializeScrollableTableRegions, { once: true });
     window.addEventListener('resize', scheduleScrollableTableRegionUpdate);
+
+    function hasSelectedTextWithin(element) {
+        var selection = window.getSelection();
+        if (!element || !selection || selection.isCollapsed
+                || selection.toString().trim().length === 0) {
+            return false;
+        }
+        if (typeof selection.containsNode === 'function') {
+            try {
+                return selection.containsNode(element, true);
+            } catch (error) {
+                // Fall through for detached nodes and older selection APIs.
+            }
+        }
+        return Boolean(
+            (selection.anchorNode && element.contains(selection.anchorNode))
+            || (selection.focusNode && element.contains(selection.focusNode))
+        );
+    }
+
+    function toggleDisclosure(toggle) {
+        var detailId = toggle.getAttribute('aria-controls');
+        var detail = detailId ? document.getElementById(detailId) : null;
+        if (!detail) {
+            return false;
+        }
+
+        var expanded = toggle.getAttribute('aria-expanded') !== 'true';
+        toggle.setAttribute('aria-expanded', String(expanded));
+        detail.hidden = !expanded;
+
+        var row = toggle.closest('[data-ui-disclosure-row]');
+        if (row) {
+            row.classList.toggle('is-expanded', expanded);
+        }
+        return true;
+    }
+
+    function handleDisclosureClick(event) {
+        var directToggle = event.target.closest('[data-ui-disclosure-toggle]');
+        var row = event.target.closest('[data-ui-disclosure-row]');
+        if (!directToggle && !row) {
+            return false;
+        }
+
+        if (event.defaultPrevented || event.button !== 0
+                || event.ctrlKey || event.metaKey || event.shiftKey
+                || event.altKey || hasSelectedTextWithin(row || directToggle)) {
+            return true;
+        }
+
+        if (!directToggle && event.target.closest(INTERACTIVE_TARGET_SELECTOR)) {
+            return true;
+        }
+        var toggle = directToggle
+            || row.querySelector('[data-ui-disclosure-toggle]');
+        if (toggle) {
+            toggleDisclosure(toggle);
+        }
+        return true;
+    }
 
     document.addEventListener('click', function (event) {
         if (!(event.target instanceof Element)) {
             return;
         }
 
+        if (handleDisclosureClick(event)) {
+            return;
+        }
+
         var row = event.target.closest('.ui-data-row[data-detail-url]');
-        var interactiveTarget = event.target.closest([
-            'a',
-            'button',
-            'input',
-            'select',
-            'textarea',
-            'summary',
-            '[contenteditable="true"]',
-            '[role="button"]',
-            '[role="link"]'
-        ].join(','));
-        var selection = window.getSelection();
-        var isSelectingText = selection
-            && !selection.isCollapsed
-            && selection.toString().trim().length > 0;
+        var interactiveTarget = event.target.closest(INTERACTIVE_TARGET_SELECTOR);
+        var isSelectingText = hasSelectedTextWithin(row);
 
         if (!row || interactiveTarget || event.defaultPrevented
                 || event.button !== 0 || event.ctrlKey || event.metaKey

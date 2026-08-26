@@ -65,6 +65,7 @@
                         <div class="maintenance-readonly-output">
                             <output id="customer_name_display"
                                     aria-labelledby="maintenanceCustomerLabel"
+                                    aria-describedby="${not empty fieldErrors.customer_name ? 'maintenanceCustomerError' : ''}"
                                     aria-invalid="${not empty fieldErrors.customer_name}"><c:out value="${formRecord.customerName}" default="미등록" /></output>
                         </div>
                         <input type="hidden"
@@ -77,6 +78,7 @@
                         <select id="customer_name"
                                 name="customer_name"
                                 required
+                                aria-describedby="${not empty fieldErrors.customer_name ? 'maintenanceCustomerError' : ''}"
                                 aria-invalid="${not empty fieldErrors.customer_name}">
                             <option value="">고객사를 선택하세요</option>
                             <c:forEach var="optionCustomer" items="${formOptions.customers}">
@@ -86,7 +88,8 @@
                     </c:otherwise>
                 </c:choose>
                 <c:if test="${not empty fieldErrors.customer_name}">
-                    <span class="ui-field-error"><c:out value="${fieldErrors.customer_name}" /></span>
+                    <span id="maintenanceCustomerError"
+                          class="ui-field-error"><c:out value="${fieldErrors.customer_name}" /></span>
                 </c:if>
             </div>
 
@@ -96,15 +99,18 @@
                 <div class="maintenance-readonly-output">
                     <output id="vertica_version_display"
                             aria-labelledby="maintenanceVersionLabel"
+                            aria-describedby="maintenanceVersionHelp${not empty fieldErrors.vertica_version ? ' maintenanceVersionError' : ''}"
                             aria-invalid="${not empty fieldErrors.vertica_version}"><c:out value="${formRecord.verticaVersion}" default="미등록" /></output>
                 </div>
                 <input type="hidden"
                        id="vertica_version"
                        name="vertica_version"
                        value="<c:out value='${formRecord.verticaVersion}' />" />
-                <span class="maintenance-field-help">고객사 정보에서 자동 적용됩니다.</span>
+                <span id="maintenanceVersionHelp"
+                      class="maintenance-field-help">고객사 정보에서 자동 적용됩니다.</span>
                 <c:if test="${not empty fieldErrors.vertica_version}">
-                    <span class="ui-field-error"><c:out value="${fieldErrors.vertica_version}" /></span>
+                    <span id="maintenanceVersionError"
+                          class="ui-field-error"><c:out value="${fieldErrors.vertica_version}" /></span>
                 </c:if>
             </div>
 
@@ -113,6 +119,7 @@
                 <select id="inspector_name"
                         name="inspector_name"
                         required
+                        aria-describedby="${not empty fieldErrors.inspector_name ? 'maintenanceInspectorError' : ''}"
                         aria-invalid="${not empty fieldErrors.inspector_name}">
                     <option value="">점검자를 선택하세요</option>
                     <c:forEach var="inspectorOption" items="${formOptions.inspectors}">
@@ -120,7 +127,8 @@
                     </c:forEach>
                 </select>
                 <c:if test="${not empty fieldErrors.inspector_name}">
-                    <span class="ui-field-error"><c:out value="${fieldErrors.inspector_name}" /></span>
+                    <span id="maintenanceInspectorError"
+                          class="ui-field-error"><c:out value="${fieldErrors.inspector_name}" /></span>
                 </c:if>
             </div>
         </div>
@@ -131,6 +139,8 @@
                  class="maintenance-inline-calendar"
                  role="group"
                  aria-labelledby="inspectionDateLabel"
+                 aria-describedby="maintenanceSelectedDateLabel${not empty fieldErrors.inspection_date ? ' maintenanceInspectionDateError' : ''}"
+                 aria-invalid="${not empty fieldErrors.inspection_date}"
                  tabindex="-1"
                  hidden>
                 <div class="maintenance-calendar-toolbar">
@@ -165,14 +175,15 @@
                        name="inspection_date"
                        value="<c:out value='${maintenanceInspectionDateValue}' />"
                        required
-                       aria-describedby="maintenanceSelectedDateLabel"
+                       aria-describedby="maintenanceSelectedDateLabel${not empty fieldErrors.inspection_date ? ' maintenanceInspectionDateError' : ''}"
                        aria-invalid="${not empty fieldErrors.inspection_date}" />
                 <output id="maintenanceSelectedDateLabel"
                         for="inspection_date"
                         aria-live="polite"></output>
             </div>
             <c:if test="${not empty fieldErrors.inspection_date}">
-                <span class="ui-field-error"><c:out value="${fieldErrors.inspection_date}" /></span>
+                <span id="maintenanceInspectionDateError"
+                      class="ui-field-error"><c:out value="${fieldErrors.inspection_date}" /></span>
             </c:if>
         </div>
     </div>
@@ -190,6 +201,7 @@
             <div class="maintenance-readonly-output">
                 <output id="license_size_gb_display"
                         aria-labelledby="maintenanceCapacityLabel"
+                        aria-describedby="maintenanceCapacityHelp${not empty fieldErrors.license_size_gb ? ' maintenanceCapacityError' : ''}"
                         aria-invalid="${not empty fieldErrors.license_size_gb}"><c:out value="${licenseSizeInput}" default="—" /></output>
                 <span id="maintenanceCapacityUnit" aria-hidden="true">TB</span>
             </div>
@@ -197,9 +209,11 @@
                    id="license_size_gb"
                    name="license_size_gb"
                    value="<c:out value='${licenseSizeInput}' />" />
-            <span class="maintenance-field-help">고객사 정보에서 자동 적용됩니다.</span>
+            <span id="maintenanceCapacityHelp"
+                  class="maintenance-field-help">고객사 정보에서 자동 적용됩니다.</span>
             <c:if test="${not empty fieldErrors.license_size_gb}">
-                <span class="ui-field-error"><c:out value="${fieldErrors.license_size_gb}" /></span>
+                <span id="maintenanceCapacityError"
+                      class="ui-field-error"><c:out value="${fieldErrors.license_size_gb}" /></span>
             </c:if>
         </div>
 
@@ -213,6 +227,7 @@
                        inputmode="decimal"
                        value="<c:out value='${licenseUsageInput}' />"
                        placeholder="예: 13.9"
+                       aria-describedby="${not empty fieldErrors.license_usage_size ? 'maintenanceLicenseUsageError' : ''}"
                        aria-invalid="${not empty fieldErrors.license_usage_size}" />
                 <span id="maintenanceUsageUnit" aria-hidden="true">TB</span>
             </div>
@@ -220,7 +235,8 @@
                   class="maintenance-field-help"
                   hidden>이 고객사의 라이선스는 TB/GB 용량이 아니어 사용량과 사용률을 자동 계산하지 않습니다.</span>
             <c:if test="${not empty fieldErrors.license_usage_size}">
-                <span class="ui-field-error"><c:out value="${fieldErrors.license_usage_size}" /></span>
+                <span id="maintenanceLicenseUsageError"
+                      class="ui-field-error"><c:out value="${fieldErrors.license_usage_size}" /></span>
             </c:if>
         </div>
 
@@ -256,11 +272,13 @@
                   name="note"
                   rows="5"
                   maxlength="65000"
+                  aria-describedby="${not empty fieldErrors.note ? 'maintenanceNoteError' : ''}"
                   aria-invalid="${not empty fieldErrors.note}"
                   placeholder="점검 결과, 발견된 이슈, 조치 사항, 후속 작업을 입력해 주세요."><c:out value="${formRecord.note}" /></textarea>
         <div class="maintenance-note-meta">
             <c:if test="${not empty fieldErrors.note}">
-                <span class="ui-field-error"><c:out value="${fieldErrors.note}" /></span>
+                <span id="maintenanceNoteError"
+                      class="ui-field-error"><c:out value="${fieldErrors.note}" /></span>
             </c:if>
             <span><span id="maintenanceNoteCount">0</span> / 65,000</span>
         </div>

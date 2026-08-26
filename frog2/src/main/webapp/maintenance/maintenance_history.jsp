@@ -6,7 +6,7 @@
 <c:set var="pageTitle" value="정기점검 이력 - ${fn:escapeXml(customerName)}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
 <c:set var="pageCss" value="/resources/css/pages/maintenance_history.css" scope="request" />
-<c:set var="vendorScript" value="${pageContext.request.contextPath}/resources/vendor/chart.js/4.4.4/chart.umd.min.js?v=${frog2AssetVersion}" scope="request" />
+<c:set var="vendorScript" value="${pageContext.request.contextPath}/resources/vendor/chart.js/4.4.4/chart.umd.min.js?v=${initParam.frog2AssetVersion}" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/maintenance_history.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
@@ -164,7 +164,7 @@
             <c:param name="view" value="history" />
             <c:param name="customerName" value="${customerName}" />
         </c:url>
-        <form class="history-filter-form"
+        <form class="history-filter-form ui-table-toolbar ui-form ui-form--compact"
               method="get"
               action="${pageContext.request.contextPath}/maintenance"
               aria-label="정기점검 이력 필터">
@@ -208,15 +208,14 @@
 
         <c:choose>
             <c:when test="${not empty historyRows}">
-                <p class="history-scroll-hint" id="historyScrollHint">
+                <p class="history-scroll-hint" id="historyScrollHint" hidden>
                     표를 좌우로 스크롤해 전체 항목을 확인할 수 있습니다.
                 </p>
-                <div class="history-table-scroll"
-                     role="region"
-                     aria-label="정기점검 이력 비교표"
-                     aria-describedby="historyScrollHint"
-                     tabindex="0">
-                    <table class="history-comparison-table">
+                <div class="history-table-scroll ui-table-wrap"
+                     data-ui-scroll-region
+                     data-ui-scroll-label="정기점검 이력 비교표"
+                     data-ui-scroll-hint-id="historyScrollHint">
+                    <table class="history-comparison-table ui-table ui-data-table">
                         <caption class="sr-only">
                             <c:out value="${customerName}" /> 정기점검 이력 비교표
                         </caption>
@@ -404,57 +403,51 @@
                         </c:forEach>
                     </table>
                 </div>
+                <c:if test="${currentPage > 1}">
+                    <c:url var="maintenanceHistoryPreviousUrl" value="/maintenance">
+                        <c:param name="view" value="history" />
+                        <c:param name="customerName" value="${customerName}" />
+                        <c:param name="historyPage" value="${currentPage - 1}" />
+                        <c:param name="historyYear" value="${historyYear}" />
+                        <c:param name="historyVersion" value="${historyVersion}" />
+                        <c:param name="historyQuery" value="${historyQuery}" />
+                    </c:url>
+                </c:if>
+                <c:if test="${currentPage < totalPages}">
+                    <c:url var="maintenanceHistoryNextUrl" value="/maintenance">
+                        <c:param name="view" value="history" />
+                        <c:param name="customerName" value="${customerName}" />
+                        <c:param name="historyPage" value="${currentPage + 1}" />
+                        <c:param name="historyYear" value="${historyYear}" />
+                        <c:param name="historyVersion" value="${historyVersion}" />
+                        <c:param name="historyQuery" value="${historyQuery}" />
+                    </c:url>
+                </c:if>
+                <t:tableFooter itemLabel="점검 이력"
+                               currentPage="${currentPage}"
+                               totalPages="${totalPages}"
+                               previousUrl="${maintenanceHistoryPreviousUrl}"
+                               nextUrl="${maintenanceHistoryNextUrl}"
+                               paginationLabel="정기점검 이력 페이지" />
             </c:when>
             <c:otherwise>
-                <div class="empty-history">
-                    <i class="fas fa-clipboard"></i>
+                <div class="empty-history ui-empty-state">
+                    <i class="fas fa-clipboard" aria-hidden="true"></i>
                     <c:choose>
                         <c:when test="${historyFiltersActive}">
-                            <h3>검색 결과가 없습니다</h3>
-                            <p>다른 연도, 버전 또는 키워드로 검색해 주세요.</p>
+                            <strong>검색 결과가 없습니다</strong>
+                            <span>다른 연도, 버전 또는 키워드로 검색해 주세요.</span>
                             <a href="<c:out value='${maintenanceHistoryResetUrl}' />"
                                class="ui-button button--secondary button--md">검색 조건 초기화</a>
                         </c:when>
                         <c:otherwise>
-                            <h3>정기점검 이력이 없습니다</h3>
-                            <p><c:out value="${customerName}" />의 정기점검 이력이 아직 등록되지 않았습니다.</p>
-                            <a href="${addHistoryUrl}"
-                               class="ui-button button--secondary button--md">
-                                <i class="fas fa-plus"></i>
-                                첫 번째 점검 이력 추가하기
-                            </a>
+                            <strong>정기점검 이력이 없습니다</strong>
+                            <span><c:out value="${customerName}" />의 정기점검 이력이 아직 등록되지 않았습니다.</span>
                         </c:otherwise>
                     </c:choose>
                 </div>
             </c:otherwise>
         </c:choose>
-
-        <c:if test="${currentPage > 1}">
-            <c:url var="maintenanceHistoryPreviousUrl" value="/maintenance">
-                <c:param name="view" value="history" />
-                <c:param name="customerName" value="${customerName}" />
-                <c:param name="historyPage" value="${currentPage - 1}" />
-                <c:param name="historyYear" value="${historyYear}" />
-                <c:param name="historyVersion" value="${historyVersion}" />
-                <c:param name="historyQuery" value="${historyQuery}" />
-            </c:url>
-        </c:if>
-        <c:if test="${currentPage < totalPages}">
-            <c:url var="maintenanceHistoryNextUrl" value="/maintenance">
-                <c:param name="view" value="history" />
-                <c:param name="customerName" value="${customerName}" />
-                <c:param name="historyPage" value="${currentPage + 1}" />
-                <c:param name="historyYear" value="${historyYear}" />
-                <c:param name="historyVersion" value="${historyVersion}" />
-                <c:param name="historyQuery" value="${historyQuery}" />
-            </c:url>
-        </c:if>
-        <t:tableFooter itemLabel="점검 이력"
-                       currentPage="${currentPage}"
-                       totalPages="${totalPages}"
-                       previousUrl="${maintenanceHistoryPreviousUrl}"
-                       nextUrl="${maintenanceHistoryNextUrl}"
-                       paginationLabel="정기점검 이력 페이지" />
     </div>
 </div>
 

@@ -4,7 +4,7 @@
 <c:set var="pageTitle" value="정기점검 이력 추가" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
 <c:set var="pageCss" value="/resources/css/pages/maintenance.css" scope="request" />
-<c:set var="pageScript" value="/resources/js/pages/maintenance_form.js" scope="request" />
+<c:set var="pageScript" value="/resources/js/pages/maintenance_calendar.js,/resources/js/pages/maintenance_form.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
