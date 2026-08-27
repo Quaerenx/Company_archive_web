@@ -32,12 +32,14 @@
     <div class="vm-board-body">
         <c:if test="${param.vmHostResult == 'saved'}">
             <div class="vm-message ui-alert ui-alert--success" role="status">
-                호스트 정보가 저장되었습니다.
+                <i class="fas fa-check-circle" aria-hidden="true"></i>
+                <span>호스트 정보가 저장되었습니다.</span>
             </div>
         </c:if>
         <c:if test="${param.vmHostResult == 'deleted'}">
             <div class="vm-message ui-alert ui-alert--success" role="status">
-                호스트가 삭제되었습니다.
+                <i class="fas fa-check-circle" aria-hidden="true"></i>
+                <span>호스트가 삭제되었습니다.</span>
             </div>
         </c:if>
 
@@ -141,7 +143,8 @@
                 <div id="vmHostModalError"
                      class="vm-error ui-alert ui-alert--danger"
                      role="alert">
-                    <c:out value="${vmHostErrorMessage}" />
+                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                    <span><c:out value="${vmHostErrorMessage}" /></span>
                 </div>
             </c:if>
             <form class="vm-form ui-form"

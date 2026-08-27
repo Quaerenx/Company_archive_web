@@ -31,7 +31,8 @@
         <div class="ui-alert ui-alert--danger"
              role="alert"
              aria-live="assertive">
-            <c:out value="${formError}" />
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+            <span><c:out value="${formError}" /></span>
         </div>
     </c:if>
 

@@ -89,9 +89,9 @@ body {
 /* 점보트론 스타일 */
 .jumbotron {
     background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-surface-edge);
     border-radius: var(--radius-lg);
-    box-shadow: none;
+    box-shadow: var(--shadow-sm);
     padding: var(--space-40);
     margin-bottom: var(--space-32);
 }
@@ -349,11 +349,11 @@ body {
 /* 점보트론 스타일 */
 .customer-jumbotron {
     background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-surface-edge);
     border-radius: var(--radius-lg);
     padding: var(--space-32);
     margin-bottom: var(--space-32);
-    box-shadow: none;
+    box-shadow: var(--shadow-sm);
 }
 
 .customer-jumbotron h1 {
@@ -391,9 +391,9 @@ body {
 /* 카드 스타일 */
 .customer-card {
     background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-surface-edge);
     border-radius: var(--radius-lg);
-    box-shadow: none;
+    box-shadow: var(--shadow-sm);
     margin-bottom: var(--space-20);
     overflow: hidden;
 }

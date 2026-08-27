@@ -81,6 +81,7 @@
              aria-atomic="true"
              tabindex="-1"
              hidden>
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
             <strong>저장할 수 없습니다.</strong>
             <span data-customer-detail-error-message>입력 내용을 다시 확인해 주세요.</span>
         </div>

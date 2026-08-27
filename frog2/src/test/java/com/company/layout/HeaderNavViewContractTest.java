@@ -42,6 +42,15 @@ class HeaderNavViewContractTest {
         assertTrue(header.contains("/meeting?view=list"));
         assertTrue(header.contains("/file-repository"));
         assertTrue(header.contains("/troubleshooting?view=list"));
+        assertTrue(header.contains(
+                "|| navMaintenanceCurrent || navTroubleshootingCurrent"));
+        assertTrue(header.contains(
+                "value=\"${navMeetingCurrent || navFileRepositoryCurrent}\""));
+        int customerMenuStart = header.indexOf("id=\"customerNavMenu\"");
+        int resourceMenuStart = header.indexOf("id=\"resourceNavMenu\"");
+        int troubleshootingLink = header.indexOf("/troubleshooting?view=list");
+        assertTrue(customerMenuStart < troubleshootingLink);
+        assertTrue(troubleshootingLink < resourceMenuStart);
         assertTrue(header.contains("/mypage"));
         assertTrue(header.contains("id=\"logoutLink\""));
         assertFalse(header.contains("href=\"#\""));

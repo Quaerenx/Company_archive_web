@@ -137,6 +137,12 @@
     --color-danger-bg: var(--palette-danger-subtle);
     --color-danger-border: var(--palette-danger);
     --color-danger-text: var(--palette-danger);
+    --progress-risk-fill: repeating-linear-gradient(
+        135deg,
+        var(--color-danger) 0 var(--space-4),
+        var(--palette-brand-hover) var(--space-4) 6px,
+        var(--color-danger) 6px 10px
+    );
     --color-info-bg: var(--palette-brand-subtle);
     --color-info-border: var(--palette-brand);
     --color-info-text: var(--palette-brand);
@@ -153,9 +159,9 @@
     /* Self-hosted product typography with system fallbacks. */
     --font-base: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, Arial, sans-serif;
     --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --font-size-2xs: 0.75rem;
-    --font-size-xs: 0.8rem;
-    --font-size-sm: 0.875rem;
+    --font-size-xs: 0.8125rem;
+    --font-size-2xs: var(--font-size-xs);
+    --font-size-sm: 0.9375rem;
     --font-size-md: 1rem;
     --font-size-lg: 1.25rem;
     --font-size-xl: 1.563rem;
@@ -163,7 +169,7 @@
     --font-size-3xl: 2.441rem;
     --line-height-heading: 1.2;
     --line-height-tight: 1.3;
-    --line-height-ui: 1.4;
+    --line-height-ui: 1.5;
     --line-height-base: 1.6;
     --line-height-relaxed: 1.75;
     --measure-compact: 52ch;

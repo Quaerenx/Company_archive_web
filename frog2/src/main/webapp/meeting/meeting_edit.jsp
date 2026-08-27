@@ -51,9 +51,9 @@
             <!-- 작성 정보 -->
             <div class="section-title">작성 정보</div>
             <fmt:formatDate var="meetingCreatedIso" value="${meeting.createdAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" />
-            <fmt:formatDate var="meetingCreatedLabel" value="${meeting.createdAt}" pattern="yyyy.MM.dd HH:mm" />
+            <fmt:formatDate var="meetingCreatedLabel" value="${meeting.createdAt}" pattern="yyyy-MM-dd HH:mm" />
             <fmt:formatDate var="meetingUpdatedIso" value="${meeting.updatedAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" />
-            <fmt:formatDate var="meetingUpdatedLabel" value="${meeting.updatedAt}" pattern="yyyy.MM.dd HH:mm" />
+            <fmt:formatDate var="meetingUpdatedLabel" value="${meeting.updatedAt}" pattern="yyyy-MM-dd HH:mm" />
             <dl class="meeting-audit-list">
                 <div>
                     <dt>작성자</dt>

@@ -248,7 +248,7 @@
                                 <c:when test="${not empty row.record.inspectionDate}">
                                     <fmt:formatDate var="inspectionDateLabel"
                                                     value="${row.record.inspectionDate}"
-                                                    pattern="yyyy.MM.dd" />
+                                                    pattern="yyyy-MM-dd" />
                                 </c:when>
                                 <c:otherwise>
                                     <c:set var="inspectionDateLabel" value="날짜 미등록" />
@@ -265,9 +265,9 @@
                                                 aria-label="${inspectionDateLabel} 정기점검 상세">
                                             <c:choose>
                                                 <c:when test="${not empty row.record.inspectionDate}">
-                                                    <fmt:formatDate value="${row.record.inspectionDate}" pattern="yyyy.MM.dd" />
+                                                    <fmt:formatDate value="${row.record.inspectionDate}" pattern="yyyy-MM-dd" />
                                                 </c:when>
-                                                <c:otherwise>—</c:otherwise>
+                                                <c:otherwise>-</c:otherwise>
                                             </c:choose>
                                         </button>
                                     </th>
@@ -276,7 +276,7 @@
                                             <c:when test="${not empty row.record.verticaVersion}">
                                                 <span class="version-tag ui-badge ui-badge--neutral"><c:out value="${row.record.verticaVersion}" /></span>
                                             </c:when>
-                                            <c:otherwise>—</c:otherwise>
+                                            <c:otherwise>-</c:otherwise>
                                         </c:choose>
                                     </td>
                                     <td class="history-license-cell">
@@ -293,7 +293,7 @@
                                                     <c:when test="${not empty row.capacityTerabytes}">
                                                         <c:out value="${row.capacityTerabytes}" /> TB 한도
                                                     </c:when>
-                                                    <c:otherwise>—</c:otherwise>
+                                                    <c:otherwise>-</c:otherwise>
                                                 </c:choose>
                                             </span>
                                             <c:if test="${not empty row.usagePercentage}">
@@ -318,7 +318,7 @@
                                         </span>
                                     </td>
                                     <td class="history-inspector-cell history-col-inspector">
-                                        <c:out value="${row.record.inspectorName}" default="—" />
+                                        <c:out value="${row.record.inspectorName}" default="-" />
                                     </td>
                                     <td class="history-note-summary-cell history-col-note">
                                         <c:out value="${row.noteSummary}" />
@@ -347,17 +347,17 @@
                                                                     <c:when test="${not empty row.capacityTerabytes}">
                                                                         한도 <c:out value="${row.capacityTerabytes}" /> TB
                                                                     </c:when>
-                                                                    <c:otherwise>—</c:otherwise>
+                                                                    <c:otherwise>-</c:otherwise>
                                                                 </c:choose>
                                                             </dd>
                                                         </div>
                                                         <div>
                                                             <dt>라이선스 사용률</dt>
-                                                            <dd><c:out value="${row.usagePercentage}" default="—" /><c:if test="${not empty row.usagePercentage}">%</c:if></dd>
+                                                            <dd><c:out value="${row.usagePercentage}" default="-" /><c:if test="${not empty row.usagePercentage}">%</c:if></dd>
                                                         </div>
                                                         <div>
                                                             <dt>전월 사용률</dt>
-                                                            <dd><c:out value="${row.previousUsagePercentage}" default="—" /><c:if test="${not empty row.previousUsagePercentage}">%</c:if></dd>
+                                                            <dd><c:out value="${row.previousUsagePercentage}" default="-" /><c:if test="${not empty row.previousUsagePercentage}">%</c:if></dd>
                                                         </div>
                                                         <div>
                                                             <dt>전월 대비</dt>
@@ -375,23 +375,23 @@
                                                         <dl class="history-detail-meta">
                                                             <div>
                                                                 <dt>점검자</dt>
-                                                                <dd><c:out value="${row.record.inspectorName}" default="—" /></dd>
+                                                                <dd><c:out value="${row.record.inspectorName}" default="-" /></dd>
                                                             </div>
                                                             <div>
                                                                 <dt>등록 일시</dt>
                                                                 <dd>
                                                                     <c:choose>
                                                                         <c:when test="${not empty row.record.createdAt}">
-                                                                            <fmt:formatDate value="${row.record.createdAt}" pattern="yyyy.MM.dd HH:mm" />
+                                                                            <fmt:formatDate value="${row.record.createdAt}" pattern="yyyy-MM-dd HH:mm" />
                                                                         </c:when>
-                                                                        <c:otherwise>—</c:otherwise>
+                                                                        <c:otherwise>-</c:otherwise>
                                                                     </c:choose>
                                                                 </dd>
                                                             </div>
                                                             <c:if test="${not empty row.record.updatedAt}">
                                                                 <div>
                                                                     <dt>수정 일시</dt>
-                                                                    <dd><fmt:formatDate value="${row.record.updatedAt}" pattern="yyyy.MM.dd HH:mm" /></dd>
+                                                                    <dd><fmt:formatDate value="${row.record.updatedAt}" pattern="yyyy-MM-dd HH:mm" /></dd>
                                                                 </div>
                                                             </c:if>
                                                         </dl>

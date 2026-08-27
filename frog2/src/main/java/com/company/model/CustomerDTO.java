@@ -1,6 +1,11 @@
 package com.company.model;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class CustomerDTO {
+    private static final Pattern LICENSE_PATTERN = Pattern.compile(
+            "^\\s*([0-9]+(?:\\.[0-9]+)?)\\s*([\\p{L}]+)?\\s*$");
     private String customerName;
     private String firstIntroductionYear;
     private String dbName;
@@ -96,6 +101,24 @@ public class CustomerDTO {
 
     public void setLicenseSize(String licenseSize) {
         this.licenseSize = licenseSize;
+    }
+
+    public String getLicenseAmount() {
+        Matcher matcher = licenseMatcher();
+        return matcher == null ? null : matcher.group(1);
+    }
+
+    public String getLicenseUnit() {
+        Matcher matcher = licenseMatcher();
+        return matcher == null ? null : matcher.group(2);
+    }
+
+    private Matcher licenseMatcher() {
+        if (licenseSize == null) {
+            return null;
+        }
+        Matcher matcher = LICENSE_PATTERN.matcher(licenseSize);
+        return matcher.matches() ? matcher : null;
     }
 
     public String getManagerName() {

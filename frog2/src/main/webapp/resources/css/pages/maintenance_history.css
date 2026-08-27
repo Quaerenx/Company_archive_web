@@ -277,11 +277,11 @@
 }
 
 .maintenance-history .history-license-progress--risk::-webkit-progress-value {
-    background: var(--color-danger);
+    background: var(--progress-risk-fill);
 }
 
 .maintenance-history .history-license-progress--risk::-moz-progress-bar {
-    background: var(--color-danger);
+    background: var(--progress-risk-fill);
 }
 
 .maintenance-history .history-number-cell,

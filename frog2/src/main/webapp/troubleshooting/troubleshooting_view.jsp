@@ -28,7 +28,7 @@
 <c:if test="${not empty troubleshooting.occurrenceDate}">
     <fmt:formatDate var="troubleshootingOccurrenceDateLabel"
                     value="${troubleshooting.occurrenceDate}"
-                    pattern="yyyy.MM.dd" />
+                    pattern="yyyy-MM-dd" />
 </c:if>
 <c:set var="troubleshootingCustomerLabel"
        value="${not empty troubleshooting.customerName ? troubleshooting.customerName : '고객사 미등록'}" />
@@ -104,7 +104,7 @@
                 </div>
                 <div class="troubleshooting-meta-item">
                     <dt>작성 일시</dt>
-                    <dd><fmt:formatDate value="${troubleshooting.createDate}" pattern="yyyy.MM.dd HH:mm" /></dd>
+                    <dd><fmt:formatDate value="${troubleshooting.createDate}" pattern="yyyy-MM-dd HH:mm" /></dd>
                 </div>
             </dl>
         </section>
@@ -190,7 +190,7 @@
             
             <c:if test="${not empty troubleshooting.updatedDate}">
                 <div class="troubleshooting-updated-at">
-                    최종 수정 <fmt:formatDate value="${troubleshooting.updatedDate}" pattern="yyyy.MM.dd HH:mm" />
+                    최종 수정 <fmt:formatDate value="${troubleshooting.updatedDate}" pattern="yyyy-MM-dd HH:mm" />
                 </div>
             </c:if>
             <c:if test="${canManageTroubleshooting}">

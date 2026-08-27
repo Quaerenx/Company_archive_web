@@ -79,7 +79,8 @@ class DataManagementTableContractTest {
 
         assertTrue(shared.contains(".ui-system .ui-table-toolbar {"));
         assertTrue(shared.contains(".ui-system .ui-data-table {"));
-        assertTrue(shared.contains(".ui-system .ui-data-table :is(th, td) {"));
+        assertTrue(shared.contains(
+                ".ui-system .ui-data-table :is(th, td):not(.ui-disclosure-cell) {"));
         assertTrue(shared.contains(".ui-system .ui-data-table .col--date {"));
         assertTrue(shared.contains(".ui-system .ui-data-table .col--numeric {"));
 

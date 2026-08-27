@@ -108,12 +108,12 @@ class PageShellContractTest {
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
         assertEquals(1, occurrences(
-                webXml, "20260827-release-candidate-5"));
+                webXml, "20260827-release-candidate-7"));
         assertEquals(6, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
         assertEquals(3, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("ui-system.js?v=${frog2AssetVersion}"));
-        assertTrue(footer.contains("ambient-background.js?v=${frog2AssetVersion}"));
+        assertFalse(footer.contains("ambient-background.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("${script}?v=${frog2AssetVersion}"));
 
         String login = read("login.jsp");

@@ -23,7 +23,6 @@
      aria-relevant="additions"></div>
 
 <script src="${pageContext.request.contextPath}/resources/js/ui-system.js?v=${frog2AssetVersion}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/ambient-background.js?v=${frog2AssetVersion}"></script>
 
 <c:if test="${not empty pageScript}">
     <c:forTokens items="${pageScript}" delims="," var="script">

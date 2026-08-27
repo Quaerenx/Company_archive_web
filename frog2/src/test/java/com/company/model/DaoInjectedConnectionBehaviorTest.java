@@ -53,8 +53,10 @@ class DaoInjectedConnectionBehaviorTest {
         assertEquals(2, jdbc.closeCount);
         assertTrue(jdbc.statements.get(0).sql.contains(
                 "d.customer_type = '정기점검 계약 고객사'"));
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "NULLIF(TRIM(d.main_manager), '') IS NULL"));
         assertTrue(jdbc.statements.get(0).sql.endsWith(
-                "ORDER BY d.main_manager DESC"));
+                "d.main_manager DESC, d.customer_name ASC"));
         assertEquals("Acme", jdbc.statements.get(1).parameters.get(1));
     }
 

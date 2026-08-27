@@ -47,7 +47,7 @@
                                     <c:param name="returnPage" value="${currentPage}" />
                                 </c:url>
                                 <fmt:formatDate var="meetingDateIso" value="${meeting.meetingDatetime}" pattern="yyyy-MM-dd'T'HH:mm" />
-                                <fmt:formatDate var="meetingDateLabel" value="${meeting.meetingDatetime}" pattern="yyyy.MM.dd" />
+                                <fmt:formatDate var="meetingDateLabel" value="${meeting.meetingDatetime}" pattern="yyyy-MM-dd" />
                                 <fmt:formatDate var="meetingTimeLabel" value="${meeting.meetingDatetime}" pattern="HH:mm" />
                                 <tr class="ui-data-row" data-detail-url="<c:out value='${meetingViewUrl}' />">
                                     <td class="meeting-datetime-cell col--date">

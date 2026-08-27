@@ -50,6 +50,8 @@ class ReadabilityRefinementContractTest {
         String styles = read("resources/css/ui-system.css");
 
         assertTrue(styles.contains("block-size: 44px;"));
+        assertTrue(styles.contains("@media (pointer: fine)"));
+        assertTrue(styles.contains("block-size: 40px;"));
         assertTrue(styles.contains("inline-size: 148px;"));
         assertTrue(styles.contains("inline-size: 104px;"));
         assertTrue(styles.contains(".ui-data-table td.empty-state"));

@@ -20,10 +20,7 @@
         </c:forTokens>
     </c:if>
 </head>
-<body class="ui-system has-ambient-background <c:out value='${pageBodyClass}' />">
-<canvas class="app-ambient-background"
-        data-app-ambient-background
-        aria-hidden="true"></canvas>
+<body class="ui-system has-ambient-background authenticated-shell <c:out value='${pageBodyClass}' />">
 <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 <%@ include file="/WEB-INF/includes/header_nav.jspf" %>
 <main id="main-content" class="app-main" tabindex="-1">

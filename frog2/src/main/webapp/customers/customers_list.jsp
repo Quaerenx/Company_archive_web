@@ -111,53 +111,53 @@
         <div class="table-wrapper ui-table-wrap"
              data-ui-scroll-region
              data-ui-scroll-label="고객사 정보 표">
-            <table class="customer-table ui-table">
+            <table class="customer-table ui-table ui-data-table">
                 <caption class="sr-only">고객사 정보 목록</caption>
                 <thead>
                     <tr>
-                        <th scope="col" aria-sort="${sortField eq 'customer_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="col--customer" aria-sort="${sortField eq 'customer_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${customerNameSortUrl}' />" class="js-customer-sort" data-sort-field="customer_name">
                                 고객사
                                 <i class="fas fa-sort sort-icon ${sortField == 'customer_name' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
-                        <th scope="col" aria-sort="${sortField eq 'vertica_version' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="customer-col-version col--identifier" aria-sort="${sortField eq 'vertica_version' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${versionSortUrl}' />" class="js-customer-sort" data-sort-field="vertica_version">
                                 버전
                                 <i class="fas fa-sort sort-icon ${sortField == 'vertica_version' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
-                        <th scope="col" aria-sort="${sortField eq 'mode' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="customer-col-mode col--type" aria-sort="${sortField eq 'mode' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${modeSortUrl}' />" class="js-customer-sort" data-sort-field="mode">
                                 모드
                                 <i class="fas fa-sort sort-icon ${sortField == 'mode' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
-                        <th scope="col" aria-sort="${sortField eq 'os' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="col--text" aria-sort="${sortField eq 'os' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${osSortUrl}' />" class="js-customer-sort" data-sort-field="os">
                                 OS
                                 <i class="fas fa-sort sort-icon ${sortField == 'os' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
-                        <th scope="col" aria-sort="${sortField eq 'nodes' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="customer-col-nodes col--numeric" aria-sort="${sortField eq 'nodes' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${nodesSortUrl}' />" class="js-customer-sort" data-sort-field="nodes">
                                 노드수
                                 <i class="fas fa-sort sort-icon ${sortField == 'nodes' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
-                        <th scope="col" aria-sort="${sortField eq 'license_size' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="customer-col-license col--numeric" aria-sort="${sortField eq 'license_size' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${licenseSortUrl}' />" class="js-customer-sort" data-sort-field="license_size">
                                 라이선스
                                 <i class="fas fa-sort sort-icon ${sortField == 'license_size' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
-                        <th scope="col" aria-sort="${sortField eq 'said' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="col--identifier" aria-sort="${sortField eq 'said' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${saidSortUrl}' />" class="js-customer-sort" data-sort-field="said">
                                 SAID
                                 <i class="fas fa-sort sort-icon ${sortField == 'said' ? 'active' : ''}" aria-hidden="true"></i>
                             </a>
                         </th>
-                        <th scope="col" aria-sort="${sortField eq 'manager_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
+                        <th scope="col" class="col--author" aria-sort="${sortField eq 'manager_name' ? (sortDirection eq 'ASC' ? 'ascending' : 'descending') : 'none'}">
                             <a href="<c:out value='${managerSortUrl}' />" class="js-customer-sort" data-sort-field="manager_name">
                                 담당자
                                 <i class="fas fa-sort sort-icon ${sortField == 'manager_name' ? 'active' : ''}" aria-hidden="true"></i>
@@ -180,17 +180,24 @@
                         </c:url>
                         <tr class="customer-row ui-data-row"
                             data-detail-url="<c:out value="${customerDetailUrl}" />">
-                            <td title="<c:out value="${customer.customerName}" />" data-original="<c:out value="${customer.customerName}" />">
+                            <td class="col--customer" title="<c:out value="${customer.customerName}" />" data-original="<c:out value="${customer.customerName}" />">
                                 <a class="customer-detail-link"
                                    href="<c:out value='${customerDetailUrl}' />"><c:out value="${customer.customerName}" default="" /></a>
                             </td>
-                            <td data-original="<c:out value="${customer.verticaVersion}" />"><c:out value="${customer.verticaVersion}" default="" /></td>
-                            <td data-original="<c:out value="${customer.mode}" />"><c:out value="${customer.mode}" default="" /></td>
-                            <td data-original="<c:out value="${customer.os}" />"><c:out value="${customer.os}" default="" /></td>
-                            <td data-original="<c:out value="${customer.nodes}" />"><c:out value="${customer.nodes}" default="" /></td>
-                            <td data-original="<c:out value="${customer.licenseSize}" />"><c:out value="${customer.licenseSize}" default="" /></td>
-                            <td data-original="<c:out value="${customer.said}" />"><c:out value="${customer.said}" default="" /></td>
-                            <td title="<c:out value="${customer.managerName}" />" data-original="<c:out value="${customer.managerName}" />"><c:out value="${customer.managerName}" default="" /></td>
+                            <td class="customer-col-version col--identifier" data-original="<c:out value="${customer.verticaVersion}" />"><c:out value="${customer.verticaVersion}" default="-" /></td>
+                            <td class="customer-col-mode col--type" data-original="<c:out value="${customer.mode}" />"><c:out value="${customer.mode}" default="-" /></td>
+                            <td class="col--text" data-original="<c:out value="${customer.os}" />"><c:out value="${customer.os}" default="-" /></td>
+                            <td class="customer-col-nodes col--numeric" data-original="<c:out value="${customer.nodes}" />"><c:out value="${customer.nodes}" default="-" /></td>
+                            <td class="customer-col-license col--numeric" data-original="<c:out value="${customer.licenseSize}" />">
+                                <c:choose>
+                                    <c:when test="${not empty customer.licenseAmount}">
+                                        <span class="customer-license-amount"><c:out value="${customer.licenseAmount}" /></span><c:if test="${not empty customer.licenseUnit}"> <span class="customer-license-unit"><c:out value="${customer.licenseUnit}" /></span></c:if>
+                                    </c:when>
+                                    <c:otherwise><c:out value="${customer.licenseSize}" default="-" /></c:otherwise>
+                                </c:choose>
+                            </td>
+                            <td class="col--identifier" data-original="<c:out value="${customer.said}" />"><c:out value="${customer.said}" default="-" /></td>
+                            <td class="col--author" title="<c:out value="${customer.managerName}" />" data-original="<c:out value="${customer.managerName}" />"><c:out value="${customer.managerName}" default="-" /></td>
                         </tr>
                     </c:forEach>
 

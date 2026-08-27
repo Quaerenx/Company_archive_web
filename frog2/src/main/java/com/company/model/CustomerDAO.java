@@ -72,7 +72,8 @@ public class CustomerDAO {
             if (MAINTENANCE_FILTER.equals(filter)) {
                 sql += " AND d.customer_type = '정기점검 계약 고객사'";
             }
-            sql += " ORDER BY " + sortColumn(sortField) + " " + direction;
+            sql += " ORDER BY " + sortOrder(sortField, direction)
+                    + ", d.customer_name ASC";
 
             try (PreparedStatement statement = connection.prepareStatement(sql);
                     ResultSet resultSet = statement.executeQuery()) {
@@ -241,9 +242,7 @@ public class CustomerDAO {
                     + "WHERE d.is_deleted = " + ACTIVE_FLAG + " AND "
                     + selectionPredicate
                     + " ORDER BY "
-                    + sortColumn(sortField)
-                    + " "
-                    + direction
+                    + sortOrder(sortField, direction)
                     + ", d.customer_name ASC LIMIT ? OFFSET ?";
 
             int maximumPage = Pagination.totalPages(
@@ -529,20 +528,75 @@ public class CustomerDAO {
         return SearchQueryPolicy.normalize(query);
     }
 
-    private static String sortColumn(String sortField) {
+    private static String sortOrder(String sortField, String direction) {
+        String safeDirection = "DESC".equalsIgnoreCase(direction)
+                ? "DESC"
+                : "ASC";
         if (sortField == null) {
-            return "d.customer_name";
+            return "d.customer_name " + safeDirection;
         }
         return switch (sortField) {
-            case "vertica_version" -> "d.vertica_version";
-            case "mode" -> "d.db_mode";
-            case "os" -> "d.os_info";
-            case "nodes" -> "d.node_count";
-            case "license_size" -> "d.license_info";
-            case "said" -> "d.said";
-            case "manager_name" -> "d.main_manager";
-            default -> "d.customer_name";
+            case "vertica_version" -> versionSortOrder(safeDirection);
+            case "mode" -> nullableTextSortOrder("d.db_mode", safeDirection);
+            case "os" -> nullableTextSortOrder("d.os_info", safeDirection);
+            case "nodes" -> numericTextSortOrder("d.node_count", safeDirection);
+            case "license_size" -> licenseSortOrder(safeDirection);
+            case "said" -> nullableTextSortOrder("d.said", safeDirection);
+            case "manager_name" -> nullableTextSortOrder(
+                    "d.main_manager", safeDirection);
+            default -> "d.customer_name " + safeDirection;
         };
+    }
+
+    private static String nullableTextSortOrder(
+            String column, String direction) {
+        return "CASE WHEN NULLIF(TRIM(" + column + "), '') IS NULL "
+                + "THEN 1 ELSE 0 END ASC, " + column + " " + direction;
+    }
+
+    private static String numericTextSortOrder(
+            String column, String direction) {
+        String numericValue = numericPart(column);
+        return "CASE WHEN " + numericValue + " IS NULL THEN 1 ELSE 0 END ASC, "
+                + numericValue + " " + direction;
+    }
+
+    private static String licenseSortOrder(String direction) {
+        String column = "d.license_info";
+        String numericValue = numericPart(column);
+        String unit = "LOWER(CAST(NULLIF(REGEXP_SUBSTR(CAST(" + column
+                + " AS VARCHAR(65000)), '[[:alpha:]]+'), '') AS VARCHAR(64)))";
+        return "CASE WHEN " + numericValue + " IS NULL THEN 1 ELSE 0 END ASC, "
+                + unit + " " + direction + ", "
+                + numericValue + " " + direction;
+    }
+
+    private static String versionSortOrder(String direction) {
+        String column = "CAST(d.vertica_version AS VARCHAR(65000))";
+        String major = versionPart(column, 1, 1);
+        String minor = versionPart(column, 2, 1);
+        String patch = versionPart(column, 3, 1);
+        String build = versionPart(column, 3, 2);
+        return "CASE WHEN NULLIF(TRIM(d.vertica_version), '') IS NULL "
+                + "THEN 1 ELSE 0 END ASC, "
+                + major + " " + direction + ", "
+                + minor + " " + direction + ", "
+                + patch + " " + direction + ", "
+                + build + " " + direction;
+    }
+
+    private static String versionPart(
+            String column, int dotPart, int hyphenPart) {
+        String component = "SPLIT_PART(SPLIT_PART(" + column + ", '.', "
+                + dotPart + "), '-', " + hyphenPart + ")";
+        return "CAST(NULLIF(REGEXP_SUBSTR(" + component
+                + ", '[0-9]+'), '') AS INTEGER)";
+    }
+
+    private static String numericPart(String column) {
+        return "CAST(NULLIF(REGEXP_SUBSTR(CAST(" + column
+                + " AS VARCHAR(65000)), '[0-9]+([.][0-9]+)?'), '') "
+                + "AS NUMERIC)";
     }
 
     private void setStringOrNull(PreparedStatement pstmt, int parameterIndex, String value) throws SQLException {

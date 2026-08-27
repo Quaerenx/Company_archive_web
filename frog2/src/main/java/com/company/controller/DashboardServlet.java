@@ -35,7 +35,7 @@ public class DashboardServlet extends HttpServlet {
     private final CustomerDAO customerDAO;
     private final Clock clock;
     private static final DateTimeFormatter MONTH_PARAM_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM");
-    private static final DateTimeFormatter MONTH_LABEL_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM");
+    private static final DateTimeFormatter MONTH_LABEL_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     public DashboardServlet() {
         this(

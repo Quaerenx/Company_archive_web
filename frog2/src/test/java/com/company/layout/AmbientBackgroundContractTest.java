@@ -11,18 +11,19 @@ class AmbientBackgroundContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
 
     @Test
-    void authenticatedShellOwnsOneDecorativeAmbientCanvas() throws Exception {
+    void ambientMotionIsLimitedToTheLoginPage() throws Exception {
         String header = read("includes/header.jsp");
         String footer = read("includes/footer.jsp");
         String login = read("login.jsp");
 
-        assertTrue(header.contains("has-ambient-background"));
-        assertTrue(header.contains("data-app-ambient-background"));
-        assertTrue(header.contains("aria-hidden=\"true\""));
-        assertTrue(footer.contains("/resources/js/ambient-background.js?v=${frog2AssetVersion}"));
+        assertTrue(header.contains("authenticated-shell"));
+        assertFalse(header.contains("data-app-ambient-background"));
+        assertFalse(footer.contains("/resources/js/ambient-background.js?v=${frog2AssetVersion}"));
         assertTrue(login.contains("has-ambient-background"));
         assertTrue(login.contains("data-app-ambient-background"));
         assertTrue(login.contains("ambient-background.js?v=${initParam.frog2AssetVersion}"));
+        assertTrue(read("resources/css/ambient-background.css").contains(
+                "body.ui-system.has-ambient-background.authenticated-shell::before"));
     }
 
     @Test

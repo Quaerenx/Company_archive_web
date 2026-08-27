@@ -29,6 +29,11 @@ body.ui-system.has-ambient-background::before {
     z-index: var(--z-background);
 }
 
+body.ui-system.has-ambient-background.authenticated-shell::before {
+    animation: none;
+    transform: none;
+}
+
 .app-ambient-background {
     color: var(--color-ambient-particle);
     display: block;

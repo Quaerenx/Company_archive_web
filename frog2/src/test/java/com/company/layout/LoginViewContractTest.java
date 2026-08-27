@@ -130,7 +130,7 @@ class LoginViewContractTest {
                 "(?s).*\\.login-page #userId\\s*\\{[^}]*"
                         + "font-family:\\s*var\\(--font-base\\);[^}]*"
                         + "font-weight:\\s*500;[^}]*"
-                        + "letter-spacing:\\s*-0\\.01em;.*"));
+                        + "letter-spacing:\\s*0;.*"));
         assertFalse(styles.contains(".login-page #password {"));
         assertTrue(styles.contains(
                 ".login-page #loginForm .form-group > input:focus-visible {"));

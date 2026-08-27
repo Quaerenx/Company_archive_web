@@ -39,7 +39,7 @@
                                     <span>
                                         <c:choose>
                                             <c:when test="${not empty record.inspectionDate}">
-                                                <fmt:formatDate value="${record.inspectionDate}" pattern="yyyy.MM.dd" />
+                                                <fmt:formatDate value="${record.inspectionDate}" pattern="yyyy-MM-dd" />
                                             </c:when>
                                             <c:otherwise>날짜 없음</c:otherwise>
                                         </c:choose>
@@ -83,7 +83,7 @@
                                     <span>
                                         <c:choose>
                                             <c:when test="${not empty ts.occurrenceDate}">
-                                                <fmt:formatDate value="${ts.occurrenceDate}" pattern="yyyy.MM.dd" />
+                                                <fmt:formatDate value="${ts.occurrenceDate}" pattern="yyyy-MM-dd" />
                                             </c:when>
                                             <c:otherwise>발생일 미기재</c:otherwise>
                                         </c:choose>

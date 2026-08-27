@@ -31,18 +31,27 @@
         <div class="vm-message ui-alert ui-alert--success"
              role="status"
              aria-live="polite"
-             aria-atomic="true">호스트 정보가 저장되었습니다.</div>
+             aria-atomic="true">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          <span>호스트 정보가 저장되었습니다.</span>
+        </div>
       </c:if>
       <c:if test="${param.result == 'deleted'}">
         <div class="vm-message ui-alert ui-alert--success"
              role="status"
              aria-live="polite"
-             aria-atomic="true">호스트가 삭제되었습니다.</div>
+             aria-atomic="true">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          <span>호스트가 삭제되었습니다.</span>
+        </div>
       </c:if>
       <c:if test="${not empty errorMessage}">
         <div class="vm-error ui-alert ui-alert--danger"
              role="alert"
-             aria-atomic="true"><c:out value="${errorMessage}"/></div>
+             aria-atomic="true">
+          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+          <span><c:out value="${errorMessage}"/></span>
+        </div>
       </c:if>
 
       <div class="vm-host-grid">

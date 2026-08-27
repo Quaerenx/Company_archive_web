@@ -55,7 +55,7 @@ class DataTableAccessibilityContractTest {
         String page = read("customers/customers_list.jsp");
 
         assertEquals(8, occurrences(page, "aria-sort=\"${sortField eq"));
-        assertEquals(8, occurrences(page, "scope=\"col\" aria-sort="));
+        assertEquals(8, occurrences(page, "scope=\"col\" class="));
         assertTrue(page.contains("? 'ascending' : 'descending') : 'none'"));
     }
 

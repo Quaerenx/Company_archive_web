@@ -184,7 +184,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "scope=\"row\""));
         assertTrue(comparisonTable.contains(
-                "pattern=\"yyyy.MM.dd\""));
+                "pattern=\"yyyy-MM-dd\""));
         assertTrue(comparisonTable.contains(
                 "<c:out value=\"${row.noteSummary}\" />"));
         assertTrue(comparisonTable.contains(

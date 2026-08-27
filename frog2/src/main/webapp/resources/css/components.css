@@ -338,7 +338,7 @@
 
 .modal-content {
     background-color: var(--color-surface-elevated);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-surface-edge);
     border-radius: var(--radius-xl);
     padding: 0;
     max-width: 600px;
@@ -460,10 +460,10 @@
 
 .account-form-container .form-card {
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-surface-edge);
     padding: var(--space-24);
     border-radius: var(--radius-lg);
-    box-shadow: none;
+    box-shadow: var(--shadow-sm);
     max-width: 600px;
     margin: 0 auto;
 }

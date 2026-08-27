@@ -30,7 +30,7 @@
         <jsp:attribute name="title"><i class="fas fa-file-alt"></i> <c:out value="${meeting.title}" /></jsp:attribute>
         <jsp:attribute name="subtitle">
             <span class="meta-item"><i class="fas fa-tag"></i> <span class="type-badge ui-badge ui-badge--neutral"><c:out value="${meeting.meetingTypeLabel}" /></span></span>
-            <span class="meta-item"><i class="fas fa-calendar"></i> <fmt:formatDate value="${meeting.meetingDatetime}" pattern="yyyy년 MM월 dd일 HH:mm"/></span>
+            <span class="meta-item"><i class="fas fa-calendar"></i> <fmt:formatDate value="${meeting.meetingDatetime}" pattern="yyyy-MM-dd HH:mm"/></span>
             <span class="meta-item"><i class="fas fa-user"></i> <c:out value="${meeting.authorName}" /></span>
         </jsp:attribute>
         <jsp:attribute name="actions">

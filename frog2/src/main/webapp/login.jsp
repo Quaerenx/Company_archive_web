@@ -44,7 +44,8 @@
                          role="alert"
                          aria-live="assertive"
                          aria-atomic="true">
-                        <c:out value="${errorMessage}"/>
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        <span><c:out value="${errorMessage}"/></span>
                     </div>
                 </c:if>
 

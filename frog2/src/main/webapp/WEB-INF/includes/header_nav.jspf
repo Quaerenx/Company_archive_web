@@ -56,9 +56,10 @@
 <c:set var="navMyPageCurrent"
        value="${navRequestUri eq navMyPagePath || fn:startsWith(navRequestUri, navMyPagePrefix)}" />
 <c:set var="navCustomerSectionCurrent"
-       value="${navCustomersCurrent || navCustomerHistoryCurrent || navMaintenanceCurrent}" />
+       value="${navCustomersCurrent || navCustomerHistoryCurrent
+               || navMaintenanceCurrent || navTroubleshootingCurrent}" />
 <c:set var="navResourceSectionCurrent"
-       value="${navMeetingCurrent || navFileRepositoryCurrent || navTroubleshootingCurrent}" />
+       value="${navMeetingCurrent || navFileRepositoryCurrent}" />
 
 <header class="main-header" data-csrf-token="${csrfToken}">
     <div class="header-box">
@@ -136,6 +137,14 @@
                                     고객사 히스토리
                                 </a>
                             </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/troubleshooting?view=list"
+                                   class="${navTroubleshootingCurrent ? 'active' : ''}"
+                                   aria-current="${navTroubleshootingCurrent ? 'page' : 'false'}">
+                                    <i class="fas fa-tools mr-2" aria-hidden="true"></i>
+                                    트러블슈팅
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
@@ -166,14 +175,6 @@
                                    aria-current="${navFileRepositoryCurrent ? 'page' : 'false'}">
                                     <i class="fas fa-file-alt mr-2" aria-hidden="true"></i>
                                     자료실
-                                </a>
-                            </li>
-                            <li>
-                                <a href="${pageContext.request.contextPath}/troubleshooting?view=list"
-                                   class="${navTroubleshootingCurrent ? 'active' : ''}"
-                                   aria-current="${navTroubleshootingCurrent ? 'page' : 'false'}">
-                                    <i class="fas fa-tools mr-2" aria-hidden="true"></i>
-                                    트러블슈팅
                                 </a>
                             </li>
                         </ul>

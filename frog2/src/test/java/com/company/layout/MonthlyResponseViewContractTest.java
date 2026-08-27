@@ -51,8 +51,9 @@ class MonthlyResponseViewContractTest {
         assertTrue(sharedStyles.contains("padding-block: var(--space-32)"));
         assertFalse(styles.contains("max-width: var(--page-content-max-width)"));
         assertTrue(styles.contains("background-color: var(--color-surface-muted)"));
-        assertTrue(styles.contains("border: 1px solid var(--color-border)"));
-        assertTrue(styles.contains("box-shadow: none"));
+        assertTrue(styles.contains(
+                "border: 1px solid var(--color-surface-edge)"));
+        assertTrue(styles.contains("box-shadow: var(--shadow-sm)"));
         assertFalse(styles.contains("translateY("));
         assertTrue(styles.contains("@media (max-width: 768px)"));
     }

@@ -8,7 +8,7 @@
 
 <fmt:formatDate var="previousMaintenanceDateLabel"
                 value="${previousMaintenanceRecord.inspectionDate}"
-                pattern="yyyy.MM.dd" />
+                pattern="yyyy-MM-dd" />
 <aside id="previousMaintenanceCallout"
        class="maintenance-previous-callout"
        aria-labelledby="previousMaintenanceTitle"
@@ -202,7 +202,7 @@
                 <output id="license_size_gb_display"
                         aria-labelledby="maintenanceCapacityLabel"
                         aria-describedby="maintenanceCapacityHelp${not empty fieldErrors.license_size_gb ? ' maintenanceCapacityError' : ''}"
-                        aria-invalid="${not empty fieldErrors.license_size_gb}"><c:out value="${licenseSizeInput}" default="—" /></output>
+                        aria-invalid="${not empty fieldErrors.license_size_gb}"><c:out value="${licenseSizeInput}" default="-" /></output>
                 <span id="maintenanceCapacityUnit" aria-hidden="true">TB</span>
             </div>
             <input type="hidden"
@@ -244,7 +244,7 @@
             <span class="maintenance-output-label">사용률</span>
             <div class="maintenance-readonly-output maintenance-percentage-output">
                 <output id="license_usage_pct_display"
-                        for="license_size_gb license_usage_size"><c:out value="${licensePercentageInput}" default="—" /></output>
+                        for="license_size_gb license_usage_size"><c:out value="${licensePercentageInput}" default="-" /></output>
                 <span aria-hidden="true">%</span>
             </div>
             <input type="hidden"
