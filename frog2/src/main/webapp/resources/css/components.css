@@ -310,7 +310,9 @@
 
 /* 모달 컴포넌트 */
 .modal {
-    display: none;
+    align-items: center;
+    display: flex;
+    justify-content: center;
     position: fixed;
     top: 0;
     left: 0;
@@ -319,13 +321,19 @@
     background-color: var(--color-overlay-soft);
     z-index: var(--z-dialog);
     overflow: auto;
-    animation: fadeIn var(--motion-base) var(--motion-ease);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity var(--motion-base) var(--motion-ease),
+        visibility 0s linear var(--motion-base);
+    visibility: hidden;
 }
 
 .modal.show {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 0s;
+    visibility: visible;
 }
 
 .modal-content {
@@ -339,7 +347,16 @@
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
     margin: 5% auto;
-    animation: slideDown var(--motion-slow) var(--motion-ease);
+    opacity: 0;
+    transform: translateY(calc(var(--space-8) * -1)) scale(0.985);
+    transition:
+        opacity var(--motion-base) var(--motion-ease),
+        transform var(--motion-slow) var(--motion-ease);
+}
+
+.modal.show .modal-content {
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }
 
 .modal-wide .modal-content {
@@ -434,22 +451,6 @@
 .modal-form-group textarea {
     resize: vertical;
     min-height: 90px;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-24px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* 계정 설정 폼 */

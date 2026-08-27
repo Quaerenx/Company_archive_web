@@ -170,7 +170,6 @@ body.page-customer-history .customer-history-table .col--status {
 
 .customer-history-detail-row > td {
     background: var(--color-surface);
-    padding: 0;
 }
 
 .customer-history-detail-row:hover > td {
@@ -444,7 +443,6 @@ body.page-customer-history .customer-history-table .col--status {
     }
 
     body.page-customer-history .customer-history-detail-row:not([hidden]) {
-        border-block-end: 1px solid var(--color-border);
         display: block;
     }
 

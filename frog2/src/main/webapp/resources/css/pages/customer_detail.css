@@ -17,6 +17,7 @@
     margin: 0;
     overflow-x: auto;
     padding-inline: var(--space-8);
+    position: relative;
 }
 
 .customer-detail--view .tab-btn {
@@ -39,6 +40,24 @@
 .customer-detail--view .tab-btn.active {
     border-bottom-color: var(--color-primary);
     color: var(--color-primary);
+}
+
+.customer-detail--view .tab-nav.is-enhanced .tab-btn.active {
+    border-bottom-color: transparent;
+}
+
+.customer-detail--view .tab-indicator {
+    background: var(--color-primary);
+    block-size: 2px;
+    bottom: 0;
+    inline-size: 0;
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    transform: translateX(0);
+    transition:
+        inline-size var(--motion-base) var(--motion-ease),
+        transform var(--motion-base) var(--motion-ease);
 }
 
 .customer-detail--view .tab-btn:focus-visible {

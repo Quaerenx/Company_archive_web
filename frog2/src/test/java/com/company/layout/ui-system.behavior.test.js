@@ -102,12 +102,24 @@ class FakeElement extends Element {
         this.hidden = options.hidden === true;
         this.style = new StyleDeclaration();
         this.animations = [];
+        this.listeners = new Map();
     }
 
     animate(keyframes, options) {
         const animation = new FakeAnimation(keyframes, options);
         this.animations.push(animation);
         return animation;
+    }
+
+    addEventListener(name, listener) {
+        if (!this.listeners.has(name)) {
+            this.listeners.set(name, []);
+        }
+        this.listeners.get(name).push(listener);
+    }
+
+    dispatch(name, event) {
+        (this.listeners.get(name) || []).slice().forEach((listener) => listener(event));
     }
 
     closest(selector) {
@@ -167,6 +179,11 @@ class FakeElement extends Element {
 
     removeAttribute(name) {
         this.attributes.delete(name);
+    }
+
+    removeEventListener(name, listener) {
+        const registered = this.listeners.get(name) || [];
+        this.listeners.set(name, registered.filter((item) => item !== listener));
     }
 
     setAttribute(name, value) {
@@ -305,6 +322,7 @@ function createHarness(options = {}) {
             frames.push(callback);
             return frames.length;
         },
+        clearTimeout() {},
         setTimeout() {}
     };
 
@@ -413,6 +431,7 @@ test('dialog traps Tab, closes on Escape, and restores opener focus', () => {
     harness.flushFrames();
     assert.equal(controller.isOpen(), true);
     assert.equal(dialog.getAttribute('aria-hidden'), 'false');
+    assert.equal(dialog.getAttribute('inert'), null);
     assert.equal(harness.document.activeElement, first);
 
     last.focus();
@@ -432,7 +451,25 @@ test('dialog traps Tab, closes on Escape, and restores opener focus', () => {
     harness.flushFrames();
     assert.equal(controller.isOpen(), false);
     assert.equal(dialog.getAttribute('aria-hidden'), 'true');
+    assert.equal(dialog.getAttribute('inert'), '');
     assert.equal(harness.document.activeElement, opener);
+});
+
+test('successful button state replaces loading state with a check state', () => {
+    const harness = createHarness();
+    const button = new FakeElement(harness.document);
+    button.innerHTML = '<span>업로드</span>';
+    button.disabled = false;
+
+    harness.ui.setButtonLoading(button, true, '업로드 중');
+    assert.equal(button.classList.contains('is-loading'), true);
+
+    harness.ui.setButtonSuccess(button, '완료', 900);
+    assert.equal(button.classList.contains('is-loading'), false);
+    assert.equal(button.classList.contains('is-success'), true);
+    assert.equal(button.getAttribute('aria-disabled'), 'true');
+    assert.equal(button.disabled, true);
+    assert.equal(button.textContent, '완료');
 });
 
 test('clickable row navigates only for an unmodified primary click', () => {
@@ -517,26 +554,13 @@ test('shared disclosure animates open and close before hiding the detail', () =>
     assert.equal(detail.hidden, false);
     assert.equal(detail.getAttribute('aria-hidden'), null);
     assert.equal(detail.getAttribute('inert'), null);
-    assert.equal(content.animations.length, 1);
-    const opening = content.animations[0];
-    assert.deepEqual(JSON.parse(JSON.stringify(opening.keyframes)), [
-        {
-            height: '0px',
-            opacity: 0,
-            overflow: 'hidden'
-        },
-        {
-            height: '144px',
-            opacity: 1,
-            overflow: 'hidden'
-        }
-    ]);
-    assert.equal(opening.options.duration, 180);
-    assert.equal(opening.options.easing, 'cubic-bezier(0.42, 0, 0.58, 1)');
-    assert.equal(opening.options.fill, 'both');
-    opening.finish();
+    assert.equal(content.classList.contains('is-disclosure-expanded'), true);
+    assert.equal(content.animations.length, 0);
+    content.dispatch('transitionend', {
+        target: content,
+        propertyName: 'grid-template-rows'
+    });
     assert.equal(detail.hidden, false);
-    assert.equal(opening.cancelled, true);
 
     harness.document.dispatch('click', clickEvent(toggle));
 
@@ -545,26 +569,14 @@ test('shared disclosure animates open and close before hiding the detail', () =>
     assert.equal(detail.hidden, false);
     assert.equal(detail.getAttribute('aria-hidden'), 'true');
     assert.equal(detail.getAttribute('inert'), '');
-    assert.equal(content.animations.length, 2);
-    const closing = content.animations[1];
-    assert.deepEqual(JSON.parse(JSON.stringify(closing.keyframes)), [
-        {
-            height: '144px',
-            opacity: 1,
-            overflow: 'hidden'
-        },
-        {
-            height: '0px',
-            opacity: 0,
-            overflow: 'hidden'
-        }
-    ]);
-    assert.equal(closing.options.fill, 'both');
-    closing.finish();
+    assert.equal(content.classList.contains('is-disclosure-expanded'), false);
+    content.dispatch('transitionend', {
+        target: content,
+        propertyName: 'grid-template-rows'
+    });
     assert.equal(detail.hidden, true);
     assert.equal(detail.getAttribute('aria-hidden'), 'true');
     assert.equal(detail.getAttribute('inert'), '');
-    assert.equal(closing.cancelled, true);
 });
 
 test('shared disclosure skips animation when reduced motion is requested', () => {
@@ -577,6 +589,7 @@ test('shared disclosure skips animation when reduced motion is requested', () =>
     assert.equal(detail.hidden, false);
     assert.equal(detail.getAttribute('aria-hidden'), null);
     assert.equal(detail.getAttribute('inert'), null);
+    assert.equal(content.classList.contains('is-disclosure-expanded'), true);
     assert.equal(content.animations.length, 0);
 
     harness.document.dispatch('click', clickEvent(toggle));
@@ -585,6 +598,7 @@ test('shared disclosure skips animation when reduced motion is requested', () =>
     assert.equal(detail.hidden, true);
     assert.equal(detail.getAttribute('aria-hidden'), 'true');
     assert.equal(detail.getAttribute('inert'), '');
+    assert.equal(content.classList.contains('is-disclosure-expanded'), false);
     assert.equal(content.animations.length, 0);
 });
 
@@ -593,37 +607,32 @@ test('shared disclosure cancels rapid reversals and ignores stale finishes', () 
         = createAnimatedDisclosureHarness();
 
     harness.document.dispatch('click', clickEvent(toggle));
-    const firstOpen = content.animations[0];
+    assert.equal(content.classList.contains('is-disclosure-expanded'), true);
 
-    content.bounds = { bottom: 72, height: 72 };
     harness.document.dispatch('click', clickEvent(toggle));
-    const firstClose = content.animations[1];
-    assert.equal(firstOpen.cancelled, true);
-    assert.equal(firstClose.keyframes[0].height, '72px');
-    assert.equal(firstClose.keyframes[0].opacity, 0.5);
+    assert.equal(content.classList.contains('is-disclosure-expanded'), false);
 
-    content.bounds = { bottom: 36, height: 36 };
     harness.document.dispatch('click', clickEvent(toggle));
-    const latestOpen = content.animations[2];
-    assert.equal(firstClose.cancelled, true);
-    assert.equal(latestOpen.keyframes[0].height, '36px');
-    assert.equal(latestOpen.keyframes[0].opacity, 0.25);
+    assert.equal(content.classList.contains('is-disclosure-expanded'), true);
     assert.equal(toggle.getAttribute('aria-expanded'), 'true');
     assert.equal(detail.hidden, false);
 
-    firstOpen.finish();
-    firstClose.finish();
+    content.dispatch('transitionend', {
+        target: content,
+        propertyName: 'grid-template-rows'
+    });
     assert.equal(toggle.getAttribute('aria-expanded'), 'true');
     assert.equal(detail.hidden, false);
     assert.equal(detail.getAttribute('aria-hidden'), null);
 
     harness.document.dispatch('click', clickEvent(toggle));
-    const latestClose = content.animations[3];
-    assert.equal(latestOpen.cancelled, true);
     assert.equal(toggle.getAttribute('aria-expanded'), 'false');
     assert.equal(detail.hidden, false);
 
-    latestClose.finish();
+    content.dispatch('transitionend', {
+        target: content,
+        propertyName: 'grid-template-rows'
+    });
     assert.equal(detail.hidden, true);
     assert.equal(detail.getAttribute('aria-hidden'), 'true');
 });

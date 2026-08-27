@@ -10,19 +10,44 @@
     var maxFiles = 5;
     var maxFileSize = 10 * 1024 * 1024;
 
+    function setFileState(state, label) {
+        selected.querySelectorAll('.file-item').forEach(function (item) {
+            item.dataset.fileState = state;
+            var stateLabel = item.querySelector('.file-state');
+            if (stateLabel) {
+                stateLabel.textContent = label;
+            }
+        });
+    }
+
     function renderFiles() {
         selected.textContent = '';
         Array.prototype.forEach.call(input.files, function (file) {
             var item = document.createElement('div');
             item.className = 'file-item';
+            item.dataset.fileState = 'queued';
+            var summary = document.createElement('span');
+            summary.className = 'file-item__summary';
+            var stateMark = document.createElement('span');
+            stateMark.className = 'file-state-mark';
+            stateMark.setAttribute('aria-hidden', 'true');
             var name = document.createElement('span');
             name.className = 'file-name';
             name.textContent = file.name;
+            summary.appendChild(stateMark);
+            summary.appendChild(name);
+            var meta = document.createElement('span');
+            meta.className = 'file-item__meta';
             var size = document.createElement('span');
             size.className = 'file-size';
             size.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-            item.appendChild(name);
-            item.appendChild(size);
+            var fileState = document.createElement('span');
+            fileState.className = 'file-state';
+            fileState.textContent = '대기';
+            meta.appendChild(size);
+            meta.appendChild(fileState);
+            item.appendChild(summary);
+            item.appendChild(meta);
             selected.appendChild(item);
         });
     }
@@ -58,6 +83,7 @@
         }
 
         window.Frog2UI.setButtonLoading(button, true, '업로드 중');
+        setFileState('uploading', '업로드 중');
         window.Frog2UI.setStatus(status, '업로드 중입니다.', 'info');
         fetch(form.action, {
             method: 'POST',
@@ -81,6 +107,8 @@
                 status,
                 result.payload.files.length + '개 파일을 업로드했습니다.',
                 'success');
+            setFileState('complete', '완료');
+            window.Frog2UI.setButtonSuccess(button, '완료', 900);
             window.setTimeout(function () {
                 window.location.assign(form.dataset.successUrl);
             }, 700);
@@ -89,6 +117,7 @@
                 status,
                 error.message || '업로드에 실패했습니다.',
                 'danger');
+            setFileState('error', '오류');
             window.Frog2UI.setButtonLoading(button, false);
         });
     });

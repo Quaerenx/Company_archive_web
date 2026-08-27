@@ -9,6 +9,24 @@ document.addEventListener('DOMContentLoaded', function() {
 	var panels = customerDetailRoot
 		? Array.prototype.slice.call(customerDetailRoot.querySelectorAll('.tab-panel'))
 		: [];
+	var tabNavigation = customerDetailRoot
+		? customerDetailRoot.querySelector('.tab-nav')
+		: null;
+	var tabIndicator = tabNavigation
+		? tabNavigation.querySelector('.tab-indicator')
+		: null;
+
+	function syncTabIndicator() {
+		var activeTab = tabs.find(function(tab) {
+			return tab.classList.contains('active');
+		});
+		if (!tabNavigation || !tabIndicator || !activeTab) {
+			return;
+		}
+		tabNavigation.classList.add('is-enhanced');
+		tabIndicator.style.inlineSize = activeTab.offsetWidth + 'px';
+		tabIndicator.style.transform = 'translateX(' + activeTab.offsetLeft + 'px)';
+	}
 
 	function setActive(targetId) {
 		panels.forEach(function(panel) {
@@ -22,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			tab.setAttribute('aria-selected', String(isActive));
 			tab.tabIndex = isActive ? 0 : -1;
 		});
+		window.requestAnimationFrame(syncTabIndicator);
 	}
 
 	// 초기 활성 탭 결정: URL env 우선, 없으면 운영 > 스테이징 > 개발 순
@@ -39,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		else if (!devEmpty) initial = 'env-dev';
 	}
 	setActive(initial);
+	window.addEventListener('resize', syncTabIndicator);
 
 	tabs.forEach(function(tab){
 		tab.addEventListener('click', function(){

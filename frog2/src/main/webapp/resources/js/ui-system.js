@@ -4,6 +4,7 @@
     var MAX_TOASTS_PER_REGION = 3;
     var submittingForms = new WeakSet();
     var originalButtonState = new WeakMap();
+    var successfulButtonState = new WeakMap();
     var generatedId = 0;
     var openDialogCount = 0;
     var tableHeaderResizeObserver = null;
@@ -86,6 +87,47 @@
             originalButtonState.delete(button);
         }
         button.classList.remove('is-loading');
+    }
+
+    function restoreButtonSuccess(button) {
+        var state = successfulButtonState.get(button);
+        if (!state) {
+            return;
+        }
+        window.clearTimeout(state.timer);
+        button.innerHTML = state.markup;
+        button.disabled = state.disabled;
+        if (state.ariaDisabled === null) {
+            button.removeAttribute('aria-disabled');
+        } else {
+            button.setAttribute('aria-disabled', state.ariaDisabled);
+        }
+        button.classList.remove('is-success');
+        successfulButtonState.delete(button);
+    }
+
+    function setButtonSuccess(button, label, duration) {
+        if (!button) {
+            return;
+        }
+        setButtonLoading(button, false);
+        restoreButtonSuccess(button);
+
+        var state = {
+            markup: button.innerHTML,
+            disabled: button.disabled,
+            ariaDisabled: button.getAttribute('aria-disabled'),
+            timer: 0
+        };
+        successfulButtonState.set(button, state);
+        button.classList.add('is-success');
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+        button.textContent = label || '완료';
+        announce((label || '작업') + ' 완료');
+        state.timer = window.setTimeout(function () {
+            restoreButtonSuccess(button);
+        }, Number.isFinite(duration) ? Math.max(0, duration) : 1200);
     }
 
     function unlockForm(form) {
@@ -176,14 +218,24 @@
         toast.dataset.tone = resolvedTone;
 
         var content = document.createElement('span');
-        content.textContent = message;
+        content.className = 'ui-toast__message';
+        if (resolvedTone === 'success') {
+            var icon = document.createElement('span');
+            icon.className = 'ui-toast__icon';
+            icon.setAttribute('aria-hidden', 'true');
+            icon.textContent = '\u2713';
+            content.appendChild(icon);
+        }
+        var messageText = document.createElement('span');
+        messageText.textContent = message;
+        content.appendChild(messageText);
         var close = document.createElement('button');
         close.type = 'button';
         close.className = 'ui-toast__close';
         close.setAttribute('aria-label', '알림 닫기');
         close.textContent = '×';
         close.addEventListener('click', function () {
-            toast.remove();
+            dismissToast(toast);
         });
 
         toast.appendChild(content);
@@ -196,10 +248,25 @@
         var persistent = options && options.persistent;
         if (!persistent && resolvedTone === 'success') {
             window.setTimeout(function () {
-                toast.remove();
+                dismissToast(toast);
             }, 5000);
         }
         return toast;
+    }
+
+    function dismissToast(toast) {
+        if (!toast || toast.classList.contains('is-leaving')) {
+            return;
+        }
+        toast.classList.add('is-leaving');
+        toast.setAttribute('aria-hidden', 'true');
+        var remove = function () {
+            if (toast.isConnected) {
+                toast.remove();
+            }
+        };
+        toast.addEventListener('animationend', remove, { once: true });
+        window.setTimeout(remove, 240);
     }
 
     function setStatus(element, message, tone) {
@@ -300,6 +367,7 @@
                 : document.activeElement;
             opened = true;
             openDialogCount += 1;
+            dialog.removeAttribute('inert');
             dialog.classList.add('show');
             dialog.setAttribute('aria-hidden', 'false');
             document.body.classList.add('ui-dialog-open');
@@ -315,6 +383,7 @@
             openDialogCount = Math.max(0, openDialogCount - 1);
             dialog.classList.remove('show');
             dialog.setAttribute('aria-hidden', 'true');
+            dialog.setAttribute('inert', '');
             document.removeEventListener('keydown', handleKeydown);
             if (openDialogCount === 0) {
                 document.body.classList.remove('ui-dialog-open');
@@ -475,14 +544,29 @@
         );
     }
 
-    var disclosureAnimations = new WeakMap();
+    var disclosureTransitions = new WeakMap();
 
     function prefersReducedDisclosureMotion() {
         return typeof window.matchMedia === 'function'
             && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
-    function finishDisclosureImmediately(detail, expanded) {
+    function clearDisclosureTransition(detail) {
+        var state = disclosureTransitions.get(detail);
+        if (!state) {
+            return;
+        }
+        if (state.content && typeof state.content.removeEventListener === 'function') {
+            state.content.removeEventListener('transitionend', state.handleTransitionEnd);
+        }
+        window.clearTimeout(state.fallbackTimer);
+        disclosureTransitions.delete(detail);
+    }
+
+    function finishDisclosureImmediately(detail, content, expanded) {
+        if (content) {
+            content.classList.toggle('is-disclosure-expanded', expanded);
+        }
         detail.hidden = !expanded;
         if (expanded) {
             detail.removeAttribute('aria-hidden');
@@ -495,25 +579,14 @@
 
     function animateDisclosure(detail, toggle, expanded) {
         var content = detail.querySelector('[data-ui-disclosure-content]');
-        var runningAnimation = disclosureAnimations.get(detail);
-        var interruptedHeight = null;
-        if (runningAnimation) {
-            if (content && typeof content.getBoundingClientRect === 'function') {
-                var interruptedRect = content.getBoundingClientRect();
-                if (interruptedRect && Number.isFinite(interruptedRect.height)) {
-                    interruptedHeight = Math.max(0, interruptedRect.height);
-                }
-            }
-            runningAnimation.cancel();
-            disclosureAnimations.delete(detail);
-        }
+        clearDisclosureTransition(detail);
 
-        if (!content || typeof content.animate !== 'function'
-                || prefersReducedDisclosureMotion()) {
-            finishDisclosureImmediately(detail, expanded);
+        if (!content || prefersReducedDisclosureMotion()) {
+            finishDisclosureImmediately(detail, content, expanded);
             return;
         }
 
+        var wasHidden = detail.hidden;
         detail.hidden = false;
         if (expanded) {
             detail.removeAttribute('aria-hidden');
@@ -523,57 +596,37 @@
             detail.setAttribute('inert', '');
         }
 
-        var contentHeight = content.scrollHeight;
-        if (!Number.isFinite(contentHeight) || contentHeight <= 0) {
-            finishDisclosureImmediately(detail, expanded);
-            return;
+        if (expanded && wasHidden && typeof content.getBoundingClientRect === 'function') {
+            // Flush the collapsed frame after unhiding the table row so the
+            // browser interpolates from 0fr instead of painting it open.
+            content.getBoundingClientRect();
         }
+        content.classList.toggle('is-disclosure-expanded', expanded);
 
-        var targetHeight = expanded ? contentHeight : 0;
-        var startHeight = interruptedHeight === null
-            ? (expanded ? 0 : contentHeight)
-            : Math.min(interruptedHeight, contentHeight);
-        var startOpacity = contentHeight > 0 ? startHeight / contentHeight : 0;
-        var startFrame = {
-            height: startHeight + 'px',
-            opacity: startOpacity,
-            overflow: 'hidden'
+        var state = {
+            content: content,
+            fallbackTimer: 0,
+            handleTransitionEnd: null
         };
-        var endFrame = {
-            height: targetHeight + 'px',
-            opacity: expanded ? 1 : 0,
-            overflow: 'hidden'
-        };
-        var animation;
-        try {
-            animation = content.animate(
-                [startFrame, endFrame],
-                {
-                    duration: 180,
-                    easing: 'cubic-bezier(0.42, 0, 0.58, 1)',
-                    fill: 'both'
-                }
-            );
-        } catch (error) {
-            finishDisclosureImmediately(detail, expanded);
-            return;
-        }
-
-        disclosureAnimations.set(detail, animation);
-        animation.onfinish = function () {
-            if (disclosureAnimations.get(detail) !== animation) {
+        var finish = function () {
+            if (disclosureTransitions.get(detail) !== state) {
                 return;
             }
-            disclosureAnimations.delete(detail);
+            clearDisclosureTransition(detail);
             var stillExpanded = toggle.getAttribute('aria-expanded') === 'true';
-            finishDisclosureImmediately(detail, stillExpanded);
-            animation.cancel();
+            finishDisclosureImmediately(detail, content, stillExpanded);
         };
-        animation.oncancel = function () {
-            if (disclosureAnimations.get(detail) === animation) {
-                disclosureAnimations.delete(detail);
+        state.handleTransitionEnd = function (event) {
+            if (event.target === content
+                    && event.propertyName === 'grid-template-rows') {
+                finish();
             }
         };
+        if (typeof content.addEventListener === 'function') {
+            content.addEventListener('transitionend', state.handleTransitionEnd);
+        }
+        disclosureTransitions.set(detail, state);
+        state.fallbackTimer = window.setTimeout(finish, 260);
     }
 
     function toggleDisclosure(toggle) {
@@ -684,6 +737,7 @@
         createDialogController: createDialogController,
         notify: notify,
         setButtonLoading: setButtonLoading,
+        setButtonSuccess: setButtonSuccess,
         setStatus: setStatus,
         showFieldError: showFieldError,
         unlockForm: unlockForm

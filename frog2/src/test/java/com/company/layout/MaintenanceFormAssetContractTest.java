@@ -202,7 +202,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "<tr id=\"${row.detailId}\" class=\"history-detail-row\" hidden>"));
         assertTrue(comparisonTable.contains(
-                "<td class=\"history-detail-cell\" colspan=\"6\">"));
+                "<td class=\"history-detail-cell ui-disclosure-cell\" colspan=\"6\">"));
         assertFalse(comparisonTable.contains("data-history-toggle"));
         assertFalse(comparisonTable.contains("fa-chevron-down"));
         assertFalse(comparisonTable.contains("history-detail-toggle-cell"));

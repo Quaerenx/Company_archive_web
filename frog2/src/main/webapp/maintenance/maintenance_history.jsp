@@ -325,10 +325,11 @@
                                     </td>
                                 </tr>
                                 <tr id="${row.detailId}" class="history-detail-row" hidden>
-                                    <td class="history-detail-cell" colspan="6">
+                                    <td class="history-detail-cell ui-disclosure-cell" colspan="6">
                                         <div class="history-detail-motion"
                                              data-ui-disclosure-content>
-                                            <div class="history-detail-content">
+                                            <div class="ui-disclosure-clip">
+                                              <div class="history-detail-content">
                                                 <section class="history-detail-section history-detail-summary"
                                                          aria-label="라이선스 요약">
                                                     <h3>라이선스 요약</h3>
@@ -398,6 +399,7 @@
                                                            href="<c:out value='${maintenanceEditUrl}' />">이력 수정</a>
                                                     </section>
                                                 </div>
+                                              </div>
                                             </div>
                                         </div>
                                     </td>

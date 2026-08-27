@@ -299,6 +299,20 @@ body.ui-system .content-shell {
     block-size: 1em;
 }
 
+.ui-system .ui-button.is-success {
+    background: var(--color-success-strong);
+    border-color: var(--color-success-strong);
+    color: var(--color-on-primary);
+    pointer-events: none;
+}
+
+.ui-system .ui-button.is-success::before {
+    content: "\2713";
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    line-height: 1;
+}
+
 /* Forms */
 .ui-system .ui-form-actions {
     align-items: center;
@@ -626,6 +640,32 @@ body.ui-system .content-shell {
     pointer-events: auto;
 }
 
+.ui-toast.is-leaving {
+    animation: frog2-ui-toast-out var(--motion-base) var(--motion-ease-in) forwards;
+    pointer-events: none;
+}
+
+.ui-toast__message {
+    align-items: flex-start;
+    display: flex;
+    gap: var(--space-8);
+    min-inline-size: 0;
+}
+
+.ui-toast__icon {
+    align-items: center;
+    background: var(--color-success-bg);
+    border-radius: var(--radius-pill);
+    color: var(--color-success-text);
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    block-size: 20px;
+    inline-size: 20px;
+    justify-content: center;
+}
+
 .ui-toast[data-tone="success"] {
     border-inline-start-color: var(--color-success);
 }
@@ -760,6 +800,27 @@ body.ui-system .content-shell {
 }
 
 /*
+ * Disclosure rows use a fractional track at both endpoints. Unlike a
+ * measured pixel height, 1fr follows wrapped content without snapping to
+ * height:auto after the transition.
+ */
+.ui-system [data-ui-disclosure-content] {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--motion-base) var(--motion-ease);
+}
+
+.ui-system [data-ui-disclosure-content] > .ui-disclosure-clip {
+    min-block-size: 0;
+    min-inline-size: 0;
+    overflow: hidden;
+}
+
+.ui-system [data-ui-disclosure-content].is-disclosure-expanded {
+    grid-template-rows: 1fr;
+}
+
+/*
  * Sticky headers are enabled only after JavaScript confirms that the table
  * does not need horizontal scrolling. This avoids competing scroll
  * containers on narrow screens while keeping long desktop lists readable.
@@ -815,6 +876,12 @@ body.ui-system .content-shell {
     padding: var(--space-8) var(--space-12);
     text-align: left;
     vertical-align: middle;
+}
+
+.ui-system .ui-data-table .ui-disclosure-cell {
+    block-size: auto;
+    border-block-end: 0;
+    padding: 0;
 }
 
 .ui-system .ui-data-table thead th {
@@ -1051,6 +1118,17 @@ body.ui-dialog-open {
     }
 }
 
+@keyframes frog2-ui-toast-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(calc(var(--space-8) * -1));
+    }
+}
+
 /* Native entry styles enhance the existing keyframe fallback when supported. */
 @starting-style {
     .ui-system .ui-toast {
@@ -1167,7 +1245,10 @@ body.ui-dialog-open {
 @media (prefers-reduced-motion: reduce) {
     .ui-system .ui-button,
     .ui-system form.ui-form :is(input, select, textarea),
-    .ui-system .ui-toast {
+    .ui-system .ui-toast,
+    .ui-system .modal,
+    .ui-system .modal-content,
+    .ui-system [data-ui-disclosure-content] {
         animation-duration: 0.01ms;
         animation-iteration-count: 1;
         transition-duration: 0.01ms;

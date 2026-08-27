@@ -102,6 +102,7 @@
                 <button type="button" id="env-dev-tab" class="tab-btn ui-touch-target"
                         role="tab" aria-selected="false" aria-controls="env-dev" tabindex="-1"
                         data-target="env-dev">개발</button>
+                <span class="tab-indicator" aria-hidden="true"></span>
             </div>
             <div class="tab-panel active" id="env-prod" role="tabpanel" aria-labelledby="env-prod-tab">
                 <c:if test="${empty customerDetail}">

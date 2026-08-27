@@ -204,7 +204,7 @@
 }
 
 .main-nav .dropdown-menu {
-    display: none;
+    display: block;
     position: absolute;
     top: 100%;
     left: 0;
@@ -216,6 +216,15 @@
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(var(--space-4) * -1)) scale(0.99);
+    transform-origin: top left;
+    transition:
+        opacity var(--motion-fast) var(--motion-ease),
+        transform var(--motion-fast) var(--motion-ease),
+        visibility 0s linear var(--motion-fast);
+    visibility: hidden;
     z-index: var(--z-dropdown);
 }
 
@@ -223,6 +232,11 @@
 .main-header:not(.nav-enhanced) .main-nav .dropdown:hover > .dropdown-menu,
 .main-header:not(.nav-enhanced) .main-nav .dropdown:focus-within > .dropdown-menu {
     display: block;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    transition-delay: 0s;
+    visibility: visible;
 }
 
 .main-nav .dropdown-menu li {
@@ -579,6 +593,18 @@
         border-left: 2px solid var(--neutral-200);
         border-radius: 0;
         box-shadow: none;
+    }
+
+    .main-nav .dropdown:not(.open) > .dropdown-menu {
+        display: none;
+    }
+
+    .main-nav .dropdown.open > .dropdown-menu {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+        visibility: visible;
     }
 
     .main-nav .dropdown-menu a {

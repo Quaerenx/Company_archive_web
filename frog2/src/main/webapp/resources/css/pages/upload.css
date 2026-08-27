@@ -102,6 +102,57 @@
     padding: var(--space-12) var(--space-16);
 }
 
+.page-file-upload .file-item__summary {
+    align-items: center;
+    display: flex;
+    gap: var(--space-8);
+    min-inline-size: 0;
+}
+
+.page-file-upload .file-state-mark {
+    background: var(--color-text-muted);
+    border-radius: var(--radius-pill);
+    block-size: 8px;
+    flex: 0 0 auto;
+    inline-size: 8px;
+    transition: background-color var(--motion-fast) var(--motion-ease);
+}
+
+.page-file-upload .file-item[data-file-state="uploading"] .file-state-mark {
+    animation: file-upload-pulse var(--motion-loading) var(--motion-ease-in-out) infinite alternate;
+    background: var(--color-primary);
+}
+
+.page-file-upload .file-item[data-file-state="complete"] .file-state-mark {
+    background: var(--color-success);
+}
+
+.page-file-upload .file-item[data-file-state="error"] .file-state-mark {
+    background: var(--color-danger);
+}
+
+.page-file-upload .file-item__meta {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--space-12);
+}
+
+.page-file-upload .file-state {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    min-inline-size: 54px;
+    text-align: end;
+}
+
+.page-file-upload .file-item[data-file-state="complete"] .file-state {
+    color: var(--color-success-text);
+}
+
+.page-file-upload .file-item[data-file-state="error"] .file-state {
+    color: var(--color-danger-text);
+}
+
 .page-file-upload .file-name {
     color: var(--color-text);
     font-size: var(--font-size-sm);
@@ -130,6 +181,17 @@
     justify-content: flex-end;
 }
 
+@keyframes file-upload-pulse {
+    from { opacity: 0.45; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-file-upload .file-item[data-file-state="uploading"] .file-state-mark {
+        animation: none;
+    }
+}
+
 @media (max-width: 768px) {
     .page-file-upload .upload-container {
         padding: var(--space-20);
@@ -147,5 +209,15 @@
 
     .page-file-upload .upload-actions .ui-button {
         width: 100%;
+    }
+
+    .page-file-upload .file-item {
+        align-items: flex-start;
+    }
+
+    .page-file-upload .file-item__meta {
+        align-items: flex-end;
+        flex-direction: column;
+        gap: var(--space-4);
     }
 }

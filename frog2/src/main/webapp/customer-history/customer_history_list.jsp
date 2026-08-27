@@ -163,10 +163,11 @@
                                 <tr id="customer-history-detail-<c:out value='${history.id}' />"
                                     class="customer-history-detail-row"
                                     hidden>
-                                    <td colspan="5">
+                                    <td class="ui-disclosure-cell" colspan="5">
                                         <div class="customer-history-detail-motion"
                                              data-ui-disclosure-content>
-                                            <dl class="customer-history-detail">
+                                            <div class="ui-disclosure-clip">
+                                              <dl class="customer-history-detail">
                                                 <div>
                                                     <dt>작업 내용</dt>
                                                     <dd><strong><c:out value="${history.title}" /></strong></dd>
@@ -175,7 +176,8 @@
                                                     <dt>조치사항</dt>
                                                     <dd><c:out value="${history.actionSummary}" /></dd>
                                                 </div>
-                                            </dl>
+                                              </dl>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>

@@ -311,7 +311,6 @@
 
 .maintenance-history .history-detail-cell {
     background: var(--color-surface-subtle);
-    padding: 0;
 }
 
 .maintenance-history .history-detail-content {
