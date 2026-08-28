@@ -158,7 +158,11 @@ class CssLayoutStructureTest {
         String cardsScript = Files.readString(
                 WEBAPP.resolve("resources/js/pages/maintenance_cards.js"));
         assertFalse(cardsScript.contains(".style."));
+        assertFalse(cardsScript.contains("mouseenter"));
+        assertFalse(cardsScript.contains("mouseleave"));
+        assertFalse(cardsScript.contains("is-hovered"));
         assertTrue(cardsScript.contains("classList.add('is-loading')"));
+        assertFalse(cardsCss.contains(".customer-card.is-hovered"));
 
         String history = Files.readString(
                 WEBAPP.resolve("maintenance/maintenance_history.jsp"));
@@ -423,7 +427,10 @@ class CssLayoutStructureTest {
                         || line.startsWith(".troubleshooting-table")));
         assertTrue(listCss.contains(
                 ".troubleshooting-management .troubleshooting-table"));
-        assertTrue(listCss.contains("min-width: 720px;"));
+        assertFalse(listCss.contains("min-width: 720px;"));
+        assertTrue(listCss.contains(
+                ".troubleshooting-management .troubleshooting-row-meta"));
+        assertTrue(list.contains("class=\"troubleshooting-row-meta\""));
         assertFalse(listCss.contains("nth-child"));
         assertTrue(Files.readString(WEBAPP.resolve(
                 "troubleshooting/troubleshooting_list.jsp")).contains("col--customer"));
@@ -462,11 +469,12 @@ class CssLayoutStructureTest {
         String styles = Files.readString(
                 CSS.resolve("pages/monthly_customer_response.css"));
         assertTrue(styles.contains(".monthly-response-page .filter-card"));
-        assertTrue(styles.contains(".monthly-response-page .data-table"));
+        assertTrue(styles.contains(
+                ".monthly-response-page .monthly-response-table"));
         assertTrue(styles.contains(".monthly-response-page #responseModal"));
         assertFalse(styles.lines().map(String::stripLeading)
                 .anyMatch(line -> line.startsWith(".filter-card")
-                        || line.startsWith(".data-table")
+                        || line.startsWith(".monthly-response-table")
                         || line.startsWith("#responseModal")));
     }
 

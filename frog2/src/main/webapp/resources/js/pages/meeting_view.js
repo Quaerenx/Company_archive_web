@@ -214,6 +214,7 @@
                         return {};
                     })
                     .then(function(payload) {
+                        window.Frog2Session.requireActiveSession(response);
                         if (!response.ok) {
                             throw new Error(payload.message || fallbackMessage);
                         }
@@ -239,6 +240,9 @@
                     { persistent: true });
             })
             .catch(function(error) {
+                if (window.Frog2Session.isSessionExpired(error)) {
+                    return;
+                }
                 window.Frog2UI.notify(
                     error.message || fallbackMessage,
                     'danger',

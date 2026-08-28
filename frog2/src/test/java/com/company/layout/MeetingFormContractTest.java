@@ -65,6 +65,10 @@ class MeetingFormContractTest {
         assertTrue(editPage.contains("id=\"deleteForm\""));
         assertTrue(formFields.contains("data-meeting-action=\"insert-template\""));
         assertTrue(formFields.contains("id=\"contentCount\""));
+        assertFalse(formFields.contains("id=\"contentCount\" aria-live="));
+        assertFalse(formFields.contains("aria-live=\"polite\""));
+        assertTrue(writeBehavior.contains(
+                "Array.from(fields.content.value).length + '자'"));
         assertFalse(formFields.contains("공간 확보용"));
     }
 

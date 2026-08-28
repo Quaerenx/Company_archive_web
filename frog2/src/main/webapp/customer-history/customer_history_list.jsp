@@ -101,7 +101,7 @@
                                 <th scope="col" class="col--customer">고객사</th>
                                 <th scope="col" class="col--type">유형</th>
                                 <th scope="col" class="col--work">작업 내용</th>
-                                <th scope="col" class="col--status">상태</th>
+                                <th scope="col" class="col--action"><span class="sr-only">작업</span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -114,8 +114,7 @@
                                     <c:param name="returnQ" value="${q}" />
                                     <c:param name="returnPage" value="${currentPage}" />
                                 </c:url>
-                                <tr class="customer-history-summary-row"
-                                    data-ui-disclosure-row>
+                                <tr class="customer-history-summary-row">
                                     <td class="col--date">
                                         <time datetime="<c:out value='${history.workDate}' />">
                                             <c:out value="${history.workDate}" />
@@ -130,55 +129,22 @@
                                         </span>
                                     </td>
                                     <td class="col--work">
-                                        <button type="button"
-                                                class="customer-history-detail-toggle"
-                                                data-ui-disclosure-toggle
-                                                aria-expanded="false"
-                                                aria-controls="customer-history-detail-<c:out value='${history.id}' />"
-                                                aria-label="<c:out value='${history.customerName}' /> <c:out value='${history.workDate}' /> <c:out value='${history.title}' /> 이력 상세">
-                                            <span class="customer-history-work" aria-hidden="true">
-                                                <strong><c:out value="${history.title}" /></strong>
-                                                <c:if test="${history.actionSummary ne history.title}">
-                                                    <span><c:out value="${history.actionSummary}" /></span>
-                                                </c:if>
-                                            </span>
-                                        </button>
-                                    </td>
-                                    <td class="col--status">
-                                        <div class="customer-history-status-actions">
-                                            <span class="customer-history-status customer-history-status--${history.status.tone}">
-                                                <c:out value="${history.status.label}" />
-                                            </span>
-                                            <c:if test="${history.creatorUserId eq currentUserId}">
-                                                <a href="<c:out value='${editHistoryUrl}' />"
-                                                   class="customer-history-edit-link ui-button button--ghost button--sm"
-                                                   title="이력 수정">
-                                                    <i class="fas fa-pen" aria-hidden="true"></i>
-                                                    <span class="sr-only"><c:out value="${history.customerName}" /> <c:out value="${history.workDate}" /> 이력 수정</span>
-                                                </a>
+                                        <div class="customer-history-work">
+                                            <strong><c:out value="${history.title}" /></strong>
+                                            <c:if test="${history.actionSummary ne history.title}">
+                                                <span><c:out value="${history.actionSummary}" /></span>
                                             </c:if>
                                         </div>
                                     </td>
-                                </tr>
-                                <tr id="customer-history-detail-<c:out value='${history.id}' />"
-                                    class="customer-history-detail-row"
-                                    hidden>
-                                    <td class="ui-disclosure-cell" colspan="5">
-                                        <div class="customer-history-detail-motion"
-                                             data-ui-disclosure-content>
-                                            <div class="ui-disclosure-clip">
-                                              <dl class="customer-history-detail">
-                                                <div>
-                                                    <dt>작업 내용</dt>
-                                                    <dd><strong><c:out value="${history.title}" /></strong></dd>
-                                                </div>
-                                                <div>
-                                                    <dt>조치사항</dt>
-                                                    <dd><c:out value="${history.actionSummary}" /></dd>
-                                                </div>
-                                              </dl>
-                                            </div>
-                                        </div>
+                                    <td class="col--action">
+                                        <c:if test="${history.creatorUserId eq currentUserId}">
+                                            <a href="<c:out value='${editHistoryUrl}' />"
+                                               class="customer-history-edit-link ui-button button--ghost button--sm"
+                                               title="이력 수정">
+                                                <i class="fas fa-pen" aria-hidden="true"></i>
+                                                <span class="sr-only"><c:out value="${history.customerName}" /> <c:out value="${history.workDate}" /> 이력 수정</span>
+                                            </a>
+                                        </c:if>
                                     </td>
                                 </tr>
                             </c:forEach>

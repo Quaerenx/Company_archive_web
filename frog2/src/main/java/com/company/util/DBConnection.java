@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * HikariCP Connection Pool을 사용하는 데이터베이스 연결 유틸리티
@@ -25,7 +26,8 @@ public class DBConnection {
             "jdbc.queryTimeoutSeconds";
     private static final String[] REQUIRED_PROPERTIES = { "db.url", "db.user", "db.password", "db.driver" };
     private static final Logger logger = LoggerFactory.getLogger(DBConnection.class);
-    private static HikariDataSource dataSource;
+    private static final AtomicReference<HikariDataSource> DATA_SOURCE =
+            new AtomicReference<>();
     private static int queryTimeoutSeconds;
     
     static {
@@ -76,7 +78,11 @@ public class DBConnection {
         // Leak Detection (개발 환경용 - 운영에서는 비활성화 권장)
         config.setLeakDetectionThreshold(60000); // 60초
         
-        dataSource = new HikariDataSource(config);
+        HikariDataSource initializedDataSource = new HikariDataSource(config);
+        if (!DATA_SOURCE.compareAndSet(null, initializedDataSource)) {
+            initializedDataSource.close();
+            throw new IllegalStateException("DataSource가 이미 초기화되었습니다.");
+        }
         
         logger.info(
                 "Connection Pool 설정 완료 - MaxPoolSize: {}, MinIdle: {}, ReadOnly: {}, QueryTimeoutSeconds: {}",
@@ -134,20 +140,23 @@ public class DBConnection {
      * @throws SQLException 연결 실패 시
      */
     public static Connection getConnection() throws SQLException {
-        if (dataSource == null) {
+        HikariDataSource currentDataSource = DATA_SOURCE.get();
+        if (currentDataSource == null) {
             throw new SQLException("DataSource가 초기화되지 않았습니다.");
         }
         
         Connection conn = JdbcConnectionDecorator.decorate(
-                JdbcConnectionAcquisition.acquire(dataSource::getConnection),
+                JdbcConnectionAcquisition.acquire(currentDataSource::getConnection),
                 queryTimeoutSeconds,
                 ApplicationEnvironment.isReadOnly());
         if (logger.isDebugEnabled()) {
-            HikariPoolMXBean pool = dataSource.getHikariPoolMXBean();
-            logger.debug("Connection 획득 - Active: {}, Idle: {}, Total: {}",
-                    pool.getActiveConnections(),
-                    pool.getIdleConnections(),
-                    pool.getTotalConnections());
+            HikariPoolMXBean pool = currentDataSource.getHikariPoolMXBean();
+            if (pool != null) {
+                logger.debug("Connection 획득 - Active: {}, Idle: {}, Total: {}",
+                        pool.getActiveConnections(),
+                        pool.getIdleConnections(),
+                        pool.getTotalConnections());
+            }
         }
         
         return conn;
@@ -173,16 +182,25 @@ public class DBConnection {
      * Connection Pool 통계 정보 조회 (모니터링용)
      */
     public static String getPoolStats() {
-        if (dataSource == null) {
+        HikariDataSource currentDataSource = DATA_SOURCE.get();
+        if (currentDataSource == null) {
             return "DataSource not initialized";
         }
-        
+
+        return getPoolStats(currentDataSource);
+    }
+
+    private static String getPoolStats(HikariDataSource currentDataSource) {
+        HikariPoolMXBean pool = currentDataSource.getHikariPoolMXBean();
+        if (pool == null) {
+            return "DataSource pool unavailable";
+        }
         return String.format(
             "Pool Stats - Active: %d, Idle: %d, Total: %d, Waiting: %d",
-            dataSource.getHikariPoolMXBean().getActiveConnections(),
-            dataSource.getHikariPoolMXBean().getIdleConnections(),
-            dataSource.getHikariPoolMXBean().getTotalConnections(),
-            dataSource.getHikariPoolMXBean().getThreadsAwaitingConnection()
+            pool.getActiveConnections(),
+            pool.getIdleConnections(),
+            pool.getTotalConnections(),
+            pool.getThreadsAwaitingConnection()
         );
     }
     
@@ -191,11 +209,11 @@ public class DBConnection {
      * ServletContextListener에서 호출해야 합니다.
      */
     public static void shutdown() {
-        if (dataSource != null && !dataSource.isClosed()) {
+        HikariDataSource closingDataSource = DATA_SOURCE.getAndSet(null);
+        if (closingDataSource != null && !closingDataSource.isClosed()) {
             logger.info("Connection Pool 종료 시작...");
-            logger.info("최종 통계: {}", getPoolStats());
-            dataSource.close();
-            dataSource = null;
+            logger.info("최종 통계: {}", getPoolStats(closingDataSource));
+            closingDataSource.close();
             logger.info("Connection Pool 종료 완료");
         }
         try {

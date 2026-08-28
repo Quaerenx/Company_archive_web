@@ -1,14 +1,20 @@
 import java.util.jar.JarFile
 
 def jspcCatalinaHome = providers.gradleProperty('frog2JspcCatalinaHome')
+        .orElse(providers.environmentVariable('FROG2_JSPC_CATALINA_HOME'))
         .orElse('/opt/tomcat-dev-home/current')
 def expectedJasperVersion = providers.gradleProperty('frog2JspcJasperVersion')
+        .orElse(providers.environmentVariable('FROG2_JSPC_JASPER_VERSION'))
         .orElse('10.1.59')
 def jspcRoot = layout.buildDirectory.dir('jspc')
 def jspcWebapp = jspcRoot.map { it.dir('webapp') }
+def jspcRawGeneratedSources = jspcRoot.map { it.dir('generated-raw') }
 def jspcGeneratedSources = jspcRoot.map { it.dir('generated') }
 def jspcCompiledClasses = jspcRoot.map { it.dir('classes') }
 def jspcWebFragment = jspcRoot.map { it.file('generated-web.xml') }
+def jspcMergedWebXml = jspcRoot.map { it.file('web.xml') }
+def jspcPreparedWebXml = jspcWebapp.map { it.file('WEB-INF/web.xml') }
+def reproducibleSourceTimestamp = 315532800000L
 
 def jspcTomcatLibraries = files(providers.provider {
     File catalinaHome = file(jspcCatalinaHome.get())
@@ -67,12 +73,31 @@ def verifyJspcEnvironment = tasks.register('verifyJspcEnvironment') {
 
 def prepareJspcWebapp = tasks.register('prepareJspcWebapp', Sync) {
     group = 'verification'
-    description = 'Expands the reproducible WAR for JSP source generation.'
-    dependsOn tasks.named('war')
-    from {
-        zipTree(tasks.named('war').get().archiveFile.get().asFile)
+    description = 'Stages the web application for reproducible JSP source generation.'
+    dependsOn tasks.named('classes')
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    from(layout.projectDirectory.dir('src/main/webapp')) {
+        exclude 'META-INF/MANIFEST.MF'
+        exclude '**/.classpath', '**/.project', '**/.settings/**'
+        exclude '**/build/**', '**/db.properties', '**/db.properties.*'
+        exclude 'WEB-INF/classes/db/**'
+    }
+    from(sourceSets.main.output) {
+        into 'WEB-INF/classes'
+    }
+    from(configurations.runtimeClasspath) {
+        into 'WEB-INF/lib'
     }
     into jspcWebapp
+    doLast {
+        jspcWebapp.get().asFile.eachFileRecurse { File preparedFile ->
+            if (preparedFile.isFile()
+                    && !preparedFile.setLastModified(reproducibleSourceTimestamp)) {
+                throw new GradleException(
+                        "Unable to normalize JspC input timestamp: ${preparedFile}")
+            }
+        }
+    }
 }
 
 def generateJspSources = tasks.register('generateJspSources', JavaExec) {
@@ -84,25 +109,80 @@ def generateJspSources = tasks.register('generateJspSources', JavaExec) {
     }
     classpath = jspcTomcatLibraries + jspcGradleAntLibraries
     mainClass = 'org.apache.jasper.JspC'
-    inputs.file(tasks.named('war').flatMap { it.archiveFile })
-    outputs.dir(jspcGeneratedSources)
+    inputs.dir(jspcWebapp)
+    outputs.dir(jspcRawGeneratedSources)
     outputs.file(jspcWebFragment)
     doFirst {
-        delete jspcGeneratedSources
-        jspcGeneratedSources.get().asFile.mkdirs()
+        delete jspcRawGeneratedSources
+        jspcRawGeneratedSources.get().asFile.mkdirs()
         jspcWebFragment.get().asFile.parentFile.mkdirs()
-        args '-webapp', jspcWebapp.get().asFile.absolutePath,
-                '-d', jspcGeneratedSources.get().asFile.absolutePath,
+        File webappRoot = jspcWebapp.get().asFile
+        List<String> jspPages = fileTree(webappRoot) {
+            include '**/*.jsp'
+        }.files.collect { File jsp ->
+            webappRoot.toPath().relativize(jsp.toPath())
+                    .toString().replace(File.separatorChar, '/' as char)
+        }.sort()
+        setArgs(['-webapp', webappRoot.absolutePath,
+                '-d', jspcRawGeneratedSources.get().asFile.absolutePath,
                 '-webinc', jspcWebFragment.get().asFile.absolutePath,
                 '-failFast',
-                '-javaEncoding', 'UTF-8'
+                '-threadCount', '1',
+                '-javaEncoding', 'UTF-8'] + jspPages)
+    }
+}
+
+def normalizeJspSources = tasks.register('normalizeJspSources') {
+    group = 'verification'
+    description = 'Removes build-path-only TLD dependency entries from generated JSP sources.'
+    dependsOn generateJspSources
+    inputs.dir(jspcRawGeneratedSources)
+    outputs.dir(jspcGeneratedSources)
+    doLast {
+        File rawRoot = jspcRawGeneratedSources.get().asFile
+        File normalizedRoot = jspcGeneratedSources.get().asFile
+        delete normalizedRoot
+        normalizedRoot.mkdirs()
+
+        fileTree(rawRoot) {
+            include '**/*.java'
+        }.files.sort { left, right -> left.path <=> right.path }.each { File rawSource ->
+            String source = rawSource.getText('UTF-8')
+            List<String> normalizedLines = []
+            source.readLines().each { String line ->
+                def tldDependency = line =~ /_jspx_dependants\.put\("jar:file:.*\/WEB-INF\/lib\/([^\/"]+)!\/META-INF\/[^\"]+\.tld", Long\.valueOf\([^)]*\)\);/
+                if (tldDependency.find()) {
+                    String libraryName = tldDependency.group(1)
+                    String packagedLibraryDependency =
+                            '_jspx_dependants.put("/WEB-INF/lib/' + libraryName + '"'
+                    if (!source.contains(packagedLibraryDependency)) {
+                        throw new GradleException(
+                                "Cannot normalize TLD dependency without packaged library dependency: ${line}")
+                    }
+                } else {
+                    normalizedLines.add(line)
+                }
+            }
+
+            String normalized = normalizedLines.join('\n') + '\n'
+            String stagingPath = jspcWebapp.get().asFile.absolutePath
+                    .replace(File.separatorChar, '/' as char)
+            if (normalized.replace('\\', '/').contains(stagingPath)) {
+                throw new GradleException(
+                        "Generated JSP source still contains the staging path: ${rawSource}")
+            }
+            File relativeSource = rawRoot.toPath().relativize(rawSource.toPath()).toFile()
+            File outputSource = new File(normalizedRoot, relativeSource.path)
+            outputSource.parentFile.mkdirs()
+            outputSource.setText(normalized, 'UTF-8')
+        }
     }
 }
 
 def compileJspJava22 = tasks.register('compileJspJava22', JavaCompile) {
     group = 'verification'
     description = 'Compiles generated JSP servlet sources with javac --release 22.'
-    dependsOn generateJspSources
+    dependsOn normalizeJspSources
     source jspcGeneratedSources
     destinationDirectory = jspcCompiledClasses
     classpath = jspcTomcatLibraries + sourceSets.main.runtimeClasspath
@@ -111,6 +191,50 @@ def compileJspJava22 = tasks.register('compileJspJava22', JavaCompile) {
     }
     options.encoding = 'UTF-8'
     options.release = 22
+}
+
+def mergeJspWebXml = tasks.register('mergeJspWebXml') {
+    group = 'build'
+    description = 'Merges generated JSP servlet mappings into the deployment descriptor.'
+    dependsOn generateJspSources
+    inputs.file(jspcPreparedWebXml)
+    inputs.file(jspcWebFragment)
+    outputs.file(jspcMergedWebXml)
+    doLast {
+        File sourceWebXml = jspcPreparedWebXml.get().asFile
+        String source = sourceWebXml.getText('UTF-8')
+        String closingTag = '</web-app>'
+        int closingIndex = source.lastIndexOf(closingTag)
+        if (closingIndex < 0) {
+            throw new GradleException('WEB-INF/web.xml is missing </web-app>')
+        }
+        String generated = jspcWebFragment.get().asFile.getText('UTF-8').trim()
+        File output = jspcMergedWebXml.get().asFile
+        output.parentFile.mkdirs()
+        output.setText(
+                source.substring(0, closingIndex)
+                        + '\n\n    <!-- Precompiled JSP servlet mappings. -->\n'
+                        + generated
+                        + '\n\n'
+                        + source.substring(closingIndex),
+                'UTF-8')
+    }
+}
+
+tasks.named('war') {
+    dependsOn compileJspJava22, mergeJspWebXml
+    webXml = jspcMergedWebXml.get().asFile
+    File sourceDeploymentDescriptor = layout.projectDirectory
+            .file('src/main/webapp/WEB-INF/web.xml').asFile
+    eachFile { details ->
+        if (details.path == 'WEB-INF/web.xml'
+                && details.file.canonicalFile == sourceDeploymentDescriptor.canonicalFile) {
+            details.exclude()
+        }
+    }
+    from(jspcCompiledClasses) {
+        into 'WEB-INF/classes'
+    }
 }
 
 tasks.register('jspcJava22') {

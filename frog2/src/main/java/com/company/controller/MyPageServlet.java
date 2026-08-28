@@ -37,6 +37,7 @@ public class MyPageServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        FlashMessage.expose(request);
         String action = request.getParameter("action");
         
         if (action == null) {
@@ -267,8 +268,6 @@ public class MyPageServlet extends HttpServlet {
         List<MonthlyCustomerResponseDTO> monthlyResponses = 
             dao.getMonthlyResponses(
                     user.getUserId(), year, month);
-        FlashMessage.expose(request);
-        
         request.setAttribute("currentYear", currentYear);
         request.setAttribute("currentMonth", currentMonth);
         request.setAttribute("selectedYear", year);
@@ -282,7 +281,8 @@ public class MyPageServlet extends HttpServlet {
     // 월별 고객 응대 추가
     private void addMonthlyResponse(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
             throws ServletException, IOException {
-        
+        String message;
+        String messageType;
         try {
             String responseDateStr = request.getParameter("responseDate");
             String customerName = request.getParameter("customerName");
@@ -303,26 +303,32 @@ public class MyPageServlet extends HttpServlet {
             
             MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
             boolean success = dao.addResponse(dto);
-            
-            FlashMessage.store(
-                    request,
-                    success ? "고객 응대 기록이 추가되었습니다." : "고객 응대 기록 추가에 실패했습니다.",
-                    success ? "success" : "error");
-            
+            message = success
+                    ? "고객 응대 기록이 추가되었습니다."
+                    : "고객 응대 기록 추가에 실패했습니다.";
+            messageType = success ? "success" : "error";
         } catch (ParseException e) {
-            FlashMessage.store(request, "날짜 형식이 올바르지 않습니다.", "error");
+            message = "날짜 형식이 올바르지 않습니다.";
+            messageType = "error";
         }
         
         // 선택된 년월로 다시 조회
         String year = request.getParameter("year");
         String month = request.getParameter("month");
-        response.sendRedirect(request.getContextPath() + "/mypage?action=monthlyResponse&year=" + year + "&month=" + month);
+        FlashMessage.redirect(
+                request,
+                response,
+                request.getContextPath() + "/mypage?action=monthlyResponse&year="
+                        + year + "&month=" + month,
+                message,
+                messageType);
     }
     
     // 월별 고객 응대 수정
     private void updateMonthlyResponse(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
             throws ServletException, IOException {
-        
+        String message;
+        String messageType;
         try {
             int id = Integer.parseInt(request.getParameter("responseId"));
             String responseDateStr = request.getParameter("responseDate");
@@ -345,44 +351,55 @@ public class MyPageServlet extends HttpServlet {
             
             MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
             boolean success = dao.updateResponse(dto);
-            
-            FlashMessage.store(
-                    request,
-                    success ? "고객 응대 기록이 수정되었습니다." : "고객 응대 기록 수정에 실패했습니다.",
-                    success ? "success" : "error");
-            
+            message = success
+                    ? "고객 응대 기록이 수정되었습니다."
+                    : "고객 응대 기록 수정에 실패했습니다.";
+            messageType = success ? "success" : "error";
         } catch (ParseException | NumberFormatException e) {
-            FlashMessage.store(request, "입력값이 올바르지 않습니다.", "error");
+            message = "입력값이 올바르지 않습니다.";
+            messageType = "error";
         }
         
         // 선택된 년월로 다시 조회
         String year = request.getParameter("year");
         String month = request.getParameter("month");
-        response.sendRedirect(request.getContextPath() + "/mypage?action=monthlyResponse&year=" + year + "&month=" + month);
+        FlashMessage.redirect(
+                request,
+                response,
+                request.getContextPath() + "/mypage?action=monthlyResponse&year="
+                        + year + "&month=" + month,
+                message,
+                messageType);
     }
     
     // 월별 고객 응대 삭제
     private void deleteMonthlyResponse(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
             throws ServletException, IOException {
-        
+        String message;
+        String messageType;
         try {
             int id = Integer.parseInt(request.getParameter("responseId"));
             
             MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
             boolean success = dao.deleteResponse(id, user.getUserId());
-            
-            FlashMessage.store(
-                    request,
-                    success ? "고객 응대 기록이 삭제되었습니다." : "고객 응대 기록 삭제에 실패했습니다.",
-                    success ? "success" : "error");
-            
+            message = success
+                    ? "고객 응대 기록이 삭제되었습니다."
+                    : "고객 응대 기록 삭제에 실패했습니다.";
+            messageType = success ? "success" : "error";
         } catch (NumberFormatException e) {
-            FlashMessage.store(request, "잘못된 요청입니다.", "error");
+            message = "잘못된 요청입니다.";
+            messageType = "error";
         }
         
         // 선택된 년월로 다시 조회
         String year = request.getParameter("year");
         String month = request.getParameter("month");
-        response.sendRedirect(request.getContextPath() + "/mypage?action=monthlyResponse&year=" + year + "&month=" + month);
+        FlashMessage.redirect(
+                request,
+                response,
+                request.getContextPath() + "/mypage?action=monthlyResponse&year="
+                        + year + "&month=" + month,
+                message,
+                messageType);
     }
 }

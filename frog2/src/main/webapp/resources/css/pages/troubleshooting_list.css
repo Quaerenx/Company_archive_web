@@ -14,6 +14,10 @@
     text-decoration: underline;
 }
 
+.troubleshooting-management .troubleshooting-row-meta {
+    display: none;
+}
+
 .troubleshooting-management .empty-state {
     text-align: center;
     padding: var(--space-48);
@@ -25,13 +29,6 @@
     font-size: var(--illustration-icon-size-md);
     margin-bottom: var(--space-16);
     opacity: 0.5;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-    .troubleshooting-management .troubleshooting-table {
-        min-width: 720px;
-    }
 }
 
 /* 검색 바 */
@@ -68,5 +65,77 @@
 
     .troubleshooting-management .ts-search-input {
         flex-basis: 100%;
+    }
+
+    .troubleshooting-management .ui-table-wrap {
+        overflow-x: visible;
+    }
+
+    .troubleshooting-management .troubleshooting-table thead {
+        border: 0;
+        clip: rect(0, 0, 0, 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        white-space: nowrap;
+        width: 1px;
+    }
+
+    .troubleshooting-management .troubleshooting-table,
+    .troubleshooting-management .troubleshooting-table tbody,
+    .troubleshooting-management .troubleshooting-table tr {
+        display: block;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .troubleshooting-management .troubleshooting-table tbody tr {
+        border-bottom: 1px solid var(--color-border);
+        padding: var(--space-16);
+    }
+
+    body.ui-system .troubleshooting-management .troubleshooting-table td {
+        block-size: auto;
+        border: 0;
+        display: none;
+        padding: 0;
+    }
+
+    body.ui-system .troubleshooting-management .troubleshooting-table td.col--title {
+        display: block;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .troubleshooting-management .title-link {
+        color: var(--color-text-strong);
+        display: block;
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        line-height: var(--line-height-ui);
+        overflow-wrap: anywhere;
+    }
+
+    .troubleshooting-management .troubleshooting-row-meta {
+        align-items: center;
+        color: var(--color-text-muted);
+        display: flex;
+        flex-wrap: wrap;
+        font-size: var(--font-size-xs);
+        gap: var(--space-8);
+        margin-top: var(--space-8);
+    }
+
+    .troubleshooting-management .troubleshooting-row-meta strong {
+        color: var(--color-text);
+        font-weight: 600;
+    }
+
+    .troubleshooting-management .troubleshooting-row-meta > * + *::before {
+        color: var(--color-divider);
+        content: "·";
+        margin-right: var(--space-8);
     }
 }

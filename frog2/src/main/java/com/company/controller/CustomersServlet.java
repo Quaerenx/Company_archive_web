@@ -35,6 +35,7 @@ public class CustomersServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        FlashMessage.expose(request);
         queryController.handle(request, response);
     }
 

@@ -143,13 +143,13 @@
                     <tbody>
                       <c:forEach var="host" items="${vmHosts}">
                         <tr>
-                          <td><strong><c:out value="${host.ip}"/></strong></td>
-                          <td><c:out value="${host.purpose}"/></td>
-                          <td><c:out value="${host.osInfo}"/></td>
-                          <td><c:out value="${host.verticaVersion}"/></td>
-                          <td><c:out value="${host.remoteHost}"/></td>
-                          <td><c:out value="${host.note}"/></td>
-                          <td>
+                          <td data-label="IP"><strong><c:out value="${host.ip}"/></strong></td>
+                          <td data-label="목적"><c:out value="${host.purpose}"/></td>
+                          <td data-label="OS"><c:out value="${host.osInfo}"/></td>
+                          <td data-label="VERTICA-ver"><c:out value="${host.verticaVersion}"/></td>
+                          <td data-label="원격지"><c:out value="${host.remoteHost}"/></td>
+                          <td data-label="비고"><c:out value="${host.note}"/></td>
+                          <td data-label="수정일">
                             <c:choose>
                               <c:when test="${not empty host.updatedAt}">
                                 <fmt:formatDate value="${host.updatedAt}" pattern="yyyy-MM-dd HH:mm" />
@@ -157,7 +157,7 @@
                               <c:otherwise>-</c:otherwise>
                             </c:choose>
                           </td>
-                          <td>
+                          <td data-label="작업">
                             <div class="vm-inline-actions">
                               <a class="vm-btn-secondary ui-button button--secondary button--sm"
                                  href="${pageContext.request.contextPath}/vm-hosts?editIp=${host.ip}">수정</a>

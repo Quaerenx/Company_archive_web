@@ -22,6 +22,15 @@ class MonthlyResponseViewContractTest {
         assertTrue(page.contains("name=\"formAction\" id=\"formAction\" value=\"addResponse\""));
         assertTrue(page.contains("name=\"responseId\" id=\"responseId\""));
         assertTrue(page.contains("data-response-id="));
+        assertTrue(page.contains(
+                "class=\"monthly-response-table ui-table ui-data-table\""));
+        assertTrue(page.contains("class=\"col--author\" data-label=\"담당자\""));
+        assertTrue(page.contains("responseEntry.userName"));
+        for (String label : new String[] {
+                "날짜", "고객사", "담당자", "사유", "조치 내용", "비고", "작업"
+        }) {
+            assertTrue(page.contains("data-label=\"" + label + "\""), label);
+        }
         assertTrue(page.contains("class=\"response-date\""));
         assertTrue(page.contains("class=\"response-customer-name\""));
         assertTrue(page.contains("class=\"response-reason\""));
@@ -56,6 +65,9 @@ class MonthlyResponseViewContractTest {
         assertTrue(styles.contains("box-shadow: var(--shadow-sm)"));
         assertFalse(styles.contains("translateY("));
         assertTrue(styles.contains("@media (max-width: 768px)"));
+        assertTrue(styles.contains("overflow-x: visible"));
+        assertTrue(styles.contains("content: attr(data-label)"));
+        assertFalse(styles.contains("nth-child"));
     }
 
     private static String read(String path) throws Exception {

@@ -76,12 +76,13 @@
                 </div>
             </c:if>
             <c:if test="${not empty verticaEosDate}">
-                <div class="alert alert-warning customer-eos-alert ui-alert ui-alert--warning"
+                <div class="customer-eos-alert ui-alert ui-alert--${verticaEosNotice.tone}"
                      role="status"
                      aria-live="polite"
                      aria-atomic="true">
                     <i class="fas fa-exclamation-triangle"></i>
-                    Vertica EOS 일자: <strong><fmt:formatDate value="${verticaEosDate}" pattern="yyyy-MM-dd"/></strong>
+                    <span><c:out value="${verticaEosNotice.message}" />
+                    (<strong><fmt:formatDate value="${verticaEosDate}" pattern="yyyy-MM-dd"/></strong>)</span>
                 </div>
             </c:if>
         </jsp:attribute>
@@ -106,7 +107,7 @@
             </div>
             <div class="tab-panel active" id="env-prod" role="tabpanel" aria-labelledby="env-prod-tab">
                 <c:if test="${empty customerDetail}">
-                    <div class="alert alert-light ui-alert ui-alert--neutral">운영 환경 데이터가 없습니다.</div>
+                    <div class="ui-alert ui-alert--neutral">운영 환경 데이터가 없습니다.</div>
                 </c:if>
                 <c:if test="${not empty customerDetail}">
                     <c:set var="detail" value="${customerDetail}" />
@@ -115,7 +116,7 @@
             </div>
             <div class="tab-panel" id="env-stg" role="tabpanel" aria-labelledby="env-stg-tab" hidden>
         <c:if test="${empty customerDetailStg}">
-            <div class="alert alert-light ui-alert ui-alert--neutral">스테이징 환경 데이터가 없습니다.</div>
+            <div class="ui-alert ui-alert--neutral">스테이징 환경 데이터가 없습니다.</div>
         </c:if>
         <c:if test="${not empty customerDetailStg}">
             <c:set var="detail" value="${customerDetailStg}" />
@@ -124,7 +125,7 @@
     </div>
     <div class="tab-panel" id="env-dev" role="tabpanel" aria-labelledby="env-dev-tab" hidden>
         <c:if test="${empty customerDetailDev}">
-            <div class="alert alert-light ui-alert ui-alert--neutral">개발 환경 데이터가 없습니다.</div>
+            <div class="ui-alert ui-alert--neutral">개발 환경 데이터가 없습니다.</div>
         </c:if>
         <c:if test="${not empty customerDetailDev}">
             <c:set var="detail" value="${customerDetailDev}" />

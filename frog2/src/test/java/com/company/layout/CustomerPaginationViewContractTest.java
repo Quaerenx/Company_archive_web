@@ -21,6 +21,17 @@ class CustomerPaginationViewContractTest {
 
         assertTrue(page.contains("name=\"q\""));
         assertTrue(page.contains("name=\"pageSize\""));
+        assertTrue(page.contains(
+                "class=\"customer-mobile-sort ui-form ui-form--compact\""));
+        assertTrue(page.contains("id=\"customer-mobile-sort-field\""));
+        assertTrue(page.contains("id=\"customer-mobile-sort-direction\""));
+        for (String mobileSortField : List.of(
+                "customer_name", "vertica_version", "mode", "os", "nodes",
+                "license_size", "said", "manager_name")) {
+            assertTrue(page.contains(
+                    "<option value=\"" + mobileSortField + "\""),
+                    mobileSortField);
+        }
         assertTrue(page.contains("<t:tableFooter"));
         assertTrue(page.contains("customerPreviousPageUrl"));
         assertTrue(page.contains("customerNextPageUrl"));
@@ -49,7 +60,8 @@ class CustomerPaginationViewContractTest {
         String maintenanceFilter = page.substring(
                 maintenanceFilterStart, allFilterStart);
         String allFilter = page.substring(
-                allFilterStart, page.indexOf("<div class=\"table-container", allFilterStart));
+                allFilterStart,
+                page.indexOf("<div class=\"customer-list-panel", allFilterStart));
         for (String parameter : List.of(
                 "sortField", "sortDirection", "q", "pageSize")) {
             assertTrue(maintenanceFilter.contains(
@@ -73,7 +85,7 @@ class CustomerPaginationViewContractTest {
         String baseStyles = Files.readString(WEBAPP.resolve("resources/css/base.css"));
 
         assertTrue(page.contains(
-                "class=\"table-container customer-list-panel ui-work-surface\""));
+                "class=\"customer-list-panel ui-work-surface\""));
         assertTrue(page.contains("<t:pageHeader>"));
         assertTrue(page.contains("고객사 정보"));
         assertTrue(page.contains("<jsp:attribute name=\"subtitle\">"));
@@ -101,6 +113,11 @@ class CustomerPaginationViewContractTest {
         assertTrue(styles.contains("pointer-events: none;"));
         assertTrue(page.contains("class=\"fas fa-search search-icon\" aria-hidden=\"true\""));
         assertTrue(styles.contains("min-width: 840px;"));
+        assertTrue(styles.contains(
+                ".customer-list-panel .customer-table thead {\n"
+                        + "        display: none;"));
+        assertTrue(styles.contains(
+                "body.ui-system.page-customers .customer-mobile-sort"));
         assertTrue(styles.contains("flex: 0 0 auto;"));
         assertTrue(styles.contains("min-inline-size: var(--indicator-icon-size);"));
         assertTrue(baseStyles.contains("scrollbar-gutter: stable;"));

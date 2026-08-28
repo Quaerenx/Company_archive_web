@@ -13,7 +13,8 @@ class DataManagementTableContractTest {
     private static final List<String> LIST_PAGES = List.of(
             "meeting/meeting_list.jsp",
             "troubleshooting/troubleshooting_list.jsp",
-            "WEB-INF/views/filerepo/list.jsp");
+            "WEB-INF/views/filerepo/list.jsp",
+            "mypage/monthly_customer_response.jsp");
 
     @Test
     void dataManagementPagesShareOneTableFrame() throws Exception {
@@ -34,6 +35,7 @@ class DataManagementTableContractTest {
         String meeting = read("meeting/meeting_list.jsp");
         String troubleshooting = read("troubleshooting/troubleshooting_list.jsp");
         String fileRepository = read("WEB-INF/views/filerepo/list.jsp");
+        String monthlyResponse = read("mypage/monthly_customer_response.jsp");
 
         assertTrue(troubleshooting.contains("ts-search-bar ui-table-toolbar"));
         assertTrue(fileRepository.contains("file-toolbar ui-table-toolbar"));
@@ -43,16 +45,23 @@ class DataManagementTableContractTest {
         assertTrue(troubleshooting.indexOf("ui-table-toolbar")
                 < troubleshooting.indexOf("ui-table-wrap"));
 
-        for (String page : List.of(meeting, troubleshooting, fileRepository)) {
+        for (String page : List.of(
+                meeting, troubleshooting, fileRepository, monthlyResponse)) {
             assertTrue(page.contains("col--date"));
-            assertTrue(page.contains("col--title"));
             assertFalse(page.contains(" width=\""));
+        }
+        for (String page : List.of(meeting, troubleshooting, fileRepository)) {
+            assertTrue(page.contains("col--title"));
         }
         assertTrue(meeting.contains("col--type"));
         assertTrue(meeting.contains("col--author"));
         assertTrue(troubleshooting.contains("col--customer"));
         assertTrue(fileRepository.contains("col--description"));
         assertTrue(fileRepository.contains("col--numeric"));
+        assertTrue(monthlyResponse.contains("col--customer"));
+        assertTrue(monthlyResponse.contains("col--author"));
+        assertTrue(monthlyResponse.contains("col--description"));
+        assertTrue(monthlyResponse.contains("col--actions"));
         assertTrue(fileRepository.contains("directoryEmpty"));
         assertTrue(fileRepository.contains(
                 "directoryEmpty\" value=\"${listing.totalCount eq 0}"));
@@ -76,6 +85,8 @@ class DataManagementTableContractTest {
         String meeting = read("resources/css/pages/meeting_list.css");
         String troubleshooting = read("resources/css/pages/troubleshooting_list.css");
         String fileRepository = read("resources/css/pages/download.css");
+        String monthlyResponse = read(
+                "resources/css/pages/monthly_customer_response.css");
 
         assertTrue(shared.contains(".ui-system .ui-table-toolbar {"));
         assertTrue(shared.contains(".ui-system .ui-data-table {"));
@@ -84,13 +95,18 @@ class DataManagementTableContractTest {
         assertTrue(shared.contains(".ui-system .ui-data-table .col--date {"));
         assertTrue(shared.contains(".ui-system .ui-data-table .col--numeric {"));
 
-        for (String pageCss : List.of(meeting, troubleshooting, fileRepository)) {
+        for (String pageCss : List.of(
+                meeting, troubleshooting, fileRepository, monthlyResponse)) {
             assertFalse(pageCss.contains("border-collapse: collapse"));
         }
         assertFalse(meeting.contains(".meeting-list-table th {"));
         assertFalse(troubleshooting.contains(".troubleshooting-table th {"));
         assertFalse(fileRepository.contains(".file-table th {"));
         assertFalse(troubleshooting.contains("nth-child"));
+        assertFalse(monthlyResponse.contains("nth-child"));
+        assertTrue(monthlyResponse.contains(
+                ".monthly-response-table tbody td::before"));
+        assertTrue(monthlyResponse.contains("overflow-x: visible"));
     }
 
     private static String read(String relativePath) throws Exception {

@@ -22,7 +22,8 @@ class LoginViewContractTest {
         assertTrue(page.contains("var=\"productName\" value=\"Archive\""));
         assertTrue(page.contains("content=\"Archive 로그인\""));
         assertTrue(page.contains("class=\"login-brand-logo\""));
-        assertTrue(page.contains("/resources/images/archive-logo.svg"));
+        assertTrue(page.contains(
+                "/resources/images/archive-logo.svg?v=${initParam.frog2AssetVersion}"));
         assertTrue(page.contains("width=\"4096\""));
         assertTrue(page.contains("height=\"2286\""));
         assertTrue(page.contains("alt=\"${productName}\""));
@@ -194,6 +195,45 @@ class LoginViewContractTest {
         assertFalse(rememberId.contains("name="));
         assertTrue(page.contains("class=\"login-remember\" for=\"rememberId\""));
         assertFalse(page.contains("autocomplete=\"new-password\""));
+    }
+
+    @Test
+    void loginPeekAnimationIsDecorativeResponsiveAndMotionSafe() throws Exception {
+        String page = read("login.jsp");
+        String styles = read("resources/css/login_style.css");
+
+        assertTrue(page.contains("class=\"login-peek\" aria-hidden=\"true\""));
+        assertTrue(page.contains("class=\"peek-doc\""));
+        assertTrue(page.contains("class=\"peek-sheet\""));
+        assertTrue(styles.contains(".login-page .login-shell:hover .peek-sheet"));
+        assertTrue(styles.contains(".login-page .login-shell:focus-within .peek-sheet"));
+        assertTrue(styles.contains("@media (hover: hover) and (pointer: fine)"));
+        assertTrue(styles.contains("@media (max-width: 640px)"));
+        assertTrue(styles.matches(
+                "(?s).*@media \\(prefers-reduced-motion: reduce\\)\\s*\\{.*"
+                        + "--peek-duration:\\s*0\\.01ms;.*"
+                        + "--peek-fade:\\s*0\\.01ms;.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.login-peek\\s*\\{[^}]*"
+                        + "pointer-events:\\s*none;.*"));
+    }
+
+    @Test
+    void shortLoginViewportsKeepEveryControlVerticallyReachable() throws Exception {
+        String styles = read("resources/css/login_style.css");
+
+        assertTrue(styles.matches(
+                "(?s).*body\\.login-page\\s*\\{[^}]*"
+                        + "overflow-x:\\s*hidden;[^}]*"
+                        + "overflow-y:\\s*auto;[^}]*"
+                        + "overscroll-behavior-y:\\s*contain;.*"));
+        assertFalse(styles.matches(
+                "(?s).*body\\.login-page\\s*\\{[^}]*overflow:\\s*hidden;.*"));
+        assertTrue(styles.matches(
+                "(?s).*@media \\(max-height:\\s*640px\\)\\s*\\{\\s*"
+                        + "body\\.login-page\\s*\\{[^}]*"
+                        + "align-items:\\s*flex-start;[^}]*"
+                        + "padding-block:\\s*var\\(--space-16\\);.*"));
     }
 
     @Test

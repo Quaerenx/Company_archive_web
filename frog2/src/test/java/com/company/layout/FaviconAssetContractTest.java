@@ -40,7 +40,7 @@ class FaviconAssetContractTest {
         assertTrue(include.contains("/favicon.svg"));
         assertTrue(include.contains("type=\"image/svg+xml\""));
         assertTrue(include.contains("sizes=\"any\""));
-        assertTrue(include.contains("?v=20260814-archive-favicon-1"));
+        assertTrue(include.contains("?v=${initParam.frog2AssetVersion}"));
         assertEquals(1, occurrences(include, "rel=\"icon\""));
         assertFalse(include.contains("/favicon.png"));
         assertFalse(include.contains("rel=\"apple-touch-icon\""));

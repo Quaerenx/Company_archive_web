@@ -24,7 +24,8 @@ class UiDesignSystemContractTest {
                 "--color-secondary:",
                 "--color-danger:",
                 "--color-success:",
-                "--color-warning:",
+                "--color-warning-accent:",
+                "--color-warning-text:",
                 "--color-success-strong:",
                 "--color-danger-strong:",
                 "--color-warning-strong:",
@@ -50,7 +51,7 @@ class UiDesignSystemContractTest {
         assertTrue(tokens.contains("'Apple SD Gothic Neo'"));
         assertTrue(tokens.contains("'Malgun Gothic'"));
         assertTrue(tokens.contains(
-                "--color-surface-hover: var(--palette-surface-muted);"));
+                "--color-surface-hover: var(--palette-ambient);"));
         assertTrue(tokens.contains(
                 "--color-surface-selected: var(--palette-brand-subtle);"));
         assertTrue(tokens.contains(
@@ -213,11 +214,11 @@ class UiDesignSystemContractTest {
         }
 
         assertTrue(read("customers/customers_list.jsp").contains(
-                "table-container customer-list-panel ui-work-surface"));
+                "customer-list-panel ui-work-surface"));
         for (String page : List.of(
                 "meeting/meeting_list.jsp",
                 "troubleshooting/troubleshooting_list.jsp")) {
-            assertTrue(read(page).contains("table-container ui-work-surface"), page);
+            assertTrue(read(page).contains("class=\"ui-work-surface\""), page);
         }
 
         for (String page : List.of(
@@ -388,8 +389,9 @@ class UiDesignSystemContractTest {
 
         String monthly = read("mypage/monthly_customer_response.jsp");
         assertTrue(monthly.contains("class=\"filter-form ui-form\""));
-        assertTrue(monthly.contains("class=\"data-table ui-table\""));
-        assertTrue(monthly.contains("class=\"table-responsive ui-table-wrap\""));
+        assertTrue(monthly.contains(
+                "class=\"monthly-response-table ui-table ui-data-table\""));
+        assertTrue(monthly.contains("class=\"ui-table-wrap\""));
         assertTrue(monthly.contains("id=\"responseForm\""));
         assertTrue(monthly.contains(
                 "${responseDateValue} ${responseEntry.customerName} 응대 기록 수정"));

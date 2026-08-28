@@ -11,6 +11,8 @@
 <c:set var="tableFooterTotalPages" value="${totalPages ge 1 ? totalPages : 1}" />
 <c:set var="previousLabel" value="${itemLabel} 이전 페이지" />
 <c:set var="nextLabel" value="${itemLabel} 다음 페이지" />
+<c:set var="positionLabel"
+       value="${itemLabel} 현재 ${tableFooterCurrentPage}페이지, 전체 ${tableFooterTotalPages}페이지" />
 
 <footer class="ui-table-footer">
     <nav class="ui-table-pagination" aria-label="${paginationLabel}">
@@ -26,10 +28,11 @@
             </c:otherwise>
         </c:choose>
         <span class="ui-table-pagination__position">
-            <span class="sr-only">현재 페이지</span>
-            <c:out value="${tableFooterCurrentPage}" />
-            <span aria-hidden="true"> / </span>
-            <c:out value="${tableFooterTotalPages}" />
+            <span class="sr-only"><c:out value="${positionLabel}" /></span>
+            <span aria-hidden="true">
+                <c:out value="${tableFooterCurrentPage}" /> /
+                <c:out value="${tableFooterTotalPages}" />
+            </span>
         </span>
         <c:choose>
             <c:when test="${not empty nextUrl}">

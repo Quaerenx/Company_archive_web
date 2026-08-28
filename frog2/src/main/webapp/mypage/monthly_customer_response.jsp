@@ -97,31 +97,33 @@
                 <i class="fas fa-plus"></i> 추가
             </button>
         </div>
-        <div class="table-responsive ui-table-wrap"
+        <div class="ui-table-wrap"
              data-ui-scroll-region
              data-ui-scroll-label="월별 고객 응대 표">
-            <table class="data-table ui-table">
+            <table class="monthly-response-table ui-table ui-data-table">
                 <caption class="sr-only">월별 고객 응대 기록</caption>
                 <thead>
                     <tr>
-                        <th scope="col">날짜</th>
-                        <th scope="col">고객명</th>
-                        <th scope="col">사유</th>
-                        <th scope="col">조치 내용</th>
-                        <th scope="col">비고</th>
-                        <th scope="col" class="monthly-response-actions-column">액션</th>
+                        <th scope="col" class="col--date">날짜</th>
+                        <th scope="col" class="col--customer">고객사</th>
+                        <th scope="col" class="col--author">담당자</th>
+                        <th scope="col" class="col--reason">사유</th>
+                        <th scope="col" class="col--description">조치 내용</th>
+                        <th scope="col" class="col--note">비고</th>
+                        <th scope="col" class="col--actions">작업</th>
                     </tr>
                 </thead>
                 <tbody>
                     <c:forEach var="responseEntry" items="${monthlyResponses}">
                     <fmt:formatDate var="responseDateValue" value="${responseEntry.responseDate}" pattern="yyyy-MM-dd" />
                     <tr data-response-id="<c:out value='${responseEntry.id}' />">
-                        <td><c:out value="${not empty responseDateValue ? responseDateValue : '-'}" /></td>
-                        <td><c:out value="${not empty responseEntry.customerName ? responseEntry.customerName : '-'}" /></td>
-                        <td><c:out value="${not empty responseEntry.reason ? responseEntry.reason : '-'}" /></td>
-                        <td><c:out value="${not empty responseEntry.actionContent ? responseEntry.actionContent : '-'}" /></td>
-                        <td><c:out value="${not empty responseEntry.note ? responseEntry.note : '-'}" /></td>
-                        <td>
+                        <td class="col--date" data-label="날짜"><c:out value="${not empty responseDateValue ? responseDateValue : '-'}" /></td>
+                        <td class="col--customer" data-label="고객사"><c:out value="${not empty responseEntry.customerName ? responseEntry.customerName : '-'}" /></td>
+                        <td class="col--author" data-label="담당자"><c:out value="${not empty responseEntry.userName ? responseEntry.userName : '-'}" /></td>
+                        <td class="col--reason" data-label="사유"><c:out value="${not empty responseEntry.reason ? responseEntry.reason : '-'}" /></td>
+                        <td class="col--description" data-label="조치 내용"><c:out value="${not empty responseEntry.actionContent ? responseEntry.actionContent : '-'}" /></td>
+                        <td class="col--note" data-label="비고"><c:out value="${not empty responseEntry.note ? responseEntry.note : '-'}" /></td>
+                        <td class="col--actions" data-label="작업">
                             <div class="action-buttons">
                                 <input type="hidden" class="response-date" value="<c:out value='${responseDateValue}' />">
                                 <input type="hidden" class="response-customer-name" value="<c:out value='${responseEntry.customerName}' />">

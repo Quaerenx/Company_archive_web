@@ -12,14 +12,14 @@ class CommonUiReuseContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
 
     @Test
-    void legacySessionMessagesUseOneEscapedTag() throws Exception {
+    void flashMessagesUseOneRequestScopedEscapedTag() throws Exception {
         String tag = read("WEB-INF/tags/flashMessages.tag");
-        assertTrue(tag.contains("<c:out value=\"${sessionScope.message}\""));
-        assertTrue(tag.contains("<c:out value=\"${sessionScope.error}\""));
-        assertTrue(tag.contains("<c:remove var=\"message\" scope=\"session\""));
-        assertTrue(tag.contains("<c:remove var=\"error\" scope=\"session\""));
-        assertTrue(tag.contains("ui-alert--success"));
-        assertTrue(tag.contains("ui-alert--danger"));
+        assertTrue(tag.contains("<c:out value=\"${requestScope.message}\""));
+        assertTrue(tag.contains("requestScope.messageType"));
+        assertFalse(tag.contains("sessionScope.message"));
+        assertFalse(tag.contains("sessionScope.error"));
+        assertFalse(tag.contains("<c:remove"));
+        assertTrue(tag.contains("ui-alert--${flashTone}"));
 
         for (String page : List.of(
                 "customers/customers_list.jsp",
@@ -86,6 +86,35 @@ class CommonUiReuseContractTest {
         assertTrue(styles.contains(".ui-system .ui-form-actions"));
         assertTrue(styles.contains(".ui-form-layout .ui-form-actions"));
         assertTrue(styles.contains(".ui-form-layout .button-group"));
+    }
+
+    @Test
+    void canonicalComponentsDoNotCarryLegacyVisualAliases() throws Exception {
+        for (String page : List.of(
+                "customers/customers_add.jsp",
+                "customers/customers_edit.jsp",
+                "maintenance/maintenance_add.jsp",
+                "maintenance/maintenance_edit.jsp",
+                "meeting/meeting_write.jsp",
+                "meeting/meeting_edit.jsp",
+                "troubleshooting/troubleshooting_add.jsp",
+                "troubleshooting/troubleshooting_edit.jsp")) {
+            String source = read(page);
+            assertFalse(source.contains("alert alert-danger"), page);
+            assertFalse(source.contains("form-container ui-form-card"), page);
+            assertTrue(source.contains("ui-form-card"), page);
+        }
+
+        for (String page : List.of(
+                "customers/customers_list.jsp",
+                "meeting/meeting_list.jsp",
+                "troubleshooting/troubleshooting_list.jsp",
+                "WEB-INF/views/filerepo/list.jsp",
+                "mypage/monthly_customer_response.jsp")) {
+            String source = read(page);
+            assertFalse(source.contains("table-wrapper ui-table-wrap"), page);
+            assertFalse(source.contains("table-responsive ui-table-wrap"), page);
+        }
     }
 
     private static String read(String relativePath) throws Exception {

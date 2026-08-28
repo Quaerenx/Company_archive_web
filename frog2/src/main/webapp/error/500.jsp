@@ -4,6 +4,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>서버 오류 (500) | Archive</title>
   <!-- Favicon -->
   <%@ include file="/WEB-INF/includes/favicon.jspf" %>

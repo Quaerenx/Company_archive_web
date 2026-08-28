@@ -6,8 +6,11 @@
 <%@ attribute name="fullWidth" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="multiline" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="booleanState" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="hideWhenEmpty" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="suffix" required="false" type="java.lang.String" %>
 
-<div class="detail-item${fullWidth ? ' full-width' : ''}">
+<div class="detail-item${fullWidth ? ' full-width' : ''}${hideWhenEmpty && empty value ? ' detail-item--empty' : ''}"
+     ${hideWhenEmpty && empty value ? 'hidden' : ''}>
     <span class="detail-label"><c:out value="${label}" /></span>
     <c:choose>
         <c:when test="${empty value}">
@@ -31,7 +34,7 @@
             </c:choose>
         </c:when>
         <c:otherwise>
-            <span class="detail-value"><c:out value="${value}" /></span>
+            <span class="detail-value"><c:out value="${value}" /><c:if test="${not empty suffix}"> <c:out value="${suffix}" /></c:if></span>
         </c:otherwise>
     </c:choose>
 </div>

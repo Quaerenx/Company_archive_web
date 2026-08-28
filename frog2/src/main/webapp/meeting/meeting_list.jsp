@@ -23,10 +23,10 @@
     
     <t:flashMessages />
     
-    <div class="table-container ui-work-surface">
+    <div class="ui-work-surface">
         <c:choose>
             <c:when test="${not empty meetingList}">
-                <div class="table-wrapper ui-table-wrap"
+                <div class="ui-table-wrap"
                      data-ui-scroll-region
                      data-ui-scroll-label="회의록 표">
                     <table class="meeting-list-table ui-table ui-data-table">

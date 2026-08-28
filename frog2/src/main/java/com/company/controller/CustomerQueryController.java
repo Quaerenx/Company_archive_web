@@ -14,6 +14,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -117,6 +119,9 @@ final class CustomerQueryController {
         CustomerDetailQueryService.ViewData viewData = detailQueryService.load(customerName);
         if (viewData.eosDate() != null) {
             request.setAttribute("verticaEosDate", viewData.eosDate());
+            request.setAttribute("verticaEosNotice", CustomerEosNotice.from(
+                    viewData.eosDate(),
+                    LocalDate.now(ZoneId.of("Asia/Seoul"))));
         }
 
         request.setAttribute("customer", viewData.customer());

@@ -4,6 +4,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>페이지를 찾을 수 없습니다 (404) | Archive</title>
   <!-- Favicon -->
   <%@ include file="/WEB-INF/includes/favicon.jspf" %>

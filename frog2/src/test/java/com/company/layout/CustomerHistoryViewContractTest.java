@@ -24,17 +24,14 @@ class CustomerHistoryViewContractTest {
         assertTrue(list.contains("customer-history-search-button"));
         assertTrue(list.contains("ui-form--compact"));
         assertTrue(list.contains("customer-history-filter-actions"));
-        assertTrue(list.contains("<button type=\"button\""));
-        assertTrue(list.contains("data-ui-disclosure-row"));
-        assertTrue(list.contains("data-ui-disclosure-toggle"));
-        assertTrue(list.contains("data-ui-disclosure-content"));
-        assertTrue(list.contains("aria-expanded=\"false\""));
-        assertTrue(list.contains(
-                "<c:out value='${history.title}' /> 이력 상세"));
+        assertFalse(list.contains("data-ui-disclosure-row"));
+        assertFalse(list.contains("data-ui-disclosure-toggle"));
+        assertFalse(list.contains("data-ui-disclosure-content"));
+        assertFalse(list.contains("aria-expanded=\"false\""));
         assertFalse(list.contains("data-customer-history-label"));
         assertFalse(list.contains("data-customer-history-row"));
         assertFalse(list.contains("data-customer-history-toggle"));
-        assertTrue(list.contains("class=\"customer-history-detail-row\""));
+        assertFalse(list.contains("class=\"customer-history-detail-row\""));
         assertFalse(list.contains("customer-history-scroll-hint"));
         assertFalse(list.contains("fa-chevron-down"));
         String pageScript = read("resources/js/pages/customer_history.js");
@@ -58,6 +55,8 @@ class CustomerHistoryViewContractTest {
         assertTrue(list.contains("name=\"returnPage\""));
         assertFalse(list.contains("class=\"col--author\""));
         assertFalse(list.contains(">작성자</th>"));
+        assertFalse(list.contains(">상태</th>"));
+        assertTrue(list.contains("class=\"col--action\""));
         assertTrue(form.contains("name=\"category\""));
         assertTrue(form.contains("name=\"actionSummary\""));
         assertTrue(form.contains("href=\"<c:out value='${returnListUrl}' />\""));
@@ -111,16 +110,9 @@ class CustomerHistoryViewContractTest {
         assertFalse(styles.contains(".customer-history-detail-row > td::before"));
         assertFalse(styles.contains(".customer-history-summary-row::before"));
         assertFalse(styles.contains("box-shadow: inset"));
-        assertTrue(styles.contains(
-                "border-block-start: 1px solid var(--color-border);"));
-        assertTrue(read("customer-history/customer_history_list.jsp").contains(
-                "class=\"customer-history-detail-motion\"\n"
-                        + "                                             data-ui-disclosure-content"));
-        assertFalse(styles.contains(
-                ".customer-history-detail-row > td {\n"
-                        + "    background: var(--color-surface);\n"
-                        + "    border-block-end"));
-        assertTrue(styles.contains(".customer-history-detail-row:not([hidden])"));
+        assertFalse(styles.contains(".customer-history-detail-row"));
+        assertFalse(styles.contains(".customer-history-detail-toggle"));
+        assertTrue(styles.contains("-webkit-line-clamp: 3;"));
         assertFalse(styles.contains("min-inline-size: 788px"));
         assertFalse(styles.contains(".customer-history-detail-toggle-icon"));
         assertFalse(styles.matches("(?s).*(#[0-9a-fA-F]{3,8}|rgb\\().*"));

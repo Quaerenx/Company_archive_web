@@ -32,35 +32,6 @@
     text-overflow: ellipsis;
 }
 
-/* 고객 상세 페이지 */
-.customer-detail .detail-section {
-    background: var(--color-surface);
-    border-radius: var(--radius-lg);
-    padding: var(--space-32);
-    margin-bottom: var(--space-24);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--color-surface-edge);
-}
-
-.customer-detail .detail-section h3 {
-    color: var(--color-text-strong);
-    margin-bottom: var(--space-16);
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-}
-
-.customer-detail .detail-label {
-    font-weight: 600;
-    color: var(--color-text);
-    min-width: 120px;
-    margin-right: var(--space-16);
-}
-
-.customer-detail .detail-value {
-    color: var(--color-text-muted);
-    flex: 1;
-}
-
 /* 목록 작업 영역 */
 .customer-list-panel {
     overflow: hidden;
@@ -207,6 +178,10 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     font-weight: 600;
 }
 
+.customer-mobile-sort {
+    display: none;
+}
+
 .customer-secondary-action {
     display: flex;
     justify-content: flex-end;
@@ -214,7 +189,7 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
 }
 
 /* 가독성 향상 - 테이블 공통 개선 */
-.table-container .customer-table { font-size: var(--font-size-sm); }
+.customer-list-panel .customer-table { font-size: var(--font-size-sm); }
 .customer-table th,
 .customer-table td { padding: var(--space-12); line-height: var(--line-height-base); }
 .customer-table thead th {
@@ -293,6 +268,10 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     font-size: var(--font-size-xs);
 }
 
+.customer-mobile-meta {
+    display: none;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 1024px) {
     .customer-list-toolbar {
@@ -319,13 +298,91 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
         justify-content: flex-start;
     }
 
-    .customer-table {
-        font-size: var(--font-size-xs);
+    body.ui-system.page-customers .customer-mobile-sort {
+        display: grid;
+        gap: var(--space-8);
+        grid-template-columns: minmax(0, 1fr) minmax(104px, 0.7fr) auto;
+        width: 100%;
     }
 
-    .customer-table th,
-    .customer-table td {
-        padding: var(--space-8) var(--space-4);
+    .customer-list-panel .ui-table-wrap {
+        overflow-x: visible;
+    }
+
+    .customer-list-panel .customer-table {
+        display: block;
+        font-size: var(--font-size-sm);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .customer-list-panel .customer-table thead {
+        display: none;
+    }
+
+    .customer-list-panel .customer-table tbody,
+    .customer-list-panel .customer-table tr {
+        display: block;
+        width: 100%;
+    }
+
+    .customer-list-panel .customer-table .customer-row {
+        border-bottom: 1px solid var(--color-border);
+        padding: var(--space-16);
+    }
+
+    .customer-list-panel .customer-table .customer-row > td {
+        block-size: auto;
+        border: 0;
+        display: none;
+        padding: 0;
+        width: auto;
+    }
+
+    .customer-list-panel .customer-table .customer-row > .col--customer {
+        display: block;
+        max-width: none;
+        overflow: visible;
+        white-space: normal;
+    }
+
+    .customer-detail-link {
+        color: var(--color-text-strong);
+        display: inline-block;
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        line-height: var(--line-height-ui);
+        overflow-wrap: anywhere;
+    }
+
+    .customer-mobile-meta {
+        display: grid;
+        gap: var(--space-8) var(--space-16);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: var(--space-12) 0 0;
+    }
+
+    .customer-mobile-meta > div {
+        display: grid;
+        gap: var(--space-2);
+        min-width: 0;
+    }
+
+    .customer-mobile-meta dt {
+        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        font-weight: 500;
+    }
+
+    .customer-mobile-meta dd {
+        color: var(--color-text);
+        font-size: var(--font-size-sm);
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .customer-mobile-meta__wide {
+        grid-column: 1 / -1;
     }
 
 }

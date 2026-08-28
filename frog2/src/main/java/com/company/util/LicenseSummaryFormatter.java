@@ -87,21 +87,37 @@ public final class LicenseSummaryFormatter {
                         .setScale(1, RoundingMode.HALF_UP);
     }
 
+    public static BigDecimal resolveUsagePercentageForDisplay(
+            MaintenanceRecordDTO record) {
+        Double percentage = resolveUsagePercentage(record);
+        if (percentage == null) {
+            return null;
+        }
+        BigDecimal rounded = BigDecimal.valueOf(percentage)
+                .setScale(2, RoundingMode.HALF_UP)
+                .stripTrailingZeros();
+        return rounded.scale() < 1 ? rounded.setScale(1) : rounded;
+    }
+
     public static LicenseRiskPolicy.Level resolveUsageRiskLevel(
             MaintenanceRecordDTO record) {
-        return LicenseRiskPolicy.classify(
-                resolveUsagePercentageOneDecimal(record));
+        Double percentage = resolveUsagePercentage(record);
+        return LicenseRiskPolicy.classify(percentage == null
+                ? null
+                : BigDecimal.valueOf(percentage));
     }
 
     public static BigDecimal resolveUsageProgressPercentageOneDecimal(
             MaintenanceRecordDTO record) {
-        BigDecimal percentage = resolveUsagePercentageOneDecimal(record);
+        BigDecimal percentage = resolveUsagePercentageForDisplay(record);
         if (percentage == null) {
             return null;
         }
-        return percentage.max(BigDecimal.ZERO)
+        BigDecimal bounded = percentage.max(BigDecimal.ZERO)
                 .min(new BigDecimal("100.0"))
-                .setScale(1, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP)
+                .stripTrailingZeros();
+        return bounded.scale() < 1 ? bounded.setScale(1) : bounded;
     }
 
     public static Double resolveUsagePercentage(MaintenanceRecordDTO record) {

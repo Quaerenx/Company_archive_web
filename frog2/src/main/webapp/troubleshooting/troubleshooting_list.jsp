@@ -24,7 +24,7 @@
 
     <t:flashMessages />
 
-    <div class="table-container ui-work-surface">
+    <div class="ui-work-surface">
         <div class="ts-search-bar ui-table-toolbar">
             <form class="ts-search-form ui-form"
                   method="get"
@@ -56,7 +56,7 @@
         </div>
         <c:choose>
             <c:when test="${not empty troubleshootingList}">
-        <div class="table-wrapper ui-table-wrap"
+        <div class="ui-table-wrap"
              data-ui-scroll-region
              data-ui-scroll-label="트러블슈팅 표">
         <table class="troubleshooting-table ui-table ui-data-table">
@@ -86,6 +86,18 @@
                                class="title-link">
                                 <c:out value="${ts.title}" />
                             </a>
+                            <div class="troubleshooting-row-meta">
+                                <strong><c:out value="${ts.customerName}" /></strong>
+                                <span>
+                                    <c:choose>
+                                        <c:when test="${not empty ts.occurrenceDate}">
+                                            <fmt:formatDate value="${ts.occurrenceDate}" pattern="yyyy-MM-dd" />
+                                        </c:when>
+                                        <c:otherwise>-</c:otherwise>
+                                    </c:choose>
+                                </span>
+                                <span><c:out value="${ts.creator}" /></span>
+                            </div>
                         </td>
                         <td class="col--date">
                             <c:choose>

@@ -99,6 +99,21 @@ document.addEventListener('DOMContentLoaded', function() {
         return headerElement.classList.contains('mobile-nav-open');
     }
 
+    function mobileMenuFocusableControls() {
+        return Array.prototype.slice.call(primaryNavigation.querySelectorAll(
+                'a[href], button:not([disabled])')).filter(function(control) {
+            if (typeof control.closest !== 'function') {
+                return true;
+            }
+            var menu = control.closest('.dropdown-menu');
+            if (!menu) {
+                return true;
+            }
+            var dropdown = menu.closest('.dropdown');
+            return dropdown && dropdown.classList.contains('open');
+        });
+    }
+
     function focusedDropdownMenu() {
         return dropdownItems.find(function(item) {
             var menu = item.querySelector('.dropdown-menu');
@@ -131,6 +146,10 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
         mobileToggle.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
 
+        if (!open && primaryNavigation.contains(document.activeElement)) {
+            mobileToggle.focus();
+        }
+
         if (isMobile() && !open) {
             primaryNavigation.setAttribute('aria-hidden', 'true');
             closeAllDropdowns();
@@ -138,7 +157,12 @@ document.addEventListener('DOMContentLoaded', function() {
             primaryNavigation.removeAttribute('aria-hidden');
         }
 
-        if (!open && restoreFocus) {
+        if (open) {
+            var firstControl = mobileMenuFocusableControls()[0];
+            if (firstControl) {
+                firstControl.focus();
+            }
+        } else if (restoreFocus) {
             mobileToggle.focus();
         }
     }
@@ -254,8 +278,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 quickNavInput.focus();
                 return;
             }
+            var focusReturnTarget = trigger || quickNavOpenButton;
             if (isMobile() && mobileMenuIsOpen()) {
                 setMobileMenu(false, {restoreFocus: false});
+            }
+            if (isMobile()) {
+                focusReturnTarget = mobileToggle;
             }
             closeAllDropdowns();
             quickNavBackdrop.hidden = false;
@@ -264,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
             quickNavInput.value = '';
             quickNavInput.setAttribute('aria-expanded', 'true');
             renderResults();
-            dialogController.open(trigger || quickNavOpenButton);
+            dialogController.open(focusReturnTarget);
         }
 
         function closeQuickNavigation() {
@@ -335,7 +363,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeQuickNavigation();
 
     mobileToggle.addEventListener('click', function() {
-        setMobileMenu(!mobileMenuIsOpen());
+        var shouldOpen = !mobileMenuIsOpen();
+        setMobileMenu(shouldOpen, {restoreFocus: !shouldOpen});
     });
 
     dropdownItems.forEach(function(item) {

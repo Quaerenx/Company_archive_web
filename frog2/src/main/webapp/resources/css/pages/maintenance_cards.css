@@ -112,11 +112,6 @@
         }
 
     }
-.maintenance-management .customer-card.is-hovered {
-    background: var(--color-surface-hover);
-    border-color: var(--color-border-strong);
-}
-
 .maintenance-management .customer-card.is-loading {
     opacity: 0.7;
 }

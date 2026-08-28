@@ -33,6 +33,12 @@ class TableFooterViewContractTest {
         assertTrue(tag.contains("aria-label=\"${paginationLabel}\""));
         assertTrue(tag.contains("aria-label=\"${previousLabel}\""));
         assertTrue(tag.contains("aria-label=\"${nextLabel}\""));
+        assertTrue(tag.contains("value=\"${itemLabel} 현재 "
+                + "${tableFooterCurrentPage}페이지, 전체 "
+                + "${tableFooterTotalPages}페이지\""));
+        assertTrue(tag.contains(
+                "<span class=\"sr-only\"><c:out value=\"${positionLabel}\" /></span>"));
+        assertFalse(tag.contains("<span class=\"sr-only\">현재 페이지</span>"));
 
         for (String pagePath : TABLE_FOOTER_PAGES) {
             String page = read(pagePath);

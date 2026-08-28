@@ -42,11 +42,20 @@
             searchInput.value = '';
             searchForm.requestSubmit();
         });
+
+        searchInput.addEventListener('input', function() {
+            searchInput.closest('.search-input-wrapper')
+                    .classList.toggle('has-query', searchInput.value.length > 0);
+        });
     }
 
     function initializeSortLinks() {
         document.querySelectorAll('.js-customer-sort[data-sort-field]').forEach(function(link) {
             link.addEventListener('click', function(event) {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey
+                        || event.shiftKey || event.altKey) {
+                    return;
+                }
                 event.preventDefault();
                 var field = link.getAttribute('data-sort-field');
                 var direction = currentSortField === field && currentSortDirection === 'ASC'

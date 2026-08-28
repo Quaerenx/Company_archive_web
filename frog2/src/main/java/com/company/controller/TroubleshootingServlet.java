@@ -54,6 +54,7 @@ public class TroubleshootingServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        FlashMessage.expose(request);
 
         String viewType = request.getParameter("view");
         if (viewType == null || viewType.isEmpty()) {
@@ -121,8 +122,12 @@ public class TroubleshootingServlet extends HttpServlet {
                 request.getRequestDispatcher(
                         "/troubleshooting/troubleshooting_view.jsp").forward(request, response);
             } else {
-                session.setAttribute("error", "해당 트러블 슈팅 정보를 찾을 수 없습니다.");
-                response.sendRedirect("troubleshooting?view=list");
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "troubleshooting?view=list",
+                        "해당 트러블 슈팅 정보를 찾을 수 없습니다.",
+                        "error");
             }
 
         } else if ("edit".equals(viewType)) {
@@ -149,13 +154,20 @@ public class TroubleshootingServlet extends HttpServlet {
                             "/troubleshooting/troubleshooting_edit.jsp")
                             .forward(request, response);
                 } else {
-                    session.setAttribute("error", "수정 권한이 없습니다.");
-                    response.sendRedirect(
-                            "troubleshooting?view=view&id=" + id);
+                    FlashMessage.redirect(
+                            request,
+                            response,
+                            "troubleshooting?view=view&id=" + id,
+                            "수정 권한이 없습니다.",
+                            "error");
                 }
             } else {
-                session.setAttribute("error", "해당 트러블 슈팅 정보를 찾을 수 없습니다.");
-                response.sendRedirect("troubleshooting?view=list");
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "troubleshooting?view=list",
+                        "해당 트러블 슈팅 정보를 찾을 수 없습니다.",
+                        "error");
             }
 
         } else {
@@ -184,12 +196,14 @@ public class TroubleshootingServlet extends HttpServlet {
 
             boolean success =
                     troubleshootingDAO.addTroubleshooting(troubleshooting);
-            if (success) {
-                session.setAttribute("message", "트러블 슈팅이 성공적으로 등록되었습니다.");
-            } else {
-                session.setAttribute("error", "트러블 슈팅 등록 중 오류가 발생했습니다.");
-            }
-            response.sendRedirect("troubleshooting?view=list");
+            FlashMessage.redirect(
+                    request,
+                    response,
+                    "troubleshooting?view=list",
+                    success
+                            ? "트러블 슈팅이 성공적으로 등록되었습니다."
+                            : "트러블 슈팅 등록 중 오류가 발생했습니다.",
+                    success ? "success" : "error");
 
         } else if ("update".equals(actionType)) {
             // 트러블 슈팅 수정
@@ -206,13 +220,19 @@ public class TroubleshootingServlet extends HttpServlet {
                     troubleshootingDAO.updateTroubleshootingForOwner(
                             troubleshooting, user.getUserId());
             if (success) {
-                session.setAttribute("message", "트러블 슈팅이 성공적으로 수정되었습니다.");
-                response.sendRedirect("troubleshooting?view=view&id=" + id);
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "troubleshooting?view=view&id=" + id,
+                        "트러블 슈팅이 성공적으로 수정되었습니다.",
+                        "success");
             } else {
-                session.setAttribute(
-                        "error",
-                        "수정 권한이 없거나 트러블 슈팅 정보를 찾을 수 없습니다.");
-                response.sendRedirect("troubleshooting?view=list");
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "troubleshooting?view=list",
+                        "수정 권한이 없거나 트러블 슈팅 정보를 찾을 수 없습니다.",
+                        "error");
             }
 
         } else if ("delete".equals(actionType)) {
@@ -228,14 +248,14 @@ public class TroubleshootingServlet extends HttpServlet {
             boolean success =
                     troubleshootingDAO.deleteTroubleshootingForOwner(
                             id, user.getUserId());
-            if (success) {
-                session.setAttribute("message", "트러블 슈팅이 성공적으로 삭제되었습니다.");
-            } else {
-                session.setAttribute(
-                        "error",
-                        "삭제 권한이 없거나 트러블 슈팅 정보를 찾을 수 없습니다.");
-            }
-            response.sendRedirect("troubleshooting?view=list");
+            FlashMessage.redirect(
+                    request,
+                    response,
+                    "troubleshooting?view=list",
+                    success
+                            ? "트러블 슈팅이 성공적으로 삭제되었습니다."
+                            : "삭제 권한이 없거나 트러블 슈팅 정보를 찾을 수 없습니다.",
+                    success ? "success" : "error");
 
         } else {
             response.sendRedirect("troubleshooting?view=list");

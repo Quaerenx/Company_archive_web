@@ -69,7 +69,7 @@
                    class="brand-link"
                    aria-label="Archive 대시보드">
                     <img class="brand-logo"
-                         src="${pageContext.request.contextPath}/resources/images/archive-logo.svg"
+                         src="${pageContext.request.contextPath}/resources/images/archive-logo.svg?v=${frog2AssetVersion}"
                          width="4096"
                          height="2286"
                          alt=""

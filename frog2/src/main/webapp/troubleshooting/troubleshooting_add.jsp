@@ -18,7 +18,7 @@
 
         <!-- 오류 메시지 -->
         <c:if test="${not empty error}">
-            <div class="alert alert-danger ui-alert ui-alert--danger"
+            <div class="ui-alert ui-alert--danger"
                  role="alert"
                  aria-atomic="true">
                 <i class="fas fa-exclamation-circle"></i> <c:out value="${error}" />
@@ -26,7 +26,7 @@
         </c:if>
 
         <!-- 등록 폼 -->
-        <div class="form-container ui-form-card">
+        <div class="ui-form-card">
             <form id="troubleshootingForm"
                   class="ui-form ui-form-layout"
                   method="post"

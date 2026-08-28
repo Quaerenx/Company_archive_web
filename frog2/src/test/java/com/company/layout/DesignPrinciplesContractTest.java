@@ -24,7 +24,8 @@ class DesignPrinciplesContractTest {
         String webXml = read("WEB-INF/web.xml");
 
         assertTrue(header.contains(" | Archive"));
-        assertTrue(navigation.contains("/resources/images/archive-logo.svg"));
+        assertTrue(navigation.contains(
+                "/resources/images/archive-logo.svg?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("Archive · 고객 운영 업무공간"));
         assertTrue(login.contains("var=\"productName\" value=\"Archive\""));
         assertTrue(webXml.contains("<display-name>Archive</display-name>"));

@@ -52,6 +52,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        FlashMessage.expose(request);
 
         try {
             String view = valueOrDefault(request.getParameter("view"), "list");
@@ -82,9 +83,9 @@ public final class CustomerHistoryServlet extends HttpServlet {
         String action = request.getParameter("action");
         try {
             switch (action == null ? "" : action) {
-                case "add" -> add(request, response, session, user);
-                case "update" -> update(request, response, session, user);
-                case "delete" -> delete(request, response, session, user);
+                case "add" -> add(request, response, user);
+                case "update" -> update(request, response, user);
+                case "delete" -> delete(request, response, user);
                 default -> response.sendRedirect(
                         request.getContextPath() + "/customer-history");
             }
@@ -188,7 +189,6 @@ public final class CustomerHistoryServlet extends HttpServlet {
     private void add(
             HttpServletRequest request,
             HttpServletResponse response,
-            HttpSession session,
             UserDTO user) throws IOException {
         CustomerHistoryDraft draft = mapDraft(request);
         requireMaintenanceCustomer(draft.customerName());
@@ -196,14 +196,12 @@ public final class CustomerHistoryServlet extends HttpServlet {
                 draft,
                 user.getUserId(),
                 valueOrDefault(user.getUserName(), user.getUserId()));
-        session.setAttribute("message", "고객사 히스토리가 등록되었습니다.");
-        redirectToList(request, response);
+        redirectToList(request, response, "고객사 히스토리가 등록되었습니다.");
     }
 
     private void update(
             HttpServletRequest request,
             HttpServletResponse response,
-            HttpSession session,
             UserDTO user) throws IOException {
         CustomerHistoryDraft draft = mapDraft(request);
         requireMaintenanceCustomer(draft.customerName());
@@ -227,14 +225,12 @@ public final class CustomerHistoryServlet extends HttpServlet {
                     "고객사 히스토리를 찾을 수 없습니다.");
             return;
         }
-        session.setAttribute("message", "고객사 히스토리가 수정되었습니다.");
-        redirectToList(request, response);
+        redirectToList(request, response, "고객사 히스토리가 수정되었습니다.");
     }
 
     private void delete(
             HttpServletRequest request,
             HttpServletResponse response,
-            HttpSession session,
             UserDTO user) throws IOException {
         CustomerHistoryRepository.MutationResult result = repository.deleteOwned(
                 request.getParameter("id"), user.getUserId());
@@ -256,8 +252,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
                     "고객사 히스토리를 찾을 수 없습니다.");
             return;
         }
-        session.setAttribute("message", "고객사 히스토리가 삭제되었습니다.");
-        redirectToList(request, response);
+        redirectToList(request, response, "고객사 히스토리가 삭제되었습니다.");
     }
 
     private void showInvalidForm(
@@ -323,8 +318,14 @@ public final class CustomerHistoryServlet extends HttpServlet {
 
     private static void redirectToList(
             HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        response.sendRedirect(ListReturnState.from(request).toUrl(request.getContextPath()));
+            HttpServletResponse response,
+            String message) throws IOException {
+        FlashMessage.redirect(
+                request,
+                response,
+                ListReturnState.from(request).toUrl(request.getContextPath()),
+                message,
+                "success");
     }
 
     private static void sendBadRequest(

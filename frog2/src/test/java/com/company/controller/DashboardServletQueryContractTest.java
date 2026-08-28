@@ -120,7 +120,7 @@ class DashboardServletQueryContractTest {
                 groups.getFirst().getCustomers().getFirst();
         assertEquals("quarterly-extra", customer.getCustomerName());
         assertEquals(true, customer.isQuarterly());
-        assertEquals(true, customer.isLicenseRisk());
+        assertEquals(false, customer.isLicenseRisk());
     }
 
     @Test

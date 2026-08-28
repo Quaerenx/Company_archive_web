@@ -19,11 +19,18 @@
             data-app-ambient-background
             aria-hidden="true"></canvas>
     <main id="main-content" class="login-shell" tabindex="-1">
+        <!-- 카드 뒤에 겹쳐 있다가 hover 시 펼쳐지는 장식용 문서. 실제 데이터는 넣지 않는다. -->
+        <div class="login-peek" aria-hidden="true">
+            <div class="peek-doc"><div class="peek-sheet"></div></div><!-- 좌상단 -->
+            <div class="peek-doc"><div class="peek-sheet"></div></div><!-- 상단 -->
+            <div class="peek-doc"><div class="peek-sheet"></div></div><!-- 우상단 -->
+        </div>
+
         <section class="login-card" aria-label="로그인">
             <header class="login-header">
                 <div class="login-brand">
                     <img class="login-brand-logo"
-                         src="${pageContext.request.contextPath}/resources/images/archive-logo.svg"
+                         src="${pageContext.request.contextPath}/resources/images/archive-logo.svg?v=${initParam.frog2AssetVersion}"
                          width="4096"
                          height="2286"
                          alt="${productName}">

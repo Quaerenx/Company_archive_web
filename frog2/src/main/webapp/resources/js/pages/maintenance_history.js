@@ -124,8 +124,13 @@
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: {
-                    position: 'top',
-                    labels: { color: chartColors.text }
+                    position: compactChart ? 'bottom' : 'top',
+                    labels: {
+                        boxWidth: compactChart ? 10 : 40,
+                        color: chartColors.text,
+                        padding: compactChart ? 12 : 10,
+                        usePointStyle: compactChart
+                    }
                 },
                 tooltip: {
                     backgroundColor: chartColors.textStrong,

@@ -27,6 +27,16 @@ class ResponsiveAccessibilityContractTest {
     }
 
     @Test
+    void standaloneErrorPagesDeclareMobileViewport() throws Exception {
+        for (String pagePath : List.of("error/404.jsp", "error/500.jsp")) {
+            String page = read(pagePath);
+            assertTrue(page.contains(
+                    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\""),
+                    pagePath);
+        }
+    }
+
+    @Test
     void overflowingDataTablesBecomeNamedKeyboardRegionsOnlyWhenNeeded()
             throws Exception {
         String uiCss = read("resources/css/ui-system.css");

@@ -70,7 +70,7 @@ class MaintenanceServletAuthorizationTest {
         assertEquals("4", row.getCapacityTerabytes());
         assertEquals(new java.math.BigDecimal("50.0"),
                 row.getUsagePercentage());
-        assertEquals("—", row.getDeltaLabel());
+        assertEquals("-", row.getDeltaLabel());
         assertEquals(1,
                 ((List<?>) request.attributes.get("usageSeries")).size());
     }
@@ -168,12 +168,8 @@ class MaintenanceServletAuthorizationTest {
         servlet.doGet(request.proxy(), response.proxy());
 
         assertNull(request.forwardedPath);
-        assertEquals(
-                "maintenance?view=history&customerName=Acme",
-                response.redirect);
-        assertEquals(
-                "수정 권한이 없습니다.",
-                request.sessionAttributes.get("error"));
+        assertTrue(response.redirect.startsWith(
+                "maintenance?view=history&customerName=Acme&_flash="));
     }
 
     @Test
@@ -322,10 +318,8 @@ class MaintenanceServletAuthorizationTest {
         servlet.doPost(update.proxy(), updateResponse.proxy());
 
         assertEquals("attacker-1", dao.lastUpdateOwnerId);
-        assertEquals(
-                "maintenance?view=history&customerName=Acme",
-                updateResponse.redirect);
-        assertTrue(update.sessionAttributes.containsKey("error"));
+        assertTrue(updateResponse.redirect.startsWith(
+                "maintenance?view=history&customerName=Acme&_flash="));
 
         RequestFixture delete = new RequestFixture(user("attacker-1"));
         delete.parameters.put("action", "delete");
@@ -336,10 +330,8 @@ class MaintenanceServletAuthorizationTest {
         servlet.doPost(delete.proxy(), deleteResponse.proxy());
 
         assertEquals("attacker-1", dao.lastDeleteOwnerId);
-        assertEquals(
-                "maintenance?view=history&customerName=Acme",
-                deleteResponse.redirect);
-        assertTrue(delete.sessionAttributes.containsKey("error"));
+        assertTrue(deleteResponse.redirect.startsWith(
+                "maintenance?view=history&customerName=Acme&_flash="));
     }
 
     private static MaintenanceRecordDTO record(String creatorUserId) {

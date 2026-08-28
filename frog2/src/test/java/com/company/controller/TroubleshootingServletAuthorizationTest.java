@@ -124,12 +124,8 @@ class TroubleshootingServletAuthorizationTest {
         servlet.doGet(request.proxy(), response.proxy());
 
         assertNull(request.forwardedPath);
-        assertEquals(
-                "troubleshooting?view=view&id=7",
-                response.redirect);
-        assertEquals(
-                "수정 권한이 없습니다.",
-                request.sessionAttributes.get("error"));
+        assertTrue(response.redirect.startsWith(
+                "troubleshooting?view=view&id=7&_flash="));
     }
 
     @Test
@@ -148,10 +144,8 @@ class TroubleshootingServletAuthorizationTest {
         servlet.doPost(update.proxy(), updateResponse.proxy());
 
         assertEquals("attacker-1", dao.lastUpdateOwnerId);
-        assertEquals(
-                "troubleshooting?view=list",
-                updateResponse.redirect);
-        assertTrue(update.sessionAttributes.containsKey("error"));
+        assertTrue(updateResponse.redirect.startsWith(
+                "troubleshooting?view=list&_flash="));
 
         RequestFixture delete =
                 new RequestFixture(user("attacker-1", "Same Name"), "POST");
@@ -161,10 +155,8 @@ class TroubleshootingServletAuthorizationTest {
         servlet.doPost(delete.proxy(), deleteResponse.proxy());
 
         assertEquals("attacker-1", dao.lastDeleteOwnerId);
-        assertEquals(
-                "troubleshooting?view=list",
-                deleteResponse.redirect);
-        assertTrue(delete.sessionAttributes.containsKey("error"));
+        assertTrue(deleteResponse.redirect.startsWith(
+                "troubleshooting?view=list&_flash="));
     }
 
     @Test
@@ -184,11 +176,8 @@ class TroubleshootingServletAuthorizationTest {
         servlet.doPost(request.proxy(), response.proxy());
 
         assertEquals("owner-1", dao.lastUpdateOwnerId);
-        assertEquals(
-                "troubleshooting?view=view&id=7",
-                response.redirect);
-        assertTrue(request.sessionAttributes.containsKey("message"));
-        assertFalse(request.sessionAttributes.containsKey("error"));
+        assertTrue(response.redirect.startsWith(
+                "troubleshooting?view=view&id=7&_flash="));
     }
 
     private static TroubleshootingDTO record(

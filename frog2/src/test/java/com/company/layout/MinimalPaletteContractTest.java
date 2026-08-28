@@ -43,14 +43,13 @@ class MinimalPaletteContractTest {
         assertTrue(tokens.contains("--color-icon-strong: var(--palette-text);"));
         assertTrue(tokens.contains("--color-icon: var(--palette-text-muted);"));
         assertTrue(tokens.contains("--color-icon-active: var(--palette-brand);"));
-        assertTrue(tokens.contains(
-                "--color-on-warning: var(--palette-surface);"));
+        assertFalse(tokens.contains("--color-on-warning:"));
         assertTrue(tokens.contains(
                 "--color-on-warning-accent: var(--palette-text-strong);"));
         assertTrue(tokens.contains(
                 "--color-warning-accent: var(--palette-warning);"));
         assertTrue(tokens.contains(
-                "--color-warning-text: var(--color-warning);"));
+                "--color-warning-text: var(--palette-text-strong);"));
         assertTrue(tokens.contains("--color-chart-usage: var(--palette-brand);"));
         assertTrue(tokens.contains("--color-chart-used: var(--palette-success);"));
         assertTrue(tokens.contains(

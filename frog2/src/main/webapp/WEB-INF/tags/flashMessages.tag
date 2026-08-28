@@ -12,25 +12,3 @@
         <span><c:out value="${requestScope.message}" /></span>
     </div>
 </c:if>
-
-<c:if test="${not empty sessionScope.message}">
-    <div class="ui-alert ui-alert--success"
-         role="status"
-         aria-live="polite"
-         aria-atomic="true">
-        <i class="fas fa-check-circle" aria-hidden="true"></i>
-        <span><c:out value="${sessionScope.message}" /></span>
-    </div>
-    <c:remove var="message" scope="session" />
-</c:if>
-
-<c:if test="${not empty sessionScope.error}">
-    <div class="ui-alert ui-alert--danger"
-         role="alert"
-         aria-live="assertive"
-         aria-atomic="true">
-        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-        <span><c:out value="${sessionScope.error}" /></span>
-    </div>
-    <c:remove var="error" scope="session" />
-</c:if>

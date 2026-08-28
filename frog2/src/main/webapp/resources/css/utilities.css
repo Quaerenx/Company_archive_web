@@ -251,7 +251,7 @@
     .d-sm-grid { display: grid; }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
     .d-md-none { display: none; }
     .d-md-inline { display: inline; }
     .d-md-inline-block { display: inline-block; }

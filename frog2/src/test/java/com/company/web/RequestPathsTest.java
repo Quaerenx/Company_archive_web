@@ -32,8 +32,6 @@ class RequestPathsTest {
                 "/webjars/library/file.js",
                 "/resources/fonts/ibm-plex-sans-kr/1.1.0/font.woff2",
                 "/resources/images/archive-logo.svg",
-                "/resources/images/archive-primary-logo.svg",
-                "/resources/images/archive-compact-horizontal.svg",
                 "/favicon.ico",
                 "/favicon.svg",
                 "/favicon.png"}) {
@@ -47,7 +45,7 @@ class RequestPathsTest {
                 "/resources/hidden.class",
                 "/resources/active.html",
                 "/resources/vector.svg",
-                "/resources/images/archive-primary-logo.svg/extra",
+                "/resources/images/archive-logo.svg/extra",
                 "/resources/images/other.svg",
                 "/favicon.svg/extra",
                 "/resources/hidden.jsp;asset=.js",

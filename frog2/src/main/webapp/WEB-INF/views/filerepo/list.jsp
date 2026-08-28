@@ -32,7 +32,7 @@
         <div class="file-toolbar ui-table-toolbar">
             <nav class="breadcrumb" aria-label="자료실 경로">
                 <c:url var="rootUrl" value="/file-repository" />
-                <a href="<c:out value="${rootUrl}" />"><i class="fas fa-home"></i> 자료실</a>
+                <a href="<c:out value="${rootUrl}" />"><i class="fas fa-home" aria-hidden="true"></i> 자료실</a>
                 <c:forEach var="crumb" items="${listing.breadcrumbs}">
                     <span aria-hidden="true"> / </span>
                     <c:url var="crumbUrl" value="/file-repository">
@@ -67,7 +67,7 @@
                 </div>
             </c:when>
             <c:otherwise>
-                <div class="table-wrapper ui-table-wrap"
+                <div class="ui-table-wrap"
                      data-ui-scroll-region
                      data-ui-scroll-label="자료실 파일 및 폴더 표">
                     <table class="file-table ui-table ui-data-table">
@@ -87,14 +87,17 @@
                                 </c:url>
                                 <tr class="parent-dir">
                                     <td colspan="4">
-                                        <a href="<c:out value="${parentUrl}" />"><i class="fas fa-level-up-alt"></i> 상위 폴더</a>
+                                        <a href="<c:out value="${parentUrl}" />">
+                                            <i class="fas fa-level-up-alt" aria-hidden="true"></i> 상위 폴더
+                                        </a>
                                     </td>
                                 </tr>
                             </c:if>
 
                             <c:forEach var="entry" items="${listing.entries}">
                                 <tr>
-                                    <td class="file-name col--title ${entry.directory ? 'directory' : ''}">
+                                    <td class="file-name col--title ${entry.directory ? 'directory' : ''}"
+                                        data-label="이름">
                                         <span class="file-name-content">
                                             <span class="icon" aria-hidden="true"><c:out value="${entry.icon}" /></span>
                                             <c:choose>
@@ -114,9 +117,15 @@
                                             </c:choose>
                                         </span>
                                     </td>
-                                    <td class="col--description"><c:out value="${entry.description}" /></td>
-                                    <td class="date col--date"><c:out value="${entry.lastModifiedText}" /></td>
-                                    <td class="size col--numeric"><c:out value="${entry.sizeText}" /></td>
+                                    <td class="col--description" data-label="설명">
+                                        <c:out value="${entry.description}" />
+                                    </td>
+                                    <td class="date col--date" data-label="수정일">
+                                        <c:out value="${entry.lastModifiedText}" />
+                                    </td>
+                                    <td class="size col--numeric" data-label="크기">
+                                        <c:out value="${entry.sizeText}" />
+                                    </td>
                                 </tr>
                             </c:forEach>
                         </tbody>

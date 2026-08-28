@@ -2,6 +2,7 @@ package com.company.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.lang.reflect.Proxy;
@@ -15,12 +16,20 @@ class FaviconServletTest {
     void legacyIcoRequestRedirectsToVersionedArchiveSvg() throws Exception {
         Map<String, String> headers = new HashMap<>();
         AtomicInteger status = new AtomicInteger();
+        ServletContext servletContext = (ServletContext) Proxy.newProxyInstance(
+                ServletContext.class.getClassLoader(),
+                new Class<?>[] {ServletContext.class},
+                (ignored, call, args) -> "getInitParameter".equals(call.getName())
+                        ? "asset-test-version"
+                        : defaultValue(call.getReturnType()));
         HttpServletRequest request = (HttpServletRequest) Proxy.newProxyInstance(
                 HttpServletRequest.class.getClassLoader(),
                 new Class<?>[] {HttpServletRequest.class},
-                (ignored, call, args) -> "getContextPath".equals(call.getName())
-                        ? "/frog2"
-                        : defaultValue(call.getReturnType()));
+                (ignored, call, args) -> switch (call.getName()) {
+                    case "getContextPath" -> "/frog2";
+                    case "getServletContext" -> servletContext;
+                    default -> defaultValue(call.getReturnType());
+                });
         HttpServletResponse response = (HttpServletResponse) Proxy.newProxyInstance(
                 HttpServletResponse.class.getClassLoader(),
                 new Class<?>[] {HttpServletResponse.class},
@@ -37,7 +46,7 @@ class FaviconServletTest {
 
         assertEquals(HttpServletResponse.SC_FOUND, status.get());
         assertEquals(
-                "/frog2/favicon.svg?v=20260814-archive-favicon-1",
+                "/frog2/favicon.svg?v=asset-test-version",
                 headers.get("Location"));
     }
 

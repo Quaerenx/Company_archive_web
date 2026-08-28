@@ -50,6 +50,32 @@ class DesignFeedbackRefinementContractTest {
     }
 
     @Test
+    void pageHeadersStayQuieterThanInteractiveWorkSurfaces() throws Exception {
+        String tokens = read("resources/css/tokens.css");
+        String components = read("resources/css/components.css");
+        String system = read("resources/css/ui-system.css");
+
+        assertTrue(tokens.contains(
+                "--color-surface-subtle: var(--palette-canvas);"));
+        assertTrue(tokens.contains(
+                "--color-surface-muted: var(--palette-surface-muted);"));
+        assertTrue(tokens.contains(
+                "--color-surface-hover: var(--palette-ambient);"));
+        assertTrue(tokens.contains(
+                "--color-text-disabled: var(--palette-border-strong);"));
+        assertTrue(components.contains(
+                ".page-header {\n"
+                        + "    background: var(--color-surface-elevated);\n"
+                        + "    border: 1px solid var(--color-border);"));
+        assertTrue(components.contains("    box-shadow: none;"));
+        assertTrue(system.contains(
+                ".ui-system .ui-work-surface {\n"
+                        + "    background: var(--color-surface);\n"
+                        + "    border: 1px solid var(--color-surface-edge);\n"
+                        + "    box-shadow: var(--shadow-sm);"));
+    }
+
+    @Test
     void riskProgressAddsANonColorPatternWithoutChangingApprovedColors()
             throws Exception {
         String tokens = read("resources/css/tokens.css");
@@ -69,6 +95,10 @@ class DesignFeedbackRefinementContractTest {
         assertTrue(history.contains(
                 ".history-license-progress--risk::-moz-progress-bar {\n"
                         + "    background: var(--progress-risk-fill);"));
+        assertTrue(history.contains(
+                ".history-license-percent--warning {\n"
+                        + "    background: var(--color-warning-bg);\n"
+                        + "    border-inline-start: 3px solid var(--color-warning-accent);"));
     }
 
     @Test

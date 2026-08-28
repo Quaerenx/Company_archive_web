@@ -66,6 +66,7 @@ public class MaintenanceServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        FlashMessage.expose(request);
 
         // 뷰 타입 확인
         String viewType = request.getParameter("view");
@@ -166,18 +167,29 @@ public class MaintenanceServlet extends HttpServlet {
                         request.setAttribute("viewType", "edit");
                         request.getRequestDispatcher("/maintenance/maintenance_edit.jsp").forward(request, response);
                     } else if (record == null) {
-                        session.setAttribute("error", "해당 정기점검 이력을 찾을 수 없습니다.");
-                        response.sendRedirect("maintenance?view=cards");
+                        FlashMessage.redirect(
+                                request,
+                                response,
+                                "maintenance?view=cards",
+                                "해당 정기점검 이력을 찾을 수 없습니다.",
+                                "error");
                     } else {
-                        session.setAttribute("error", "수정 권한이 없습니다.");
-                        response.sendRedirect(
+                        FlashMessage.redirect(
+                                request,
+                                response,
                                 "maintenance?view=history&customerName="
                                         + java.net.URLEncoder.encode(
-                                                record.getCustomerName(), "UTF-8"));
+                                                record.getCustomerName(), "UTF-8"),
+                                "수정 권한이 없습니다.",
+                                "error");
                     }
                 } catch (NumberFormatException e) {
-                    session.setAttribute("error", "잘못된 요청입니다.");
-                    response.sendRedirect("maintenance?view=cards");
+                    FlashMessage.redirect(
+                            request,
+                            response,
+                            "maintenance?view=cards",
+                            "잘못된 요청입니다.",
+                            "error");
                 }
             } else {
                 response.sendRedirect("maintenance?view=cards");
@@ -268,15 +280,16 @@ public class MaintenanceServlet extends HttpServlet {
             }
 
             boolean success = maintenanceDAO.addMaintenanceRecord(record);
-            if (success) {
-                session.setAttribute("message", "정기점검 이력이 성공적으로 추가되었습니다.");
-            } else {
-                session.setAttribute("error", "정기점검 이력 추가 중 오류가 발생했습니다.");
-            }
-
             String customerName = record.getCustomerName();
             String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
-            response.sendRedirect("maintenance?view=history&customerName=" + encodedName);
+            FlashMessage.redirect(
+                    request,
+                    response,
+                    "maintenance?view=history&customerName=" + encodedName,
+                    success
+                            ? "정기점검 이력이 성공적으로 추가되었습니다."
+                            : "정기점검 이력 추가 중 오류가 발생했습니다.",
+                    success ? "success" : "error");
 
         } else if ("update".equals(actionType)) {
             // 정기점검 이력 수정
@@ -288,10 +301,12 @@ public class MaintenanceServlet extends HttpServlet {
                             maintenanceDAO.getMaintenanceRecordById(
                                     maintenanceId);
                     if (existing == null || !isOwner(existing, currentUser)) {
-                        session.setAttribute(
-                                "error",
-                                "수정 권한이 없거나 이력을 찾을 수 없습니다.");
-                        response.sendRedirect("maintenance?view=cards");
+                        FlashMessage.redirect(
+                                request,
+                                response,
+                                "maintenance?view=cards",
+                                "수정 권한이 없거나 이력을 찾을 수 없습니다.",
+                                "error");
                         return;
                     }
                     MaintenanceFormOptions options = maintenanceFormOptions(
@@ -326,19 +341,24 @@ public class MaintenanceServlet extends HttpServlet {
 
                     boolean success = maintenanceDAO.updateMaintenanceRecordForOwner(
                             record, currentUser.getUserId());
-                    if (success) {
-                        session.setAttribute("message", "정기점검 이력이 성공적으로 수정되었습니다.");
-                    } else {
-                        session.setAttribute("error", "정기점검 이력 수정 중 오류가 발생했습니다.");
-                    }
-
                     String customerName = record.getCustomerName();
                     String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
-                    response.sendRedirect("maintenance?view=history&customerName=" + encodedName);
+                    FlashMessage.redirect(
+                            request,
+                            response,
+                            "maintenance?view=history&customerName=" + encodedName,
+                            success
+                                    ? "정기점검 이력이 성공적으로 수정되었습니다."
+                                    : "정기점검 이력 수정 중 오류가 발생했습니다.",
+                            success ? "success" : "error");
 
                 } catch (NumberFormatException e) {
-                    session.setAttribute("error", "잘못된 요청입니다.");
-                    response.sendRedirect("maintenance?view=cards");
+                    FlashMessage.redirect(
+                            request,
+                            response,
+                            "maintenance?view=cards",
+                            "잘못된 요청입니다.",
+                            "error");
                 }
             }
 
@@ -346,6 +366,8 @@ public class MaintenanceServlet extends HttpServlet {
             // 정기점검 이력 삭제
             String maintenanceIdStr = request.getParameter("maintenance_id");
             String customerName = request.getParameter("customer_name");
+            String message = null;
+            String messageType = null;
 
             if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
                 try {
@@ -353,20 +375,30 @@ public class MaintenanceServlet extends HttpServlet {
                     boolean success = maintenanceDAO.deleteMaintenanceRecordForOwner(
                             maintenanceId, currentUser.getUserId());
                     if (success) {
-                        session.setAttribute("message", "정기점검 이력이 성공적으로 삭제되었습니다.");
+                        message = "정기점검 이력이 성공적으로 삭제되었습니다.";
+                        messageType = "success";
                     } else {
-                        session.setAttribute("error", "정기점검 이력 삭제 중 오류가 발생했습니다.");
+                        message = "정기점검 이력 삭제 중 오류가 발생했습니다.";
+                        messageType = "error";
                     }
                 } catch (NumberFormatException e) {
-                    session.setAttribute("error", "잘못된 요청입니다.");
+                    message = "잘못된 요청입니다.";
+                    messageType = "error";
                 }
             }
 
+            String location;
             if (customerName != null && !customerName.isEmpty()) {
                 String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
-                response.sendRedirect("maintenance?view=history&customerName=" + encodedName);
+                location = "maintenance?view=history&customerName=" + encodedName;
             } else {
-                response.sendRedirect("maintenance?view=cards");
+                location = "maintenance?view=cards";
+            }
+            if (message == null) {
+                response.sendRedirect(location);
+            } else {
+                FlashMessage.redirect(
+                        request, response, location, message, messageType);
             }
 
         } else {

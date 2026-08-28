@@ -14,7 +14,9 @@ body.login-page {
     margin: 0;
     min-height: 100vh;
     min-height: 100dvh;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
     padding: var(--space-24);
     position: relative;
 }
@@ -24,7 +26,19 @@ body.login-page {
 }
 
 .login-page .login-shell {
+    /* 문서 peek 튜닝 지점. 아래 슬롯 규칙은 전부 이 값에서 파생된다. */
+    --peek-x: 18%;
+    --peek-y: 2%;
+    --peek-rotate: 5deg;
+    --peek-top-y: -13%;
+    --peek-top-scale: 0.96;
+    --peek-rest-scale: 0.94;
+    --peek-stagger: 70ms;
+    --peek-duration: 410ms;
+    --peek-fade: 246ms;
+    --peek-ease: cubic-bezier(0.34, 1.4, 0.64, 1);
     inline-size: min(100%, 408px);
+    isolation: isolate;
     position: relative;
     z-index: 1;
 }
@@ -50,6 +64,8 @@ body.login-page::after {
     box-shadow: var(--shadow-login);
     backdrop-filter: blur(var(--login-card-blur));
     padding: var(--space-40) var(--space-40) var(--space-32);
+    position: relative;
+    z-index: 1;
 }
 
 .login-page .login-header {
@@ -205,6 +221,195 @@ body.login-page::after {
 .login-page .login-submit:is(:disabled, .is-loading) {
     box-shadow: none;
     transform: none;
+}
+
+/* 카드 뒤 문서 peek --------------------------------------------------------
+   좌상단 / 상단 / 우상단 3장이 로그인 카드와 같은 박스에서 출발해
+   hover(또는 폼 포커스) 시 바깥으로 펼쳐진다. 좌우는 부호만 뒤집은 대칭.  */
+
+.login-page .login-peek {
+    inset: 0;
+    /* 없으면 펼쳐진 문서 위에서 hover 타깃이 바뀌며 열림/닫힘이 진동한다. */
+    pointer-events: none;
+    position: absolute;
+    z-index: 0;
+}
+
+/* 겹침 순서는 도형의 좌우 대칭을 따라간다. z-index가 없으면 DOM 순서대로 칠해져
+   3번만 2번을 덮고 1번은 2번에 덮이는 비대칭이 생긴다. 가운데를 가장 뒤로 둔다.
+   .login-peek이 z-index: 0으로 쌓임 맥락을 만들므로 이 값들은 카드 위로 올라오지 않는다. */
+.login-page .peek-doc {
+    inset: 0;
+    position: absolute;
+    z-index: 1;
+}
+
+.login-page .peek-doc:nth-child(2) {
+    z-index: 0;
+}
+
+.login-page .peek-sheet {
+    /* 문서 내용은 마크업이 아니라 배경 그라디언트로 그린 더미 실루엣이다. */
+    background-color: var(--peek-surface);
+    background-image:
+        repeating-linear-gradient(
+            to bottom,
+            var(--peek-ink) 0 6px,
+            transparent 6px 28px
+        ),
+        repeating-linear-gradient(
+            to bottom,
+            var(--peek-ink) 0 7px,
+            transparent 7px 84px
+        ),
+        repeating-linear-gradient(
+            to bottom,
+            var(--peek-ink) 0 7px,
+            transparent 7px 28px
+        );
+    background-position:
+        right var(--space-20) top 78px,
+        left var(--space-20) top 78px,
+        left var(--space-20) top 78px;
+    background-repeat: no-repeat;
+    background-size:
+        30px calc(100% - 100px),
+        84% calc(100% - 100px),
+        58% calc(100% - 100px);
+    block-size: 100%;
+    border: 1px solid var(--peek-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    overflow: hidden;
+    position: relative;
+    transform: scale(var(--peek-rest-scale));
+    /* 그림자는 높이의 표현이므로 이동과 같은 창(--peek-duration)에서 따라간다.
+       스프링 커브를 그대로 쓰면 되튐 구간에서 그림자가 목표값을 넘겨 번지므로
+       감속 커브를 쓴다. transition-delay는 아래에서 일괄 적용된다. */
+    transition:
+        transform var(--peek-duration) var(--peek-ease),
+        box-shadow var(--peek-duration) var(--motion-ease),
+        opacity var(--peek-fade) var(--motion-ease);
+    /* 접힐 때는 순차 지연 없이 한 번에 돌아온다. */
+    transition-delay: 0ms;
+}
+
+/* 문서 머리말: 폴더 아이콘 + 제목 바 */
+.login-page .peek-sheet::before {
+    background: var(--peek-icon);
+    block-size: 16px;
+    border-radius: var(--radius-sm);
+    content: "";
+    inline-size: 20px;
+    inset-block-start: var(--space-24);
+    inset-inline-start: var(--space-20);
+    position: absolute;
+}
+
+.login-page .peek-sheet::after {
+    background: var(--peek-ink);
+    block-size: 9px;
+    border-radius: var(--radius-sm);
+    content: "";
+    inline-size: 46%;
+    inset-block-start: calc(var(--space-24) + 4px);
+    inset-inline-start: calc(var(--space-20) + 29px);
+    position: absolute;
+}
+
+/* 슬롯별 위치와 색. 1번과 3번은 부호만 다른 좌우 대칭. */
+.login-page .peek-doc:nth-child(1) .peek-sheet {
+    --peek-surface: var(--color-surface);
+    --peek-border: var(--color-border);
+    --peek-tx: calc(var(--peek-x) * -1);
+    --peek-ty: var(--peek-y);
+    --peek-rot: calc(var(--peek-rotate) * -1);
+    --peek-scale: 1;
+    --peek-delay: var(--peek-stagger);
+}
+
+.login-page .peek-doc:nth-child(2) .peek-sheet {
+    --peek-surface: var(--color-surface-selected);
+    --peek-border: var(--color-surface-edge);
+    --peek-tx: 0%;
+    --peek-ty: var(--peek-top-y);
+    --peek-rot: 0deg;
+    --peek-scale: var(--peek-top-scale);
+    --peek-delay: 0ms;
+}
+
+.login-page .peek-doc:nth-child(3) .peek-sheet {
+    --peek-surface: var(--color-surface-muted);
+    --peek-border: var(--color-border);
+    --peek-tx: var(--peek-x);
+    --peek-ty: var(--peek-y);
+    --peek-rot: var(--peek-rotate);
+    --peek-scale: 1;
+    --peek-delay: var(--peek-stagger);
+}
+
+/* 실루엣 바 색은 각 문서의 배경에서 파생시킨다. */
+.login-page .peek-sheet {
+    --peek-ink: var(--color-border);
+    --peek-icon: var(--color-surface-edge);
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+    .login-page .peek-sheet {
+        --peek-ink: color-mix(
+            in srgb,
+            var(--peek-surface) 72%,
+            var(--color-border-strong)
+        );
+        --peek-icon: color-mix(
+            in srgb,
+            var(--peek-surface) 66%,
+            var(--color-primary)
+        );
+    }
+}
+
+/* 마우스가 있는 환경에서만 펼친다. 터치에서는 대기 상태 그대로. */
+@media (hover: hover) and (pointer: fine) {
+    .login-page .login-shell:hover .peek-sheet,
+    .login-page .login-shell:focus-within .peek-sheet {
+        box-shadow: var(--shadow-lg);
+        opacity: 1;
+        transform:
+            translate(var(--peek-tx), var(--peek-ty))
+            rotate(var(--peek-rot))
+            scale(var(--peek-scale));
+        transition-delay: var(--peek-delay);
+    }
+}
+
+/* 감소 모션에서는 펼침을 즉시 끝낸다. 지속 시간이 토큰이 아니라 로컬 값이라
+   파일 하단의 포괄 규칙(.login-page *)보다 이 규칙의 명시도가 높기 때문에
+   여기서 직접 꺼야 한다.                                                */
+@media (prefers-reduced-motion: reduce) {
+    .login-page .login-shell {
+        --peek-duration: 0.01ms;
+        --peek-fade: 0.01ms;
+    }
+}
+
+/* 화면이 좁거나 낮으면 카드 밖 문서가 입력 영역과 겹치므로 장식만 내린다. */
+@media (max-width: 640px) {
+    .login-page .login-peek {
+        display: none;
+    }
+}
+
+@media (max-height: 640px) {
+    body.login-page {
+        align-items: flex-start;
+        padding-block: var(--space-16);
+    }
+
+    .login-page .login-peek {
+        display: none;
+    }
 }
 
 @media (max-width: 480px) {

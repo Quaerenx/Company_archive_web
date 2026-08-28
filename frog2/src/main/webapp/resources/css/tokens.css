@@ -37,9 +37,9 @@
     --color-background: var(--palette-canvas);
     --color-surface: var(--palette-surface);
     --color-surface-elevated: var(--palette-surface);
-    --color-surface-subtle: var(--palette-surface-muted);
+    --color-surface-subtle: var(--palette-canvas);
     --color-surface-muted: var(--palette-surface-muted);
-    --color-surface-hover: var(--palette-surface-muted);
+    --color-surface-hover: var(--palette-ambient);
     --color-surface-selected: var(--palette-brand-subtle);
     --color-surface-inverse: var(--palette-text-strong);
 
@@ -59,7 +59,6 @@
     --color-success-hover: var(--palette-success);
     --color-danger: var(--palette-danger);
     --color-danger-hover: var(--palette-danger);
-    --color-warning: var(--palette-text-strong);
     --color-warning-accent: var(--palette-warning);
     --color-warning-hover: var(--palette-warning);
     --color-info: var(--palette-brand);
@@ -78,7 +77,7 @@
     --color-text: var(--palette-text);
     --color-text-secondary: var(--palette-text-muted);
     --color-text-muted: var(--palette-text-muted);
-    --color-text-disabled: var(--palette-text-muted);
+    --color-text-disabled: var(--palette-border-strong);
     --color-icon-strong: var(--palette-text);
     --color-icon: var(--palette-text-muted);
     --color-icon-active: var(--palette-brand);
@@ -105,7 +104,6 @@
     --color-on-secondary: var(--palette-surface);
     --color-on-success: var(--palette-surface);
     --color-on-danger: var(--palette-surface);
-    --color-on-warning: var(--palette-surface);
     --color-on-warning-accent: var(--palette-text-strong);
     --color-on-info: var(--palette-surface);
     --color-on-strong: var(--palette-surface);
@@ -133,7 +131,7 @@
     --color-success-text: var(--palette-success);
     --color-warning-bg: var(--palette-warning-subtle);
     --color-warning-border: var(--color-warning-accent);
-    --color-warning-text: var(--color-warning);
+    --color-warning-text: var(--palette-text-strong);
     --color-danger-bg: var(--palette-danger-subtle);
     --color-danger-border: var(--palette-danger);
     --color-danger-text: var(--palette-danger);

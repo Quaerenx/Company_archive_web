@@ -129,8 +129,8 @@ class CustomerControllerCompatibilityTest {
 
         assertEquals("Acme", customerDAO.added.getCustomerName());
         assertEquals("tester", customerDAO.lastActorUserId);
-        assertEquals("customers?view=list", addResponse.redirect);
-        assertTrue(add.sessionAttributes.containsKey("message"));
+        assertTrue(addResponse.redirect.startsWith(
+                "customers?view=list&_flash="));
 
         customerDAO.customer = customer("Acme Corp");
         RequestFixture save = new RequestFixture();
@@ -142,10 +142,8 @@ class CustomerControllerCompatibilityTest {
         servlet.doPost(save.proxy(), saveResponse.proxy());
 
         assertEquals(List.of("dev:Acme Corp"), detailDAO.writes);
-        assertEquals(
-                "customers?view=detail&customerName=Acme+Corp&env=dev",
-                saveResponse.redirect);
-        assertTrue(save.sessionAttributes.containsKey("message"));
+        assertTrue(saveResponse.redirect.startsWith(
+                "customers?view=detail&customerName=Acme+Corp&env=dev&_flash="));
     }
 
     @Test
@@ -191,9 +189,8 @@ class CustomerControllerCompatibilityTest {
 
         assertEquals(List.of("prod:Acme"), detailDAO.writes);
         assertEquals("tester", detailDAO.lastActorUserId);
-        assertEquals(
-                "customers?view=detail&customerName=Acme&env=prod",
-                response.redirect);
+        assertTrue(response.redirect.startsWith(
+                "customers?view=detail&customerName=Acme&env=prod&_flash="));
     }
 
     @Test
@@ -233,10 +230,8 @@ class CustomerControllerCompatibilityTest {
         assertEquals("customers?view=list", editResponse.redirect);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, jsonResponse.status);
         assertTrue(jsonResponse.body.toString().contains("\"code\":\"customer_not_found\""));
-        assertEquals(
-                "customers?view=detail&customerName=Retired&env=dev",
-                saveResponse.redirect);
-        assertTrue(save.sessionAttributes.containsKey("error"));
+        assertTrue(saveResponse.redirect.startsWith(
+                "customers?view=detail&customerName=Retired&env=dev&_flash="));
         assertEquals(null, detail.attributes.get("customer"));
         assertEquals(null, detail.attributes.get("customerDetail"));
         assertEquals(null, detail.attributes.get("customerDetailStg"));

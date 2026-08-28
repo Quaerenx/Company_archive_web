@@ -96,9 +96,7 @@ class DevelopmentServerSmokeTest {
 
         assertHealthyAsset("resources/js/ui-system.js", "javascript");
         assertHealthyAsset("favicon.svg", "image/svg+xml");
-        assertHealthyAsset(
-                "resources/images/archive-compact-horizontal.svg",
-                "image/svg+xml");
+        assertHealthyAsset("resources/images/archive-logo.svg", "image/svg+xml");
     }
 
     @Test

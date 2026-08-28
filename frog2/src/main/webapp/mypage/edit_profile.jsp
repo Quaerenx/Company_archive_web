@@ -19,7 +19,7 @@
         </jsp:attribute>
     </t:pageHeader>
 
-    <div class="form-card ui-form-card">
+    <div class="ui-form-card">
         <form id="profileEditForm"
               class="ui-form"
               action="${pageContext.request.contextPath}/mypage"

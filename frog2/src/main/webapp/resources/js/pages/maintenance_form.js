@@ -3,10 +3,12 @@
 
     function formatLicensePercentageHalfUp(value) {
         if (!Number.isFinite(value) || value < 0) return '';
-        const scaled = value * 10;
+        const scaled = value * 100;
         const tolerance = Number.EPSILON
             * Math.max(1, Math.abs(scaled)) * 2;
-        return (Math.floor(scaled + 0.5 + tolerance) / 10).toFixed(1);
+        const formatted = (Math.floor(scaled + 0.5 + tolerance) / 100)
+            .toFixed(2);
+        return formatted.endsWith('0') ? formatted.slice(0, -1) : formatted;
     }
 
     if (typeof module === 'object' && module.exports) {
@@ -181,7 +183,8 @@
                 showContextStatus(null);
             })
             .catch(function(error) {
-                if (error.name !== 'AbortError') {
+                if (error.name !== 'AbortError'
+                        && !window.Frog2Session.isSessionExpired(error)) {
                     console.error('Unable to load maintenance form context:', error);
                     showContextStatus(
                         '이전 점검 정보와 같은 달 등록 여부를 불러오지 못했습니다.');
@@ -200,6 +203,7 @@
     }
 
     function readJsonResponse(response) {
+        window.Frog2Session.requireActiveSession(response);
         if (!response.ok) {
             throw new Error('Maintenance request failed with status '
                 + response.status);

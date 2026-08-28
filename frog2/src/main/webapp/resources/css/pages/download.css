@@ -96,8 +96,108 @@ body.page-file-repository {
 }
 
 @media (max-width: 768px) {
+    .page-file-repository .ui-table-wrap {
+        overflow-x: visible;
+        padding: var(--space-12);
+    }
+
     .page-file-repository .file-table {
-        min-width: 680px;
+        display: block;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .page-file-repository .file-table thead {
+        border: 0;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        white-space: nowrap;
+        width: 1px;
+    }
+
+    .page-file-repository .file-table tbody {
+        display: grid;
+        gap: var(--space-12);
+    }
+
+    .page-file-repository .file-table tbody tr {
+        background: var(--color-surface);
+        border: 1px solid var(--color-surface-edge);
+        border-radius: var(--radius-lg);
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .page-file-repository .file-table.ui-data-table td {
+        align-items: start;
+        block-size: auto;
+        border: 0;
+        box-sizing: border-box;
+        display: grid;
+        gap: var(--space-12);
+        grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+        inline-size: 100%;
+        min-width: 0;
+        overflow: visible;
+        overflow-wrap: anywhere;
+        padding: var(--space-12);
+        text-align: left;
+        white-space: normal;
+    }
+
+    .page-file-repository .file-table td + td {
+        border-top: 1px solid var(--color-border);
+    }
+
+    .page-file-repository .file-table td::before {
+        color: var(--color-text-muted);
+        content: attr(data-label);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+    }
+
+    .page-file-repository .file-table.ui-data-table .file-name-content {
+        overflow: visible;
+    }
+
+    .page-file-repository .file-table .file-name a {
+        align-items: center;
+        display: inline-flex;
+        min-height: 44px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .page-file-repository .file-table .icon {
+        flex: 0 0 20px;
+    }
+
+    .page-file-repository .file-table tbody tr.parent-dir {
+        background: var(--color-surface-selected);
+    }
+
+    .page-file-repository .file-table.ui-data-table .parent-dir td {
+        display: block;
+    }
+
+    .page-file-repository .file-table .parent-dir td::before {
+        content: none;
+    }
+
+    .page-file-repository .file-table .parent-dir a {
+        align-items: center;
+        display: inline-flex;
+        min-height: 44px;
+    }
+
+    .page-file-repository .file-table tbody tr.parent-dir:hover {
+        background: var(--color-surface-hover);
     }
 
     .page-file-repository .stats {

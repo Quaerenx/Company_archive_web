@@ -49,6 +49,7 @@ public class MeetingServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        FlashMessage.expose(request);
 
         // 뷰 타입 확인
         String viewType = request.getParameter("view");
@@ -101,8 +102,12 @@ public class MeetingServlet extends HttpServlet {
                 request.setAttribute("viewType", "view");
                 request.getRequestDispatcher("/meeting/meeting_view.jsp").forward(request, response);
             } else {
-                session.setAttribute("error", "존재하지 않는 회의록입니다.");
-                response.sendRedirect("meeting?view=list");
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "meeting?view=list",
+                        "존재하지 않는 회의록입니다.",
+                        "error");
             }
 
         } else if ("write".equals(viewType)) {
@@ -128,12 +133,20 @@ public class MeetingServlet extends HttpServlet {
                     request.setAttribute("viewType", "edit");
                     request.getRequestDispatcher("/meeting/meeting_edit.jsp").forward(request, response);
                 } else {
-                    session.setAttribute("error", "수정 권한이 없습니다.");
-                    response.sendRedirect("meeting?view=view&id=" + meetingId);
+                    FlashMessage.redirect(
+                            request,
+                            response,
+                            "meeting?view=view&id=" + meetingId,
+                            "수정 권한이 없습니다.",
+                            "error");
                 }
             } else {
-                session.setAttribute("error", "존재하지 않는 회의록입니다.");
-                response.sendRedirect("meeting?view=list");
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "meeting?view=list",
+                        "존재하지 않는 회의록입니다.",
+                        "error");
             }
 
         } else {
@@ -162,12 +175,14 @@ public class MeetingServlet extends HttpServlet {
             }
 
             boolean success = meetingDAO.addMeetingRecord(meeting);
-            if (success) {
-                session.setAttribute("message", "회의록이 성공적으로 등록되었습니다.");
-            } else {
-                session.setAttribute("error", "회의록 등록 중 오류가 발생했습니다.");
-            }
-            response.sendRedirect("meeting?view=list");
+            FlashMessage.redirect(
+                    request,
+                    response,
+                    "meeting?view=list",
+                    success
+                            ? "회의록이 성공적으로 등록되었습니다."
+                            : "회의록 등록 중 오류가 발생했습니다.",
+                    success ? "success" : "error");
 
         } else if ("update".equals(actionType)) {
             MeetingRecordDTO meeting;
@@ -182,13 +197,19 @@ public class MeetingServlet extends HttpServlet {
             boolean success = meetingDAO.updateMeetingRecordForAuthor(
                     meeting, user.getUserId());
             if (success) {
-                session.setAttribute("message", "회의록이 성공적으로 수정되었습니다.");
-                response.sendRedirect("meeting?view=view&id=" + meetingId);
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "meeting?view=view&id=" + meetingId,
+                        "회의록이 성공적으로 수정되었습니다.",
+                        "success");
             } else {
-                session.setAttribute(
-                        "error",
-                        "수정 권한이 없거나 회의록이 존재하지 않습니다.");
-                response.sendRedirect("meeting?view=list");
+                FlashMessage.redirect(
+                        request,
+                        response,
+                        "meeting?view=list",
+                        "수정 권한이 없거나 회의록이 존재하지 않습니다.",
+                        "error");
             }
 
         } else if ("delete".equals(actionType)) {
@@ -202,14 +223,14 @@ public class MeetingServlet extends HttpServlet {
 
             boolean success = meetingDAO.deleteMeetingRecordForAuthor(
                     meetingId, user.getUserId());
-            if (success) {
-                session.setAttribute("message", "회의록이 성공적으로 삭제되었습니다.");
-            } else {
-                session.setAttribute(
-                        "error",
-                        "삭제 권한이 없거나 회의록이 존재하지 않습니다.");
-            }
-            response.sendRedirect("meeting?view=list");
+            FlashMessage.redirect(
+                    request,
+                    response,
+                    "meeting?view=list",
+                    success
+                            ? "회의록이 성공적으로 삭제되었습니다."
+                            : "삭제 권한이 없거나 회의록이 존재하지 않습니다.",
+                    success ? "success" : "error");
 
         } else {
             response.sendRedirect("meeting?view=list");

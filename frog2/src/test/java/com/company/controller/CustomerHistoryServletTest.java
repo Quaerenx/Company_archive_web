@@ -193,9 +193,9 @@ class CustomerHistoryServletTest {
 
         servlet.doPost(request.proxy(), response.proxy());
 
-        assertEquals(
-                listUrl("테크핀 레이팅스", "incident", "복구", 3),
-                response.redirect);
+        assertTrue(response.redirect.startsWith(
+                listUrl("테크핀 레이팅스", "incident", "복구", 3)
+                        + "&_flash="));
         assertTrue(repository.findById(record.getId()).orElseThrow()
                 .getTitle().contains("완료"));
     }
@@ -212,9 +212,9 @@ class CustomerHistoryServletTest {
 
         servlet.doPost(request.proxy(), response.proxy());
 
-        assertEquals(
-                listUrl("테크핀 레이팅스", "incident", "복구", 2),
-                response.redirect);
+        assertTrue(response.redirect.startsWith(
+                listUrl("테크핀 레이팅스", "incident", "복구", 2)
+                        + "&_flash="));
     }
 
     private CustomerHistoryServlet servlet(Path repositoryRoot) {

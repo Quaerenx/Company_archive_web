@@ -46,23 +46,23 @@ class LicenseSummaryFormatterTest {
     }
 
     @Test
-    void exposesAStableOneDecimalPercentageForHistoryViews() {
-        MaintenanceRecordDTO record = record("25", "13.9", null);
+    void exposesUpToTwoDecimalPlacesForHistoryViews() {
+        MaintenanceRecordDTO record = record("80", "52.464", null);
 
         assertEquals(
-                new BigDecimal("55.6"),
+                new BigDecimal("65.58"),
                 LicenseSummaryFormatter
-                        .resolveUsagePercentageOneDecimal(record));
+                        .resolveUsagePercentageForDisplay(record));
         assertEquals(
-                new BigDecimal("55.6"),
+                new BigDecimal("65.58"),
                 LicenseSummaryFormatter
                         .resolveUsageProgressPercentageOneDecimal(record));
     }
 
     @Test
-    void classifiesRiskAfterTheSameOneDecimalRoundingUsedForDisplay() {
+    void classifiesRiskFromTheUnroundedStoredPercentage() {
         assertEquals(
-                LicenseRiskPolicy.Level.WARNING,
+                LicenseRiskPolicy.Level.NORMAL,
                 LicenseSummaryFormatter.resolveUsageRiskLevel(
                         record("100", "89.95", "89.95")));
         assertEquals(

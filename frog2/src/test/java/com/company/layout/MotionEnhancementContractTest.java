@@ -88,8 +88,8 @@ class MotionEnhancementContractTest {
                 "[data-ui-disclosure-content] > .ui-disclosure-clip"));
         assertTrue(read("maintenance/maintenance_history.jsp").contains(
                 "class=\"history-detail-cell ui-disclosure-cell\""));
-        assertTrue(read("customer-history/customer_history_list.jsp").contains(
-                "<td class=\"ui-disclosure-cell\" colspan=\"5\">"));
+        assertFalse(read("customer-history/customer_history_list.jsp").contains(
+                "data-ui-disclosure-content"));
         String fixedCellRule = ".ui-system .ui-data-table :is(th, td) {";
         String disclosureCellRule = ".ui-system .ui-data-table .ui-disclosure-cell {\n"
                 + "    block-size: auto;\n"

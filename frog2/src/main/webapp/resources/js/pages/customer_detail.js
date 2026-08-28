@@ -3,6 +3,7 @@ var customerDetailRoot = document.querySelector(".customer-detail");
 var customerContextPath = customerDetailRoot ? customerDetailRoot.getAttribute("data-context-path") : "";
 
 document.addEventListener('DOMContentLoaded', function() {
+	initializeDetailSectionCounts();
 	var tabs = customerDetailRoot
 		? Array.prototype.slice.call(customerDetailRoot.querySelectorAll('.tab-btn'))
 		: [];
@@ -101,6 +102,25 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 });
+
+function initializeDetailSectionCounts() {
+	if (!customerDetailRoot) return;
+	customerDetailRoot.querySelectorAll('[data-detail-section]')
+		.forEach(function(section) {
+			var fields = section.querySelectorAll(
+				':scope > .detail-grid > .detail-item');
+			var count = section.querySelector(
+				':scope > .detail-section-title [data-detail-section-count]');
+			if (!count || fields.length === 0) return;
+			var filled = Array.prototype.filter.call(fields, function(field) {
+				return !field.classList.contains('detail-item--empty');
+			}).length;
+			count.textContent = filled + ' / ' + fields.length;
+			count.setAttribute('aria-label',
+				fields.length + '개 중 ' + filled + '개 등록');
+			section.classList.toggle('detail-section--empty', filled === 0);
+		});
+}
 function getActiveEnv() {
     var active = document.querySelector('.tab-btn.active');
     if (!active) return 'prod';

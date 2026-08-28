@@ -16,10 +16,16 @@ class HeaderNavViewContractTest {
         assertTrue(header.contains("class=\"main-header\""));
         assertTrue(header.contains("data-csrf-token="));
         assertTrue(header.contains("class=\"brand-logo\""));
-        assertTrue(header.contains("/resources/images/archive-logo.svg"));
+        assertTrue(header.contains(
+                "/resources/images/archive-logo.svg?v=${frog2AssetVersion}"));
         assertTrue(header.contains("width=\"4096\""));
         assertTrue(header.contains("height=\"2286\""));
         assertTrue(header.contains("aria-label=\"Archive 대시보드\""));
+        String behavior = Files.readString(
+                WEBAPP.resolve("resources/js/header_nav.js"));
+        assertTrue(behavior.contains("focusReturnTarget = mobileToggle;"));
+        assertFalse(behavior.contains(
+                "primaryNavigation.addEventListener('keydown'"));
         assertTrue(header.contains("id=\"mobileNavToggle\""));
         assertTrue(header.contains("id=\"primaryNavigation\""));
         assertTrue(header.contains("aria-label=\"주요 메뉴\""));
@@ -56,10 +62,6 @@ class HeaderNavViewContractTest {
         assertFalse(header.contains("href=\"#\""));
         assertFalse(header.contains("pageTitle eq"));
 
-        String behavior = Files.exists(
-                WEBAPP.resolve("resources/js/header_nav.js"))
-                ? read("resources/js/header_nav.js")
-                : header;
         assertTrue(behavior.contains("Frog2Csrf"));
         assertTrue(behavior.contains("form.method = 'POST'"));
         assertTrue(behavior.contains("Frog2Csrf.appendTo(form)"));

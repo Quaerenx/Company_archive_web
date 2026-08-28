@@ -37,7 +37,7 @@
         <c:param name="q" value="${q}" />
         <c:param name="pageSize" value="${pageSize}" />
     </c:url>
-    <div class="table-container customer-list-panel ui-work-surface">
+    <div class="customer-list-panel ui-work-surface">
       <div class="customer-list-toolbar">
         <nav class="filter-toggle" aria-label="고객사 목록 범위">
             <a href="<c:out value='${maintenanceFilterUrl}' />"
@@ -87,6 +87,33 @@
                 </span>
             </c:if>
         </form>
+        <form class="customer-mobile-sort ui-form ui-form--compact"
+              method="get"
+              action="${pageContext.request.contextPath}/customers"
+              aria-label="고객사 목록 정렬">
+            <input type="hidden" name="view" value="list" />
+            <input type="hidden" name="filter" value="<c:out value='${filter}' />" />
+            <input type="hidden" name="q" value="<c:out value='${q}' />" />
+            <input type="hidden" name="pageSize" value="<c:out value='${pageSize}' />" />
+            <label class="sr-only" for="customer-mobile-sort-field">정렬 기준</label>
+            <select id="customer-mobile-sort-field" name="sortField">
+                <option value="customer_name" ${sortField eq 'customer_name' ? 'selected' : ''}>고객사</option>
+                <option value="vertica_version" ${sortField eq 'vertica_version' ? 'selected' : ''}>버전</option>
+                <option value="mode" ${sortField eq 'mode' ? 'selected' : ''}>모드</option>
+                <option value="os" ${sortField eq 'os' ? 'selected' : ''}>OS</option>
+                <option value="nodes" ${sortField eq 'nodes' ? 'selected' : ''}>노드수</option>
+                <option value="license_size" ${sortField eq 'license_size' ? 'selected' : ''}>라이선스</option>
+                <option value="said" ${sortField eq 'said' ? 'selected' : ''}>SAID</option>
+                <option value="manager_name" ${sortField eq 'manager_name' ? 'selected' : ''}>담당자</option>
+            </select>
+            <label class="sr-only" for="customer-mobile-sort-direction">정렬 방향</label>
+            <select id="customer-mobile-sort-direction" name="sortDirection">
+                <option value="ASC" ${sortDirection eq 'ASC' ? 'selected' : ''}>오름차순</option>
+                <option value="DESC" ${sortDirection eq 'DESC' ? 'selected' : ''}>내림차순</option>
+            </select>
+            <button type="submit"
+                    class="ui-button button--secondary button--sm">적용</button>
+        </form>
       </div>
 
     <c:set var="nextCustomerNameDirection" value="${sortField eq 'customer_name' and sortDirection eq 'ASC' ? 'DESC' : 'ASC'}" />
@@ -108,7 +135,7 @@
 
         <c:choose>
             <c:when test="${not empty customerList}">
-        <div class="table-wrapper ui-table-wrap"
+        <div class="ui-table-wrap"
              data-ui-scroll-region
              data-ui-scroll-label="고객사 정보 표">
             <table class="customer-table ui-table ui-data-table">
@@ -183,6 +210,43 @@
                             <td class="col--customer" title="<c:out value="${customer.customerName}" />" data-original="<c:out value="${customer.customerName}" />">
                                 <a class="customer-detail-link"
                                    href="<c:out value='${customerDetailUrl}' />"><c:out value="${customer.customerName}" default="" /></a>
+                                <dl class="customer-mobile-meta">
+                                    <div>
+                                        <dt>버전</dt>
+                                        <dd><c:out value="${customer.verticaVersion}" default="-" /></dd>
+                                    </div>
+                                    <div>
+                                        <dt>모드</dt>
+                                        <dd><c:out value="${customer.mode}" default="-" /></dd>
+                                    </div>
+                                    <div>
+                                        <dt>OS</dt>
+                                        <dd><c:out value="${customer.os}" default="-" /></dd>
+                                    </div>
+                                    <div>
+                                        <dt>노드</dt>
+                                        <dd><c:out value="${customer.nodes}" default="-" /></dd>
+                                    </div>
+                                    <div>
+                                        <dt>라이선스</dt>
+                                        <dd>
+                                            <c:choose>
+                                                <c:when test="${not empty customer.licenseAmount}">
+                                                    <c:out value="${customer.licenseAmount}" /><c:if test="${not empty customer.licenseUnit}"> <c:out value="${customer.licenseUnit}" /></c:if>
+                                                </c:when>
+                                                <c:otherwise><c:out value="${customer.licenseSize}" default="-" /></c:otherwise>
+                                            </c:choose>
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt>담당자</dt>
+                                        <dd><c:out value="${customer.managerName}" default="-" /></dd>
+                                    </div>
+                                    <div class="customer-mobile-meta__wide">
+                                        <dt>SAID</dt>
+                                        <dd><c:out value="${customer.said}" default="-" /></dd>
+                                    </div>
+                                </dl>
                             </td>
                             <td class="customer-col-version col--identifier" data-original="<c:out value="${customer.verticaVersion}" />"><c:out value="${customer.verticaVersion}" default="-" /></td>
                             <td class="customer-col-mode col--type" data-original="<c:out value="${customer.mode}" />"><c:out value="${customer.mode}" default="-" /></td>

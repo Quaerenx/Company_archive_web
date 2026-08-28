@@ -19,14 +19,14 @@ class CustomerDetailViewStructureTest {
         assertFalse(page.contains("customerDetail.systemName"));
         assertTrue(fragment.contains(
                 "<t:detailField label=\"시스템명\" value=\""
-                        + "$" + "{detail.systemName}\" />"));
+                        + "$" + "{detail.systemName}\" hideWhenEmpty=\"${true}\" />"));
         assertTrue(fragment.contains(
                 "<fmt:formatDate var=\"detailEosDate\" value=\""
                         + "$" + "{detail.eosDate}\""));
         assertEquals(49, occurrences(fragment, "<t:detailField "));
-        assertEquals(4, occurrences(
+        assertEquals(5, occurrences(
                 fragment,
-                "<details class=\"detail-section detail-section--collapsible\" open>"));
+                "class=\"detail-section detail-section--collapsible\" data-detail-section open"));
         assertTrue(fragment.contains("핵심 정보"));
         assertTrue(fragment.contains("기본·담당자 정보"));
         assertTrue(fragment.contains("인프라·네트워크"));
@@ -69,7 +69,12 @@ class CustomerDetailViewStructureTest {
         assertTrue(styles.contains("details[open] > .detail-section-title"));
         assertTrue(styles.contains("@media (max-width: 768px)"));
         assertTrue(fieldTag.contains("detail-value--empty\">미등록</span>"));
+        assertTrue(fieldTag.contains("name=\"hideWhenEmpty\""));
+        assertTrue(fieldTag.contains("detail-item--empty"));
         assertTrue(fieldTag.contains("<c:out value=\"${value}\" />"));
+        assertTrue(fields.contains("data-detail-section-count"));
+        assertTrue(fields.contains("${detail.licenseDisplay}"));
+        assertTrue(fields.contains("${detail.nodeCountDisplay}"));
     }
 
     @Test
@@ -113,7 +118,7 @@ class CustomerDetailViewStructureTest {
     }
 
     @Test
-    void narrowInspectorStacksLabelsAndValuesWithoutSqueezingNotes() throws Exception {
+    void narrowInspectorKeepsShortFieldsComparableAndStacksLongValues() throws Exception {
         String styles = Files.readString(Path.of(
                 "src/main/webapp/resources/css/pages/customer_detail.css"));
         int narrowBreakpoint = styles.indexOf("@media (max-width: 480px)");
@@ -122,11 +127,15 @@ class CustomerDetailViewStructureTest {
         String narrowStyles = styles.substring(narrowBreakpoint);
         String item = cssRule(narrowStyles,
                 ".ui-system .customer-detail--view .detail-item");
-        String value = cssRule(narrowStyles,
-                ".ui-system .customer-detail--view .detail-value");
+        String fullWidth = cssRule(narrowStyles,
+                ".ui-system .customer-detail--view .detail-item.full-width");
+        String label = cssRule(narrowStyles,
+                ".ui-system .customer-detail--view .detail-label");
 
-        assertTrue(item.contains("grid-template-columns: 1fr;"));
-        assertTrue(value.contains("inline-size: 100%;"));
+        assertTrue(item.contains(
+                "grid-template-columns: minmax(100px, 112px) minmax(0, 1fr);"));
+        assertTrue(fullWidth.contains("grid-template-columns: 1fr;"));
+        assertTrue(label.contains("white-space: normal;"));
     }
 
     private static String cssRule(String css, String selector) {

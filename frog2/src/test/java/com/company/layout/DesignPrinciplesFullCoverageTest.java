@@ -185,7 +185,7 @@ class DesignPrinciplesFullCoverageTest {
                 "--color-link",
                 "--color-success",
                 "--color-danger",
-                "--color-warning",
+                "--color-warning-text",
                 "--color-info")) {
             assertContrast(
                     color(theme, foreground),
@@ -193,12 +193,20 @@ class DesignPrinciplesFullCoverageTest {
                     4.5,
                     label + " " + foreground);
         }
-        for (String tone : List.of("primary", "success", "danger", "warning", "info")) {
+        for (List<String> pair : List.of(
+                List.of("--color-on-primary", "--color-primary", "primary"),
+                List.of("--color-on-success", "--color-success", "success"),
+                List.of("--color-on-danger", "--color-danger", "danger"),
+                List.of(
+                        "--color-on-warning-accent",
+                        "--color-warning-accent",
+                        "warning-accent"),
+                List.of("--color-on-info", "--color-info", "info"))) {
             assertContrast(
-                    color(theme, "--color-on-" + tone),
-                    color(theme, "--color-" + tone),
+                    color(theme, pair.get(0)),
+                    color(theme, pair.get(1)),
                     4.5,
-                    label + " on-" + tone);
+                    label + " on-" + pair.get(2));
         }
         for (String tone : List.of("success", "danger", "warning", "info")) {
             assertContrast(

@@ -51,6 +51,19 @@ class MaintenanceRecordRequestMapperTest {
     }
 
     @Test
+    void preservesSubTerabyteChangesInTheStoredPercentage() {
+        Map<String, String> parameters = validParameters();
+        parameters.put("license_usage_size", "52.464");
+
+        MaintenanceFormSubmission submission = mapper.map(
+                parameters::get, "owner-1", options("80TB"));
+
+        assertTrue(submission.valid());
+        assertEquals("52.464", submission.record().getLicenseUsageSize());
+        assertEquals("65.58", submission.record().getLicenseUsagePct());
+    }
+
+    @Test
     void acceptsLegacyGbAndPercentageSuffixesWithoutChangingTheContract() {
         Map<String, String> parameters = validParameters();
         parameters.put("license_size_gb", "1024GB");

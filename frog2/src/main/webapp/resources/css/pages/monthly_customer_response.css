@@ -92,88 +92,50 @@
     gap: var(--space-8);
 }
 
-.monthly-response-page .table-responsive {
+.monthly-response-page .ui-table-wrap {
     border: 1px solid var(--color-surface-edge);
     border-radius: var(--radius-lg);
     overflow-x: auto;
 }
 
-.monthly-response-page .data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--font-size-sm);
+.monthly-response-page .monthly-response-table {
+    min-inline-size: 800px;
 }
 
-.monthly-response-page .data-table thead {
-    background-color: var(--color-surface-subtle);
-}
-
-.monthly-response-page .data-table th {
-    padding: var(--space-12);
-    text-align: left;
-    font-weight: 600;
-    color: var(--color-text);
-    border-bottom: 1px solid var(--color-border);
-    white-space: nowrap;
-}
-
-.monthly-response-page .data-table td {
-    padding: var(--space-12);
-    border-bottom: 1px solid var(--color-border);
-    color: var(--color-text);
-    vertical-align: top;
-}
-
-.monthly-response-page .data-table tbody tr:hover {
+.monthly-response-page .monthly-response-table tbody tr:hover {
     background-color: var(--color-surface-hover);
 }
 
-.monthly-response-page .data-table a {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 500;
+.monthly-response-page .monthly-response-table .col--date {
+    inline-size: 112px;
+    text-align: left;
 }
 
-.monthly-response-page .data-table a:hover {
-    text-decoration: underline;
+.monthly-response-page .monthly-response-table .col--customer {
+    inline-size: 136px;
 }
 
-.monthly-response-page .badge {
-    display: inline-block;
-    padding: var(--space-4) var(--space-8);
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    background-color: var(--color-surface-muted);
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
+.monthly-response-page .monthly-response-table .col--author {
+    inline-size: 96px;
 }
 
-.monthly-response-page .badge-maintenance {
-    background-color: var(--color-surface-muted);
-    color: var(--color-text);
+.monthly-response-page .monthly-response-table .col--reason {
+    inline-size: 132px;
 }
 
-.monthly-response-page .badge-troubleshooting {
-    background-color: var(--color-surface-muted);
-    color: var(--color-text);
+.monthly-response-page .monthly-response-table .col--description {
+    inline-size: auto;
+    white-space: normal;
 }
 
-.monthly-response-page .empty-state {
+.monthly-response-page .monthly-response-table .col--note {
+    inline-size: 136px;
+    white-space: normal;
+}
+
+.monthly-response-page .monthly-response-table .col--actions {
+    inline-size: 112px;
     text-align: center;
-    padding: var(--space-64) var(--space-20);
-    color: var(--color-text-muted);
-}
-
-.monthly-response-page .empty-state i {
-    font-size: var(--illustration-icon-size-lg);
-    margin-bottom: var(--space-16);
-    opacity: 0.5;
-}
-
-.monthly-response-page .empty-state p {
-    font-size: var(--font-size-md);
-    margin: 0 0 var(--space-16) 0;
 }
 
 .monthly-response-page .back-link {
@@ -189,36 +151,6 @@
 
 .monthly-response-page .back-link:hover {
     text-decoration: underline;
-}
-
-/* 날짜 컬럼 너비 */
-.monthly-response-page .data-table th:nth-child(1),
-.monthly-response-page .data-table td:nth-child(1) {
-    width: 110px;
-}
-
-/* 고객명 컬럼 너비 */
-.monthly-response-page .data-table th:nth-child(2),
-.monthly-response-page .data-table td:nth-child(2) {
-    width: 150px;
-}
-
-/* 사유 컬럼 너비 */
-.monthly-response-page .data-table th:nth-child(3),
-.monthly-response-page .data-table td:nth-child(3) {
-    width: 180px;
-}
-
-/* 조치 내용 - 가장 넓게 (자동 너비) */
-.monthly-response-page .data-table th:nth-child(4),
-.monthly-response-page .data-table td:nth-child(4) {
-    width: auto;
-}
-
-/* 비고 컬럼 너비 */
-.monthly-response-page .data-table th:nth-child(5),
-.monthly-response-page .data-table td:nth-child(5) {
-    width: 180px;
 }
 
 /* 액션 버튼 스타일 */
@@ -267,10 +199,6 @@
     color: var(--color-danger);
 }
 
-.monthly-response-page .monthly-response-actions-column {
-    width: 120px;
-}
-
 @media (max-width: 768px) {
     .monthly-response-page .filter-form {
         flex-direction: column;
@@ -290,11 +218,72 @@
         justify-content: center;
     }
 
-    /* 모바일에서는 컬럼 너비 제한 제거 */
-    .monthly-response-page .data-table th:nth-child(n),
-    .monthly-response-page .data-table td:nth-child(n) {
-        width: auto;
-        min-width: auto;
+    .monthly-response-page .ui-table-wrap {
+        border: 0;
+        overflow-x: visible;
+    }
+
+    .monthly-response-page .monthly-response-table,
+    .monthly-response-page .monthly-response-table tbody {
+        display: block;
+        inline-size: 100%;
+        min-inline-size: 0;
+    }
+
+    .monthly-response-page .monthly-response-table thead {
+        block-size: 1px;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        inline-size: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        white-space: nowrap;
+    }
+
+    .monthly-response-page .monthly-response-table tbody {
+        display: grid;
+        gap: var(--space-12);
+    }
+
+    .monthly-response-page .monthly-response-table tbody tr {
+        background: var(--color-surface);
+        border: 1px solid var(--color-surface-edge);
+        border-radius: var(--radius-lg);
+        display: block;
+        overflow: hidden;
+    }
+
+    .monthly-response-page .monthly-response-table tbody tr:hover {
+        background: var(--color-surface);
+    }
+
+    body.ui-system .monthly-response-page .monthly-response-table tbody tr > td {
+        align-items: start;
+        block-size: auto;
+        border: 0;
+        display: grid;
+        gap: var(--space-12);
+        grid-template-columns: minmax(76px, 28%) minmax(0, 1fr);
+        inline-size: auto;
+        min-inline-size: 0;
+        overflow: visible;
+        overflow-wrap: anywhere;
+        padding: var(--space-12);
+        text-align: start;
+        white-space: normal;
+    }
+
+    body.ui-system .monthly-response-page .monthly-response-table tbody tr > td + td {
+        border-block-start: 1px solid var(--color-border);
+    }
+
+    .monthly-response-page .monthly-response-table tbody td::before {
+        color: var(--color-text-muted);
+        content: attr(data-label);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
     }
 
     .monthly-response-page #responseModal .modal-content {
@@ -303,7 +292,8 @@
     }
 
     .monthly-response-page .action-buttons {
-        flex-direction: column;
+        flex-direction: row;
+        justify-content: flex-start;
     }
 
     .monthly-response-page .results-header .ui-button,

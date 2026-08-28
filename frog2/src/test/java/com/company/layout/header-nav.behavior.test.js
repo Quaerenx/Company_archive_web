@@ -53,6 +53,9 @@ function createElement(document, options = {}) {
         contains(candidate) {
             return candidate === element || (options.children || []).includes(candidate);
         },
+        closest(selector) {
+            return options.closest ? options.closest(selector) : null;
+        },
         dispatch(name, event = {}) {
             (listeners.get(name) || []).forEach((listener) => listener(event));
         },
@@ -100,6 +103,8 @@ function createHarness({ mobile, dropdown = false }) {
     };
 
     const mobileToggle = createElement(document);
+    const firstNavLink = createElement(document);
+    const lastNavLink = createElement(document);
     const menu = createElement(document, {
         querySelector(selector) {
             return selector === 'a[href]' ? menuLink : null;
@@ -121,16 +126,23 @@ function createHarness({ mobile, dropdown = false }) {
     }
 
     const primaryNavigation = createElement(document, {
-        children: dropdown ? [dropdownItem, dropdownToggle, menu, menuLink] : [],
-        querySelector() {
+        children: [firstNavLink, lastNavLink, dropdownItem, dropdownToggle, menu, menuLink]
+            .filter(Boolean),
+        querySelector(selector) {
+            if (selector === 'a[href], button') return firstNavLink;
             return null;
         },
         querySelectorAll(selector) {
-            return selector === 'a[href]' ? [] : [];
+            if (selector === 'a[href]'
+                    || selector === 'a[href], button:not([disabled])') {
+                return [firstNavLink, lastNavLink];
+            }
+            return [];
         }
     });
     const header = createElement(document, {
-        children: [mobileToggle, primaryNavigation, dropdownItem, dropdownToggle, menu, menuLink]
+        children: [mobileToggle, primaryNavigation, firstNavLink, lastNavLink,
+            dropdownItem, dropdownToggle, menu, menuLink]
             .filter(Boolean),
         querySelector() {
             return null;
@@ -172,7 +184,9 @@ function createHarness({ mobile, dropdown = false }) {
         document,
         dropdownItem,
         dropdownToggle,
+        firstNavLink,
         header,
+        lastNavLink,
         mobileToggle,
         primaryNavigation
     };
@@ -198,11 +212,33 @@ test('mobile menu keeps aria-expanded in sync and Escape restores focus', () => 
     assert.equal(harness.header.classList.contains('mobile-nav-open'), true);
     assert.equal(harness.mobileToggle.getAttribute('aria-expanded'), 'true');
     assert.equal(harness.primaryNavigation.getAttribute('aria-hidden'), null);
+    assert.equal(harness.document.activeElement, harness.firstNavLink);
 
     harness.document.dispatch('keydown', keyboardEvent('Escape'));
     assert.equal(harness.header.classList.contains('mobile-nav-open'), false);
     assert.equal(harness.mobileToggle.getAttribute('aria-expanded'), 'false');
     assert.equal(harness.primaryNavigation.getAttribute('aria-hidden'), 'true');
+    assert.equal(harness.document.activeElement, harness.mobileToggle);
+});
+
+test('mobile menu leaves Tab navigation non-modal', () => {
+    const harness = createHarness({ mobile: true });
+
+    harness.mobileToggle.dispatch('click');
+    harness.document.activeElement = harness.lastNavLink;
+    const forwardTab = keyboardEvent('Tab');
+    harness.primaryNavigation.dispatch('keydown', forwardTab);
+    assert.equal(forwardTab.defaultPrevented, undefined);
+    assert.equal(harness.document.activeElement, harness.lastNavLink);
+
+    harness.document.activeElement = harness.firstNavLink;
+    const backwardTab = keyboardEvent('Tab');
+    backwardTab.shiftKey = true;
+    harness.primaryNavigation.dispatch('keydown', backwardTab);
+    assert.equal(backwardTab.defaultPrevented, undefined);
+    assert.equal(harness.document.activeElement, harness.firstNavLink);
+
+    harness.mobileToggle.dispatch('click');
     assert.equal(harness.document.activeElement, harness.mobileToggle);
 });
 

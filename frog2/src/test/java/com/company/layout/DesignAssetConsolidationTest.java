@@ -232,7 +232,7 @@ class DesignAssetConsolidationTest {
         assertTrue(hasClass(password, "account-form-container"));
         assertTrue(hasClass(profile, "account-form-container"));
         assertTrue(components.contains(".account-form-container {"));
-        assertTrue(components.contains(".account-form-container .form-card"));
+        assertTrue(components.contains(".account-form-container .ui-form-card"));
         assertTrue(components.contains(".account-form-container .form-control"));
         assertTrue(components.contains(".account-form-container .form-actions"));
         assertTrue(components.contains(".account-form-container .help-text"));

@@ -62,7 +62,7 @@
         </c:choose>
         <div class="meeting-content-guidance">
             <span class="help-text" id="contentHelp">참석자, 주요 논의, 결정사항, 후속 조치 순으로 정리하면 찾기 쉽습니다.</span>
-            <span class="meeting-character-count" id="contentCount" aria-live="polite">0자</span>
+            <span class="meeting-character-count" id="contentCount">0자</span>
         </div>
     </div>
 </div>

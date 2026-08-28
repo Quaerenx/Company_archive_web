@@ -150,17 +150,19 @@ final class MaintenanceRecordRequestMapper {
                             "계산된 사용률의 입력 범위를 확인해 주세요.");
                 } else {
                     percentage = percentageNumerator
-                        .divide(capacity, 1, RoundingMode.HALF_UP)
+                        .divide(capacity, 2, RoundingMode.HALF_UP)
+                        .stripTrailingZeros()
                         .toPlainString();
+                    percentage = percentageDecimal(
+                            new BigDecimal(percentage));
                 }
             }
         } else if (capacityUsesSupportedUnit && rawPercentage != null) {
             BigDecimal parsedPercentage = parsePercentage(
                     rawPercentage, errors);
             if (parsedPercentage != null) {
-                percentage = parsedPercentage
-                        .setScale(1, RoundingMode.HALF_UP)
-                        .toPlainString();
+                percentage = percentageDecimal(parsedPercentage
+                        .setScale(2, RoundingMode.HALF_UP));
             }
         }
         record.setLicenseUsagePct(
@@ -273,6 +275,12 @@ final class MaintenanceRecordRequestMapper {
 
     private static String decimal(BigDecimal value) {
         return value.stripTrailingZeros().toPlainString();
+    }
+
+    private static String percentageDecimal(BigDecimal value) {
+        BigDecimal normalized = value.stripTrailingZeros();
+        return (normalized.scale() < 1 ? normalized.setScale(1) : normalized)
+                .toPlainString();
     }
 
     private static int length(String value) {

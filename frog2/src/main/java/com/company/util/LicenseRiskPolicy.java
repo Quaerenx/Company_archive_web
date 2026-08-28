@@ -6,7 +6,7 @@ public final class LicenseRiskPolicy {
     public static final BigDecimal WARNING_THRESHOLD_PERCENT =
             new BigDecimal("90.0");
     public static final BigDecimal RISK_THRESHOLD_PERCENT =
-            new BigDecimal("105.1");
+            new BigDecimal("105.0");
 
     public enum Level {
         UNAVAILABLE,
@@ -29,7 +29,7 @@ public final class LicenseRiskPolicy {
         BigDecimal percentage = usagePercentage instanceof BigDecimal decimal
                 ? decimal
                 : BigDecimal.valueOf(numericValue);
-        if (percentage.compareTo(RISK_THRESHOLD_PERCENT) >= 0) {
+        if (percentage.compareTo(RISK_THRESHOLD_PERCENT) > 0) {
             return Level.RISK;
         }
         if (percentage.compareTo(WARNING_THRESHOLD_PERCENT) >= 0) {

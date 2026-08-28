@@ -1,12 +1,15 @@
 package com.company.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.MaintenanceRecordDTO;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +38,7 @@ class MaintenanceHistoryRowViewTest {
         assertEquals("neutral", rows.get(0).getDeltaTone());
         assertEquals(new BigDecimal("20.0"),
                 rows.get(0).getPreviousUsagePercentage());
-        assertEquals("—", rows.get(1).getDeltaLabel());
+        assertEquals("-", rows.get(1).getDeltaLabel());
         assertEquals("unavailable", rows.get(1).getDeltaTone());
         assertNull(rows.get(1).getPreviousUsagePercentage());
     }
@@ -50,9 +53,9 @@ class MaintenanceHistoryRowViewTest {
 
         assertEquals("↓ 10.0%p", rows.get(0).getDeltaLabel());
         assertEquals("neutral", rows.get(0).getDeltaTone());
-        assertEquals("— 0.0%p", rows.get(1).getDeltaLabel());
+        assertEquals("0.0%p", rows.get(1).getDeltaLabel());
         assertEquals("neutral", rows.get(1).getDeltaTone());
-        assertEquals("—", rows.get(2).getDeltaLabel());
+        assertEquals("-", rows.get(2).getDeltaLabel());
     }
 
     @Test
@@ -70,7 +73,7 @@ class MaintenanceHistoryRowViewTest {
         assertEquals("2", rows.get(0).getCapacityTerabytes());
         assertEquals(new BigDecimal("25.0"),
                 rows.get(0).getUsagePercentage());
-        assertEquals("—", rows.get(0).getDeltaLabel());
+        assertEquals("-", rows.get(0).getDeltaLabel());
         assertNull(rows.get(1).getUsedTerabytes());
         assertNull(rows.get(1).getCapacityTerabytes());
         assertNull(rows.get(1).getUsagePercentage());
@@ -100,7 +103,7 @@ class MaintenanceHistoryRowViewTest {
         second.setNote("  \n\t");
         MaintenanceRecordDTO third = record(
                 29L, "2026-06-03", "10", "5", "50");
-        third.setNote("가".repeat(70));
+        third.setNote("1. 라이선스 사용률은 65.58% (전월 65.5%)");
 
         List<MaintenanceHistoryRowView> rows =
                 MaintenanceHistoryRowView.fromRecords(
@@ -110,11 +113,8 @@ class MaintenanceHistoryRowViewTest {
         assertEquals("maintenance-history-detail-31",
                 rows.get(0).getDetailId());
         assertEquals("특이사항 없음", rows.get(1).getNoteSummary());
-        assertEquals("가".repeat(63) + "…",
+        assertEquals("라이선스 사용률은 65.58% (전월 65.5%)",
                 rows.get(2).getNoteSummary());
-        assertEquals(64,
-                rows.get(2).getNoteSummary().codePointCount(
-                        0, rows.get(2).getNoteSummary().length()));
     }
 
     @Test
@@ -144,12 +144,41 @@ class MaintenanceHistoryRowViewTest {
                         record(2L, "2026-08-03", "100", "89.95", "89.95"),
                         record(1L, "2026-07-03", "100", "105.05", "105.05")));
 
-        assertEquals(new BigDecimal("90.0"),
+        assertEquals(new BigDecimal("89.95"),
                 rows.get(0).getUsagePercentage());
-        assertEquals("warning", rows.get(0).getUsageTone());
-        assertEquals(new BigDecimal("105.1"),
+        assertEquals("normal", rows.get(0).getUsageTone());
+        assertEquals(new BigDecimal("105.05"),
                 rows.get(1).getUsagePercentage());
         assertEquals("risk", rows.get(1).getUsageTone());
+    }
+
+    @Test
+    void preservesTwoDecimalUsageChangesAndShowsOnlyVersionTransitions() {
+        MaintenanceRecordDTO newest = record(
+                3L, "2026-08-03", "80", "52.464", "65.58");
+        newest.setVerticaVersion("23.4.0-13");
+        newest.setCreatedAt(Timestamp.valueOf("2026-08-03 10:00:00"));
+        newest.setUpdatedAt(Timestamp.valueOf("2026-08-03 10:00:00"));
+        MaintenanceRecordDTO unchangedVersion = record(
+                2L, "2026-07-03", "80", "52.4", "65.50");
+        unchangedVersion.setVerticaVersion("23.4.0-13");
+        unchangedVersion.setCreatedAt(Timestamp.valueOf("2026-07-03 10:00:00"));
+        unchangedVersion.setUpdatedAt(Timestamp.valueOf("2026-07-03 10:05:00"));
+        MaintenanceRecordDTO oldVersion = record(
+                1L, "2026-06-03", "80", "52", "65.0");
+        oldVersion.setVerticaVersion("12.0.4-15");
+
+        List<MaintenanceHistoryRowView> rows =
+                MaintenanceHistoryRowView.fromRecords(
+                        List.of(newest, unchangedVersion, oldVersion));
+
+        assertEquals(new BigDecimal("65.58"), rows.get(0).getUsagePercentage());
+        assertEquals("↑ 0.08%p", rows.get(0).getDeltaLabel());
+        assertTrue(rows.get(0).isVersionVisible());
+        assertFalse(rows.get(1).isVersionVisible());
+        assertTrue(rows.get(2).isVersionVisible());
+        assertFalse(rows.get(0).isModifiedAfterCreation());
+        assertTrue(rows.get(1).isModifiedAfterCreation());
     }
 
     private static MaintenanceRecordDTO record(

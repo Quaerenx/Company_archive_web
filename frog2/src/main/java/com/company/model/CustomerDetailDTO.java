@@ -1,8 +1,14 @@
 package com.company.model;
 
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CustomerDetailDTO {
+    private static final Pattern CAPACITY_WITH_UNIT = Pattern.compile(
+            "^([+-]?\\d+(?:\\.\\d+)?)\\s*(TB|GB)$",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern INTEGER_VALUE = Pattern.compile("^\\d+$");
     // 메타정보
     private String customerName;
     private String systemName;
@@ -177,6 +183,16 @@ public class CustomerDetailDTO {
         return licenseInfo;
     }
 
+    public String getLicenseDisplay() {
+        if (licenseInfo == null) {
+            return null;
+        }
+        Matcher matcher = CAPACITY_WITH_UNIT.matcher(licenseInfo.trim());
+        return matcher.matches()
+                ? matcher.group(1) + " " + matcher.group(2).toUpperCase()
+                : licenseInfo;
+    }
+
     public void setLicenseInfo(String licenseInfo) {
         this.licenseInfo = licenseInfo;
     }
@@ -191,6 +207,16 @@ public class CustomerDetailDTO {
 
     public String getNodeCount() {
         return nodeCount;
+    }
+
+    public String getNodeCountDisplay() {
+        if (nodeCount == null) {
+            return null;
+        }
+        String normalized = nodeCount.trim();
+        return INTEGER_VALUE.matcher(normalized).matches()
+                ? normalized + "대"
+                : nodeCount;
     }
 
     public void setNodeCount(String nodeCount) {
@@ -263,6 +289,20 @@ public class CustomerDetailDTO {
 
     public String getBackupNote() {
         return backupNote;
+    }
+
+    public String getBackupNoteDisplay() {
+        if (backupNote == null) {
+            return null;
+        }
+        String normalized = backupNote.trim();
+        if (normalized.length() >= 2
+                && normalized.startsWith("\"")
+                && normalized.endsWith("\"")) {
+            normalized = normalized.substring(1, normalized.length() - 1)
+                    .replace("\"\"", "\"");
+        }
+        return normalized.replaceFirst("\\s*-\\s*(?=DR\\s*:)", "\n- ");
     }
 
     public void setBackupNote(String backupNote) {

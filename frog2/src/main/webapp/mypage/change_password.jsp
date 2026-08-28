@@ -19,7 +19,7 @@
         </jsp:attribute>
     </t:pageHeader>
 
-    <div class="form-card ui-form-card">
+    <div class="ui-form-card">
         <div class="password-requirements">
             <h3>
                 <i class="fas fa-info-circle password-requirement-icon"></i>

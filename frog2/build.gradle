@@ -158,6 +158,8 @@ tasks.named('processResources') {
     exclude 'db/**'
 }
 
+apply from: 'gradle/jspc-java22.gradle'
+
 def verticaDriver = layout.projectDirectory.file('libs/vertica-jdbc-23.3.0-0.jar')
 def verticaDriverSha256 = 'f3fdb4eae26cebe05fba4c2427ea7b3846dfa73177f5b3ad2bb020ea28721d43'
 def allowedWarLibraries = [
@@ -259,9 +261,15 @@ tasks.register('verifyWarContents') {
     inputs.file(packagedWar.flatMap { it.archiveFile })
     doLast {
         def entries = []
+        String deploymentDescriptor = null
         def archive = new ZipFile(packagedWar.get().archiveFile.get().asFile)
         try {
             archive.entries().each { entries.add(it.name) }
+            def webXmlEntry = archive.getEntry('WEB-INF/web.xml')
+            if (webXmlEntry != null) {
+                deploymentDescriptor = archive.getInputStream(webXmlEntry)
+                        .getText('UTF-8')
+            }
         } finally {
             archive.close()
         }
@@ -280,11 +288,29 @@ tasks.register('verifyWarContents') {
                     || entry.startsWith('WEB-INF/classes/db/')
                     || segments.any { it in ['build', '.settings', '.classpath', '.project'] }
         }
+        def precompiledJspClasses = entries.findAll { entry ->
+            entry.startsWith('WEB-INF/classes/org/apache/jsp/')
+                    && entry.endsWith('_jsp.class')
+        }
+        def mappedJspClasses = deploymentDescriptor == null
+                ? []
+                : (deploymentDescriptor =~ /<servlet-class>(org\.apache\.jsp\.[^<]+_jsp)<\/servlet-class>/)
+                        .collect { match -> match[1] }
+        def missingPrecompiledJspClasses = mappedJspClasses.findAll { className ->
+            !entries.contains(
+                    'WEB-INF/classes/' + className.replace('.', '/') + '.class')
+        }
 
-        if (unexpectedLibraries || missingLibraries || forbiddenEntries) {
+        if (unexpectedLibraries || missingLibraries || forbiddenEntries
+                || mappedJspClasses.isEmpty()
+                || precompiledJspClasses.size() != mappedJspClasses.size()
+                || !missingPrecompiledJspClasses.isEmpty()) {
             throw new GradleException(
                     "WAR allowlist violation. unexpectedLibraries=${unexpectedLibraries}, "
-                            + "missingLibraries=${missingLibraries}, forbiddenEntries=${forbiddenEntries}")
+                            + "missingLibraries=${missingLibraries}, forbiddenEntries=${forbiddenEntries}, "
+                            + "precompiledJspClasses=${precompiledJspClasses.size()}, "
+                            + "mappedJspClasses=${mappedJspClasses.size()}, "
+                            + "missingPrecompiledJspClasses=${missingPrecompiledJspClasses}")
         }
     }
 }
@@ -358,5 +384,3 @@ tasks.named('war') {
     exclude '**/build/**', '**/db.properties', '**/db.properties.*'
     exclude 'WEB-INF/classes/db/**'
 }
-
-apply from: 'gradle/jspc-java22.gradle'

@@ -6,6 +6,8 @@ public enum CustomerHistoryCategory {
     INCIDENT("incident", "장애"),
     UPGRADE("upgrade", "업그레이드"),
     EXPANSION("expansion", "증설"),
+    SUPPORT("support", "기술지원"),
+    CONFIGURATION("configuration", "설정 변경"),
     OTHER("other", "기타 작업");
 
     private final String code;

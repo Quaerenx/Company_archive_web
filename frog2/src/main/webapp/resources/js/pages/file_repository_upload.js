@@ -100,6 +100,7 @@
                 return { response: response, payload: payload };
             });
         }).then(function (result) {
+            window.Frog2Session.requireActiveSession(result.response);
             if (!result.response.ok || result.payload.status !== 'ok') {
                 throw new Error(result.payload.message || '업로드에 실패했습니다.');
             }
@@ -113,6 +114,11 @@
                 window.location.assign(form.dataset.successUrl);
             }, 700);
         }).catch(function (error) {
+            if (window.Frog2Session.isSessionExpired(error)) {
+                setFileState('queued', '대기');
+                window.Frog2UI.setButtonLoading(button, false);
+                return;
+            }
             window.Frog2UI.setStatus(
                 status,
                 error.message || '업로드에 실패했습니다.',

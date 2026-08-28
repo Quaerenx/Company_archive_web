@@ -85,17 +85,7 @@
                         </c:forEach>
                     </select>
                 </label>
-                <label class="form-group">
-                    <span>상태 <span aria-hidden="true">*</span></span>
-                    <select name="status" required>
-                        <c:forEach var="historyStatus" items="${historyStatuses}">
-                            <option value="${historyStatus.code}"
-                                    ${formStatus eq historyStatus.code ? 'selected' : ''}>
-                                <c:out value="${historyStatus.label}" />
-                            </option>
-                        </c:forEach>
-                    </select>
-                </label>
+                <input type="hidden" name="status" value="completed">
             </div>
 
             <label class="form-group customer-history-title-field">

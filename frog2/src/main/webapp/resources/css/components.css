@@ -10,10 +10,10 @@
 /* 페이지 헤더 컴포넌트 */
 .page-header {
     background: var(--color-surface-elevated);
-    border: 1px solid var(--color-surface-edge);
+    border: 1px solid var(--color-border);
     padding: var(--space-20) var(--space-24);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     margin-bottom: var(--space-20);
 }
 
@@ -213,12 +213,6 @@
     background-color: var(--neutral-100);
 }
 
-.table-responsive {
-    overflow-x: auto;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--neutral-200);
-}
-
 /* 배지 컴포넌트 */
 .badge {
     display: inline-flex;
@@ -257,39 +251,6 @@
 .badge-secondary {
     background-color: var(--neutral-200);
     color: var(--neutral-600);
-}
-
-/* 알림 컴포넌트 */
-.alert {
-    padding: var(--space-16) var(--space-20);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-20);
-    border: 1px solid;
-    font-size: var(--font-size-sm);
-}
-
-.alert-success {
-    background-color: var(--color-success-bg);
-    border-color: var(--color-success-border);
-    color: var(--color-success-text);
-}
-
-.alert-error {
-    background-color: var(--color-danger-bg);
-    border-color: var(--color-danger-border);
-    color: var(--color-danger-text);
-}
-
-.alert-warning {
-    background-color: var(--color-warning-bg);
-    border-color: var(--color-warning-border);
-    color: var(--color-warning-text);
-}
-
-.alert-info {
-    background-color: var(--color-info-bg);
-    border-color: var(--color-info-border);
-    color: var(--color-info-text);
 }
 
 /* 로딩 스피너 */
@@ -458,7 +419,7 @@
     min-width: 0;
 }
 
-.account-form-container .form-card {
+.account-form-container .ui-form-card {
     background: var(--color-surface);
     border: 1px solid var(--color-surface-edge);
     padding: var(--space-24);

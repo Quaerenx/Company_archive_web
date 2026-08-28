@@ -86,7 +86,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(script.contains("if (!response.ok)"));
         assertFalse(script.contains("toISOString()"));
         assertTrue(script.contains("calculateLicensePercentage"));
-        assertTrue(script.contains("toFixed(1)"));
+        assertTrue(script.contains("toFixed(2)"));
         assertTrue(script.contains("maxLicensePercentage = 1000000"));
         assertFalse(script.contains("used > capacity"));
         assertFalse(script.contains("사용량은 전체 용량보다 클 수 없습니다."));
@@ -186,7 +186,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "pattern=\"yyyy-MM-dd\""));
         assertTrue(comparisonTable.contains(
-                "<c:out value=\"${row.noteSummary}\" />"));
+                "class=\"history-note-summary\"><c:out value=\"${row.noteSummary}\" />"));
         assertTrue(comparisonTable.contains(
                 "data-ui-disclosure-toggle"));
         assertTrue(comparisonTable.contains(
@@ -206,7 +206,7 @@ class MaintenanceFormAssetContractTest {
         assertFalse(comparisonTable.contains("data-history-toggle"));
         assertFalse(comparisonTable.contains("fa-chevron-down"));
         assertFalse(comparisonTable.contains("history-detail-toggle-cell"));
-        assertTrue(comparisonTable.contains(
+        assertFalse(comparisonTable.contains(
                 "class=\"history-detail-metrics\""));
         assertTrue(comparisonTable.contains(
                 "class=\"history-detail-note\""));
@@ -217,7 +217,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "<c:out value=\"${row.record.note}\" />"));
         assertTrue(comparisonTable.contains("특이사항 없음"));
-        assertTrue(comparisonTable.contains("수정 일시"));
+        assertTrue(comparisonTable.contains("${row.modifiedAfterCreation}"));
         assertFalse(comparisonTable.contains("rowspan=\"2\""));
         assertFalse(comparisonTable.contains("history-note-row"));
         assertTrue(page.contains(
@@ -231,7 +231,7 @@ class MaintenanceFormAssetContractTest {
     }
 
     @Test
-    void expandedHistoryUsesFullWidthSummaryAndReadableNoteMetadataSplit()
+    void expandedHistoryContainsOnlyNewNoteAndMetadataInformation()
             throws Exception {
         String page = readWebapp("maintenance/maintenance_history.jsp");
 
@@ -242,31 +242,30 @@ class MaintenanceFormAssetContractTest {
         assertTrue(detailEnd > detailStart);
         String detail = page.substring(detailStart, detailEnd);
 
-        int summary = detail.indexOf(
-                "history-detail-summary");
-        int lower = detail.indexOf(
-                "class=\"history-detail-lower\"");
         int note = detail.indexOf(
                 "history-detail-note-section");
         int metadata = detail.indexOf(
                 "history-detail-meta-section");
-        assertTrue(summary >= 0);
-        assertTrue(lower > summary);
-        assertTrue(note > lower);
+        assertTrue(note >= 0);
         assertTrue(metadata > note);
+        assertFalse(detail.contains("history-detail-summary"));
+        assertFalse(detail.contains("라이선스 사용량"));
+        assertTrue(detail.contains("점검자"));
+        assertTrue(detail.contains("이전 대비"));
         assertTrue(detail.contains(
-                "class=\"history-detail-metrics\""));
+                "class=\"history-detail-mobile-meta\""));
+        assertTrue(detail.contains("전월 사용률"));
         assertTrue(detail.contains("class=\"history-detail-meta\""));
     }
 
     @Test
-    void expandedHistoryLayoutKeepsMetricsDenseAndMetadataAligned()
+    void expandedHistoryLayoutKeepsNoteAndMetadataAligned()
             throws Exception {
         String styles = Files.readString(
                 PAGE_STYLES.resolve("maintenance_history.css"));
 
         assertTrue(styles.contains(
-                "grid-template-columns: repeat(4, minmax(0, 1fr));"));
+                ".maintenance-history .history-detail-content"));
         assertTrue(styles.contains(
                 "grid-template-columns: minmax(0, 7fr) minmax(220px, 3fr);"));
         assertTrue(styles.contains(
@@ -274,7 +273,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(styles.contains(
                 "grid-template-columns: 72px minmax(0, 1fr);"));
         assertTrue(styles.contains("white-space: nowrap;"));
-        assertTrue(styles.contains(
+        assertFalse(styles.contains(
                 ".maintenance-history .history-detail-lower"));
     }
 
@@ -355,9 +354,8 @@ class MaintenanceFormAssetContractTest {
         assertTrue(styles.contains("white-space: pre-wrap;"));
         assertTrue(styles.contains(
                 ".maintenance-history .history-detail-note-section"));
-        assertTrue(styles.contains("align-items: stretch;"));
         assertTrue(styles.contains("flex: 1 1 auto;"));
-        assertTrue(styles.contains("min-block-size: 112px;"));
+        assertTrue(styles.contains("min-block-size: 80px;"));
         assertTrue(styles.contains(
                 "padding: var(--space-12) var(--space-16);"));
         assertFalse(styles.contains("min-block-size: 72px;"));
@@ -371,7 +369,7 @@ class MaintenanceFormAssetContractTest {
     }
 
     @Test
-    void mobileHistoryChartKeepsAReadableWidthInsideItsOwnScrollRegion()
+    void mobileHistoryChartAndSummaryTableFitWithoutForcedWideCanvases()
             throws Exception {
         String styles = Files.readString(
                 PAGE_STYLES.resolve("maintenance_history.css"));
@@ -381,9 +379,39 @@ class MaintenanceFormAssetContractTest {
         assertTrue(styles.contains("overscroll-behavior-inline: contain;"));
         assertTrue(styles.contains(
                 ".maintenance-history .usage-chart-canvas"));
-        assertTrue(styles.contains("min-width: 720px;"));
+        assertTrue(styles.contains("inline-size: 100%;"));
+        assertTrue(styles.contains(
+                ".maintenance-history .history-detail-meta > .history-detail-mobile-meta"));
+        assertTrue(styles.contains(
+                ".maintenance-history :is(.history-col-delta, .history-col-inspector)"));
+        assertFalse(styles.contains("min-width: 600px;"));
+        assertFalse(styles.contains(
+                ".maintenance-history .usage-chart-canvas {\n"
+                        + "        min-width: 720px;"));
         assertTrue(styles.contains("@media (max-width: 480px)"));
         assertTrue(styles.contains("flex-direction: column;"));
+    }
+
+    @Test
+    void expandedHistoryRowsHavePersistentStateWithoutDirectionalIcons()
+            throws Exception {
+        String page = readWebapp("maintenance/maintenance_history.jsp");
+        String styles = Files.readString(
+                PAGE_STYLES.resolve("maintenance_history.css"));
+
+        assertTrue(styles.contains(
+                ".history-summary-row:hover:not(.is-expanded)"));
+        assertTrue(styles.contains(
+                ".history-summary-row.is-expanded > th"));
+        assertTrue(styles.contains(
+                "background: var(--color-surface-selected);"));
+        assertTrue(styles.contains(
+                "border-bottom-color: var(--color-primary);"));
+        assertTrue(styles.contains(
+                ".history-summary-row.is-expanded .history-row-toggle"));
+        assertFalse(page.contains("fa-chevron"));
+        assertFalse(styles.contains(
+                ".history-summary-row > th:first-child::before"));
     }
 
     private static String readWebapp(String relativePath) throws Exception {
