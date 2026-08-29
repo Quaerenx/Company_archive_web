@@ -19,6 +19,11 @@
             <link rel="stylesheet" href="${pageContext.request.contextPath}${stylesheet}?v=${frog2AssetVersion}">
         </c:forTokens>
     </c:if>
+    <c:if test="${not empty pageHeadScript}">
+        <c:forTokens items="${pageHeadScript}" delims="," var="script">
+            <script src="${pageContext.request.contextPath}${script}?v=${frog2AssetVersion}"></script>
+        </c:forTokens>
+    </c:if>
 </head>
 <body class="ui-system has-ambient-background authenticated-shell <c:out value='${pageBodyClass}' />">
 <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>

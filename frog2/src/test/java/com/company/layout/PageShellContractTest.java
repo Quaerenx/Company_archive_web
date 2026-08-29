@@ -85,6 +85,7 @@ class PageShellContractTest {
         assertTrue(header.contains("include file=\"/WEB-INF/includes/core_styles.jspf\""));
         assertTrue(header.contains("include file=\"/WEB-INF/includes/header_nav.jspf\""));
         assertTrue(header.contains("not empty pageCss"));
+        assertTrue(header.contains("not empty pageHeadScript"));
         assertFalse(header.contains("pageCssBeforeVendor"));
         assertFalse(header.contains("pageCssAfterHeader"));
         assertTrue(header.contains("pageDocumentTitle"));
@@ -108,16 +109,17 @@ class PageShellContractTest {
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
         assertEquals(1, occurrences(
-                webXml, "20260828-ui-usability-1"));
+                webXml, "20260829-stage-transition-2"));
         assertEquals(6, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
-        assertEquals(3, occurrences(header, "?v=${frog2AssetVersion}"));
+        assertEquals(4, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("ui-system.js?v=${frog2AssetVersion}"));
         assertFalse(footer.contains("ambient-background.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("${script}?v=${frog2AssetVersion}"));
 
         String login = read("login.jsp");
-        assertEquals(8, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
+        // 스타일시트·route gate 2개와 대시보드 자산 prefetch 6개가 무대 전환용이다.
+        assertEquals(16, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
         assertTrue(login.contains(
                 "/resources/js/ui-system.js?v=${initParam.frog2AssetVersion}"));
         assertTrue(login.contains(
@@ -204,7 +206,7 @@ class PageShellContractTest {
         Map<String, PageAssets> expected = new LinkedHashMap<>();
         expected.put("dashboard.jsp", new PageAssets(
                 "page-1050 dashboard-page",
-                "/resources/css/pages/dashboard.css",
+                "/resources/css/view-transitions.css,/resources/css/pages/dashboard.css",
                 "/resources/js/pages/dashboard.js"));
         expected.put("customers/customers_list.jsp", new PageAssets(
                 "page-1050 page-customers",

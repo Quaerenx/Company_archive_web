@@ -72,24 +72,21 @@ body.login-page::after {
     margin-block-end: var(--space-24);
 }
 
+/* viewBox가 그림 경계에 맞춰져 있어 크롭 없이도 카드 폭을 채운다.
+   예전의 aspect-ratio + overflow: hidden + scale(1.12) 조합은 SVG의
+   세로 여백(17%/18%)을 가리려던 우회였고, 그 여백이 사라지면서 불필요해졌다.
+   화면 전환에서 이 로고가 헤더 자리로 모프하려면 양쪽 종횡비가 같아야 한다. */
 .login-page .login-brand {
     align-items: center;
-    aspect-ratio: 2.49 / 1;
     display: flex;
     inline-size: 100%;
     justify-content: center;
-    overflow: hidden;
 }
 
 .login-page .login-brand-logo {
     block-size: auto;
     display: block;
-    flex: 0 0 auto;
     inline-size: 100%;
-    max-inline-size: none;
-    /* Crop the vector's transparent safe area to align its artwork with the form. */
-    transform: scale(1.12);
-    transform-origin: center;
 }
 
 .login-page .login-form {
@@ -370,10 +367,16 @@ body.login-page::after {
     }
 }
 
-/* 마우스가 있는 환경에서만 펼친다. 터치에서는 대기 상태 그대로. */
+/* 마우스가 있는 환경에서만 펼친다. 터치에서는 대기 상태 그대로.
+
+   제출 중(:has)에도 펼친 상태를 유지해야 한다. ui-system.js가 잠금을 걸 때
+   버튼에 name이 없으면 disabled로 만드는데(setButtonLoading), 그 순간 포커스가
+   사라져 :focus-within이 풀린다. 그대로 두면 화면 전환 스냅샷이 찍히기 직전에
+   종이가 접혀 퇴장 연출이 빈 화면을 날리게 된다.                            */
 @media (hover: hover) and (pointer: fine) {
     .login-page .login-shell:hover .peek-sheet,
-    .login-page .login-shell:focus-within .peek-sheet {
+    .login-page .login-shell:focus-within .peek-sheet,
+    .login-page .login-shell:has(.login-submit.is-loading) .peek-sheet {
         box-shadow: var(--shadow-lg);
         opacity: 1;
         transform:

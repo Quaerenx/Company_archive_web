@@ -20,10 +20,12 @@ class BrandLogoAssetContractTest {
         String lower = svg.toLowerCase();
 
         assertEquals(
-                "0782b6e2859ead3652bf8c6d09e3f35d04a7263cae5de9a1771fc509b9049e6b",
+                "cc65259e669c6a5b8e992c2fad3bb811be2b612ce915707ce66eb567303a190f",
                 HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)));
-        assertTrue(svg.contains("width=\"4096\" height=\"2286\""));
-        assertTrue(svg.contains("viewBox=\"0 0 4096 2286\""));
+        assertTrue(svg.contains("width=\"3664\" height=\"1480\""));
+        // viewBox는 그림 경계에 맞춰져 있다. 캔버스에 여백이 남아 있으면
+        // 로그인 카드와 헤더의 로고 종횡비가 어긋나 전환 모프가 출렁인다.
+        assertTrue(svg.contains("viewBox=\"214 387 3664 1480\""));
         assertTrue(occurrences(svg, "<path ") >= 1);
         assertEquals(0, occurrences(svg, "<image "));
         assertFalse(lower.contains("href=\"data:"));

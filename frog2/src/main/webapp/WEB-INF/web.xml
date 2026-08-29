@@ -8,7 +8,7 @@
 
     <context-param>
         <param-name>frog2AssetVersion</param-name>
-        <param-value>20260828-ui-usability-1</param-value>
+        <param-value>20260829-stage-transition-2</param-value>
     </context-param>
 
     <session-config>

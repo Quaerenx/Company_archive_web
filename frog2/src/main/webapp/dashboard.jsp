@@ -5,7 +5,10 @@
 <c:set var="pageTitle" value="대시보드" scope="request" />
 <c:set var="pageDocumentTitle" value="${pageTitle}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 dashboard-page" scope="request" />
-<c:set var="pageCss" value="/resources/css/pages/dashboard.css" scope="request" />
+<%-- 두 문서가 opt-in하므로 parser-blocking route gate가 실제 로그인/로그아웃
+     경로만 남기고 오류 응답과 대시보드 내부 이동은 즉시 전환한다. --%>
+<c:set var="pageCss" value="/resources/css/view-transitions.css,/resources/css/pages/dashboard.css" scope="request" />
+<c:set var="pageHeadScript" value="/resources/js/view-transition-routing.js" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/dashboard.js" scope="request" />
 <c:set var="maintenanceDataLoaded" value="${requestScope.monthlyMaintenanceAssigneeGroups ne null}" />
 

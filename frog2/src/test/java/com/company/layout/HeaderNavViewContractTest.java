@@ -18,8 +18,8 @@ class HeaderNavViewContractTest {
         assertTrue(header.contains("class=\"brand-logo\""));
         assertTrue(header.contains(
                 "/resources/images/archive-logo.svg?v=${frog2AssetVersion}"));
-        assertTrue(header.contains("width=\"4096\""));
-        assertTrue(header.contains("height=\"2286\""));
+        assertTrue(header.contains("width=\"3664\""));
+        assertTrue(header.contains("height=\"1480\""));
         assertTrue(header.contains("aria-label=\"Archive 대시보드\""));
         String behavior = Files.readString(
                 WEBAPP.resolve("resources/js/header_nav.js"));
@@ -86,7 +86,8 @@ class HeaderNavViewContractTest {
         assertTrue(styles.contains("prefers-reduced-motion"));
         assertTrue(styles.contains("@media (max-width: 768px)"));
         assertTrue(styles.contains("padding: var(--space-8) var(--space-24);"));
-        assertTrue(styles.contains("inline-size: 76px;"));
+        // viewBox에서 여백을 덜어낸 만큼 줄인 값. 화면상 로고 크기는 이전과 같다.
+        assertTrue(styles.contains("inline-size: 68px;"));
         assertTrue(styles.contains("min-block-size: var(--control-height-md);"));
         assertFalse(styles.contains("margin-inline-start: var(--space-16);"));
     }

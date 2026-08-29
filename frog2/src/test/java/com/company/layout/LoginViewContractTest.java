@@ -24,8 +24,8 @@ class LoginViewContractTest {
         assertTrue(page.contains("class=\"login-brand-logo\""));
         assertTrue(page.contains(
                 "/resources/images/archive-logo.svg?v=${initParam.frog2AssetVersion}"));
-        assertTrue(page.contains("width=\"4096\""));
-        assertTrue(page.contains("height=\"2286\""));
+        assertTrue(page.contains("width=\"3664\""));
+        assertTrue(page.contains("height=\"1480\""));
         assertTrue(page.contains("alt=\"${productName}\""));
         assertFalse(page.contains("ARCHIVE"));
         assertFalse(page.contains("WorkSpace"));
@@ -94,16 +94,17 @@ class LoginViewContractTest {
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-header\\s*\\{[^}]*"
                         + "margin-block-end:\\s*var\\(--space-24\\);.*"));
+        // 크롭 우회는 걷어냈다. SVG viewBox가 그림 경계에 맞춰져 로고가 그대로
+        // 카드 폭을 채우고, 헤더 로고와 종횡비가 같아져 전환 모프가 깨끗해진다.
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-brand\\s*\\{[^}]*"
-                        + "aspect-ratio:\\s*2\\.49 / 1;[^}]*"
-                        + "inline-size:\\s*100%;[^}]*"
-                        + "overflow:\\s*hidden;.*"));
+                        + "inline-size:\\s*100%;.*"));
+        assertFalse(styles.contains("aspect-ratio: 2.49 / 1;"));
+        assertFalse(styles.contains("transform: scale(1.12);"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-brand-logo\\s*\\{[^}]*"
-                        + "inline-size:\\s*100%;[^}]*"
-                        + "max-inline-size:\\s*none;[^}]*"
-                        + "transform:\\s*scale\\(1\\.12\\);.*"));
+                        + "block-size:\\s*auto;[^}]*"
+                        + "inline-size:\\s*100%;.*"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-form \\.form-group\\s*\\{[^}]*"
                         + "position:\\s*relative;.*"));

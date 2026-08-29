@@ -77,7 +77,8 @@
 .main-header .brand-logo {
     block-size: auto;
     display: block;
-    inline-size: 76px;
+    /* 여백을 덜어낸 viewBox 기준. 이전 76px 캔버스에서 그림이 차지하던 폭과 같다. */
+    inline-size: 68px;
     max-inline-size: 100%;
 }
 
@@ -502,7 +503,7 @@
     }
 
     .main-header .brand-logo {
-        inline-size: 76px;
+        inline-size: 68px;
     }
 
     .page-1050 .main-header .header-box {
