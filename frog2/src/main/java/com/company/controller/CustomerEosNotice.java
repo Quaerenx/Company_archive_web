@@ -7,6 +7,18 @@ import java.util.Date;
 import java.util.Objects;
 
 public record CustomerEosNotice(long daysRemaining, String tone, String message) {
+    public long getDaysRemaining() {
+        return daysRemaining;
+    }
+
+    public String getTone() {
+        return tone;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
     static CustomerEosNotice from(Date eosDate, LocalDate today) {
         Objects.requireNonNull(eosDate, "eosDate");
         Objects.requireNonNull(today, "today");
