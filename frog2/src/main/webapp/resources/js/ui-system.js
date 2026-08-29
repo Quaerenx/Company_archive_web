@@ -5,6 +5,8 @@
     var submittingForms = new WeakSet();
     var originalButtonState = new WeakMap();
     var successfulButtonState = new WeakMap();
+    var dirtyGuardControllers = new WeakMap();
+    var dirtyGuardForms = [];
     var generatedId = 0;
     var openDialogCount = 0;
     var tableHeaderResizeObserver = null;
@@ -295,6 +297,97 @@
         return window.confirm(message);
     }
 
+    function serializeFormState(form) {
+        var controls = form.elements
+            ? Array.prototype.slice.call(form.elements)
+            : Array.prototype.slice.call(
+                form.querySelectorAll('input, select, textarea'));
+        return JSON.stringify(controls.filter(function (control) {
+            return control.name && !control.disabled
+                && !['button', 'reset', 'submit'].includes(
+                    (control.type || '').toLocaleLowerCase('en-US'));
+        }).map(function (control) {
+            var type = (control.type || '').toLocaleLowerCase('en-US');
+            var value;
+            if (type === 'checkbox' || type === 'radio') {
+                value = control.checked ? control.value : null;
+            } else if (type === 'file') {
+                value = Array.prototype.map.call(control.files || [], function (file) {
+                    return [file.name, file.size, file.lastModified];
+                });
+            } else if (control.multiple && control.options) {
+                value = Array.prototype.filter.call(
+                    control.options, function (option) {
+                        return option.selected;
+                    }).map(function (option) {
+                        return option.value;
+                    });
+            } else {
+                value = control.value;
+            }
+            return [control.name, type, value];
+        }));
+    }
+
+    function createDirtyGuard(form) {
+        if (!form) {
+            throw new TypeError('Form element is required.');
+        }
+        if (dirtyGuardControllers.has(form)) {
+            return dirtyGuardControllers.get(form);
+        }
+
+        var baseline = serializeFormState(form);
+        var submitting = false;
+
+        function isDirty() {
+            return !submitting && serializeFormState(form) !== baseline;
+        }
+
+        function markSubmitting() {
+            submitting = true;
+        }
+
+        function resume() {
+            submitting = false;
+        }
+
+        function resetBaseline() {
+            baseline = serializeFormState(form);
+            submitting = false;
+        }
+
+        form.addEventListener('reset', function () {
+            window.requestAnimationFrame(resetBaseline);
+        });
+
+        var controller = Object.freeze({
+            isDirty: isDirty,
+            markSubmitting: markSubmitting,
+            resetBaseline: resetBaseline,
+            resume: resume
+        });
+        dirtyGuardControllers.set(form, controller);
+        dirtyGuardForms.push(form);
+        return controller;
+    }
+
+    function initializeDirtyGuards() {
+        document.querySelectorAll(
+            'form[data-ui-dirty-guard="auto"]'
+        ).forEach(createDirtyGuard);
+    }
+
+    function scheduleDirtyGuardInitialization() {
+        // Page scripts populate local date/year defaults during DOMContentLoaded.
+        // Capture the baseline on the next frame so those defaults do not look dirty.
+        window.requestAnimationFrame(initializeDirtyGuards);
+    }
+
+    function hasOpenDialog() {
+        return openDialogCount > 0;
+    }
+
     function isVisible(element) {
         return element.getClientRects().length > 0
             && window.getComputedStyle(element).visibility !== 'hidden'
@@ -519,8 +612,11 @@
     if (document.readyState === 'loading') {
         document.addEventListener(
             'DOMContentLoaded', initializeScrollableTableRegions, { once: true });
+        document.addEventListener(
+            'DOMContentLoaded', scheduleDirtyGuardInitialization, { once: true });
     } else {
         initializeScrollableTableRegions();
+        scheduleDirtyGuardInitialization();
     }
     window.addEventListener('load', initializeScrollableTableRegions, { once: true });
     window.addEventListener('resize', scheduleScrollableTableRegionUpdate);
@@ -707,6 +803,14 @@
     });
 
     document.addEventListener('submit', function (event) {
+        var guardedForm = event.target.closest(
+            'form[data-ui-dirty-guard="auto"]');
+        if (guardedForm && !event.defaultPrevented
+                && (typeof guardedForm.checkValidity !== 'function'
+                    || guardedForm.checkValidity())) {
+            createDirtyGuard(guardedForm).markSubmitting();
+        }
+
         var form = event.target.closest('form.ui-form[data-ui-submit-lock="auto"]');
         if (!form || event.defaultPrevented) {
             return;
@@ -728,13 +832,31 @@
 
     window.addEventListener('pageshow', function () {
         document.querySelectorAll('form.ui-form[aria-busy="true"]').forEach(unlockForm);
+        dirtyGuardForms.forEach(function (form) {
+            dirtyGuardControllers.get(form).resume();
+        });
+    });
+
+    window.addEventListener('beforeunload', function (event) {
+        var shouldWarn = dirtyGuardForms.some(function (form) {
+            return form.isConnected !== false
+                && dirtyGuardControllers.get(form).isDirty();
+        });
+        if (!shouldWarn) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+        return '';
     });
 
     window.Frog2UI = Object.freeze({
         announce: announce,
         clearFieldError: clearFieldError,
         confirmAction: confirmAction,
+        createDirtyGuard: createDirtyGuard,
         createDialogController: createDialogController,
+        hasOpenDialog: hasOpenDialog,
         notify: notify,
         setButtonLoading: setButtonLoading,
         setButtonSuccess: setButtonSuccess,

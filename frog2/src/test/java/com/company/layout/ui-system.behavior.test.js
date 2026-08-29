@@ -262,6 +262,28 @@ function createHarness(options = {}) {
             scrollRegions[index].setAttribute('aria-describedby', region.describedBy);
         }
     });
+    let dirtyGuardField = null;
+    let dirtyGuardForm = null;
+    if (options.dirtyGuard) {
+        dirtyGuardField = new FakeElement(document);
+        dirtyGuardField.disabled = false;
+        dirtyGuardField.name = 'customer_name';
+        dirtyGuardField.type = 'text';
+        dirtyGuardField.value = '기존 고객사';
+        dirtyGuardForm = new FakeElement(document, {
+            dataset: { uiDirtyGuard: 'auto' },
+            focusables: [dirtyGuardField]
+        });
+        dirtyGuardForm.elements = [dirtyGuardField];
+        dirtyGuardForm.checkValidity = function () {
+            return true;
+        };
+        dirtyGuardForm.closest = function (selector) {
+            return selector === 'form[data-ui-dirty-guard="auto"]'
+                ? dirtyGuardForm
+                : null;
+        };
+    }
 
     document.querySelector = function (selector) {
         return selector === '.main-header' ? header : null;
@@ -274,6 +296,9 @@ function createHarness(options = {}) {
             return workSurfaces.filter((surface) =>
                 surface.classList.contains('is-table-sticky-ready')
             );
+        }
+        if (selector === 'form[data-ui-dirty-guard="auto"]') {
+            return dirtyGuardForm ? [dirtyGuardForm] : [];
         }
         return [];
     };
@@ -347,6 +372,8 @@ function createHarness(options = {}) {
     return {
         assignedLocations,
         document,
+        dirtyGuardField,
+        dirtyGuardForm,
         header,
         elementsById,
         scrollRegions,
@@ -427,9 +454,11 @@ test('dialog traps Tab, closes on Escape, and restores opener focus', () => {
     });
     const controller = harness.ui.createDialogController(dialog);
 
+    assert.equal(harness.ui.hasOpenDialog(), false);
     controller.open(opener);
     harness.flushFrames();
     assert.equal(controller.isOpen(), true);
+    assert.equal(harness.ui.hasOpenDialog(), true);
     assert.equal(dialog.getAttribute('aria-hidden'), 'false');
     assert.equal(dialog.getAttribute('inert'), null);
     assert.equal(harness.document.activeElement, first);
@@ -450,9 +479,84 @@ test('dialog traps Tab, closes on Escape, and restores opener focus', () => {
     harness.document.dispatch('keydown', escape);
     harness.flushFrames();
     assert.equal(controller.isOpen(), false);
+    assert.equal(harness.ui.hasOpenDialog(), false);
     assert.equal(dialog.getAttribute('aria-hidden'), 'true');
     assert.equal(dialog.getAttribute('inert'), '');
     assert.equal(harness.document.activeElement, opener);
+});
+
+test('shared dirty guard warns only after a form changes and pauses for submit', () => {
+    const harness = createHarness();
+    const field = new FakeElement(harness.document);
+    field.name = 'customer_name';
+    field.type = 'text';
+    field.value = '기존 고객사';
+    field.disabled = false;
+    const form = new FakeElement(harness.document, { focusables: [field] });
+    const controller = harness.ui.createDirtyGuard(form);
+
+    assert.equal(controller.isDirty(), false);
+
+    field.value = '변경 고객사';
+    assert.equal(controller.isDirty(), true);
+    const dirtyUnload = {
+        preventDefault() {
+            this.defaultPrevented = true;
+        }
+    };
+    harness.window.dispatch('beforeunload', dirtyUnload);
+    assert.equal(dirtyUnload.defaultPrevented, true);
+    assert.equal(dirtyUnload.returnValue, '');
+
+    controller.markSubmitting();
+    assert.equal(controller.isDirty(), false);
+    const submittingUnload = {
+        preventDefault() {
+            this.defaultPrevented = true;
+        }
+    };
+    harness.window.dispatch('beforeunload', submittingUnload);
+    assert.equal(submittingUnload.defaultPrevented, undefined);
+
+    controller.resume();
+    assert.equal(controller.isDirty(), true);
+    controller.resetBaseline();
+    assert.equal(controller.isDirty(), false);
+});
+
+test('automatic dirty guard pauses for a valid submit and resumes on pageshow', () => {
+    const harness = createHarness({ dirtyGuard: true });
+    harness.flushFrames();
+    harness.dirtyGuardField.value = '변경 고객사';
+
+    const dirtyUnload = {
+        preventDefault() {
+            this.defaultPrevented = true;
+        }
+    };
+    harness.window.dispatch('beforeunload', dirtyUnload);
+    assert.equal(dirtyUnload.defaultPrevented, true);
+
+    harness.document.dispatch('submit', {
+        defaultPrevented: false,
+        target: harness.dirtyGuardForm
+    });
+    const submittingUnload = {
+        preventDefault() {
+            this.defaultPrevented = true;
+        }
+    };
+    harness.window.dispatch('beforeunload', submittingUnload);
+    assert.equal(submittingUnload.defaultPrevented, undefined);
+
+    harness.window.dispatch('pageshow', {});
+    const restoredUnload = {
+        preventDefault() {
+            this.defaultPrevented = true;
+        }
+    };
+    harness.window.dispatch('beforeunload', restoredUnload);
+    assert.equal(restoredUnload.defaultPrevented, true);
 });
 
 test('successful button state replaces loading state with a check state', () => {

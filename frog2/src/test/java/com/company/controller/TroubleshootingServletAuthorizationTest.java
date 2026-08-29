@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -346,25 +347,4 @@ class TroubleshootingServletAuthorizationTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        if (type == long.class) {
-            return 0L;
-        }
-        if (type == double.class) {
-            return 0D;
-        }
-        if (type == float.class) {
-            return 0F;
-        }
-        return 0;
-    }
 }

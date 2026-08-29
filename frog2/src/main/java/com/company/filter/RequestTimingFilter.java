@@ -89,6 +89,8 @@ public final class RequestTimingFilter implements Filter {
                         performance.fileSnapshotScanCount(),
                         performance.fileSnapshotScanDurationNanos(),
                         performance.maxFileSnapshotScanNanos(),
+                        performance.customerHistoryCacheHits(),
+                        performance.customerHistoryCacheMisses(),
                         performance.customerHistoryScanCount(),
                         performance.customerHistoryRecordFileCount(),
                         performance.customerHistoryScanDurationNanos(),
@@ -106,7 +108,7 @@ public final class RequestTimingFilter implements Filter {
 
     private static void writeLog(RequestEvent event) {
         String message =
-                "{} requestId={} method={} path={} status={} durationMs={} operation={} sqlCount={} sqlDurationMs={} maxSqlMs={} dbAcquireCount={} dbAcquireDurationMs={} maxDbAcquireMs={} fileCacheHits={} fileCacheMisses={} fileScanCount={} fileScanDurationMs={} maxFileScanMs={} customerHistoryScanCount={} customerHistoryRecordFiles={} customerHistoryScanDurationMs={} maxCustomerHistoryScanMs={}";
+                "{} requestId={} method={} path={} status={} durationMs={} operation={} sqlCount={} sqlDurationMs={} maxSqlMs={} dbAcquireCount={} dbAcquireDurationMs={} maxDbAcquireMs={} fileCacheHits={} fileCacheMisses={} fileScanCount={} fileScanDurationMs={} maxFileScanMs={} customerHistoryCacheHits={} customerHistoryCacheMisses={} customerHistoryScanCount={} customerHistoryRecordFiles={} customerHistoryScanDurationMs={} maxCustomerHistoryScanMs={}";
         Object[] values = {
                 event.slow() ? "Slow HTTP request" : "HTTP request completed",
                 event.requestId(),
@@ -126,6 +128,8 @@ public final class RequestTimingFilter implements Filter {
                 event.fileSnapshotScanCount(),
                 millis(event.fileSnapshotScanDurationNanos()),
                 millis(event.maxFileSnapshotScanNanos()),
+                event.customerHistoryCacheHits(),
+                event.customerHistoryCacheMisses(),
                 event.customerHistoryScanCount(),
                 event.customerHistoryRecordFileCount(),
                 millis(event.customerHistoryScanDurationNanos()),
@@ -197,6 +201,8 @@ public final class RequestTimingFilter implements Filter {
             int fileSnapshotScanCount,
             long fileSnapshotScanDurationNanos,
             long maxFileSnapshotScanNanos,
+            int customerHistoryCacheHits,
+            int customerHistoryCacheMisses,
             int customerHistoryScanCount,
             int customerHistoryRecordFileCount,
             long customerHistoryScanDurationNanos,

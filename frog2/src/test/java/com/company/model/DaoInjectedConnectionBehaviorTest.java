@@ -49,6 +49,15 @@ class DaoInjectedConnectionBehaviorTest {
 
         assertEquals("Acme", customers.getFirst().getCustomerName());
         assertEquals("23.4", customer.getVerticaVersion());
+        assertEquals("2021", customer.getFirstIntroductionYear());
+        assertEquals("2028-10-31", customer.getVerticaEos());
+        assertEquals("storage-network", customer.getOsStorageConfig());
+        assertEquals("backup-note", customer.getBackupConfig());
+        assertEquals("etl", customer.getEtlTool());
+        assertEquals("bi", customer.getBiTool());
+        assertEquals("encryption", customer.getDbEncryption());
+        assertEquals("cdc", customer.getCdcTool());
+        assertEquals("customer-note", customer.getNote());
         assertEquals(2, jdbc.openCount);
         assertEquals(2, jdbc.closeCount);
         assertTrue(jdbc.statements.get(0).sql.contains(
@@ -91,18 +100,42 @@ class DaoInjectedConnectionBehaviorTest {
         assertEquals(3, jdbc.closeCount);
         assertTrue(jdbc.statements.get(0).sql.startsWith(
                 "UPDATE vertica_customer_detail SET"));
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "introduction_year = ?, eos_date = ?, storage_network = ?, backup_note = ?"));
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "etl_tool = ?, bi_tool = ?, db_encryption = ?, cdc_tool = ?, note = ?"));
         assertTrue(jdbc.statements.get(1).sql.startsWith(
                 "INSERT INTO vertica_customer_detail"));
+        assertTrue(jdbc.statements.get(1).sql.contains(
+                "introduction_year, eos_date, storage_network, backup_note, etl_tool, bi_tool, db_encryption, cdc_tool, note"));
         assertTrue(jdbc.statements.get(2).sql.contains(
                 "SET is_deleted = 0"));
         assertEquals("archive", jdbc.statements.get(0).parameters.get(1));
         assertEquals("정기점검 계약 고객사",
                 jdbc.statements.get(0).parameters.get(10));
-        assertEquals("Acme", jdbc.statements.get(0).parameters.get(11));
+        assertEquals("2021", jdbc.statements.get(0).parameters.get(11));
+        assertEquals(Date.valueOf("2028-10-31"),
+                jdbc.statements.get(0).parameters.get(12));
+        assertEquals("storage-network",
+                jdbc.statements.get(0).parameters.get(13));
+        assertEquals("backup-note",
+                jdbc.statements.get(0).parameters.get(14));
+        assertEquals("etl", jdbc.statements.get(0).parameters.get(15));
+        assertEquals("bi", jdbc.statements.get(0).parameters.get(16));
+        assertEquals("encryption", jdbc.statements.get(0).parameters.get(17));
+        assertEquals("cdc", jdbc.statements.get(0).parameters.get(18));
+        assertEquals("customer-note",
+                jdbc.statements.get(0).parameters.get(19));
+        assertEquals("Acme", jdbc.statements.get(0).parameters.get(20));
         assertEquals("Acme", jdbc.statements.get(1).parameters.get(1));
         assertEquals("archive", jdbc.statements.get(1).parameters.get(2));
         assertEquals("정기점검 계약 고객사",
                 jdbc.statements.get(1).parameters.get(11));
+        assertEquals("2021", jdbc.statements.get(1).parameters.get(12));
+        assertEquals(Date.valueOf("2028-10-31"),
+                jdbc.statements.get(1).parameters.get(13));
+        assertEquals("customer-note",
+                jdbc.statements.get(1).parameters.get(20));
     }
 
     @Test
@@ -286,7 +319,16 @@ class DaoInjectedConnectionBehaviorTest {
                 "main_manager", "Alice",
                 "sub_manager", "Bob",
                 "db_name", "archive",
-                "customer_type", customerType);
+                "customer_type", customerType,
+                "introduction_year", "2021",
+                "eos_date", Date.valueOf("2028-10-31"),
+                "storage_network", "storage-network",
+                "backup_note", "backup-note",
+                "etl_tool", "etl",
+                "bi_tool", "bi",
+                "db_encryption", "encryption",
+                "cdc_tool", "cdc",
+                "note", "customer-note");
     }
 
     private static CustomerDTO customer(String name) {
@@ -302,6 +344,15 @@ class DaoInjectedConnectionBehaviorTest {
         customer.setSubManagerName("Bob");
         customer.setSaid("SAID");
         customer.setCustomerType("정기점검 계약 고객사");
+        customer.setFirstIntroductionYear("2021");
+        customer.setVerticaEos("2028-10-31");
+        customer.setOsStorageConfig("storage-network");
+        customer.setBackupConfig("backup-note");
+        customer.setEtlTool("etl");
+        customer.setBiTool("bi");
+        customer.setDbEncryption("encryption");
+        customer.setCdcTool("cdc");
+        customer.setNote("customer-note");
         return customer;
     }
 

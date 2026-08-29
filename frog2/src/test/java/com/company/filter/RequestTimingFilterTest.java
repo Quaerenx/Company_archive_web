@@ -1,5 +1,6 @@
 package com.company.filter;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,6 +33,7 @@ class RequestTimingFilterTest {
             RequestPerformanceContext.recordDbAcquisition(3_000_000);
             RequestPerformanceContext.recordFileSnapshotCacheMiss();
             RequestPerformanceContext.recordFileSnapshotScan(5_000_000);
+            RequestPerformanceContext.recordCustomerHistoryCacheMiss();
             RequestPerformanceContext.recordCustomerHistoryScan(92, 6_000_000);
         };
 
@@ -52,6 +54,8 @@ class RequestTimingFilterTest {
         assertEquals(1, event.fileSnapshotCacheMisses());
         assertEquals(1, event.fileSnapshotScanCount());
         assertEquals(5_000_000, event.fileSnapshotScanDurationNanos());
+        assertEquals(0, event.customerHistoryCacheHits());
+        assertEquals(1, event.customerHistoryCacheMisses());
         assertEquals(1, event.customerHistoryScanCount());
         assertEquals(92, event.customerHistoryRecordFileCount());
         assertEquals(6_000_000, event.customerHistoryScanDurationNanos());
@@ -138,19 +142,4 @@ class RequestTimingFilterTest {
                 });
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        if (type == long.class) {
-            return 0L;
-        }
-        return 0;
-    }
 }

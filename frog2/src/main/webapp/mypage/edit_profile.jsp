@@ -19,6 +19,8 @@
         </jsp:attribute>
     </t:pageHeader>
 
+    <t:flashMessages />
+
     <div class="ui-form-card">
         <form id="profileEditForm"
               class="ui-form"
@@ -43,7 +45,8 @@
                 </label>
                 <input type="text" class="form-control" id="userName" name="userName"
                        value="<c:out value='${userInfo.userName}' />"
-                       required autocomplete="name" placeholder="이름을 입력하세요">
+                       required maxlength="100" autocomplete="name"
+                       placeholder="이름을 입력하세요">
             </div>
 
             <div class="form-actions ui-form-actions">

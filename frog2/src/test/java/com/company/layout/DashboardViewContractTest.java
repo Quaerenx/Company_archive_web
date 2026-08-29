@@ -110,6 +110,11 @@ class DashboardViewContractTest {
         assertTrue(completedPoint.contains("block-size: 6px;"));
         assertTrue(styles.contains(".maintenance-assignee-customer:hover"));
         assertTrue(styles.contains("background: var(--color-surface-hover);"));
+        assertTrue(styles.contains("@media (max-width: 768px), (pointer: coarse)"));
+        assertTrue(styles.matches(
+                "(?s).*@media \\(max-width: 768px\\), \\(pointer: coarse\\).*"
+                        + "\\.dashboard-page \\.maintenance-assignee-customer a\\s*\\{[^}]*"
+                        + "min-block-size:\\s*44px;.*"));
         String frequency = cssRule(
                 styles,
                 ".dashboard-page .maintenance-assignee-frequency");

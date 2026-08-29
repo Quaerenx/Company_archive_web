@@ -1,5 +1,6 @@
 package com.company.model;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -166,16 +167,4 @@ final class PaginationJdbcFixture {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
-    }
 }

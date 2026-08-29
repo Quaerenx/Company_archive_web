@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,7 @@ class DatabaseSchemaReadinessTest {
             "vertica_customer_detail.deleted_at",
             "vertica_customer_detail.deleted_by",
             "company_users.department");
-    private static final Set<String> ALL_REQUIRED_COLUMNS = Set.of(
+    private static final Set<String> BASE_REQUIRED_COLUMNS = Set.of(
             "user_vm_hosts.ip",
             "user_vm_hosts.owner_user_id",
             "user_vm_hosts.owner_user_name",
@@ -40,6 +41,20 @@ class DatabaseSchemaReadinessTest {
             "customer_maintenance_schedule.effective_to",
             "customer_maintenance_schedule.updated_by",
             "customer_maintenance_schedule.updated_at");
+    private static final Set<String> ALL_REQUIRED_COLUMNS =
+            allRequiredColumns();
+
+    private static Set<String> allRequiredColumns() {
+        Set<String> columns = new HashSet<>(BASE_REQUIRED_COLUMNS);
+        for (CustomerDetailEnvironment environment
+                : CustomerDetailEnvironment.values()) {
+            for (String column : CustomerDetailDAO.requiredColumnNames()) {
+                columns.add(environment.tableName() + "." + column);
+            }
+        }
+        columns.add("vertica_customer_detail.is_deleted");
+        return Set.copyOf(columns);
+    }
 
     @Test
     void legacyRecordConstructorsRemainRequiredByDefault() {
@@ -194,6 +209,29 @@ class DatabaseSchemaReadinessTest {
                 report.missingRequirements().getFirst().migrationVersion());
         assertEquals("anchor_month",
                 report.missingRequirements().getFirst().columnName());
+        assertTrue(jdbc.statements.isEmpty());
+    }
+
+    @Test
+    void missingCustomerDetailColumnBlocksReadinessWithoutExecutingSql() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = ALL_REQUIRED_COLUMNS.stream()
+                .filter(column -> !column.equals(
+                        "vertica_customer_detail_stg.storage_network"))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+
+        DatabaseSchemaReadiness.Report report =
+                DatabaseSchemaReadiness.inspect(jdbc::open);
+
+        assertFalse(report.ready());
+        assertEquals(1, report.missingRequirements().size());
+        DatabaseSchemaReadiness.Requirement missing =
+                report.missingRequirements().getFirst();
+        assertEquals("BASELINE_CUSTOMER_DETAIL",
+                missing.migrationVersion());
+        assertEquals("vertica_customer_detail_stg",
+                missing.tableName());
+        assertEquals("storage_network", missing.columnName());
         assertTrue(jdbc.statements.isEmpty());
     }
 }

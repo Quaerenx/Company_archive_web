@@ -346,6 +346,17 @@
   }
 }
 
+@media (max-width: 768px), (pointer: coarse) {
+  .dashboard-page .maintenance-assignee-customer,
+  .dashboard-page .maintenance-assignee-customer a {
+    min-block-size: 44px;
+  }
+
+  .dashboard-page .maintenance-assignee-customer a {
+    align-items: center;
+  }
+}
+
 @media (max-width: 480px) {
   .dashboard-page .dashboard-workspace {
     padding-inline: 0;

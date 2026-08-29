@@ -12,6 +12,7 @@ import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
 import com.company.util.Pagination;
+import com.company.util.BusinessDate;
 import com.company.web.ApplicationError;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -21,7 +22,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
+import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,16 +32,26 @@ public final class CustomerHistoryServlet extends HttpServlet {
 
     private final CustomerHistoryRepository repository;
     private final CustomerDAO customerDAO;
+    private final Clock clock;
 
     public CustomerHistoryServlet() {
-        this(new CustomerHistoryRepository(), new CustomerDAO());
+        this(new CustomerHistoryRepository(), new CustomerDAO(),
+                BusinessDate.systemClock());
     }
 
     CustomerHistoryServlet(
             CustomerHistoryRepository repository,
             CustomerDAO customerDAO) {
+        this(repository, customerDAO, BusinessDate.systemClock());
+    }
+
+    CustomerHistoryServlet(
+            CustomerHistoryRepository repository,
+            CustomerDAO customerDAO,
+            Clock clock) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     @Override
@@ -139,7 +150,8 @@ public final class CustomerHistoryServlet extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
         request.setAttribute("formMode", "add");
-        request.setAttribute("formWorkDate", LocalDate.now().toString());
+        request.setAttribute(
+                "formWorkDate", BusinessDate.today(clock).toString());
         request.setAttribute("formStatus", CustomerHistoryStatus.COMPLETED.getCode());
         request.setAttribute("formCustomerName", valueOrDefault(
                 request.getParameter("customerName"), "").strip());

@@ -17,6 +17,13 @@ authenticated browser
   -> durable close/force
   -> opaque metadata name (final publish marker)
   -> list/download only when the pair validates
+
+configured administrator + completed server-side copy
+  -> authenticated, CSRF-protected import POST
+  -> canonical current directory and safe descendants only
+  -> hidden/symlink/active-content/name-conflict rejection
+  -> recently modified files deferred for 30 seconds
+  -> atomic rename into the same opaque data/metadata format
 ```
 
 The repository root is outside the webroot. Browser filenames are metadata;
@@ -37,6 +44,15 @@ the server storage identifier is a random opaque value.
   `nosniff`, and `private, no-store`.
 - The listing exposes only validated data/metadata pairs and has bounded cursor
   and snapshot-cache limits.
+- Server-side import is fail-closed to configured administrator IDs, scans at
+  most 1,000 directories and 10,000 candidate files per request, and never
+  follows hidden directories or symbolic links.
+- Browser uploads retain their 10 MiB limit. Server-side import permits larger
+  files without copying them again and additionally permits RPM packages, but
+  keeps the filename, active-content prefix, metadata, and attachment-only
+  download controls. RPM remains unavailable through browser upload.
+- Files modified within the previous 30 seconds are deferred rather than moved,
+  reducing the risk of indexing a `cp`/`rsync` destination that is still open.
 
 ## Crash and orphan recovery
 
@@ -64,6 +80,17 @@ background sweep.
   recipients can still be exposed after download.
 - MIME is supplied by the client and paired with extension/prefix checks, not
   full document parsing.
+- Server-side import assumes the operating-system copy has completed before an
+  administrator starts indexing. The stability window and before/after file
+  identity checks reduce races but cannot make an uncooperative privileged
+  local writer safe.
+- Every imported directory must be traversable, readable, and writable by the
+  Tomcat service account. Prefer a dedicated shared group and setgid repository
+  directories over broad world-readable or world-writable permissions.
+- Metadata written by this release records `source=server-import`. A rollback
+  to an older WAR can temporarily hide imported files over 10 MiB or RPM files;
+  their data/metadata pairs remain on disk and become visible again after this
+  release is restored.
 - Filesystem durability after a host/power failure ultimately depends on the
   mounted filesystem; directory-entry `fsync` is not portable in this Java
   implementation.

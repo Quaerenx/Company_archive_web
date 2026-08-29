@@ -18,13 +18,13 @@ final class MaintenanceFormContextJson {
         Objects.requireNonNull(context, "context");
         return new StringBuilder("{")
                 .append("\"defaultInspector\":")
-                .append(jsonString(firstNonBlank(
+                .append(JsonResponse.nullableString(firstNonBlank(
                         customer.getManagerName(),
                         customer.getSubManagerName())))
                 .append(",\"defaultVersion\":")
-                .append(jsonString(customer.getVerticaVersion()))
+                .append(JsonResponse.nullableString(customer.getVerticaVersion()))
                 .append(",\"defaultLicenseSize\":")
-                .append(jsonString(
+                .append(JsonResponse.nullableString(
                         MaintenanceRecordRequestMapper
                                 .normalizeTerabytesForInput(
                                         customer.getLicenseSize())))
@@ -43,35 +43,29 @@ final class MaintenanceFormContextJson {
         return new StringBuilder("{")
                 .append("\"id\":").append(record.getMaintenanceId())
                 .append(",\"inspectionDate\":")
-                .append(jsonString(StrictDateParser.formatDate(
+                .append(JsonResponse.nullableString(StrictDateParser.formatDate(
                         record.getInspectionDate())))
                 .append(",\"inspector\":")
-                .append(jsonString(record.getInspectorName()))
+                .append(JsonResponse.nullableString(record.getInspectorName()))
                 .append(",\"version\":")
-                .append(jsonString(record.getVerticaVersion()))
+                .append(JsonResponse.nullableString(record.getVerticaVersion()))
                 .append(",\"licenseSize\":")
-                .append(jsonString(
+                .append(JsonResponse.nullableString(
                         MaintenanceRecordRequestMapper
                                 .normalizeTerabytesForInput(
                                         record.getLicenseSizeGb())))
                 .append(",\"licenseUsage\":")
-                .append(jsonString(
+                .append(JsonResponse.nullableString(
                         MaintenanceRecordRequestMapper
                                 .normalizeTerabytesForInput(
                                         record.getLicenseUsageSize())))
                 .append(",\"licensePercentage\":")
-                .append(jsonString(
+                .append(JsonResponse.nullableString(
                         MaintenanceRecordRequestMapper
                                 .normalizePercentageForInput(
                                         record.getLicenseUsagePct())))
                 .append('}')
                 .toString();
-    }
-
-    private static String jsonString(String value) {
-        return value == null
-                ? "null"
-                : "\"" + JsonResponse.escape(value) + "\"";
     }
 
     private static String firstNonBlank(String first, String second) {

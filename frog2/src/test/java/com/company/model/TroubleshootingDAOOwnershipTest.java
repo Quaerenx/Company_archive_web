@@ -1,5 +1,6 @@
 package com.company.model;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -231,16 +232,4 @@ class TroubleshootingDAOOwnershipTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
-    }
 }

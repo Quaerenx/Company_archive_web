@@ -80,6 +80,20 @@ public final class RequestPerformanceContext {
                 state.maxCustomerHistoryScanNanos, safeElapsed);
     }
 
+    public static void recordCustomerHistoryCacheHit() {
+        State state = CURRENT.get();
+        if (state != null) {
+            state.customerHistoryCacheHits++;
+        }
+    }
+
+    public static void recordCustomerHistoryCacheMiss() {
+        State state = CURRENT.get();
+        if (state != null) {
+            state.customerHistoryCacheMisses++;
+        }
+    }
+
     public static Snapshot finish() {
         State state = CURRENT.get();
         CURRENT.remove();
@@ -89,6 +103,7 @@ public final class RequestPerformanceContext {
                     0, 0, 0,
                     0, 0, 0,
                     0, 0, 0, 0, 0,
+                    0, 0,
                     0, 0, 0, 0);
         }
         return new Snapshot(
@@ -104,6 +119,8 @@ public final class RequestPerformanceContext {
                 state.fileSnapshotScanCount,
                 state.fileSnapshotScanDurationNanos,
                 state.maxFileSnapshotScanNanos,
+                state.customerHistoryCacheHits,
+                state.customerHistoryCacheMisses,
                 state.customerHistoryScanCount,
                 state.customerHistoryRecordFileCount,
                 state.customerHistoryScanDurationNanos,
@@ -140,6 +157,8 @@ public final class RequestPerformanceContext {
             int fileSnapshotScanCount,
             long fileSnapshotScanDurationNanos,
             long maxFileSnapshotScanNanos,
+            int customerHistoryCacheHits,
+            int customerHistoryCacheMisses,
             int customerHistoryScanCount,
             int customerHistoryRecordFileCount,
             long customerHistoryScanDurationNanos,
@@ -159,6 +178,8 @@ public final class RequestPerformanceContext {
         private int fileSnapshotScanCount;
         private long fileSnapshotScanDurationNanos;
         private long maxFileSnapshotScanNanos;
+        private int customerHistoryCacheHits;
+        private int customerHistoryCacheMisses;
         private int customerHistoryScanCount;
         private int customerHistoryRecordFileCount;
         private long customerHistoryScanDurationNanos;

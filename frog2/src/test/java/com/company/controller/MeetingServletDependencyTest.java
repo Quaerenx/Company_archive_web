@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -215,19 +216,4 @@ class MeetingServletDependencyTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        if (type == long.class) {
-            return 0L;
-        }
-        return 0;
-    }
 }

@@ -150,6 +150,8 @@
     function cancelEdit(commentId, editButton) {
         const content = document.getElementById('content-' + commentId);
         const editForm = document.getElementById('edit-form-' + commentId);
+        const editContent = document.getElementById('edit-content-' + commentId);
+        editContent.value = content.textContent;
         content.hidden = false;
         editForm.hidden = true;
         editForm.classList.remove('is-open');

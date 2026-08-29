@@ -62,6 +62,26 @@ class CommonUiReuseContractTest {
         assertTrue(edit.contains("customerFormMode\" value=\"edit\""));
         assertTrue(add.contains("_customer_form_fields.jspf"));
         assertTrue(edit.contains("_customer_form_fields.jspf"));
+        assertFalse(fields.contains("max=\"2030\""));
+        assertFalse(read("customers/customers_detail_edit.jsp")
+                .contains("max=\"2030\""));
+    }
+
+    @Test
+    void longCustomerAndTroubleshootingFormsUseTheSharedDirtyGuard()
+            throws Exception {
+        for (String page : List.of(
+                "customers/customers_add.jsp",
+                "customers/customers_edit.jsp",
+                "troubleshooting/troubleshooting_add.jsp",
+                "troubleshooting/troubleshooting_edit.jsp")) {
+            assertTrue(read(page).contains(
+                    "data-ui-dirty-guard=\"auto\""), page);
+        }
+
+        String behavior = read("resources/js/ui-system.js");
+        assertTrue(behavior.contains("function createDirtyGuard(form)"));
+        assertTrue(behavior.contains("window.addEventListener('beforeunload'"));
     }
 
     @Test

@@ -10,6 +10,9 @@ Date: 2026-08-03
 - SQL executions at or above the slow-SQL threshold are logged at `WARN`.
 - SQL summaries remove comments, string literals, and numeric literals and are limited to 240 characters.
 - Query strings, form fields, user IDs, passwords, customer names, and bound JDBC parameter values are never written by the performance logger.
+- Troubleshooting searches identify summary-only and explicit full-content operations separately. Full-content search covers complete `LONG VARCHAR` fields; it remains a bounded-time contains scan unless a separately approved Vertica text index is introduced.
+- File-repository requests report snapshot cache hits/misses and scan count/duration.
+- Customer-history requests report snapshot cache hits/misses, scanned record-file count, and scan duration without logging record content or customer names.
 
 ## Settings
 

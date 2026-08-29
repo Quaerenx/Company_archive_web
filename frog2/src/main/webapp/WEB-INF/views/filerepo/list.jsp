@@ -9,6 +9,7 @@
 <c:url var="uploadUrl" value="/file-repository/upload">
     <c:param name="path" value="${listing.currentPath}" />
 </c:url>
+<c:url var="importUrl" value="/file-repository/import" />
 <c:set var="directoryEmpty" value="${listing.totalCount eq 0}" />
 
 <%@ include file="/includes/header.jsp" %>
@@ -18,6 +19,21 @@
         <jsp:attribute name="title"><i class="fas fa-folder-open" aria-hidden="true"></i> 업무자료</jsp:attribute>
         <jsp:attribute name="subtitle">안전한 외부 저장소에서 제공되는 파일입니다.</jsp:attribute>
         <jsp:attribute name="actions">
+            <c:if test="${fileRepositoryAdmin}">
+                <form class="file-import-form ui-form"
+                      method="post"
+                      data-ui-submit-lock="auto"
+                      action="<c:out value='${importUrl}' />">
+                    <input type="hidden" name="_csrf" value="<c:out value='${csrfToken}' />" />
+                    <input type="hidden" name="path" value="<c:out value='${listing.currentPath}' />" />
+                    <button class="ui-button button--secondary button--md"
+                            type="submit"
+                            data-busy-label="반입 중"
+                            aria-describedby="file-import-help">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i> 서버 파일 반입
+                    </button>
+                </form>
+            </c:if>
             <c:if test="${not directoryEmpty}">
                 <a class="ui-button button--primary button--md"
                    href="<c:out value="${uploadUrl}" />">
@@ -26,6 +42,25 @@
             </c:if>
         </jsp:attribute>
     </t:pageHeader>
+
+    <t:flashMessages />
+
+    <c:if test="${fileRepositoryAdmin}">
+        <p id="file-import-help" class="file-import-help text-muted">
+            서버 복사가 끝난 뒤 30초가 지난 일반 파일만 현재 경로 아래에서 재귀적으로 반입됩니다.
+        </p>
+    </c:if>
+
+    <c:if test="${fileRepositoryAdmin and listing.invalidEntryCount gt 0}">
+        <div class="ui-alert ui-alert--warning"
+             role="status"
+             aria-live="polite">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+                손상된 저장 항목 <strong><c:out value="${listing.invalidEntryCount}" /></strong>건을 목록에서 제외했습니다.
+            </span>
+        </div>
+    </c:if>
 
     <section class="file-main ui-work-surface" aria-label="업무자료 목록">
 

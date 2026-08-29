@@ -162,7 +162,7 @@ class LoginViewContractTest {
     }
 
     @Test
-    void loginPreservesItsPostContractWhileSuppressingStoredUserIdSuggestions()
+    void loginPreservesItsPostContractAndExposesStandardCredentialAutocomplete()
             throws Exception {
         String page = read("login.jsp");
         String form = loginForm(page);
@@ -176,8 +176,8 @@ class LoginViewContractTest {
         assertFalse(form.contains("autocomplete=\"on\""));
         assertTrue(page.contains("csrf_input.jspf"));
         assertTrue(userId.contains("name=\"userId\""));
-        assertTrue(userId.contains("autocomplete=\"off\""));
-        assertFalse(userId.contains("autocomplete=\"username\""));
+        assertTrue(userId.contains("autocomplete=\"username\""));
+        assertFalse(userId.contains("autocomplete=\"off\""));
         assertTrue(password.contains("name=\"password\""));
         assertTrue(password.contains("autocomplete=\"current-password\""));
         assertTrue(userId.contains("placeholder=\" \""));

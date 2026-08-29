@@ -42,6 +42,35 @@ class FileRepositoryFilePolicyTest {
         }));
     }
 
+    @Test
+    void serverImportKeepsFilePolicyButNotMultipartSizeLimit()
+            throws Exception {
+        long largeSize = FileRepositoryFilePolicy.MAX_FILE_SIZE + 1;
+
+        FileRepositoryException uploadError = assertThrows(
+                FileRepositoryException.class,
+                () -> policy.validate(
+                        "archive.zip", "application/zip", largeSize));
+        var imported = policy.validateImported("archive.zip", largeSize);
+
+        assertEquals("file_too_large", uploadError.getCode());
+        assertCode(
+                "file_too_large",
+                () -> policy.validateStored(
+                        "archive.zip", "application/zip", largeSize));
+        assertEquals("archive.zip", imported.originalName());
+        assertEquals("application/zip", imported.contentType());
+        assertCode(
+                "unsupported_extension",
+                () -> policy.validateImported("payload.sh", largeSize));
+        assertCode(
+                "unsupported_extension",
+                () -> policy.validate(
+                        "package.rpm", "application/x-rpm", 128));
+        var rpm = policy.validateImported("package.rpm", largeSize);
+        assertEquals("application/x-rpm", rpm.contentType());
+    }
+
     private static void assertCode(String expectedCode, ThrowingCall call) {
         FileRepositoryException error = assertThrows(FileRepositoryException.class, call::run);
         assertEquals(expectedCode, error.getCode());

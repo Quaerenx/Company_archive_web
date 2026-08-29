@@ -9,9 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.performance.RequestPerformanceContext;
 import java.io.ByteArrayInputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
@@ -75,6 +77,105 @@ class FileRepositoryServiceTest {
 
         assertEquals(0, service.list("").getFileCount());
         assertTrue(Files.exists(root.resolve("legacy-public.txt")));
+    }
+
+    @Test
+    void importsStableServerFilesRecursivelyAndLeavesExcludedFilesUntouched()
+            throws Exception {
+        Path nested = Files.createDirectories(root.resolve("RPM").resolve("packages"));
+        Path rootFile = Files.writeString(root.resolve("readme.txt"), "root file");
+        Path nestedFile = Files.writeString(nested.resolve("package.log"), "nested file");
+        Path hidden = Files.writeString(root.resolve(".secret.txt"), "hidden");
+        Path active = Files.writeString(root.resolve("script.sh"), "#!/bin/sh");
+        Path disguisedActive = Files.writeString(
+                root.resolve("payload.txt"), "<html><script>alert(1)</script></html>");
+        Path disguisedExecutable = Files.write(
+                root.resolve("binary.txt"), new byte[] {'M', 'Z', 0, 0});
+        Path outside = Files.writeString(
+                temporaryDirectory.resolve("outside.txt"), "outside");
+        Path link = root.resolve("linked.txt");
+        Files.createSymbolicLink(link, outside);
+        markStable(rootFile);
+        markStable(nestedFile);
+        markStable(hidden);
+        markStable(active);
+        markStable(disguisedActive);
+        markStable(disguisedExecutable);
+
+        FileRepositoryService.ImportResult result = service.importUnmanaged("");
+
+        assertEquals(2, result.importedCount());
+        assertEquals(0, result.conflictCount());
+        assertEquals(5, result.rejectedCount());
+        assertEquals(0, result.deferredCount());
+        assertEquals(0, result.failedCount());
+        assertFalse(Files.exists(rootFile));
+        assertFalse(Files.exists(nestedFile));
+        assertTrue(Files.exists(hidden));
+        assertTrue(Files.exists(active));
+        assertTrue(Files.exists(disguisedActive));
+        assertTrue(Files.exists(disguisedExecutable));
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(1, service.list("").getFileCount());
+        assertEquals(1, service.list("RPM/packages").getFileCount());
+    }
+
+    @Test
+    void importDefersRecentlyModifiedFilesAndReportsNameConflicts()
+            throws Exception {
+        byte[] existingContent = "managed".getBytes(StandardCharsets.UTF_8);
+        var validated = service.validateUpload(
+                "same.txt", "text/plain", existingContent.length);
+        service.store(
+                "",
+                validated,
+                existingContent.length,
+                new ByteArrayInputStream(existingContent));
+        Path conflict = Files.writeString(root.resolve("same.txt"), "copied");
+        markStable(conflict);
+        Path recent = Files.writeString(root.resolve("recent.txt"), "copying");
+
+        FileRepositoryService.ImportResult result = service.importUnmanaged("");
+
+        assertEquals(0, result.importedCount());
+        assertEquals(1, result.conflictCount());
+        assertEquals(0, result.rejectedCount());
+        assertEquals(1, result.deferredCount());
+        assertEquals(0, result.failedCount());
+        assertTrue(Files.exists(conflict));
+        assertTrue(Files.exists(recent));
+    }
+
+    @Test
+    void importsServerFileLargerThanBrowserUploadLimit() throws Exception {
+        Path large = root.resolve("package.rpm");
+        long largeSize = FileRepositoryFilePolicy.MAX_FILE_SIZE + 1;
+        try (var output = Files.newByteChannel(
+                large,
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE)) {
+            output.position(largeSize - 1);
+            output.write(ByteBuffer.wrap(new byte[] {0}));
+        }
+        markStable(large);
+
+        FileRepositoryService.ImportResult result = service.importUnmanaged("");
+        FileRepositoryEntry entry = service.list("").getEntries().getFirst();
+        FileRepositoryService.DownloadFile download =
+                service.openDownload("", entry.getId());
+
+        assertEquals(1, result.importedCount());
+        assertEquals(largeSize, entry.getSize());
+        assertEquals("RPM 패키지", entry.getDescription());
+        assertEquals(largeSize, download.size());
+        try (var children = Files.list(root)) {
+            Path metadata = children
+                    .filter(path -> path.getFileName().toString().endsWith(".meta"))
+                    .findFirst()
+                    .orElseThrow();
+            assertTrue(Files.readString(metadata).contains(
+                    "source=server-import"));
+        }
     }
 
     @Test
@@ -149,6 +250,35 @@ class FileRepositoryServiceTest {
                 () -> service.openDownload("", stored.id()));
 
         assertEquals("invalid_metadata", error.getCode());
+    }
+
+    @Test
+    void listingCountsOnlyInvalidManagedPairs() throws Exception {
+        byte[] content = "safe".getBytes(StandardCharsets.UTF_8);
+        var validated = service.validateUpload(
+                "safe.txt", "text/plain", content.length);
+        var stored = service.store(
+                "",
+                validated,
+                content.length,
+                new ByteArrayInputStream(content));
+
+        assertEquals(0, service.list("").getInvalidEntryCount());
+
+        Path metadataPath = managedPath(stored.id(), "meta");
+        Files.writeString(
+                metadataPath,
+                Files.readString(metadataPath).replace("size=4", "size=9"));
+        Files.writeString(managedPath("f".repeat(32), "data"), "orphan");
+        Files.writeString(root.resolve("ordinary.txt"), "not indexed");
+        Files.setLastModifiedTime(
+                root,
+                FileTime.fromMillis(System.currentTimeMillis() + 2_000));
+
+        FileRepositoryListing listing = service.list("");
+
+        assertEquals(2, listing.getInvalidEntryCount());
+        assertEquals(0, listing.getFileCount());
     }
 
     @Test
@@ -573,5 +703,11 @@ class FileRepositoryServiceTest {
 
     private Path managedPath(String id, String suffix) {
         return root.resolve(".frog2-" + id + "." + suffix);
+    }
+
+    private static void markStable(Path path) throws Exception {
+        Files.setLastModifiedTime(
+                path,
+                FileTime.from(Instant.now().minus(Duration.ofMinutes(1))));
     }
 }

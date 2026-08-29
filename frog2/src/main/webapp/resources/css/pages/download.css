@@ -13,6 +13,15 @@ body.page-file-repository {
     width: 100%;
 }
 
+.page-file-repository .file-import-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.page-file-repository .file-import-help {
+    margin: 0 0 var(--space-12);
+}
+
 .page-file-repository .breadcrumb {
     display: flex;
     flex-wrap: wrap;

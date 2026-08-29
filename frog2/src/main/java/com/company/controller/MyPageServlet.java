@@ -1,30 +1,56 @@
 package com.company.controller;
 
-import com.company.util.StrictDateParser;
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-
 import com.company.model.MonthlyCustomerResponseDAO;
 import com.company.model.MonthlyCustomerResponseDTO;
 import com.company.model.UserDAO;
 import com.company.model.UserDTO;
-import com.company.security.PasswordPolicy;
 import com.company.security.SessionPrincipal;
-
+import com.company.util.BusinessDate;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.Objects;
 
 public class MyPageServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int RECENT_ACTIVITY_LIMIT = 5;
     private static final String HOSTS_SECTION = "hosts";
+    private final UserDAO userDAO;
+    private final MonthlyCustomerResponseDAO monthlyResponseDAO;
+    private final MyPageRequestMapper requestMapper;
+    private final MyPageCommandService commandService;
+
+    public MyPageServlet() {
+        this(
+                new UserDAO(),
+                new MonthlyCustomerResponseDAO(),
+                new MyPageRequestMapper());
+    }
+
+    MyPageServlet(UserDAO userDAO) {
+        this(
+                userDAO,
+                new MonthlyCustomerResponseDAO(),
+                new MyPageRequestMapper());
+    }
+
+    MyPageServlet(
+            UserDAO userDAO,
+            MonthlyCustomerResponseDAO monthlyResponseDAO,
+            MyPageRequestMapper requestMapper) {
+        this.userDAO = Objects.requireNonNull(userDAO, "userDAO");
+        this.monthlyResponseDAO = Objects.requireNonNull(
+                monthlyResponseDAO, "monthlyResponseDAO");
+        this.requestMapper = Objects.requireNonNull(
+                requestMapper, "requestMapper");
+        this.commandService = new MyPageCommandService(
+                userDAO, monthlyResponseDAO);
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
@@ -38,29 +64,11 @@ public class MyPageServlet extends HttpServlet {
             return;
         }
         FlashMessage.expose(request);
-        String action = request.getParameter("action");
-        
-        if (action == null) {
-            action = "view";
-        }
-
-        switch (action) {
-            case "view":
-                renderMainPage(request, response, currentUser);
-                break;
-            case "editProfile":
-                showEditProfile(request, response, currentUser);
-                break;
-            case "changePassword":
-                showChangePassword(request, response);
-                break;
-            case "monthlyResponse":
-                showMonthlyResponse(request, response, currentUser);
-                break;
-            default:
-                renderMainPage(request, response, currentUser);
-                break;
-        }
+        dispatchGet(
+                request.getParameter("action"),
+                request,
+                response,
+                currentUser);
     }
 
     @Override
@@ -78,18 +86,56 @@ public class MyPageServlet extends HttpServlet {
             formAction = request.getParameter("action");
         }
 
-        if ("updateProfile".equals(formAction)) {
-            updateProfile(request, response, currentUser, session);
-        } else if ("updatePassword".equals(formAction)) {
-            updatePassword(request, response, currentUser);
-        } else if ("addResponse".equals(formAction)) {
-            addMonthlyResponse(request, response, currentUser);
-        } else if ("updateResponse".equals(formAction)) {
-            updateMonthlyResponse(request, response, currentUser);
-        } else if ("deleteResponse".equals(formAction)) {
-            deleteMonthlyResponse(request, response, currentUser);
-        } else {
-            renderMainPage(request, response, currentUser);
+        dispatchPost(
+                formAction,
+                request,
+                response,
+                currentUser,
+                session);
+    }
+
+    private void dispatchGet(
+            String action,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO currentUser) throws ServletException, IOException {
+        switch (action == null ? "view" : action) {
+            case "editProfile" ->
+                    handleShowEditProfile(request, response, currentUser);
+            case "changePassword" ->
+                    handleShowChangePassword(request, response);
+            case "monthlyResponse" ->
+                    handleShowMonthlyResponse(request, response, currentUser);
+            default -> renderMainPage(request, response, currentUser);
+        }
+    }
+
+    private void dispatchPost(
+            String action,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO currentUser,
+            HttpSession session) throws IOException {
+        if (action == null) {
+            response.sendRedirect(request.getContextPath() + "/mypage");
+            return;
+        }
+        switch (action) {
+            case "updateProfile" ->
+                    handleUpdateProfile(
+                            request, response, currentUser, session);
+            case "updatePassword" ->
+                    handleUpdatePassword(request, response, currentUser);
+            case "addResponse" ->
+                    handleAddMonthlyResponse(request, response, currentUser);
+            case "updateResponse" ->
+                    handleUpdateMonthlyResponse(
+                            request, response, currentUser);
+            case "deleteResponse" ->
+                    handleDeleteMonthlyResponse(
+                            request, response, currentUser);
+            default -> response.sendRedirect(
+                    request.getContextPath() + "/mypage");
         }
     }
 
@@ -158,240 +204,220 @@ public class MyPageServlet extends HttpServlet {
     }
 
     // 프로필 수정 화면
-    private void showEditProfile(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
+    private void handleShowEditProfile(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
             throws ServletException, IOException {
         
-        UserDAO userDAO = new UserDAO();
         UserDTO userInfo = userDAO.getUserById(user.getUserId());
         
         request.setAttribute("userInfo", userInfo);
-        request.getRequestDispatcher("/mypage/edit_profile.jsp").forward(request, response);
+        request.getRequestDispatcher("/mypage/edit_profile.jsp")
+                .forward(request, response);
     }
 
     // 비밀번호 변경 화면
-    private void showChangePassword(HttpServletRequest request, HttpServletResponse response) 
+    private void handleShowChangePassword(
+            HttpServletRequest request,
+            HttpServletResponse response)
             throws ServletException, IOException {
         
-        request.getRequestDispatcher("/mypage/change_password.jsp").forward(request, response);
+        request.getRequestDispatcher("/mypage/change_password.jsp")
+                .forward(request, response);
     }
 
     // 프로필 업데이트 처리
-    private void updateProfile(HttpServletRequest request, HttpServletResponse response, 
-                               UserDTO currentUser, HttpSession session) 
-            throws ServletException, IOException {
-        
-        String userName = request.getParameter("userName");
-        
-        UserDAO userDAO = new UserDAO();
-        boolean success = userDAO.updateUserName(currentUser.getUserId(), userName);
-        
+    private void handleUpdateProfile(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO currentUser,
+            HttpSession session) throws IOException {
+        final String userName;
+        try {
+            userName = requestMapper.profileName(request);
+        } catch (IllegalArgumentException exception) {
+            redirectToProfileForm(
+                    request, response, exception.getMessage());
+            return;
+        }
+
+        boolean success = commandService.updateProfile(
+                currentUser.getUserId(), userName);
         if (success) {
-            // 세션 업데이트
             currentUser.setUserName(userName);
             SessionPrincipal.store(session, currentUser);
-            
-            request.setAttribute("message", "프로필이 성공적으로 업데이트되었습니다.");
-            request.setAttribute("messageType", "success");
+            redirectToMyPage(
+                    request,
+                    response,
+                    "프로필이 성공적으로 업데이트되었습니다.",
+                    "success");
         } else {
-            request.setAttribute("message", "프로필 업데이트에 실패했습니다.");
-            request.setAttribute("messageType", "error");
+            redirectToProfileForm(
+                    request, response, "프로필 업데이트에 실패했습니다.");
         }
-        
-        renderMainPage(request, response, currentUser);
     }
 
     // 비밀번호 변경 처리
-    private void updatePassword(HttpServletRequest request, HttpServletResponse response, UserDTO currentUser) 
-            throws ServletException, IOException {
-        
-        String currentPassword = request.getParameter("currentPassword");
-        String newPassword = request.getParameter("newPassword");
-        String confirmPassword = request.getParameter("confirmPassword");
-        
-        Optional<String> validationError =
-                PasswordPolicy.validate(currentPassword, newPassword, confirmPassword);
-        if (validationError.isPresent()) {
-            request.setAttribute("message", validationError.get());
-            request.setAttribute("messageType", "error");
-            showChangePassword(request, response);
-            return;
-        }
-        
-        UserDAO userDAO = new UserDAO();
-        
-        // 현재 비밀번호 확인
-        UserDTO authUser = userDAO.authenticateUser(currentUser.getUserId(), currentPassword);
-        if (authUser == null) {
-            request.setAttribute("message", "현재 비밀번호가 올바르지 않습니다.");
-            request.setAttribute("messageType", "error");
-            showChangePassword(request, response);
-            return;
-        }
-        
-        // 비밀번호 변경
-        boolean success = userDAO.updatePassword(currentUser.getUserId(), newPassword);
-        
-        if (success) {
-            request.setAttribute("message", "비밀번호가 성공적으로 변경되었습니다.");
-            request.setAttribute("messageType", "success");
+    private void handleUpdatePassword(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO currentUser) throws IOException {
+        MyPageCommandService.PasswordChangeResult result =
+                commandService.updatePassword(
+                        currentUser.getUserId(),
+                        requestMapper.passwordChange(request));
+        if (result.status()
+                == MyPageCommandService.PasswordChangeStatus.SUCCESS) {
+            redirectToMyPage(
+                    request,
+                    response,
+                    "비밀번호가 성공적으로 변경되었습니다.",
+                    "success");
         } else {
-            request.setAttribute("message", "비밀번호 변경에 실패했습니다.");
-            request.setAttribute("messageType", "error");
+            redirectToPasswordForm(
+                    request, response, result.errorMessage());
         }
-        
-        renderMainPage(request, response, currentUser);
+    }
+
+    private static void redirectToProfileForm(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String message) throws IOException {
+        FlashMessage.redirect(
+                request,
+                response,
+                request.getContextPath() + "/mypage?action=editProfile",
+                message,
+                "error");
+    }
+
+    private static void redirectToPasswordForm(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String message) throws IOException {
+        FlashMessage.redirect(
+                request,
+                response,
+                request.getContextPath() + "/mypage?action=changePassword",
+                message,
+                "error");
+    }
+
+    private static void redirectToMyPage(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String message,
+            String messageType) throws IOException {
+        FlashMessage.redirect(
+                request,
+                response,
+                request.getContextPath() + "/mypage",
+                message,
+                messageType);
     }
     
     // 월별 고객 응대 화면
-    private void showMonthlyResponse(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
+    private void handleShowMonthlyResponse(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
             throws ServletException, IOException {
         
-        String yearStr = request.getParameter("year");
-        String monthStr = request.getParameter("month");
-        
-        Calendar cal = Calendar.getInstance();
-        int currentYear = cal.get(Calendar.YEAR);
-        int currentMonth = cal.get(Calendar.MONTH) + 1;
-        int year = currentYear;
-        int month = currentMonth;
-        
-        if (yearStr != null && monthStr != null) {
-            try {
-                year = Integer.parseInt(yearStr);
-                month = Integer.parseInt(monthStr);
-            } catch (NumberFormatException e) {
-                // 기본값 사용
-            }
-        }
-        
-        MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
+        YearMonth currentBusinessMonth = BusinessDate.currentMonth(
+                BusinessDate.systemClock());
+        int currentYear = currentBusinessMonth.getYear();
+        int currentMonth = currentBusinessMonth.getMonthValue();
+        MyPageRequestMapper.MonthSelection selection =
+                requestMapper.monthSelection(request, currentBusinessMonth);
         List<MonthlyCustomerResponseDTO> monthlyResponses = 
-            dao.getMonthlyResponses(
-                    user.getUserId(), year, month);
+            monthlyResponseDAO.getMonthlyResponses(
+                    user.getUserId(), selection.year(), selection.month());
         request.setAttribute("currentYear", currentYear);
         request.setAttribute("currentMonth", currentMonth);
-        request.setAttribute("selectedYear", year);
-        request.setAttribute("selectedMonth", month);
+        request.setAttribute("selectedYear", selection.year());
+        request.setAttribute("selectedMonth", selection.month());
         request.setAttribute("monthlyResponses", monthlyResponses);
-        request.setAttribute("hasData", yearStr != null && monthStr != null);
+        request.setAttribute("hasData", selection.explicitlySelected());
         
-        request.getRequestDispatcher("/mypage/monthly_customer_response.jsp").forward(request, response);
+        request.getRequestDispatcher("/mypage/monthly_customer_response.jsp")
+                .forward(request, response);
     }
     
     // 월별 고객 응대 추가
-    private void addMonthlyResponse(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
-            throws ServletException, IOException {
+    private void handleAddMonthlyResponse(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
+            throws IOException {
         String message;
         String messageType;
         try {
-            String responseDateStr = request.getParameter("responseDate");
-            String customerName = request.getParameter("customerName");
-            String reason = request.getParameter("reason");
-            String actionContent = request.getParameter("actionContent");
-            String note = request.getParameter("note");
-            
-            Date responseDate = StrictDateParser.parseDate(responseDateStr);
-            
-            MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
-            dto.setUserId(user.getUserId());
-            dto.setUserName(user.getUserName());
-            dto.setResponseDate(responseDate);
-            dto.setCustomerName(customerName);
-            dto.setReason(reason);
-            dto.setActionContent(actionContent);
-            dto.setNote(note);
-            
-            MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
-            boolean success = dao.addResponse(dto);
+            MonthlyCustomerResponseDTO dto = requestMapper.monthlyResponse(
+                    request, user, false);
+            boolean success = commandService.addMonthlyResponse(dto);
             message = success
                     ? "고객 응대 기록이 추가되었습니다."
                     : "고객 응대 기록 추가에 실패했습니다.";
             messageType = success ? "success" : "error";
-        } catch (ParseException e) {
-            message = "날짜 형식이 올바르지 않습니다.";
+        } catch (IllegalArgumentException exception) {
+            message = exception.getMessage();
             messageType = "error";
         }
-        
-        // 선택된 년월로 다시 조회
-        String year = request.getParameter("year");
-        String month = request.getParameter("month");
-        FlashMessage.redirect(
-                request,
-                response,
-                request.getContextPath() + "/mypage?action=monthlyResponse&year="
-                        + year + "&month=" + month,
-                message,
-                messageType);
+        redirectToMonthlyResponses(request, response, message, messageType);
     }
     
     // 월별 고객 응대 수정
-    private void updateMonthlyResponse(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
-            throws ServletException, IOException {
+    private void handleUpdateMonthlyResponse(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
+            throws IOException {
         String message;
         String messageType;
         try {
-            int id = Integer.parseInt(request.getParameter("responseId"));
-            String responseDateStr = request.getParameter("responseDate");
-            String customerName = request.getParameter("customerName");
-            String reason = request.getParameter("reason");
-            String actionContent = request.getParameter("actionContent");
-            String note = request.getParameter("note");
-            
-            Date responseDate = StrictDateParser.parseDate(responseDateStr);
-            
-            MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
-            dto.setId(id);
-            dto.setUserId(user.getUserId());
-            dto.setUserName(user.getUserName());
-            dto.setResponseDate(responseDate);
-            dto.setCustomerName(customerName);
-            dto.setReason(reason);
-            dto.setActionContent(actionContent);
-            dto.setNote(note);
-            
-            MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
-            boolean success = dao.updateResponse(dto);
+            MonthlyCustomerResponseDTO dto = requestMapper.monthlyResponse(
+                    request, user, true);
+            boolean success = commandService.updateMonthlyResponse(dto);
             message = success
                     ? "고객 응대 기록이 수정되었습니다."
                     : "고객 응대 기록 수정에 실패했습니다.";
             messageType = success ? "success" : "error";
-        } catch (ParseException | NumberFormatException e) {
-            message = "입력값이 올바르지 않습니다.";
+        } catch (IllegalArgumentException exception) {
+            message = exception.getMessage();
             messageType = "error";
         }
-        
-        // 선택된 년월로 다시 조회
-        String year = request.getParameter("year");
-        String month = request.getParameter("month");
-        FlashMessage.redirect(
-                request,
-                response,
-                request.getContextPath() + "/mypage?action=monthlyResponse&year="
-                        + year + "&month=" + month,
-                message,
-                messageType);
+        redirectToMonthlyResponses(request, response, message, messageType);
     }
     
     // 월별 고객 응대 삭제
-    private void deleteMonthlyResponse(HttpServletRequest request, HttpServletResponse response, UserDTO user) 
-            throws ServletException, IOException {
+    private void handleDeleteMonthlyResponse(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
+            throws IOException {
         String message;
         String messageType;
         try {
-            int id = Integer.parseInt(request.getParameter("responseId"));
-            
-            MonthlyCustomerResponseDAO dao = new MonthlyCustomerResponseDAO();
-            boolean success = dao.deleteResponse(id, user.getUserId());
+            int id = requestMapper.responseIdForDelete(request);
+            boolean success = commandService.deleteMonthlyResponse(
+                    id, user.getUserId());
             message = success
                     ? "고객 응대 기록이 삭제되었습니다."
                     : "고객 응대 기록 삭제에 실패했습니다.";
             messageType = success ? "success" : "error";
-        } catch (NumberFormatException e) {
-            message = "잘못된 요청입니다.";
+        } catch (IllegalArgumentException exception) {
+            message = exception.getMessage();
             messageType = "error";
         }
-        
-        // 선택된 년월로 다시 조회
+        redirectToMonthlyResponses(request, response, message, messageType);
+    }
+
+    private static void redirectToMonthlyResponses(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String message,
+            String messageType) throws IOException {
         String year = request.getParameter("year");
         String month = request.getParameter("month");
         FlashMessage.redirect(

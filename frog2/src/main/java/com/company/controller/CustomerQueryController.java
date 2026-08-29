@@ -10,12 +10,12 @@ import com.company.model.PageResult;
 import com.company.model.VerticaEosDAO;
 import com.company.web.ApplicationError;
 import com.company.web.JsonResponse;
+import com.company.util.BusinessDate;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,10 +25,11 @@ final class CustomerQueryController {
     private final CustomerDetailDAO detailDAO;
     private final CustomerDetailQueryService detailQueryService;
     private final CustomerRequestMapper mapper;
+    private final Clock clock;
 
     CustomerQueryController() {
         this(new CustomerDAO(), new CustomerDetailDAO(), new VerticaEosDAO(),
-                new CustomerRequestMapper());
+                new CustomerRequestMapper(), BusinessDate.systemClock());
     }
 
     CustomerQueryController(
@@ -36,11 +37,21 @@ final class CustomerQueryController {
             CustomerDetailDAO detailDAO,
             VerticaEosDAO eosDAO,
             CustomerRequestMapper mapper) {
+        this(customerDAO, detailDAO, eosDAO, mapper, BusinessDate.systemClock());
+    }
+
+    CustomerQueryController(
+            CustomerDAO customerDAO,
+            CustomerDetailDAO detailDAO,
+            VerticaEosDAO eosDAO,
+            CustomerRequestMapper mapper,
+            Clock clock) {
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
         this.detailDAO = Objects.requireNonNull(detailDAO, "detailDAO");
         this.detailQueryService = new CustomerDetailQueryService(
                 detailDAO, Objects.requireNonNull(eosDAO, "eosDAO"));
         this.mapper = Objects.requireNonNull(mapper, "mapper");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     void handle(HttpServletRequest request, HttpServletResponse response)
@@ -121,7 +132,7 @@ final class CustomerQueryController {
             request.setAttribute("verticaEosDate", viewData.eosDate());
             request.setAttribute("verticaEosNotice", CustomerEosNotice.from(
                     viewData.eosDate(),
-                    LocalDate.now(ZoneId.of("Asia/Seoul"))));
+                    BusinessDate.today(clock)));
         }
 
         request.setAttribute("customer", viewData.customer());

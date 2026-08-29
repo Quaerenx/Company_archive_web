@@ -24,11 +24,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,6 +61,8 @@ public final class FileRepositoryService {
             "^\\.frog2-([0-9a-f]{32})\\.(data|meta)$");
     private static final Pattern UPLOAD_TEMP_FILE = Pattern.compile(
             "^\\.frog2-(?:upload|meta)-.+\\.tmp$");
+    private static final Pattern POTENTIAL_MANAGED_FILE = Pattern.compile(
+            "^\\.frog2-.+\\.(?:data|meta)$");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)
             .withZone(ZoneId.systemDefault());
@@ -134,6 +138,7 @@ public final class FileRepositoryService {
                 entries,
                 snapshot.directoryCount(),
                 snapshot.fileCount(),
+                snapshot.invalidEntryCount(),
                 formatSize(snapshot.totalSize()),
                 previousCursor,
                 nextCursor,
@@ -275,11 +280,17 @@ public final class FileRepositoryService {
             int directoryCount = 0;
             int fileCount = 0;
             long totalSize = 0;
+            Set<String> invalidManagedEntries = new HashSet<>();
             try (var children = Files.list(directory.path())) {
                 var iterator = children.iterator();
                 while (iterator.hasNext()) {
                     Path child = iterator.next();
-                    FileRepositoryEntry entry = entryFor(directory, child);
+                    EntryInspection inspection = inspectEntry(directory, child);
+                    if (inspection.invalidManagedKey() != null) {
+                        invalidManagedEntries.add(
+                                inspection.invalidManagedKey());
+                    }
+                    FileRepositoryEntry entry = inspection.entry();
                     if (entry == null) {
                         continue;
                     }
@@ -299,11 +310,17 @@ public final class FileRepositoryService {
                         e);
             }
             candidates.sort(Comparator.comparing(Candidate::key));
+            if (!invalidManagedEntries.isEmpty()) {
+                logger.warn(
+                        "File repository directory contains {} invalid managed entries",
+                        invalidManagedEntries.size());
+            }
             return new DirectorySnapshot(
                     List.copyOf(candidates),
                     directoryCount,
                     fileCount,
-                    totalSize);
+                    totalSize,
+                    invalidManagedEntries.size());
         } finally {
             RequestPerformanceContext.recordFileSnapshotScan(
                     Math.max(0, System.nanoTime() - started));
@@ -381,7 +398,7 @@ public final class FileRepositoryService {
         }
     }
 
-    private static void invalidateSnapshot(Path path) {
+    static void invalidateSnapshot(Path path) {
         SnapshotLoad active = SNAPSHOT_LOADS.get(path);
         if (active != null) {
             synchronized (active) {
@@ -414,6 +431,28 @@ public final class FileRepositoryService {
     public ValidatedFile validateUpload(String submittedName, String contentType, long size)
             throws FileRepositoryException {
         return files.validate(submittedName, contentType, size);
+    }
+
+    /**
+     * Converts ordinary files copied into the repository by an administrator to
+     * the same opaque data/metadata pair used by browser uploads. The selected
+     * directory and its safe, visible descendants are processed recursively.
+     */
+    public ImportResult importUnmanaged(String rawPath)
+            throws FileRepositoryException {
+        FileRepositoryImporter.Result result = new FileRepositoryImporter(
+                paths,
+                files,
+                this::readMetadata,
+                FileRepositoryService::invalidateSnapshot)
+                .importUnmanaged(rawPath);
+        return new ImportResult(
+                result.relativePath(),
+                result.importedCount(),
+                result.conflictCount(),
+                result.rejectedCount(),
+                result.deferredCount(),
+                result.failedCount());
     }
 
     public StoredFile store(String rawPath, ValidatedFile validated, long declaredSize, InputStream input)
@@ -597,35 +636,69 @@ public final class FileRepositoryService {
         }
     }
 
-    private FileRepositoryEntry entryFor(
+    private EntryInspection inspectEntry(
             ResolvedDirectory directory, Path child) {
+        String serverName = child.getFileName().toString();
         try {
             if (Files.isSymbolicLink(child)) {
-                return null;
+                return new EntryInspection(
+                        null, invalidManagedKey(serverName));
             }
-            String serverName = child.getFileName().toString();
             if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS) && !serverName.startsWith(".")) {
                 String childPath = directory.relativePath().isEmpty()
                         ? serverName
                         : directory.relativePath() + "/" + serverName;
                 childPath = FileRepositoryPathPolicy.normalizeRelativePath(childPath);
-                return new FileRepositoryEntry(
-                        true, null, serverName, childPath,
-                        DATE_FORMAT.format(Files.getLastModifiedTime(child).toInstant()),
-                        0, "-", "📁", "폴더");
+                return new EntryInspection(
+                        new FileRepositoryEntry(
+                                true, null, serverName, childPath,
+                                DATE_FORMAT.format(Files.getLastModifiedTime(child).toInstant()),
+                                0, "-", "📁", "폴더"),
+                        null);
             }
             Matcher matcher = METADATA_FILE.matcher(serverName);
             if (!matcher.matches()) {
-                return null;
+                Matcher managed = MANAGED_FILE.matcher(serverName);
+                if (managed.matches()
+                        && "data".equals(managed.group(2))) {
+                    Path metadataPath = paths.managedPathForWrite(
+                            directory, managed.group(1), META_SUFFIX);
+                    if (Files.isSymbolicLink(metadataPath)
+                            || !Files.isRegularFile(
+                                    metadataPath,
+                                    LinkOption.NOFOLLOW_LINKS)) {
+                        return new EntryInspection(
+                                null, managed.group(1));
+                    }
+                    return new EntryInspection(null, null);
+                }
+                return new EntryInspection(
+                        null, invalidManagedKey(serverName));
             }
             String storageId = matcher.group(1);
             Path dataPath = paths.resolveManagedFile(directory, storageId, DATA_SUFFIX);
             StoredMetadata metadata = readMetadata(child, dataPath, storageId);
-            return fileEntry(directory.relativePath(), storageId, dataPath, metadata);
+            return new EntryInspection(
+                    fileEntry(
+                            directory.relativePath(),
+                            storageId,
+                            dataPath,
+                            metadata),
+                    null);
         } catch (Exception e) {
-            logger.warn("Skipping invalid repository entry {}", child.getFileName());
-            return null;
+            return new EntryInspection(
+                    null, invalidManagedKey(serverName));
         }
+    }
+
+    private static String invalidManagedKey(String serverName) {
+        Matcher managed = MANAGED_FILE.matcher(serverName);
+        if (managed.matches()) {
+            return managed.group(1);
+        }
+        return POTENTIAL_MANAGED_FILE.matcher(serverName).matches()
+                ? serverName
+                : null;
     }
 
     private static SortKey sortKey(FileRepositoryEntry entry) {
@@ -692,6 +765,9 @@ public final class FileRepositoryService {
         } else if (SetGroups.ARCHIVES.contains(extension)) {
             icon = "📦";
             description = "압축 파일";
+        } else if ("rpm".equals(extension)) {
+            icon = "📦";
+            description = "RPM 패키지";
         } else if (SetGroups.TEXT.contains(extension)) {
             icon = "📃";
             description = "텍스트 파일";
@@ -708,7 +784,7 @@ public final class FileRepositoryService {
                 description);
     }
 
-    private StoredMetadata readMetadata(Path metadataPath, Path dataPath, String expectedId)
+    StoredMetadata readMetadata(Path metadataPath, Path dataPath, String expectedId)
             throws FileRepositoryException {
         try (InputStream input = Files.newInputStream(metadataPath)) {
             byte[] encodedMetadata = input.readNBytes(MAX_METADATA_BYTES + 1);
@@ -725,10 +801,17 @@ public final class FileRepositoryService {
             if (storedSize != actualSize) {
                 throw invalidMetadata();
             }
-            ValidatedFile validated = files.validate(
-                    metadata.getProperty("originalName"),
-                    metadata.getProperty("contentType"),
-                    storedSize);
+            boolean serverImported = "server-import".equals(
+                    metadata.getProperty("source"));
+            ValidatedFile validated = serverImported
+                    ? files.validateImportedStored(
+                            metadata.getProperty("originalName"),
+                            metadata.getProperty("contentType"),
+                            storedSize)
+                    : files.validateStored(
+                            metadata.getProperty("originalName"),
+                            metadata.getProperty("contentType"),
+                            storedSize);
             return new StoredMetadata(validated.originalName(), validated.contentType(), storedSize);
         } catch (FileRepositoryException e) {
             throw e;
@@ -848,17 +931,22 @@ public final class FileRepositoryService {
     private record CopyResult(long size, byte[] prefix) {
     }
 
-    private record StoredMetadata(String originalName, String contentType, long size) {
+    record StoredMetadata(String originalName, String contentType, long size) {
     }
 
     private record Candidate(SortKey key, FileRepositoryEntry entry) {
+    }
+
+    private record EntryInspection(
+            FileRepositoryEntry entry, String invalidManagedKey) {
     }
 
     private record DirectorySnapshot(
             List<Candidate> candidates,
             int directoryCount,
             int fileCount,
-            long totalSize) {
+            long totalSize,
+            int invalidEntryCount) {
     }
 
     private record CachedDirectorySnapshot(
@@ -929,5 +1017,14 @@ public final class FileRepositoryService {
     }
 
     public record DownloadFile(Path path, String originalName, String contentType, long size) {
+    }
+
+    public record ImportResult(
+            String relativePath,
+            int importedCount,
+            int conflictCount,
+            int rejectedCount,
+            int deferredCount,
+            int failedCount) {
     }
 }

@@ -72,7 +72,7 @@
                            name="userId"
                            placeholder=" "
                            required
-                           autocomplete="off"
+                           autocomplete="username"
                            autocapitalize="off"
                            autocorrect="off"
                            spellcheck="false"

@@ -82,7 +82,7 @@ class DevelopmentServerSmokeTest {
         assertTrue(login.body().contains("id=\"loginForm\""));
         assertTrue(login.body().contains("autocomplete=\"off\""));
         assertFalse(login.body().contains("autocomplete=\"on\""));
-        assertFalse(login.body().contains("autocomplete=\"username\""));
+        assertTrue(login.body().contains("autocomplete=\"username\""));
         assertTrue(CSRF_INPUT.matcher(login.body()).find());
         assertEquals("nosniff", header(login, "X-Content-Type-Options"));
         assertTrue(header(login, "Cache-Control").contains("no-store"));

@@ -6,9 +6,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CustomerDetailDAO {
+    private static final int SAVE_LOCK_STRIPES = 64;
+    private static final ReentrantLock[] SAVE_LOCKS = createSaveLocks();
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
             new SchemaCapabilityCache();
     private static final String COLUMNS =
@@ -36,6 +40,10 @@ public class CustomerDetailDAO {
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
+
+    static List<String> requiredColumnNames() {
+        return List.of(COLUMNS.split(", "));
+    }
 
     public CustomerDetailDAO() {
         this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES);
@@ -161,6 +169,53 @@ public class CustomerDetailDAO {
             CustomerDetailDTO detail,
             String actorUserId) {
         Objects.requireNonNull(detail, "detail");
+        String customerName = Objects.requireNonNull(
+                detail.getCustomerName(), "detail.customerName");
+        ReentrantLock saveLock = saveLock(environment, customerName);
+        saveLock.lock();
+        try {
+            try {
+                return saveInTransaction(
+                        environment, detail, actorUserId, true);
+            } catch (SQLException exception) {
+                if (!isDuplicateKey(exception)) {
+                    throw DataAccessException.from(
+                            "save customer detail", exception);
+                }
+                try {
+                    return saveInTransaction(
+                            environment, detail, actorUserId, false);
+                } catch (SQLException retryFailure) {
+                    retryFailure.addSuppressed(exception);
+                    throw DataAccessException.from(
+                            "save customer detail after concurrent insert",
+                            retryFailure);
+                }
+            }
+        } finally {
+            saveLock.unlock();
+        }
+    }
+
+    private static ReentrantLock saveLock(
+            CustomerDetailEnvironment environment, String customerName) {
+        int hash = Objects.hash(environment, customerName);
+        return SAVE_LOCKS[Math.floorMod(hash, SAVE_LOCKS.length)];
+    }
+
+    private static ReentrantLock[] createSaveLocks() {
+        ReentrantLock[] locks = new ReentrantLock[SAVE_LOCK_STRIPES];
+        for (int index = 0; index < locks.length; index++) {
+            locks[index] = new ReentrantLock();
+        }
+        return locks;
+    }
+
+    private boolean saveInTransaction(
+            CustomerDetailEnvironment environment,
+            CustomerDetailDTO detail,
+            String actorUserId,
+            boolean insertWhenMissing) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
             boolean auditAvailable = environment == CustomerDetailEnvironment.PROD
                     && CustomerAuditSupport.shouldAuditWrite(
@@ -172,14 +227,20 @@ public class CustomerDetailDAO {
                     connection.setAutoCommit(false);
                 }
 
-                boolean exists = exists(connection, environment, detail.getCustomerName());
-                boolean changed = exists
-                        ? update(
-                                connection, environment, detail,
-                                actorUserId, auditAvailable)
-                        : insert(
-                                connection, environment, detail,
-                                actorUserId, auditAvailable);
+                boolean changed = update(
+                        connection,
+                        environment,
+                        detail,
+                        actorUserId,
+                        auditAvailable);
+                if (!changed && insertWhenMissing) {
+                    changed = insert(
+                            connection,
+                            environment,
+                            detail,
+                            actorUserId,
+                            auditAvailable);
+                }
                 connection.commit();
                 return changed;
             } catch (SQLException | RuntimeException exception) {
@@ -191,22 +252,18 @@ public class CustomerDetailDAO {
                     restoreAutoCommit(connection, primaryFailure);
                 }
             }
-        } catch (SQLException exception) {
-            throw DataAccessException.from("save customer detail", exception);
         }
     }
 
-    private boolean exists(
-            Connection connection,
-            CustomerDetailEnvironment environment,
-            String customerName) throws SQLException {
-        String sql = "SELECT 1 FROM " + environment.tableName() + " WHERE customer_name = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, customerName);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next();
+    private static boolean isDuplicateKey(SQLException exception) {
+        for (SQLException current = exception;
+                current != null;
+                current = current.getNextException()) {
+            if ("23505".equals(current.getSQLState())) {
+                return true;
             }
         }
+        return false;
     }
 
     private boolean insert(

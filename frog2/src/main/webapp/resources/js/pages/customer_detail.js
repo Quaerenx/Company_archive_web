@@ -44,13 +44,46 @@ document.addEventListener('DOMContentLoaded', function() {
 		window.requestAnimationFrame(syncTabIndicator);
 	}
 
+	function targetForEnvironment(environment) {
+		if (environment === 'stg') return 'env-stg';
+		if (environment === 'dev') return 'env-dev';
+		return 'env-prod';
+	}
+
+	function environmentForTarget(targetId) {
+		if (targetId === 'env-stg') return 'stg';
+		if (targetId === 'env-dev') return 'dev';
+		return 'prod';
+	}
+
+	function targetFromLocation() {
+		var params = new URLSearchParams(window.location.search);
+		return targetForEnvironment((params.get('env') || '').trim().toLowerCase());
+	}
+
+	function syncEnvironmentUrl(targetId, replace) {
+		var environment = environmentForTarget(targetId);
+		var url = new URL(window.location.href);
+		if (url.searchParams.get('env') === environment) return;
+
+		url.searchParams.set('env', environment);
+		var currentState = window.history.state;
+		var state = currentState && typeof currentState === 'object'
+			? Object.assign({}, currentState)
+			: {};
+		state.customerEnvironment = environment;
+		window.history[replace ? 'replaceState' : 'pushState'](
+			state,
+			'',
+			url.pathname + url.search + url.hash);
+	}
+
 	// 초기 활성 탭 결정: URL env 우선, 없으면 운영 > 스테이징 > 개발 순
 	var initial = 'env-prod';
 	var params = new URLSearchParams(window.location.search);
 	var envParam = (params.get('env') || '').trim().toLowerCase();
 	var hasRequestedEnvironment = envParam === 'prod' || envParam === 'stg' || envParam === 'dev';
-	if (envParam === 'stg') initial = 'env-stg';
-	if (envParam === 'dev') initial = 'env-dev';
+	if (hasRequestedEnvironment) initial = targetForEnvironment(envParam);
 	var prodEmpty = document.querySelector('#env-prod .alert');
 	var stgEmpty = document.querySelector('#env-stg .alert');
 	var devEmpty = document.querySelector('#env-dev .alert');
@@ -59,11 +92,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		else if (!devEmpty) initial = 'env-dev';
 	}
 	setActive(initial);
+	syncEnvironmentUrl(initial, true);
 	window.addEventListener('resize', syncTabIndicator);
+	window.addEventListener('popstate', function() {
+		setActive(targetFromLocation());
+	});
 
 	tabs.forEach(function(tab){
 		tab.addEventListener('click', function(){
-			setActive(tab.getAttribute('data-target'));
+			var targetId = tab.getAttribute('data-target');
+			setActive(targetId);
+			syncEnvironmentUrl(targetId, false);
 		});
 		tab.addEventListener('keydown', function(event) {
 			var currentIndex = tabs.indexOf(tab);
@@ -83,7 +122,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 			event.preventDefault();
 			var nextTab = tabs[nextIndex];
-			setActive(nextTab.getAttribute('data-target'));
+			var targetId = nextTab.getAttribute('data-target');
+			setActive(targetId);
+			syncEnvironmentUrl(targetId, false);
 			nextTab.focus();
 		});
 	});

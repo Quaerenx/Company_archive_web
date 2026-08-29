@@ -110,6 +110,7 @@ final class CustomerJsonResponse {
             append(json, "subManager", customer.getSubManagerName());
             append(json, "said", customer.getSaid());
             append(json, "storageYn", customer.getOsStorageConfig());
+            append(json, "storageNetwork", customer.getOsStorageConfig());
             append(json, "backupNote", customer.getBackupConfig());
             append(json, "customerType", customer.getCustomerType());
             append(json, "etlTool", customer.getEtlTool());
@@ -147,10 +148,7 @@ final class CustomerJsonResponse {
     }
 
     static String jsonString(String value) {
-        if (value == null) {
-            return "null";
-        }
-        return "\"" + JsonResponse.escape(value) + "\"";
+        return JsonResponse.nullableString(value);
     }
 
     private static String formatDate(Date date) {

@@ -1,5 +1,6 @@
 package com.company.filter;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -243,18 +244,5 @@ class SchemaReadinessFilterTest {
                         default -> defaultValue(call.getReturnType());
                     });
         }
-    }
-
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
     }
 }

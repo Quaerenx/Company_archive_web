@@ -29,8 +29,8 @@ public final class JsonResponse {
         }
         if ("/customers".equals(path)) {
             String action = request.getParameter("action");
-            if ("getDetail".equals(action) || "getCustomersForMaintenance".equals(action)
-                    || "saveDetail".equals(action)) {
+            if ("getDetail".equals(action)
+                    || "getCustomersForMaintenance".equals(action)) {
                 return true;
             }
         }
@@ -43,14 +43,14 @@ public final class JsonResponse {
 
     public static void sendError(
             HttpServletResponse response, int status, String code, String message) throws IOException {
-        write(response, status, "{\"status\":\"error\",\"success\":false,\"code\":\""
-                + escape(code) + "\",\"message\":\"" + escape(message) + "\"}");
+        write(response, status, "{\"status\":\"error\",\"success\":false,\"code\":"
+                + string(code) + ",\"message\":" + string(message) + "}");
     }
 
     public static void sendSuccess(
             HttpServletResponse response, int status, String message) throws IOException {
-        write(response, status, "{\"status\":\"ok\",\"success\":true,\"message\":\""
-                + escape(message) + "\"}");
+        write(response, status, "{\"status\":\"ok\",\"success\":true,\"message\":"
+                + string(message) + "}");
     }
 
     public static void write(HttpServletResponse response, int status, String body) throws IOException {
@@ -86,5 +86,18 @@ public final class JsonResponse {
             }
         }
         return result.toString();
+    }
+
+    /**
+     * Encodes a JSON string value. A {@code null} Java value keeps the legacy
+     * response behavior and is encoded as an empty JSON string.
+     */
+    public static String string(String value) {
+        return "\"" + escape(value) + "\"";
+    }
+
+    /** Encodes a nullable JSON string value, using the JSON {@code null} literal. */
+    public static String nullableString(String value) {
+        return value == null ? "null" : string(value);
     }
 }

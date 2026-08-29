@@ -49,6 +49,7 @@ a new role model.
 | `/file-repository` | GET | Authenticated | Shared repository listing | No | Shared repository policy |
 | `/file-repository/upload` | GET | Authenticated | Upload form read | No | Shared repository policy |
 | `/file-repository/upload` | POST | Authenticated | File upload | Yes | Shared repository policy; no delete API |
+| `/file-repository/import` | POST | Configured administrator IDs | Index server-copied files | Yes | Exact fail-closed administrator allowlist; current folder and safe descendants only |
 | `/file-repository/download` | GET | Authenticated | Attachment-only download | No | Shared repository policy |
 | `/admin/pool-status` | GET | Configured administrator IDs | Read-only pool check | No | Exact fail-closed administrator allowlist |
 | `/favicon.ico` | GET | Public | Redirect to packaged favicon | No | None |

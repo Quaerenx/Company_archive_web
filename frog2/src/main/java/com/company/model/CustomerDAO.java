@@ -4,13 +4,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.company.util.BusinessDate;
 import com.company.util.DBConnection;
 import com.company.util.Pagination;
 import com.company.util.SearchQueryPolicy;
@@ -28,9 +29,7 @@ public class CustomerDAO {
     private static final String MAINTENANCE_CUSTOMER_TYPE =
             "정기점검 계약 고객사";
     private static final String CUSTOMER_COLUMNS =
-            "d.customer_name, d.vertica_version, d.db_mode, d.os_info, "
-                    + "d.node_count, d.license_info, d.said, d.main_manager, "
-                    + "d.sub_manager, d.db_name, d.customer_type";
+            CustomerFieldContract.selectColumns("d");
     private static final String SEARCH_PREDICATE =
             "(CAST(d.customer_name AS VARCHAR(65000)) ILIKE ? "
                     + "OR CAST(d.vertica_version AS VARCHAR(65000)) ILIKE ? "
@@ -41,22 +40,37 @@ public class CustomerDAO {
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
+    private final Clock clock;
 
     public CustomerDAO() {
-        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES);
+        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES,
+                BusinessDate.systemClock());
     }
 
     CustomerDAO(JdbcConnectionProvider connectionProvider) {
-        this(connectionProvider, new SchemaCapabilityCache());
+        this(connectionProvider, new SchemaCapabilityCache(),
+                BusinessDate.systemClock());
+    }
+
+    CustomerDAO(JdbcConnectionProvider connectionProvider, Clock clock) {
+        this(connectionProvider, new SchemaCapabilityCache(), clock);
     }
 
     CustomerDAO(
             JdbcConnectionProvider connectionProvider,
             SchemaCapabilityCache schemaCapabilities) {
+        this(connectionProvider, schemaCapabilities, BusinessDate.systemClock());
+    }
+
+    CustomerDAO(
+            JdbcConnectionProvider connectionProvider,
+            SchemaCapabilityCache schemaCapabilities,
+            Clock clock) {
         this.connectionProvider = Objects.requireNonNull(
                 connectionProvider, "connectionProvider");
         this.schemaCapabilities = Objects.requireNonNull(
                 schemaCapabilities, "schemaCapabilities");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     // 모든 고객사 정보 조회 (활성 상태만, 필터 옵션 추가)
@@ -78,7 +92,7 @@ public class CustomerDAO {
             try (PreparedStatement statement = connection.prepareStatement(sql);
                     ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    customerList.add(mapCustomer(resultSet));
+                    customerList.add(CustomerFieldContract.read(resultSet));
                 }
             }
         } catch (SQLException  e) {
@@ -106,7 +120,8 @@ public class CustomerDAO {
     }
 
     public List<MaintenanceCustomerAssignment> getMaintenanceCustomerAssignments() {
-        return getMaintenanceCustomerAssignments(YearMonth.now());
+        return getMaintenanceCustomerAssignments(
+                BusinessDate.currentMonth(clock));
     }
 
     public List<MaintenanceCustomerAssignment> getMaintenanceCustomerAssignments(
@@ -321,7 +336,7 @@ public class CustomerDAO {
                     if (customers.isEmpty()) {
                         totalCount = resultSet.getInt("result_count");
                     }
-                    customers.add(mapCustomer(resultSet));
+                    customers.add(CustomerFieldContract.read(resultSet));
                 }
             }
         }
@@ -358,7 +373,9 @@ public class CustomerDAO {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, customerName);
                 try (ResultSet resultSet = statement.executeQuery()) {
-                    return resultSet.next() ? mapCustomer(resultSet) : null;
+                    return resultSet.next()
+                            ? CustomerFieldContract.read(resultSet)
+                            : null;
                 }
             }
         } catch (SQLException  e) {
@@ -375,15 +392,15 @@ public class CustomerDAO {
         try (Connection connection = connectionProvider.getConnection()) {
             boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
                     connection, schemaCapabilities, actorUserId);
-            String sql = "UPDATE vertica_customer_detail SET db_name = ?, vertica_version = ?, db_mode = ?, os_info = ?, "
-                    + "node_count = ?, license_info = ?, main_manager = ?, sub_manager = ?, said = ?, customer_type = ? "
+            String sql = "UPDATE vertica_customer_detail SET "
+                    + CustomerFieldContract.mutableAssignments() + " "
                     + (auditAvailable
                             ? ", updated_at = CURRENT_TIMESTAMP, updated_by = ? "
                             : "")
                     + "WHERE customer_name = ? AND is_deleted = "
                     + ACTIVE_FLAG;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                int nextParameter = bindMutableCustomerFields(
+                int nextParameter = CustomerFieldContract.bindMutableFields(
                         statement, 1, customer);
                 if (auditAvailable) {
                     statement.setString(nextParameter++, actorUserId.trim());
@@ -405,8 +422,9 @@ public class CustomerDAO {
         try (Connection connection = connectionProvider.getConnection()) {
             boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
                     connection, schemaCapabilities, actorUserId);
-            String columns = "customer_name, db_name, vertica_version, db_mode, os_info, node_count, license_info, main_manager, sub_manager, said, customer_type, is_deleted";
-            String values = "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+            String columns = CustomerFieldContract.insertColumns()
+                    + ", is_deleted";
+            String values = CustomerFieldContract.insertPlaceholders() + ", "
                     + ACTIVE_FLAG;
             if (auditAvailable) {
                 columns += ", updated_at, updated_by";
@@ -415,9 +433,8 @@ public class CustomerDAO {
             String sql = "INSERT INTO vertica_customer_detail (" + columns
                     + ") VALUES (" + values + ")";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, customer.getCustomerName());
-                int nextParameter = bindMutableCustomerFields(
-                        statement, 2, customer);
+                int nextParameter = CustomerFieldContract.bindInsertFields(
+                        statement, 1, customer);
                 if (auditAvailable) {
                     statement.setString(nextParameter, actorUserId.trim());
                 }
@@ -456,47 +473,6 @@ public class CustomerDAO {
         } catch (SQLException  e) {
             throw DataAccessException.from(e);
         }
-    }
-
-    private int bindMutableCustomerFields(
-            PreparedStatement statement,
-            int startIndex,
-            CustomerDTO customer) throws SQLException {
-        int parameter = startIndex;
-        setStringOrNull(statement, parameter++, customer.getDbName());
-        setStringOrNull(statement, parameter++, customer.getVerticaVersion());
-        setStringOrNull(statement, parameter++, customer.getMode());
-        setStringOrNull(statement, parameter++, customer.getOs());
-        setStringOrNull(statement, parameter++, customer.getNodes());
-        setStringOrNull(statement, parameter++, customer.getLicenseSize());
-        setStringOrNull(statement, parameter++, customer.getManagerName());
-        setStringOrNull(statement, parameter++, customer.getSubManagerName());
-        setStringOrNull(statement, parameter++, customer.getSaid());
-        setStringOrNull(statement, parameter++, customer.getCustomerType());
-        return parameter;
-    }
-
-    private static CustomerDTO mapCustomer(ResultSet resultSet)
-            throws SQLException {
-        CustomerDTO customer = new CustomerDTO();
-        customer.setCustomerName(
-                resultSet.getString("customer_name"));
-        customer.setDbName(resultSet.getString("db_name"));
-        customer.setVerticaVersion(
-                resultSet.getString("vertica_version"));
-        customer.setMode(resultSet.getString("db_mode"));
-        customer.setOs(resultSet.getString("os_info"));
-        customer.setNodes(resultSet.getString("node_count"));
-        customer.setLicenseSize(
-                resultSet.getString("license_info"));
-        customer.setSaid(resultSet.getString("said"));
-        customer.setManagerName(
-                resultSet.getString("main_manager"));
-        customer.setSubManagerName(
-                resultSet.getString("sub_manager"));
-        customer.setCustomerType(
-                resultSet.getString("customer_type"));
-        return customer;
     }
 
     private static String selectionPredicate(
@@ -599,11 +575,4 @@ public class CustomerDAO {
                 + "AS NUMERIC)";
     }
 
-    private void setStringOrNull(PreparedStatement pstmt, int parameterIndex, String value) throws SQLException {
-        if (value == null || value.trim().isEmpty()) {
-            pstmt.setNull(parameterIndex, Types.VARCHAR);
-        } else {
-            pstmt.setString(parameterIndex, value.trim());
-        }
-    }
 }

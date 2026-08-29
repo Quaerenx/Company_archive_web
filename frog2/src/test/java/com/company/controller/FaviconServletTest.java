@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.ServletContext;
@@ -50,25 +51,4 @@ class FaviconServletTest {
                 headers.get("Location"));
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        if (type == long.class) {
-            return 0L;
-        }
-        if (type == float.class) {
-            return 0F;
-        }
-        if (type == double.class) {
-            return 0D;
-        }
-        return 0;
-    }
 }

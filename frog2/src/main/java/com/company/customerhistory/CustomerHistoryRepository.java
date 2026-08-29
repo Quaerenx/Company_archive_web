@@ -2,6 +2,7 @@ package com.company.customerhistory;
 
 import com.company.model.PageResult;
 import com.company.performance.RequestPerformanceContext;
+import com.company.storage.ExternalStoragePathPolicy;
 import com.company.util.Pagination;
 import java.io.IOException;
 import java.io.Reader;
@@ -215,19 +216,23 @@ public final class CustomerHistoryRepository {
     private List<CustomerHistoryRecord> loadAll() {
         Path records = recordsDirectory(false);
         if (!Files.exists(records, LinkOption.NOFOLLOW_LINKS)) {
+            RequestPerformanceContext.recordCustomerHistoryCacheMiss();
             return List.of();
         }
         ensureSafeDirectory(records);
         FileTime directoryModified = lastModified(records);
         RecordSnapshot cached = snapshot;
         if (cached != null && cached.isCurrent(directoryModified)) {
+            RequestPerformanceContext.recordCustomerHistoryCacheHit();
             return cached.records();
         }
         synchronized (snapshotMonitor) {
             cached = snapshot;
             if (cached != null && cached.isCurrent(directoryModified)) {
+                RequestPerformanceContext.recordCustomerHistoryCacheHit();
                 return cached.records();
             }
+            RequestPerformanceContext.recordCustomerHistoryCacheMiss();
             List<CustomerHistoryRecord> loaded = scanAll(records);
             snapshot = new RecordSnapshot(
                     directoryModified,
@@ -375,8 +380,7 @@ public final class CustomerHistoryRepository {
     }
 
     private static void ensureSafeDirectory(Path directory) {
-        if (Files.isSymbolicLink(directory)
-                || !Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
+        if (!ExternalStoragePathPolicy.isSafeDirectory(directory)) {
             throw new CustomerHistoryStorageException(
                     "고객사 히스토리 저장 경로가 안전하지 않습니다.");
         }

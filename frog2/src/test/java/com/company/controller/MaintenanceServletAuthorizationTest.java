@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -21,6 +22,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Proxy;
 import java.sql.Date;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,6 +177,33 @@ class MaintenanceServletAuthorizationTest {
     }
 
     @Test
+    void editRejectsMissingOrMalformedMaintenanceIdBeforeDaoUse()
+            throws Exception {
+        for (String invalidId : new String[] {null, "", "abc", "0", "-1"}) {
+            StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+            MaintenanceServlet servlet = new MaintenanceServlet(
+                    dao, new StubCustomerDAO());
+            RequestFixture request = new RequestFixture(user("owner-1"));
+            request.parameters.put("view", "edit");
+            if (invalidId != null) {
+                request.parameters.put("id", invalidId);
+            }
+            request.accept = "application/json";
+            ResponseFixture response = new ResponseFixture();
+
+            servlet.doGet(request.proxy(), response.proxy());
+
+            assertEquals(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    response.status);
+            assertTrue(response.body.toString().contains(
+                    "\"code\":\"invalid_maintenance_id\""));
+            assertEquals(0, dao.recordReads);
+            assertNull(response.redirect);
+        }
+    }
+
+    @Test
     void addFormIsServerRenderedWithCustomerDefaultsAndPreviousRecord()
             throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
@@ -204,6 +235,25 @@ class MaintenanceServletAuthorizationTest {
                 request.attributes.get("previousMaintenanceRecord"));
         assertEquals(true,
                 request.attributes.get("formCustomerFixed"));
+    }
+
+    @Test
+    void addFormUsesSeoulDateAtUtcMonthBoundary() throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        Clock utcClockAtSeoulMidnight = Clock.fixed(
+                Instant.parse("2026-08-31T15:00:00Z"),
+                ZoneOffset.UTC);
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, new StubCustomerDAO(), utcClockAtSeoulMidnight);
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "add");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        MaintenanceRecordDTO formRecord = (MaintenanceRecordDTO)
+                request.attributes.get("formRecord");
+        assertEquals(Date.valueOf("2026-09-01"),
+                formRecord.getInspectionDate());
     }
 
     @Test
@@ -334,6 +384,33 @@ class MaintenanceServletAuthorizationTest {
                 "maintenance?view=history&customerName=Acme&_flash="));
     }
 
+    @Test
+    void updateRejectsMissingOrMalformedMaintenanceIdBeforeDaoUse()
+            throws Exception {
+        for (String invalidId : new String[] {null, "", "abc", "0", "-1"}) {
+            StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+            MaintenanceServlet servlet = new MaintenanceServlet(
+                    dao, new StubCustomerDAO());
+            RequestFixture request = new RequestFixture(user("owner-1"));
+            request.parameters.put("action", "update");
+            if (invalidId != null) {
+                request.parameters.put("maintenance_id", invalidId);
+            }
+            request.accept = "application/json";
+            ResponseFixture response = new ResponseFixture();
+
+            servlet.doPost(request.proxy(), response.proxy());
+
+            assertEquals(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    response.status);
+            assertTrue(response.body.toString().contains(
+                    "\"code\":\"invalid_maintenance_id\""));
+            assertEquals(0, dao.recordReads);
+            assertNull(response.redirect);
+        }
+    }
+
     private static MaintenanceRecordDTO record(String creatorUserId) {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
         record.setMaintenanceId(17L);
@@ -349,6 +426,7 @@ class MaintenanceServletAuthorizationTest {
     private static final class StubMaintenanceRecordDAO
             extends MaintenanceRecordDAO {
         private MaintenanceRecordDTO record;
+        private int recordReads;
         private String lastUpdateOwnerId;
         private String lastDeleteOwnerId;
         private PageResult<MaintenanceRecordDTO> historyPage =
@@ -391,6 +469,7 @@ class MaintenanceServletAuthorizationTest {
         @Override
         public MaintenanceRecordDTO getMaintenanceRecordById(
                 Long maintenanceId) {
+            recordReads++;
             return record;
         }
 
@@ -556,19 +635,4 @@ class MaintenanceServletAuthorizationTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        if (type == long.class) {
-            return 0L;
-        }
-        return 0;
-    }
 }

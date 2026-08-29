@@ -22,23 +22,17 @@ public class TroubleshootingDAO {
     private static final String SUMMARY_COLUMNS =
             "id, title, customer_name, occurrence_date, creator, create_date";
     private static final String SUMMARY_SEARCH_PREDICATE =
-            "(title ILIKE ? "
-                    + "OR customer_name ILIKE ? "
-                    + "OR creator ILIKE ?)";
+            "(title ILIKE ? ESCAPE '!' "
+                    + "OR customer_name ILIKE ? ESCAPE '!' "
+                    + "OR creator ILIKE ? ESCAPE '!')";
     private static final String CONTENT_SEARCH_PREDICATE =
             "(" + SUMMARY_SEARCH_PREDICATE
-                    + " OR CAST(SUBSTR(overview,1,65000) AS VARCHAR(65000)) "
-                    + "ILIKE CAST(? AS VARCHAR(65000)) "
-                    + "OR CAST(SUBSTR(cause_analysis,1,65000) AS VARCHAR(65000)) "
-                    + "ILIKE CAST(? AS VARCHAR(65000)) "
-                    + "OR CAST(SUBSTR(error_content,1,65000) AS VARCHAR(65000)) "
-                    + "ILIKE CAST(? AS VARCHAR(65000)) "
-                    + "OR CAST(SUBSTR(action_taken,1,65000) AS VARCHAR(65000)) "
-                    + "ILIKE CAST(? AS VARCHAR(65000)) "
-                    + "OR CAST(SUBSTR(script_content,1,65000) AS VARCHAR(65000)) "
-                    + "ILIKE CAST(? AS VARCHAR(65000)) "
-                    + "OR CAST(SUBSTR(note,1,65000) AS VARCHAR(65000)) "
-                    + "ILIKE CAST(? AS VARCHAR(65000)))";
+                    + " OR REGEXP_ILIKE(overview, ?) "
+                    + "OR REGEXP_ILIKE(cause_analysis, ?) "
+                    + "OR REGEXP_ILIKE(error_content, ?) "
+                    + "OR REGEXP_ILIKE(action_taken, ?) "
+                    + "OR REGEXP_ILIKE(script_content, ?) "
+                    + "OR REGEXP_ILIKE(note, ?))";
     private static final String STABLE_SUMMARY_ORDER =
             " ORDER BY CASE WHEN occurrence_date IS NULL THEN 1 ELSE 0 END, "
                     + "occurrence_date DESC, create_date DESC, id DESC";
@@ -459,13 +453,49 @@ public class TroubleshootingDAO {
             int startIndex,
             String query,
             boolean includeContent) throws SQLException {
-        String like = "%" + query + "%";
         int parameterIndex = startIndex;
-        int fieldCount = includeContent ? 9 : 3;
-        for (int field = 0; field < fieldCount; field++) {
-            statement.setString(parameterIndex++, like);
+        String summaryPattern = literalContainsLikePattern(query);
+        for (int field = 0; field < 3; field++) {
+            statement.setString(parameterIndex++, summaryPattern);
+        }
+        if (includeContent) {
+            String contentPattern = literalContainsRegex(query);
+            for (int field = 0; field < 6; field++) {
+                statement.setString(parameterIndex++, contentPattern);
+            }
         }
         return parameterIndex;
+    }
+
+    private static String literalContainsLikePattern(String query) {
+        StringBuilder pattern = new StringBuilder(query.length() + 2);
+        pattern.append('%');
+        for (int index = 0; index < query.length(); index++) {
+            char character = query.charAt(index);
+            if (character == '!' || character == '%' || character == '_') {
+                pattern.append('!');
+            }
+            pattern.append(character);
+        }
+        return pattern.append('%').toString();
+    }
+
+    private static String literalContainsRegex(String query) {
+        StringBuilder pattern = new StringBuilder(query.length());
+        for (int index = 0; index < query.length(); index++) {
+            char character = query.charAt(index);
+            if (Character.isWhitespace(character)) {
+                pattern.append("\\x{")
+                        .append(Integer.toHexString(character))
+                        .append('}');
+                continue;
+            }
+            if ("\\.^$|?*+()[]{}#".indexOf(character) >= 0) {
+                pattern.append('\\');
+            }
+            pattern.append(character);
+        }
+        return pattern.toString();
     }
 
     private static String normalizedQuery(String query) {

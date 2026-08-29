@@ -84,7 +84,8 @@ function createElement(document, options = {}) {
     return element;
 }
 
-function createHarness({ mobile, dropdown = false }) {
+function createHarness({ mobile, dropdown = false, quickNav = false,
+        otherDialogOpen = false }) {
     const documentListeners = new Map();
     const document = {
         activeElement: null,
@@ -133,6 +134,9 @@ function createHarness({ mobile, dropdown = false }) {
             return null;
         },
         querySelectorAll(selector) {
+            if (selector === 'a[href]:not(#logoutLink)') {
+                return [];
+            }
             if (selector === 'a[href]'
                     || selector === 'a[href], button:not([disabled])') {
                 return [firstNavLink, lastNavLink];
@@ -140,6 +144,20 @@ function createHarness({ mobile, dropdown = false }) {
             return [];
         }
     });
+    const quickNavOpenButton = quickNav ? createElement(document) : null;
+    const quickNavBackdrop = quickNav ? createElement(document) : null;
+    const quickNavDialog = quickNav ? createElement(document) : null;
+    const quickNavCloseButton = quickNav ? createElement(document) : null;
+    const quickNavInput = quickNav ? createElement(document) : null;
+    const quickNavResults = quickNav ? createElement(document, {
+        querySelectorAll() {
+            return [];
+        }
+    }) : null;
+    const quickNavEmpty = quickNav ? createElement(document) : null;
+    if (quickNavInput) {
+        quickNavInput.value = '';
+    }
     const header = createElement(document, {
         children: [mobileToggle, primaryNavigation, firstNavLink, lastNavLink,
             dropdownItem, dropdownToggle, menu, menuLink]
@@ -157,6 +175,13 @@ function createHarness({ mobile, dropdown = false }) {
         getElementById(id) {
             if (id === 'mobileNavToggle') return mobileToggle;
             if (id === 'primaryNavigation') return primaryNavigation;
+            if (id === 'quickNavOpenButton') return quickNavOpenButton;
+            if (id === 'quickNavBackdrop') return quickNavBackdrop;
+            if (id === 'quickNavDialog') return quickNavDialog;
+            if (id === 'quickNavCloseButton') return quickNavCloseButton;
+            if (id === 'quickNavInput') return quickNavInput;
+            if (id === 'quickNavResults') return quickNavResults;
+            if (id === 'quickNavEmpty') return quickNavEmpty;
             return null;
         },
         querySelector(selector) {
@@ -176,6 +201,29 @@ function createHarness({ mobile, dropdown = false }) {
             callback();
         }
     };
+    let quickNavOpen = false;
+    let quickNavOpenCalls = 0;
+    if (quickNav) {
+        window.Frog2UI = {
+            createDialogController() {
+                return {
+                    close() {
+                        quickNavOpen = false;
+                    },
+                    isOpen() {
+                        return quickNavOpen;
+                    },
+                    open() {
+                        quickNavOpen = true;
+                        quickNavOpenCalls += 1;
+                    }
+                };
+            },
+            hasOpenDialog() {
+                return otherDialogOpen || quickNavOpen;
+            }
+        };
+    }
 
     vm.runInNewContext(source, { document, window });
     document.dispatch('DOMContentLoaded', {});
@@ -188,7 +236,11 @@ function createHarness({ mobile, dropdown = false }) {
         header,
         lastNavLink,
         mobileToggle,
-        primaryNavigation
+        primaryNavigation,
+        quickNavOpenButton,
+        get quickNavOpenCalls() {
+            return quickNavOpenCalls;
+        }
     };
 }
 
@@ -253,4 +305,30 @@ test('desktop dropdown Escape closes the menu and restores toggle focus', () => 
     assert.equal(harness.dropdownItem.classList.contains('open'), false);
     assert.equal(harness.dropdownToggle.getAttribute('aria-expanded'), 'false');
     assert.equal(harness.document.activeElement, harness.dropdownToggle);
+});
+
+test('quick navigation stays closed while another dialog is open', () => {
+    const harness = createHarness({
+        mobile: false,
+        otherDialogOpen: true,
+        quickNav: true
+    });
+
+    harness.quickNavOpenButton.dispatch('click');
+    assert.equal(harness.quickNavOpenCalls, 0);
+
+    for (const modifier of ['ctrlKey', 'metaKey']) {
+        const shortcut = keyboardEvent('k');
+        shortcut.target = createElement(harness.document);
+        shortcut.altKey = false;
+        shortcut.shiftKey = false;
+        shortcut.ctrlKey = false;
+        shortcut.metaKey = false;
+        shortcut[modifier] = true;
+
+        harness.document.dispatch('keydown', shortcut);
+
+        assert.equal(shortcut.defaultPrevented, true);
+        assert.equal(harness.quickNavOpenCalls, 0);
+    }
 });

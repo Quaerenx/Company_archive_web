@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -22,7 +23,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -217,6 +221,25 @@ class CustomerHistoryServletTest {
                         + "&_flash="));
     }
 
+    @Test
+    void addFormUsesSeoulDateAtUtcMonthBoundary() throws Exception {
+        Clock utcClockAtSeoulMidnight = Clock.fixed(
+                Instant.parse("2026-08-31T15:00:00Z"),
+                ZoneOffset.UTC);
+        CustomerHistoryServlet servlet = new CustomerHistoryServlet(
+                new CustomerHistoryRepository(
+                        temporaryDirectory.resolve("history")),
+                new StubCustomerDAO(),
+                utcClockAtSeoulMidnight);
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "add");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals("2026-09-01",
+                request.attributes.get("formWorkDate"));
+    }
+
     private CustomerHistoryServlet servlet(Path repositoryRoot) {
         return new CustomerHistoryServlet(
                 new CustomerHistoryRepository(repositoryRoot),
@@ -364,16 +387,4 @@ class CustomerHistoryServletTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
-    }
 }

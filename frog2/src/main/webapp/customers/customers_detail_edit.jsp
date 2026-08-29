@@ -179,7 +179,7 @@
                         <div class="detail-value">
                             <input type="number" class="form-control" id="introductionYear" name="introductionYear"
                                    value="<c:out value="${not empty customerDetail.introductionYear ? customerDetail.introductionYear : customer.firstIntroductionYear}" />"
-                                   min="2000" max="2030" placeholder="YYYY">
+                                   min="2000" placeholder="YYYY">
                         </div>
                     </div>
                 </div>

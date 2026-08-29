@@ -24,3 +24,15 @@ bounded test window; development and test environments remain read-only.
 everyone unless the authenticated stable user ID is listed in
 `frog2.adminUserIds` (or `FROG2_ADMIN_USER_IDS`). Do not put passwords or other
 secrets in that list.
+
+## Reproducible verification
+
+The Java 22 JSP compiler uses an explicit, read-only Tomcat toolchain. Point
+the build at an extracted Apache Tomcat 10.1.59 directory; do not reuse
+`CATALINA_HOME`, which may identify a running production instance.
+
+```sh
+export FROG2_JSPC_CATALINA_HOME=/absolute/path/to/apache-tomcat-10.1.59
+export FROG2_JSPC_JASPER_VERSION=10.1.59
+./gradlew --no-daemon clean check
+```

@@ -44,6 +44,9 @@ class CustomerDetailViewStructureTest {
                 "var envParam = (params.get('env') || '').trim().toLowerCase()"));
         assertTrue(script.contains("var hasRequestedEnvironment = envParam === 'prod'"));
         assertTrue(script.contains("if (!hasRequestedEnvironment && prodEmpty)"));
+        assertTrue(script.contains("window.history[replace ? 'replaceState' : 'pushState']"));
+        assertTrue(script.contains("window.addEventListener('popstate'"));
+        assertTrue(script.contains("url.searchParams.set('env', environment)"));
     }
 
     @Test

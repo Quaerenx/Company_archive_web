@@ -70,7 +70,8 @@ class DataManagementTableContractTest {
         assertTrue(fileRepository.contains("<c:if test=\"${not directoryEmpty}\">"));
         assertTrue(fileRepository.contains("등록된 파일이 없습니다."));
         assertTrue(fileRepository.contains("이 폴더는 비어 있습니다."));
-        assertFalse(fileRepository.contains("role=\"status\""));
+        assertFalse(fileRepository.contains(
+                "file-empty-state ui-empty-state\" role=\"status\""));
         int emptyBranch = fileRepository.indexOf(
                 "<c:when test=\"${directoryEmpty}\">");
         int tableFooter = fileRepository.indexOf("<t:tableFooter");

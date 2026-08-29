@@ -81,7 +81,7 @@ public class MonthlyCustomerResponseDAO {
     }
 
     public boolean addResponse(MonthlyCustomerResponseDTO dto) {
-        if (dto == null || isBlank(dto.getUserId())) {
+        if (!isValidForWrite(dto, false)) {
             return false;
         }
         try (Connection connection = connectionProvider.getConnection()) {
@@ -109,7 +109,7 @@ public class MonthlyCustomerResponseDAO {
     }
 
     public boolean updateResponse(MonthlyCustomerResponseDTO dto) {
-        if (dto == null || isBlank(dto.getUserId())) {
+        if (!isValidForWrite(dto, true)) {
             return false;
         }
         try (Connection connection = connectionProvider.getConnection()) {
@@ -179,5 +179,15 @@ public class MonthlyCustomerResponseDAO {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private static boolean isValidForWrite(
+            MonthlyCustomerResponseDTO dto, boolean requireId) {
+        return dto != null
+                && (!requireId || dto.getId() > 0)
+                && !isBlank(dto.getUserId())
+                && dto.getResponseDate() != null
+                && !isBlank(dto.getCustomerName())
+                && !isBlank(dto.getReason());
     }
 }

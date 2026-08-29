@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -20,6 +21,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -154,6 +156,40 @@ class DashboardServletQueryContractTest {
         assertEquals(true, customer.isLicenseRisk());
     }
 
+    @Test
+    void defaultMonthAndCompletionUseSeoulAtUtcMonthBoundary()
+            throws Exception {
+        Clock utcClockAtSeoulMidnight = Clock.fixed(
+                Instant.parse("2026-08-31T15:00:00Z"),
+                ZoneOffset.UTC);
+        StubMaintenanceRecordDAO maintenanceDAO =
+                new StubMaintenanceRecordDAO();
+        maintenanceDAO.records = List.of(
+                maintenanceRecord(
+                        "boundary-customer",
+                        LocalDate.of(2026, 9, 1),
+                        "40"));
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.assignments = List.of(
+                new MaintenanceCustomerAssignment(
+                        "boundary-customer", "Manager"));
+        DashboardServlet servlet = new DashboardServlet(
+                maintenanceDAO, customerDAO, utcClockAtSeoulMidnight);
+        RequestFixture request = new RequestFixture();
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals("2026-09",
+                request.attributes.get("maintenanceMonthParam"));
+        @SuppressWarnings("unchecked")
+        List<DashboardServlet.MaintenanceAssigneeGroup> groups =
+                (List<DashboardServlet.MaintenanceAssigneeGroup>)
+                        request.attributes.get(
+                                "monthlyMaintenanceAssigneeGroups");
+        assertEquals(true,
+                groups.getFirst().getCustomers().getFirst().isDone());
+    }
+
     private static MaintenanceRecordDTO maintenanceRecord(
             String customerName, LocalDate inspectionDate, String usagePercentage) {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
@@ -243,16 +279,4 @@ class DashboardServletQueryContractTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
-    }
 }

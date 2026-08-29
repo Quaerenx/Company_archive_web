@@ -3,11 +3,14 @@ package com.company.model;
 import com.company.util.DBConnection;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public final class DatabaseSchemaReadiness {
-    private static final List<Requirement> REQUIREMENTS = List.of(
+    private static final String CUSTOMER_DETAIL_BASELINE =
+            "BASELINE_CUSTOMER_DETAIL";
+    private static final List<Requirement> BASE_REQUIREMENTS = List.of(
             required(
                     "V20260720_01",
                     "user_vm_hosts",
@@ -124,8 +127,27 @@ public final class DatabaseSchemaReadiness {
                     "LEGACY_ADD_DEPARTMENT_COLUMN",
                     "company_users",
                     "department"));
+    private static final List<Requirement> REQUIREMENTS = requirements();
 
     private DatabaseSchemaReadiness() {
+    }
+
+    private static List<Requirement> requirements() {
+        List<Requirement> requirements = new ArrayList<>(BASE_REQUIREMENTS);
+        for (CustomerDetailEnvironment environment
+                : CustomerDetailEnvironment.values()) {
+            for (String column : CustomerDetailDAO.requiredColumnNames()) {
+                requirements.add(required(
+                        CUSTOMER_DETAIL_BASELINE,
+                        environment.tableName(),
+                        column));
+            }
+        }
+        requirements.add(required(
+                CUSTOMER_DETAIL_BASELINE,
+                CustomerDetailEnvironment.PROD.tableName(),
+                "is_deleted"));
+        return List.copyOf(requirements);
     }
 
     public static Report inspect() {

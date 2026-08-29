@@ -1,5 +1,6 @@
 package com.company.filerepo;
 
+import com.company.storage.ExternalStoragePathPolicy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -14,7 +15,7 @@ public final class FileRepositoryPathPolicy {
 
     public FileRepositoryPathPolicy(Path configuredRoot) throws IOException {
         Path absoluteRoot = configuredRoot.toAbsolutePath().normalize();
-        if (!Files.isDirectory(absoluteRoot, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(absoluteRoot)) {
+        if (!ExternalStoragePathPolicy.isSafeDirectory(absoluteRoot)) {
             throw new IOException("File repository root must be an existing non-symlink directory");
         }
         root = absoluteRoot.toRealPath();
@@ -24,7 +25,7 @@ public final class FileRepositoryPathPolicy {
         String relativePath = normalizeRelativePath(rawPath);
         Path candidate = relativePath.isEmpty() ? root : root.resolve(relativePath).normalize();
         requireContained(candidate);
-        if (!Files.isDirectory(candidate, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(candidate)) {
+        if (!ExternalStoragePathPolicy.isSafeDirectory(candidate)) {
             throw new FileRepositoryException(404, "directory_not_found", "Requested repository directory was not found");
         }
         try {

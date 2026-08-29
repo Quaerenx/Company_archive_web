@@ -4,6 +4,8 @@ import com.company.filerepo.FileRepositoryConfig;
 import com.company.filerepo.FileRepositoryException;
 import com.company.filerepo.FileRepositoryListing;
 import com.company.filerepo.FileRepositoryService;
+import com.company.security.AdminAccessPolicy;
+import com.company.security.SessionPrincipal;
 import com.company.web.ApplicationError;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -29,10 +31,15 @@ public class FileRepositoryServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
+            FlashMessage.expose(request);
             FileRepositoryListing listing = service.list(
                     request.getParameter("path"),
                     request.getParameter("cursor"));
             request.setAttribute("listing", listing);
+            request.setAttribute(
+                    "fileRepositoryAdmin",
+                    AdminAccessPolicy.isAdmin(
+                            SessionPrincipal.from(request)));
             request.getRequestDispatcher("/WEB-INF/views/filerepo/list.jsp").forward(request, response);
         } catch (FileRepositoryException e) {
             ApplicationError.send(

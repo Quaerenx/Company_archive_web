@@ -2,6 +2,7 @@ package com.company.controller;
 
 import com.company.util.LicenseRiskPolicy;
 import com.company.util.LicenseSummaryFormatter;
+import com.company.util.BusinessDate;
 import java.io.IOException;
 import java.sql.Date;
 import java.time.Clock;
@@ -41,13 +42,13 @@ public class DashboardServlet extends HttpServlet {
         this(
                 new MaintenanceRecordDAO(),
                 new CustomerDAO(),
-                Clock.systemDefaultZone());
+                BusinessDate.systemClock());
     }
 
     DashboardServlet(
             MaintenanceRecordDAO maintenanceRecordDAO,
             CustomerDAO customerDAO) {
-        this(maintenanceRecordDAO, customerDAO, Clock.systemDefaultZone());
+        this(maintenanceRecordDAO, customerDAO, BusinessDate.systemClock());
     }
 
     DashboardServlet(
@@ -70,7 +71,7 @@ public class DashboardServlet extends HttpServlet {
         YearMonth selectedMonth = parseMaintenanceMonth(request.getParameter("maintenanceMonth"));
         LocalDate monthStart = selectedMonth.atDay(1);
         LocalDate nextMonthStart = selectedMonth.plusMonths(1).atDay(1);
-        LocalDate today = LocalDate.now(clock);
+        LocalDate today = BusinessDate.today(clock);
         Map<String, CustomerMonthState> stateByCustomer =
                 buildCustomerMonthStates(
                         maintenanceRecordDAO.getMaintenanceRecordsByMonth(
@@ -95,7 +96,7 @@ public class DashboardServlet extends HttpServlet {
     }
 
     private YearMonth parseMaintenanceMonth(String rawMonth) {
-        YearMonth currentMonth = YearMonth.now(clock);
+        YearMonth currentMonth = BusinessDate.currentMonth(clock);
         YearMonth previousMonth = currentMonth.minusMonths(1);
 
         if (rawMonth == null || rawMonth.trim().isEmpty()) {
@@ -115,7 +116,7 @@ public class DashboardServlet extends HttpServlet {
 
     private List<MonthTab> buildMaintenanceMonthTabs(YearMonth selectedMonth) {
         List<MonthTab> tabs = new ArrayList<>();
-        YearMonth currentMonth = YearMonth.now(clock);
+        YearMonth currentMonth = BusinessDate.currentMonth(clock);
         YearMonth previousMonth = currentMonth.minusMonths(1);
 
         tabs.add(new MonthTab(

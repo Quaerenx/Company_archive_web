@@ -16,6 +16,8 @@ class RequestPerformanceContextTest {
         RequestPerformanceContext.recordFileSnapshotCacheMiss();
         RequestPerformanceContext.recordFileSnapshotCacheHit();
         RequestPerformanceContext.recordFileSnapshotScan(4_000_000);
+        RequestPerformanceContext.recordCustomerHistoryCacheMiss();
+        RequestPerformanceContext.recordCustomerHistoryCacheHit();
         RequestPerformanceContext.recordCustomerHistoryScan(92, 6_000_000);
 
         RequestPerformanceContext.Snapshot snapshot =
@@ -35,6 +37,8 @@ class RequestPerformanceContextTest {
         assertEquals(1, snapshot.fileSnapshotScanCount());
         assertEquals(4_000_000, snapshot.fileSnapshotScanDurationNanos());
         assertEquals(4_000_000, snapshot.maxFileSnapshotScanNanos());
+        assertEquals(1, snapshot.customerHistoryCacheHits());
+        assertEquals(1, snapshot.customerHistoryCacheMisses());
         assertEquals(1, snapshot.customerHistoryScanCount());
         assertEquals(92, snapshot.customerHistoryRecordFileCount());
         assertEquals(6_000_000, snapshot.customerHistoryScanDurationNanos());

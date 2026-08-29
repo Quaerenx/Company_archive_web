@@ -16,6 +16,8 @@ class ProfileEditViewContractTest {
         assertTrue(page.contains("name=\"formAction\" value=\"updateProfile\""));
         assertTrue(page.contains("id=\"userId\""));
         assertTrue(page.contains("id=\"userName\""));
+        assertTrue(page.contains("maxlength=\"100\""));
+        assertTrue(page.contains("<t:flashMessages />"));
         assertTrue(page.contains("csrf_input.jspf"));
         assertTrue(page.contains("/resources/css/pages/profile_edit.css"));
         assertTrue(page.contains("/resources/js/pages/profile_edit.js"));

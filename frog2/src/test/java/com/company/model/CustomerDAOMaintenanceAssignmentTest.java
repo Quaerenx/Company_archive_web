@@ -5,7 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -95,6 +98,39 @@ class CustomerDAOMaintenanceAssignmentTest {
                         .toList());
         assertFalse(assignments.getFirst().schedule().isQuarterly());
         assertTrue(assignments.get(1).schedule().isQuarterly());
+    }
+
+    @Test
+    void defaultScheduleFilterUsesSeoulMonthAtUtcBoundary() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "customer_maintenance_schedule.interval_months");
+        jdbc.enqueue(
+                scheduleRow(
+                        "September quarterly",
+                        "Manager A",
+                        3,
+                        "2025-03-01",
+                        true),
+                scheduleRow(
+                        "August quarterly",
+                        "Manager B",
+                        3,
+                        "2025-02-01",
+                        true));
+        Clock utcClockAtSeoulMidnight = Clock.fixed(
+                Instant.parse("2026-08-31T15:00:00Z"),
+                ZoneOffset.UTC);
+        CustomerDAO dao = new CustomerDAO(
+                jdbc::open, utcClockAtSeoulMidnight);
+
+        List<MaintenanceCustomerAssignment> assignments =
+                dao.getMaintenanceCustomerAssignments();
+
+        assertEquals(List.of("September quarterly"),
+                assignments.stream()
+                        .map(MaintenanceCustomerAssignment::customerName)
+                        .toList());
     }
 
     private static java.util.Map<String, Object> scheduleRow(

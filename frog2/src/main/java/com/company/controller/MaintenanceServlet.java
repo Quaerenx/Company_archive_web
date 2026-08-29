@@ -1,9 +1,12 @@
 package com.company.controller;
 
+import com.company.util.BusinessDate;
 import com.company.util.StrictDateParser;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
-import java.time.LocalDate;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,29 +40,38 @@ public class MaintenanceServlet extends HttpServlet {
             "정기점검 계약 고객사";
     private final MaintenanceRecordDAO maintenanceDAO;
     private final CustomerDAO customerDAO;
+    private final Clock clock;
     private final MaintenanceRecordRequestMapper requestMapper =
             new MaintenanceRecordRequestMapper();
 
     public MaintenanceServlet() {
-        this(new MaintenanceRecordDAO(), new CustomerDAO());
+        this(new MaintenanceRecordDAO(), new CustomerDAO(),
+                BusinessDate.systemClock());
     }
 
     MaintenanceServlet(MaintenanceRecordDAO maintenanceDAO) {
-        this(maintenanceDAO, new CustomerDAO());
+        this(maintenanceDAO, new CustomerDAO(), BusinessDate.systemClock());
     }
 
     MaintenanceServlet(
             MaintenanceRecordDAO maintenanceDAO,
             CustomerDAO customerDAO) {
+        this(maintenanceDAO, customerDAO, BusinessDate.systemClock());
+    }
+
+    MaintenanceServlet(
+            MaintenanceRecordDAO maintenanceDAO,
+            CustomerDAO customerDAO,
+            Clock clock) {
         this.maintenanceDAO = Objects.requireNonNull(
                 maintenanceDAO, "maintenanceDAO");
         this.customerDAO = Objects.requireNonNull(
                 customerDAO, "customerDAO");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     @Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 세션 확인
         HttpSession session = request.getSession(false);
         UserDTO user = SessionPrincipal.expose(request, session);
         if (user == null) {
@@ -68,136 +80,133 @@ public class MaintenanceServlet extends HttpServlet {
         }
         FlashMessage.expose(request);
 
-        // 뷰 타입 확인
         String viewType = request.getParameter("view");
         if (viewType == null || viewType.isEmpty()) {
             viewType = "cards";
         }
-
-        if ("cards".equals(viewType)) {
-            // 담당자별 고객사 카드 목록 표시 (라이선스 요약 제거)
-            Map<String, List<CustomerDTO>> inspectorCustomers =
-                    prioritizeInspector(
-                            getInspectorCustomersMap(),
-                            user.getUserName());
-            request.setAttribute("inspectorCustomers", inspectorCustomers);
-            request.setAttribute(
-                    "maintenanceFrequencyLabels",
-                    getMaintenanceFrequencyLabels(customerDAO));
-            request.setAttribute("viewType", "cards");
-            request.getRequestDispatcher("/maintenance/maintenance_cards.jsp").forward(request, response);
-
-        } else if ("history".equals(viewType)) {
-            // 특정 고객사의 정기점검 이력 목록
-            String customerName = request.getParameter("customerName");
-            if (customerName != null && !customerName.isEmpty()) {
-                int historyPage;
-                try {
-                    historyPage = parseHistoryPage(
-                            request.getParameter("historyPage"));
-                } catch (IllegalArgumentException exception) {
-                    ApplicationError.send(
-                            request,
-                            response,
-                            HttpServletResponse.SC_BAD_REQUEST,
-                            "invalid_history_page",
-                            "점검 이력 페이지가 올바르지 않습니다.");
-                    return;
-                }
-                MaintenanceHistoryFilter historyFilter;
-                try {
-                    historyFilter = MaintenanceHistoryFilter.parse(
-                            request.getParameter("historyYear"),
-                            request.getParameter("historyVersion"),
-                            request.getParameter("historyQuery"));
-                } catch (IllegalArgumentException exception) {
-                    ApplicationError.send(
-                            request,
-                            response,
-                            HttpServletResponse.SC_BAD_REQUEST,
-                            "invalid_history_filter",
-                            "점검 이력 검색 조건이 올바르지 않습니다.");
-                    return;
-                }
-                PageResult<MaintenanceRecordDTO> page =
-                        maintenanceDAO.getMaintenanceRecordsByCustomer(
-                                customerName,
-                                historyPage,
-                                HISTORY_PAGE_SIZE,
-                                historyFilter);
-                // 고객사 기본 정보 조회
-                CustomerDTO customer = customerDAO.getCustomerByName(customerName);
-                MaintenanceHistoryViewData.from(
-                        page, historyFilter, customer, customerName)
-                        .expose(request);
-                request.getRequestDispatcher("/maintenance/maintenance_history.jsp").forward(request, response);
-            } else {
-                response.sendRedirect("maintenance?view=cards");
-            }
-
-        } else if ("add".equals(viewType)) {
-            // 새 정기점검 이력 추가 폼
-            showAddForm(
+        switch (viewType) {
+            case "cards" -> showCards(request, response, user);
+            case "history" -> showHistory(request, response);
+            case "add" -> showAddForm(
                     request,
                     response,
                     request.getParameter("customerName"),
                     null,
                     Map.of(),
                     HttpServletResponse.SC_OK);
-
-        } else if ("formContext".equals(viewType)) {
-            writeFormContext(request, response);
-
-        } else if ("edit".equals(viewType)) {
-            // 정기점검 이력 수정 폼
-            String maintenanceIdStr = request.getParameter("id");
-            if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
-                try {
-                    Long maintenanceId = Long.parseLong(maintenanceIdStr);
-                    MaintenanceRecordDTO record = maintenanceDAO.getMaintenanceRecordById(maintenanceId);
-                    if (record != null && isOwner(record, user)) {
-                        request.setAttribute("record", record);
-                        prepareFormView(
-                                request,
-                                maintenanceFormOptions(
-                                        record.getInspectorName()),
-                                record,
-                                Map.of(),
-                                false);
-                        request.setAttribute("viewType", "edit");
-                        request.getRequestDispatcher("/maintenance/maintenance_edit.jsp").forward(request, response);
-                    } else if (record == null) {
-                        FlashMessage.redirect(
-                                request,
-                                response,
-                                "maintenance?view=cards",
-                                "해당 정기점검 이력을 찾을 수 없습니다.",
-                                "error");
-                    } else {
-                        FlashMessage.redirect(
-                                request,
-                                response,
-                                "maintenance?view=history&customerName="
-                                        + java.net.URLEncoder.encode(
-                                                record.getCustomerName(), "UTF-8"),
-                                "수정 권한이 없습니다.",
-                                "error");
-                    }
-                } catch (NumberFormatException e) {
-                    FlashMessage.redirect(
-                            request,
-                            response,
-                            "maintenance?view=cards",
-                            "잘못된 요청입니다.",
-                            "error");
-                }
-            } else {
-                response.sendRedirect("maintenance?view=cards");
-            }
-
-        } else {
-            response.sendRedirect("maintenance?view=cards");
+            case "formContext" -> writeFormContext(request, response);
+            case "edit" -> showEdit(request, response, user);
+            default -> redirectToCards(response);
         }
+    }
+
+    private void showCards(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user) throws ServletException, IOException {
+        Map<String, List<CustomerDTO>> inspectorCustomers =
+                prioritizeInspector(
+                        getInspectorCustomersMap(),
+                        user.getUserName());
+        request.setAttribute("inspectorCustomers", inspectorCustomers);
+        request.setAttribute(
+                "maintenanceFrequencyLabels",
+                getMaintenanceFrequencyLabels(customerDAO));
+        request.setAttribute("viewType", "cards");
+        request.getRequestDispatcher("/maintenance/maintenance_cards.jsp")
+                .forward(request, response);
+    }
+
+    private void showHistory(
+            HttpServletRequest request,
+            HttpServletResponse response) throws ServletException, IOException {
+        String customerName = request.getParameter("customerName");
+        if (customerName == null || customerName.isEmpty()) {
+            redirectToCards(response);
+            return;
+        }
+        int historyPage;
+        try {
+            historyPage = parseHistoryPage(
+                    request.getParameter("historyPage"));
+        } catch (IllegalArgumentException exception) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_history_page",
+                    "점검 이력 페이지가 올바르지 않습니다.");
+            return;
+        }
+        MaintenanceHistoryFilter historyFilter;
+        try {
+            historyFilter = MaintenanceHistoryFilter.parse(
+                    request.getParameter("historyYear"),
+                    request.getParameter("historyVersion"),
+                    request.getParameter("historyQuery"));
+        } catch (IllegalArgumentException exception) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_history_filter",
+                    "점검 이력 검색 조건이 올바르지 않습니다.");
+            return;
+        }
+        PageResult<MaintenanceRecordDTO> page =
+                maintenanceDAO.getMaintenanceRecordsByCustomer(
+                        customerName,
+                        historyPage,
+                        HISTORY_PAGE_SIZE,
+                        historyFilter);
+        CustomerDTO customer = customerDAO.getCustomerByName(customerName);
+        MaintenanceHistoryViewData.from(
+                page, historyFilter, customer, customerName)
+                .expose(request);
+        request.getRequestDispatcher("/maintenance/maintenance_history.jsp")
+                .forward(request, response);
+    }
+
+    private void showEdit(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user) throws ServletException, IOException {
+        Long maintenanceId = parsePositiveLong(request.getParameter("id"));
+        if (maintenanceId == null) {
+            sendInvalidMaintenanceId(request, response);
+            return;
+        }
+        MaintenanceRecordDTO record =
+                maintenanceDAO.getMaintenanceRecordById(maintenanceId);
+        if (record != null && isOwner(record, user)) {
+            request.setAttribute("record", record);
+            prepareFormView(
+                    request,
+                    maintenanceFormOptions(record.getInspectorName()),
+                    record,
+                    Map.of(),
+                    false);
+            request.setAttribute("viewType", "edit");
+            request.getRequestDispatcher(
+                    "/maintenance/maintenance_edit.jsp")
+                    .forward(request, response);
+            return;
+        }
+        if (record == null) {
+            FlashMessage.redirect(
+                    request,
+                    response,
+                    "maintenance?view=cards",
+                    "해당 정기점검 이력을 찾을 수 없습니다.",
+                    "error");
+            return;
+        }
+        FlashMessage.redirect(
+                request,
+                response,
+                historyLocation(record.getCustomerName()),
+                "수정 권한이 없습니다.",
+                "error");
     }
 
  // 담당자별 고객사 목록을 Map으로 구성 (정기점검 계약 고객사이면서 활성 상태인 것만)
@@ -251,7 +260,6 @@ public class MaintenanceServlet extends HttpServlet {
 
     @Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 세션 확인
         HttpSession session = request.getSession(false);
         UserDTO currentUser = SessionPrincipal.from(session);
         if (currentUser == null) {
@@ -260,150 +268,153 @@ public class MaintenanceServlet extends HttpServlet {
         }
 
         String actionType = request.getParameter("action");
+        if (actionType == null) {
+            redirectToCards(response);
+            return;
+        }
+        switch (actionType) {
+            case "add" -> addRecord(request, response, currentUser);
+            case "update" -> updateRecord(request, response, currentUser);
+            case "delete" -> deleteRecord(request, response, currentUser);
+            default -> redirectToCards(response);
+        }
+    }
 
-        if ("add".equals(actionType)) {
-            // 새 정기점검 이력 추가
-            MaintenanceFormSubmission submission = requestMapper.map(
-                    request::getParameter,
-                    currentUser.getUserId(),
-                    maintenanceFormOptions(null));
-            MaintenanceRecordDTO record = submission.record();
-            if (!submission.valid()) {
-                showAddForm(
-                        request,
-                        response,
-                        record.getCustomerName(),
-                        record,
-                        submission.fieldErrors(),
-                        HttpServletResponse.SC_BAD_REQUEST);
-                return;
-            }
+    private void addRecord(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO currentUser) throws ServletException, IOException {
+        MaintenanceFormSubmission submission = requestMapper.map(
+                request::getParameter,
+                currentUser.getUserId(),
+                maintenanceFormOptions(null));
+        MaintenanceRecordDTO record = submission.record();
+        if (!submission.valid()) {
+            showAddForm(
+                    request,
+                    response,
+                    record.getCustomerName(),
+                    record,
+                    submission.fieldErrors(),
+                    HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
 
-            boolean success = maintenanceDAO.addMaintenanceRecord(record);
-            String customerName = record.getCustomerName();
-            String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
+        boolean success = maintenanceDAO.addMaintenanceRecord(record);
+        FlashMessage.redirect(
+                request,
+                response,
+                historyLocation(record.getCustomerName()),
+                success
+                        ? "정기점검 이력이 성공적으로 추가되었습니다."
+                        : "정기점검 이력 추가 중 오류가 발생했습니다.",
+                success ? "success" : "error");
+    }
+
+    private void updateRecord(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO currentUser) throws ServletException, IOException {
+        Long maintenanceId = parsePositiveLong(
+                request.getParameter("maintenance_id"));
+        if (maintenanceId == null) {
+            sendInvalidMaintenanceId(request, response);
+            return;
+        }
+        MaintenanceRecordDTO existing =
+                maintenanceDAO.getMaintenanceRecordById(maintenanceId);
+        if (existing == null || !isOwner(existing, currentUser)) {
             FlashMessage.redirect(
                     request,
                     response,
-                    "maintenance?view=history&customerName=" + encodedName,
-                    success
-                            ? "정기점검 이력이 성공적으로 추가되었습니다."
-                            : "정기점검 이력 추가 중 오류가 발생했습니다.",
-                    success ? "success" : "error");
-
-        } else if ("update".equals(actionType)) {
-            // 정기점검 이력 수정
-            String maintenanceIdStr = request.getParameter("maintenance_id");
-            if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
-                try {
-                    Long maintenanceId = Long.parseLong(maintenanceIdStr);
-                    MaintenanceRecordDTO existing =
-                            maintenanceDAO.getMaintenanceRecordById(
-                                    maintenanceId);
-                    if (existing == null || !isOwner(existing, currentUser)) {
-                        FlashMessage.redirect(
-                                request,
-                                response,
-                                "maintenance?view=cards",
-                                "수정 권한이 없거나 이력을 찾을 수 없습니다.",
-                                "error");
-                        return;
-                    }
-                    MaintenanceFormOptions options = maintenanceFormOptions(
-                            existing.getInspectorName());
-                    MaintenanceFormSubmission submission =
-                            requestMapper.mapForUpdate(
-                                    request::getParameter,
-                                    currentUser.getUserId(),
-                                    options,
-                                    maintenanceId,
-                                    existing.getLicenseSizeGb(),
-                                    existing.getVerticaVersion(),
-                                    existing.getLicenseUsageSize(),
-                                    existing.getLicenseUsagePct());
-                    MaintenanceRecordDTO record = submission.record();
-                    if (!submission.valid()) {
-                        request.setAttribute("record", record);
-                        prepareFormView(
-                                request,
-                                options,
-                                record,
-                                submission.fieldErrors(),
-                                false);
-                        response.setStatus(
-                                HttpServletResponse.SC_BAD_REQUEST);
-                        request.setAttribute("viewType", "edit");
-                        request.getRequestDispatcher(
-                                "/maintenance/maintenance_edit.jsp")
-                                .forward(request, response);
-                        return;
-                    }
-
-                    boolean success = maintenanceDAO.updateMaintenanceRecordForOwner(
-                            record, currentUser.getUserId());
-                    String customerName = record.getCustomerName();
-                    String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
-                    FlashMessage.redirect(
-                            request,
-                            response,
-                            "maintenance?view=history&customerName=" + encodedName,
-                            success
-                                    ? "정기점검 이력이 성공적으로 수정되었습니다."
-                                    : "정기점검 이력 수정 중 오류가 발생했습니다.",
-                            success ? "success" : "error");
-
-                } catch (NumberFormatException e) {
-                    FlashMessage.redirect(
-                            request,
-                            response,
-                            "maintenance?view=cards",
-                            "잘못된 요청입니다.",
-                            "error");
-                }
-            }
-
-        } else if ("delete".equals(actionType)) {
-            // 정기점검 이력 삭제
-            String maintenanceIdStr = request.getParameter("maintenance_id");
-            String customerName = request.getParameter("customer_name");
-            String message = null;
-            String messageType = null;
-
-            if (maintenanceIdStr != null && !maintenanceIdStr.isEmpty()) {
-                try {
-                    Long maintenanceId = Long.parseLong(maintenanceIdStr);
-                    boolean success = maintenanceDAO.deleteMaintenanceRecordForOwner(
-                            maintenanceId, currentUser.getUserId());
-                    if (success) {
-                        message = "정기점검 이력이 성공적으로 삭제되었습니다.";
-                        messageType = "success";
-                    } else {
-                        message = "정기점검 이력 삭제 중 오류가 발생했습니다.";
-                        messageType = "error";
-                    }
-                } catch (NumberFormatException e) {
-                    message = "잘못된 요청입니다.";
-                    messageType = "error";
-                }
-            }
-
-            String location;
-            if (customerName != null && !customerName.isEmpty()) {
-                String encodedName = java.net.URLEncoder.encode(customerName, "UTF-8");
-                location = "maintenance?view=history&customerName=" + encodedName;
-            } else {
-                location = "maintenance?view=cards";
-            }
-            if (message == null) {
-                response.sendRedirect(location);
-            } else {
-                FlashMessage.redirect(
-                        request, response, location, message, messageType);
-            }
-
-        } else {
-            response.sendRedirect("maintenance?view=cards");
+                    "maintenance?view=cards",
+                    "수정 권한이 없거나 이력을 찾을 수 없습니다.",
+                    "error");
+            return;
         }
+        MaintenanceFormOptions options = maintenanceFormOptions(
+                existing.getInspectorName());
+        MaintenanceFormSubmission submission = requestMapper.mapForUpdate(
+                request::getParameter,
+                currentUser.getUserId(),
+                options,
+                maintenanceId,
+                existing.getLicenseSizeGb(),
+                existing.getVerticaVersion(),
+                existing.getLicenseUsageSize(),
+                existing.getLicenseUsagePct());
+        MaintenanceRecordDTO record = submission.record();
+        if (!submission.valid()) {
+            request.setAttribute("record", record);
+            prepareFormView(
+                    request,
+                    options,
+                    record,
+                    submission.fieldErrors(),
+                    false);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            request.setAttribute("viewType", "edit");
+            request.getRequestDispatcher(
+                    "/maintenance/maintenance_edit.jsp")
+                    .forward(request, response);
+            return;
+        }
+
+        boolean success = maintenanceDAO.updateMaintenanceRecordForOwner(
+                record, currentUser.getUserId());
+        FlashMessage.redirect(
+                request,
+                response,
+                historyLocation(record.getCustomerName()),
+                success
+                        ? "정기점검 이력이 성공적으로 수정되었습니다."
+                        : "정기점검 이력 수정 중 오류가 발생했습니다.",
+                success ? "success" : "error");
+    }
+
+    private void deleteRecord(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO currentUser) throws IOException {
+        String maintenanceIdValue = request.getParameter("maintenance_id");
+        String customerName = request.getParameter("customer_name");
+        String message = null;
+        String messageType = null;
+
+        if (maintenanceIdValue != null && !maintenanceIdValue.isEmpty()) {
+            try {
+                Long maintenanceId = Long.parseLong(maintenanceIdValue);
+                boolean success = maintenanceDAO.deleteMaintenanceRecordForOwner(
+                        maintenanceId, currentUser.getUserId());
+                message = success
+                        ? "정기점검 이력이 성공적으로 삭제되었습니다."
+                        : "정기점검 이력 삭제 중 오류가 발생했습니다.";
+                messageType = success ? "success" : "error";
+            } catch (NumberFormatException exception) {
+                message = "잘못된 요청입니다.";
+                messageType = "error";
+            }
+        }
+
+        String location = customerName != null && !customerName.isEmpty()
+                ? historyLocation(customerName)
+                : "maintenance?view=cards";
+        if (message == null) {
+            response.sendRedirect(location);
+            return;
+        }
+        FlashMessage.redirect(
+                request, response, location, message, messageType);
+    }
+
+    private static String historyLocation(String customerName) {
+        return "maintenance?view=history&customerName="
+                + URLEncoder.encode(customerName, StandardCharsets.UTF_8);
+    }
+
+    private static void redirectToCards(HttpServletResponse response)
+            throws IOException {
+        response.sendRedirect("maintenance?view=cards");
     }
 
     // 날짜 문자열을 Date 객체로 변환
@@ -451,7 +462,7 @@ public class MaintenanceServlet extends HttpServlet {
 
     private MaintenanceRecordDTO defaultFormRecord(CustomerDTO customer) {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
-        record.setInspectionDate(Date.valueOf(LocalDate.now()));
+        record.setInspectionDate(Date.valueOf(BusinessDate.today(clock)));
         if (customer != null) {
             record.setCustomerName(customer.getCustomerName());
             record.setInspectorName(firstNonBlank(
@@ -544,6 +555,22 @@ public class MaintenanceServlet extends HttpServlet {
         } catch (NumberFormatException exception) {
             return null;
         }
+    }
+
+    private static Long parsePositiveLong(String value) {
+        Long parsed = parseOptionalLong(value);
+        return parsed != null && parsed > 0 ? parsed : null;
+    }
+
+    private static void sendInvalidMaintenanceId(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        ApplicationError.send(
+                request,
+                response,
+                HttpServletResponse.SC_BAD_REQUEST,
+                "invalid_maintenance_id",
+                "정기점검 이력 번호가 올바르지 않습니다.");
     }
 
     private static String firstNonBlank(String first, String second) {

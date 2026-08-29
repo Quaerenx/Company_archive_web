@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,6 +22,9 @@ import jakarta.servlet.http.HttpSession;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Proxy;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -95,6 +99,39 @@ class CustomerControllerCompatibilityTest {
     }
 
     @Test
+    void eosNoticeUsesSeoulDateAtUtcMidnightBoundary() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        detailDAO.production.setCustomerName("Acme");
+        detailDAO.production.setVerticaVersion("23.4.0-13");
+        StubEosDAO eosDAO = new StubEosDAO();
+        eosDAO.eosDate = java.sql.Date.valueOf("2026-09-01");
+        Clock utcClockAtSeoulMidnight = Clock.fixed(
+                Instant.parse("2026-08-31T15:00:00Z"),
+                ZoneOffset.UTC);
+        CustomerQueryController query = new CustomerQueryController(
+                customerDAO,
+                detailDAO,
+                eosDAO,
+                new CustomerRequestMapper(),
+                utcClockAtSeoulMidnight);
+        CustomerCommandController command = new CustomerCommandController(
+                new CustomerCommandService(customerDAO, detailDAO),
+                new CustomerRequestMapper());
+        CustomersServlet servlet = new CustomersServlet(query, command);
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("view", "detail");
+        request.parameters.put("customerName", "Acme");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        CustomerEosNotice notice = (CustomerEosNotice)
+                request.attributes.get("verticaEosNotice");
+        assertEquals(0, notice.daysRemaining());
+        assertEquals("Vertica EOS가 오늘입니다", notice.message());
+    }
+
+    @Test
     void editDetailKeepsEnvironmentAllowlistAndLegacyView() throws Exception {
         StubCustomerDAO customerDAO = new StubCustomerDAO();
         customerDAO.customer = customer("Acme");
@@ -147,7 +184,35 @@ class CustomerControllerCompatibilityTest {
     }
 
     @Test
-    void invalidEnvironmentReturnsBadRequestBeforeDetailReadOrWrite() throws Exception {
+    void basicCustomerWriteRejectsInvalidEosBeforeDaoUse() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        CustomersServlet servlet = servlet(
+                customerDAO, new StubDetailDAO());
+
+        RequestFixture add = new RequestFixture();
+        add.parameters.put("action", "add");
+        add.parameters.put("customer_name", "Acme");
+        add.parameters.put("vertica_eos", "2026-02-31");
+        ResponseFixture addResponse = new ResponseFixture();
+        servlet.doPost(add.proxy(), addResponse.proxy());
+
+        RequestFixture update = new RequestFixture();
+        update.parameters.put("action", "update");
+        update.parameters.put("customer_name", "Acme");
+        update.parameters.put("vertica_eos", "not-a-date");
+        ResponseFixture updateResponse = new ResponseFixture();
+        servlet.doPost(update.proxy(), updateResponse.proxy());
+
+        assertEquals(null, customerDAO.added);
+        assertEquals(null, customerDAO.updated);
+        assertTrue(addResponse.redirect.startsWith(
+                "customers?view=add&_flash="));
+        assertTrue(updateResponse.redirect.startsWith(
+                "customers?view=list&_flash="));
+    }
+
+    @Test
+    void invalidEnvironmentKeepsHtmlDetailSaveOnTheEditFlow() throws Exception {
         StubCustomerDAO customerDAO = new StubCustomerDAO();
         customerDAO.customer = customer("Acme");
         StubDetailDAO detailDAO = new StubDetailDAO();
@@ -168,9 +233,72 @@ class CustomerControllerCompatibilityTest {
         servlet.doPost(post.proxy(), postResponse.proxy());
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, getResponse.status);
-        assertEquals(HttpServletResponse.SC_BAD_REQUEST, postResponse.status);
-        assertTrue(postResponse.body.toString().contains("\"code\":\"invalid_environment\""));
+        assertTrue(postResponse.redirect.startsWith(
+                "customers?view=editDetail&customerName=Acme&env=prod&_flash="));
         assertTrue(detailDAO.reads.isEmpty());
+        assertTrue(detailDAO.writes.isEmpty());
+    }
+
+    @Test
+    void ajaxDetailSaveStillReceivesStructuredValidationErrors() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customer = customer("Acme");
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        CustomersServlet servlet = servlet(customerDAO, detailDAO);
+
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("action", "saveDetail");
+        request.parameters.put("customerName", "Acme");
+        request.parameters.put("env", "development-copy");
+        request.headers.put("X-Requested-With", "XMLHttpRequest");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.status);
+        assertTrue(response.body.toString().contains(
+                "\"code\":\"invalid_environment\""));
+        assertTrue(detailDAO.writes.isEmpty());
+    }
+
+    @Test
+    void missingCustomerNameRedirectsWithAnErrorInsteadOfThrowing() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        CustomersServlet servlet = servlet(customerDAO, detailDAO);
+
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("action", "saveDetail");
+        request.parameters.put("env", "prod");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertTrue(response.redirect.startsWith(
+                "customers?view=list&_flash="));
+        assertEquals(null, customerDAO.lastCustomerName);
+        assertTrue(detailDAO.writes.isEmpty());
+    }
+
+    @Test
+    void invalidDetailDateRedirectsBackToTheHtmlEditForm() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customer = customer("Acme");
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        CustomersServlet servlet = servlet(customerDAO, detailDAO);
+
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("action", "saveDetail");
+        request.parameters.put("customerName", "Acme");
+        request.parameters.put("env", "stg");
+        request.parameters.put("createDate", "2026-02-31");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertTrue(response.redirect.startsWith(
+                "customers?view=editDetail&customerName=Acme&env=stg&_flash="));
+        assertEquals(null, customerDAO.lastCustomerName);
         assertTrue(detailDAO.writes.isEmpty());
     }
 
@@ -265,6 +393,7 @@ class CustomerControllerCompatibilityTest {
         private List<CustomerDTO> customers = new ArrayList<>();
         private CustomerDTO customer;
         private CustomerDTO added;
+        private CustomerDTO updated;
         private String lastSortField;
         private String lastSortDirection;
         private String lastFilter;
@@ -317,6 +446,7 @@ class CustomerControllerCompatibilityTest {
 
         @Override
         public boolean updateCustomer(CustomerDTO customer) {
+            updated = customer;
             return true;
         }
 
@@ -401,16 +531,18 @@ class CustomerControllerCompatibilityTest {
 
     private static final class StubEosDAO extends VerticaEosDAO {
         private int reads;
+        private Date eosDate = new Date(1_000L);
 
         @Override
         public Date findEosDateByVersion(String versionText) {
             reads++;
-            return new Date(1_000L);
+            return eosDate;
         }
     }
 
     private static final class RequestFixture {
         private final Map<String, String> parameters = new HashMap<>();
+        private final Map<String, String> headers = new HashMap<>();
         private final Map<String, Object> attributes = new HashMap<>();
         private final Map<String, Object> sessionAttributes = new HashMap<>();
         private final HttpSession session;
@@ -438,6 +570,7 @@ class CustomerControllerCompatibilityTest {
                     (ignored, call, args) -> switch (call.getName()) {
                         case "getSession" -> session;
                         case "getParameter" -> parameters.get((String) args[0]);
+                        case "getHeader" -> headers.get((String) args[0]);
                         case "setAttribute" -> {
                             attributes.put((String) args[0], args[1]);
                             yield null;
@@ -489,16 +622,4 @@ class CustomerControllerCompatibilityTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
-    }
 }

@@ -56,11 +56,15 @@ class DialogAccessibilityContractTest {
         assertTrue(controller.contains("opener = trigger"));
         assertTrue(controller.contains("focusTarget.isConnected"));
         assertTrue(controller.contains("focusTarget.focus()"));
+        assertTrue(controller.contains("function hasOpenDialog()"));
         assertTrue(controller.contains("document.addEventListener('keydown', handleKeydown)"));
         assertTrue(controller.contains("document.removeEventListener('keydown', handleKeydown)"));
 
-        assertTrue(read("resources/js/header_nav.js")
+        String headerNavigation = read("resources/js/header_nav.js");
+        assertTrue(headerNavigation
                 .contains("Frog2UI.createDialogController(quickNavDialog)"));
+        assertTrue(headerNavigation
+                .contains("if (window.Frog2UI.hasOpenDialog())"));
         assertTrue(read("resources/js/pages/meeting_form.js")
                 .contains("Frog2UI.createDialogController(modal)"));
         assertTrue(read("resources/js/pages/monthly_customer_response.js")

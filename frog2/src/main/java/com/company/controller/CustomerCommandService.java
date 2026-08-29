@@ -53,7 +53,10 @@ final class CustomerCommandService {
             String actorUserId) {
         Objects.requireNonNull(environment, "environment");
         Objects.requireNonNull(detail, "detail");
-        if (customerDAO.getCustomerByName(detail.getCustomerName()) == null) {
+        String customerName = detail.getCustomerName();
+        if (customerName == null
+                || customerName.isBlank()
+                || customerDAO.getCustomerByName(customerName) == null) {
             return false;
         }
 

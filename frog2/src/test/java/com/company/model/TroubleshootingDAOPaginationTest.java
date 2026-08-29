@@ -25,7 +25,7 @@ class TroubleshootingDAOPaginationTest {
 
         RequestPerformanceContext.begin();
         PageResult<TroubleshootingDTO> result =
-                dao.getTroubleshootingPage("  needle  ", 1, 20);
+                dao.getTroubleshootingPage("  need%_!le  ", 1, 20);
         RequestPerformanceContext.Snapshot performance =
                 RequestPerformanceContext.finish();
 
@@ -38,9 +38,11 @@ class TroubleshootingDAOPaginationTest {
                         + "id DESC LIMIT ? OFFSET ?"));
         assertFalse(jdbc.statements.get(0).sql.contains("NULLS LAST"));
         assertFalse(jdbc.statements.get(0).sql.contains("SUBSTR(overview"));
-        assertEquals("%needle%",
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "title ILIKE ? ESCAPE '!'"));
+        assertEquals("%need!%!_!!le%",
                 jdbc.statements.get(0).parameters.get(1));
-        assertEquals("%needle%",
+        assertEquals("%need!%!_!!le%",
                 jdbc.statements.get(0).parameters.get(3));
         assertEquals(20, jdbc.statements.get(0).parameters.get(4));
         assertEquals(0, jdbc.statements.get(0).parameters.get(5));
@@ -55,7 +57,7 @@ class TroubleshootingDAOPaginationTest {
     }
 
     @Test
-    void contentSearchIsExplicitAndKeepsTheLegacyBodyFields() {
+    void contentSearchIsExplicitAndSearchesCompleteLongVarcharFields() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(PaginationJdbcFixture.row(
                 "id", 9,
@@ -71,14 +73,23 @@ class TroubleshootingDAOPaginationTest {
         RequestPerformanceContext.begin();
         PageResult<TroubleshootingDTO> result =
                 dao.getTroubleshootingPage(
-                        "needle", true, 1, 20);
+                        "need [le].*#", true, 1, 20);
         RequestPerformanceContext.Snapshot performance =
                 RequestPerformanceContext.finish();
 
-        assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(overview"));
-        assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(script_content"));
-        assertTrue(jdbc.statements.get(0).sql.contains("SUBSTR(note"));
-        assertEquals("%needle%",
+        assertFalse(jdbc.statements.get(0).sql.contains("SUBSTR("));
+        assertFalse(jdbc.statements.get(0).sql.contains("VARCHAR(65000)"));
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "REGEXP_ILIKE(overview, ?)"));
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "REGEXP_ILIKE(script_content, ?)"));
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "REGEXP_ILIKE(note, ?)"));
+        assertEquals("%need [le].*#%",
+                jdbc.statements.get(0).parameters.get(1));
+        assertEquals("need\\x{20}\\[le\\]\\.\\*\\#",
+                jdbc.statements.get(0).parameters.get(4));
+        assertEquals("need\\x{20}\\[le\\]\\.\\*\\#",
                 jdbc.statements.get(0).parameters.get(9));
         assertEquals(20, jdbc.statements.get(0).parameters.get(10));
         assertEquals(0, jdbc.statements.get(0).parameters.get(11));
@@ -159,5 +170,39 @@ class TroubleshootingDAOPaginationTest {
                 "SELECT COUNT(*) FROM troubleshooting WHERE"));
         assertEquals(3, result.page());
         assertEquals(41, result.totalCount());
+    }
+
+    @Test
+    void contentSearchUsesTheSamePredicateAndBindingsForPageAndCount() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 0));
+        TroubleshootingDAO dao = new TroubleshootingDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<TroubleshootingDTO> result =
+                dao.getTroubleshootingPage(
+                        "disk_100%", true, 999, 20);
+
+        assertEquals(2, jdbc.statements.size());
+        String pageSql = jdbc.statements.get(0).sql;
+        String countSql = jdbc.statements.get(1).sql;
+        String pagePredicate = pageSql.substring(
+                pageSql.indexOf(" WHERE ") + " WHERE ".length(),
+                pageSql.indexOf(" ORDER BY "));
+        String countPredicate = countSql.substring(
+                countSql.indexOf(" WHERE ") + " WHERE ".length());
+        assertEquals(pagePredicate, countPredicate);
+        for (int parameter = 1; parameter <= 9; parameter++) {
+            assertEquals(
+                    jdbc.statements.get(0).parameters.get(parameter),
+                    jdbc.statements.get(1).parameters.get(parameter));
+        }
+        assertEquals("%disk!_100!%%",
+                jdbc.statements.get(0).parameters.get(1));
+        assertEquals("disk_100%",
+                jdbc.statements.get(0).parameters.get(4));
+        assertEquals(0, result.totalCount());
+        assertEquals(1, result.page());
     }
 }

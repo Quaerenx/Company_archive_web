@@ -45,6 +45,7 @@ class MeetingViewContractTest {
         assertTrue(behavior.contains("/meeting?view=view&id="));
         assertTrue(behavior.contains("#comments"));
         assertTrue(behavior.contains("정말로 이 댓글을 삭제하시겠습니까?"));
+        assertTrue(behavior.contains("editContent.value = content.textContent"));
     }
 
     @Test

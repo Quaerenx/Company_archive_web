@@ -49,6 +49,7 @@
         <form class="ui-form ui-form-layout"
               method="post"
               action="${pageContext.request.contextPath}/customers"
+              data-ui-dirty-guard="auto"
               data-ui-submit-lock="auto">
             <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
             <input type="hidden" name="action" value="update">

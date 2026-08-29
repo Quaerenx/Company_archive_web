@@ -278,6 +278,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 quickNavInput.focus();
                 return;
             }
+            if (window.Frog2UI.hasOpenDialog()) {
+                return;
+            }
             var focusReturnTarget = trigger || quickNavOpenButton;
             if (isMobile() && mobileMenuIsOpen()) {
                 setMobileMenu(false, {restoreFocus: false});

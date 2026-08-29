@@ -2,7 +2,7 @@ import java.util.jar.JarFile
 
 def jspcCatalinaHome = providers.gradleProperty('frog2JspcCatalinaHome')
         .orElse(providers.environmentVariable('FROG2_JSPC_CATALINA_HOME'))
-        .orElse('/opt/tomcat-dev-home/current')
+        .orElse('')
 def expectedJasperVersion = providers.gradleProperty('frog2JspcJasperVersion')
         .orElse(providers.environmentVariable('FROG2_JSPC_JASPER_VERSION'))
         .orElse('10.1.59')
@@ -17,7 +17,11 @@ def jspcPreparedWebXml = jspcWebapp.map { it.file('WEB-INF/web.xml') }
 def reproducibleSourceTimestamp = 315532800000L
 
 def jspcTomcatLibraries = files(providers.provider {
-    File catalinaHome = file(jspcCatalinaHome.get())
+    String configuredHome = jspcCatalinaHome.get().trim()
+    if (configuredHome.isEmpty()) {
+        return [] as Set<File>
+    }
+    File catalinaHome = file(configuredHome)
     Set<File> libraries = new LinkedHashSet<>(
             fileTree(new File(catalinaHome, 'lib')) {
                 include '*.jar'
@@ -37,7 +41,13 @@ def verifyJspcEnvironment = tasks.register('verifyJspcEnvironment') {
     inputs.property('catalinaHome', jspcCatalinaHome)
     inputs.property('expectedJasperVersion', expectedJasperVersion)
     doLast {
-        File catalinaHome = file(jspcCatalinaHome.get())
+        String configuredHome = jspcCatalinaHome.get().trim()
+        if (configuredHome.isEmpty()) {
+            throw new GradleException(
+                    'JspC validation requires frog2JspcCatalinaHome or '
+                            + 'FROG2_JSPC_CATALINA_HOME to point to Tomcat 10.1.59')
+        }
+        File catalinaHome = file(configuredHome)
         List<String> requiredFiles = [
                 'bin/tomcat-juli.jar',
                 'lib/jasper.jar',

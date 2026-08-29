@@ -129,6 +129,9 @@ class MonthlyCustomerResponseDAOContractTest {
                 jdbc::open, new SchemaCapabilityCache());
         MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
         dto.setUserId("user-1");
+        dto.setResponseDate(Date.valueOf("2026-07-31"));
+        dto.setCustomerName("Acme");
+        dto.setReason("Support");
 
         assertFalse(dao.addResponse(dto));
         assertTrue(jdbc.statements.isEmpty());
@@ -147,6 +150,7 @@ class MonthlyCustomerResponseDAOContractTest {
         dto.setUserName("Renamed");
         dto.setResponseDate(Date.valueOf("2026-07-31"));
         dto.setCustomerName("Acme");
+        dto.setReason("Support");
 
         assertTrue(dao.addResponse(dto));
 
@@ -164,6 +168,9 @@ class MonthlyCustomerResponseDAOContractTest {
         });
         MonthlyCustomerResponseDTO dto = new MonthlyCustomerResponseDTO();
         dto.setUserId("user-1");
+        dto.setResponseDate(Date.valueOf("2026-07-31"));
+        dto.setCustomerName("Acme");
+        dto.setReason("Support");
 
         DataAccessException exception = assertThrows(
                 DataAccessException.class,
@@ -171,5 +178,31 @@ class MonthlyCustomerResponseDAOContractTest {
 
         assertTrue(exception.isReadOnlyViolation());
         assertEquals(DataAccessException.Kind.READ_ONLY, exception.getKind());
+    }
+
+    @Test
+    void writeRejectsMissingRequiredValuesBeforeOpeningDatabase() {
+        for (String missingField : Set.of("date", "customer", "reason")) {
+            PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+            MonthlyCustomerResponseDAO dao =
+                    new MonthlyCustomerResponseDAO(jdbc::open);
+            MonthlyCustomerResponseDTO dto =
+                    new MonthlyCustomerResponseDTO();
+            dto.setId(1);
+            dto.setUserId("user-1");
+            dto.setResponseDate(Date.valueOf("2026-08-30"));
+            dto.setCustomerName("Acme");
+            dto.setReason("Support");
+            switch (missingField) {
+                case "date" -> dto.setResponseDate(null);
+                case "customer" -> dto.setCustomerName("  ");
+                case "reason" -> dto.setReason(null);
+                default -> throw new AssertionError(missingField);
+            }
+
+            assertFalse(dao.addResponse(dto));
+            assertFalse(dao.updateResponse(dto));
+            assertEquals(0, jdbc.openCount);
+        }
     }
 }

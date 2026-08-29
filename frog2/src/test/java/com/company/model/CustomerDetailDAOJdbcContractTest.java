@@ -1,5 +1,6 @@
 package com.company.model;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,6 +17,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class CustomerDetailDAOJdbcContractTest {
@@ -71,7 +76,7 @@ class CustomerDetailDAOJdbcContractTest {
 
         assertTransaction(jdbc, 1, 0);
         assertEquals(List.of(
-                "SELECT 1 FROM vertica_customer_detail_dev WHERE customer_name = ?",
+                "UPDATE vertica_customer_detail_dev SET",
                 insertPrefix("vertica_customer_detail_dev")),
                 jdbc.sqlPrefixes());
         assertParameters(jdbc.statements.get(1).parameters, insertParameters(detail));
@@ -87,12 +92,66 @@ class CustomerDetailDAOJdbcContractTest {
 
         assertTransaction(jdbc, 1, 0);
         assertEquals(List.of(
-                "SELECT 1 FROM vertica_customer_detail_stg WHERE customer_name = ?",
                 "UPDATE vertica_customer_detail_stg SET"),
                 jdbc.sqlPrefixes());
         List<Object> expected = mutableParameters(detail);
         expected.add(detail.getCustomerName());
-        assertParameters(jdbc.statements.get(1).parameters, expected);
+        assertParameters(jdbc.statements.getFirst().parameters, expected);
+    }
+
+    @Test
+    void duplicateFirstInsertRetriesUpdateOnANewTransaction() {
+        FakeJdbc jdbc = new FakeJdbc(false);
+        jdbc.duplicateFirstInsert = true;
+        CustomerDetailDAO dao = new CustomerDetailDAO(jdbc::open);
+        CustomerDetailDTO detail = detail();
+
+        assertTrue(dao.saveOrUpdateCustomerDetailDev(detail));
+
+        assertEquals(List.of(
+                "UPDATE vertica_customer_detail_dev SET",
+                insertPrefix("vertica_customer_detail_dev"),
+                "UPDATE vertica_customer_detail_dev SET"),
+                jdbc.sqlPrefixes());
+        assertEquals(2, jdbc.openCount);
+        assertEquals(1, jdbc.commitCount);
+        assertEquals(1, jdbc.rollbackCount);
+        assertEquals(2, jdbc.closeCount);
+        assertEquals(List.of(false, true, false, true),
+                jdbc.autoCommitValues);
+    }
+
+    @Test
+    void sameCustomerWritesAreSerializedWithinTheApplication()
+            throws Exception {
+        AtomicInteger activeConnections = new AtomicInteger();
+        AtomicInteger maximumActiveConnections = new AtomicInteger();
+        CustomerDetailDAO dao = new CustomerDetailDAO(() ->
+                serializedConnection(
+                        activeConnections, maximumActiveConnections));
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var first = executor.submit(() -> {
+                ready.countDown();
+                start.await();
+                return dao.saveOrUpdateCustomerDetailDev(detail());
+            });
+            var second = executor.submit(() -> {
+                ready.countDown();
+                start.await();
+                return dao.saveOrUpdateCustomerDetailDev(detail());
+            });
+            assertTrue(ready.await(1, TimeUnit.SECONDS));
+            start.countDown();
+
+            assertTrue(first.get(2, TimeUnit.SECONDS));
+            assertTrue(second.get(2, TimeUnit.SECONDS));
+            assertEquals(1, maximumActiveConnections.get());
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test
@@ -139,6 +198,45 @@ class CustomerDetailDAOJdbcContractTest {
         assertEquals(commits, jdbc.commitCount);
         assertEquals(rollbacks, jdbc.rollbackCount);
         assertEquals(1, jdbc.closeCount);
+    }
+
+    private static Connection serializedConnection(
+            AtomicInteger activeConnections,
+            AtomicInteger maximumActiveConnections) throws SQLException {
+        int active = activeConnections.incrementAndGet();
+        maximumActiveConnections.accumulateAndGet(active, Math::max);
+        try {
+            Thread.sleep(75);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            activeConnections.decrementAndGet();
+            throw new SQLException("Interrupted while opening test connection",
+                    exception);
+        }
+        return (Connection) Proxy.newProxyInstance(
+                Connection.class.getClassLoader(),
+                new Class<?>[] {Connection.class},
+                (ignored, call, args) -> switch (call.getName()) {
+                    case "getAutoCommit" -> true;
+                    case "setAutoCommit", "commit", "rollback" -> null;
+                    case "prepareStatement" -> serializedStatement();
+                    case "close" -> {
+                        activeConnections.decrementAndGet();
+                        yield null;
+                    }
+                    default -> defaultValue(call.getReturnType());
+                });
+    }
+
+    private static PreparedStatement serializedStatement() {
+        return (PreparedStatement) Proxy.newProxyInstance(
+                PreparedStatement.class.getClassLoader(),
+                new Class<?>[] {PreparedStatement.class},
+                (ignored, call, args) -> switch (call.getName()) {
+                    case "setString", "setTimestamp", "close" -> null;
+                    case "executeUpdate" -> 1;
+                    default -> defaultValue(call.getReturnType());
+                });
     }
 
     private static String insertPrefix(String tableName) {
@@ -275,6 +373,8 @@ class CustomerDetailDAOJdbcContractTest {
         private int rollbackCount;
         private int closeCount;
         private SQLException writeFailure;
+        private boolean duplicateFirstInsert;
+        private boolean concurrentRowCreated;
         private boolean autoCommit = true;
 
         private FakeJdbc(boolean existing) {
@@ -343,6 +443,16 @@ class CustomerDetailDAOJdbcContractTest {
                             if (writeFailure != null) {
                                 throw writeFailure;
                             }
+                            if (record.sql.startsWith("UPDATE")) {
+                                yield existing || concurrentRowCreated ? 1 : 0;
+                            }
+                            if (record.sql.startsWith("INSERT")
+                                    && duplicateFirstInsert) {
+                                duplicateFirstInsert = false;
+                                concurrentRowCreated = true;
+                                throw new SQLException(
+                                        "duplicate customer", "23505");
+                            }
                             yield 1;
                         }
                         case "close" -> null;
@@ -390,16 +500,4 @@ class CustomerDetailDAOJdbcContractTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
-    }
 }

@@ -26,7 +26,7 @@
         <input type="number" id="first_introduction_year"
                name="first_introduction_year"
                value="<c:out value='${customer.firstIntroductionYear}' />"
-               min="2000" max="2030">
+               min="2000">
     </div>
 </div>
 

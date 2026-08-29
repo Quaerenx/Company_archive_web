@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -54,6 +55,58 @@ class DatabaseMigrationReadOnlyAuditTest {
                 assertFalse(
                         resultSet.next(),
                         "Reviewed schedule override must be unique");
+            }
+        }
+    }
+
+    @Test
+    void troubleshootingContentSearchMatchesBeyondVarcharLimit()
+            throws Exception {
+        Properties database = loadDatabaseProperties();
+        Class.forName(database.getProperty("db.driver"));
+
+        String sql = "SELECT OCTET_LENGTH(body) AS body_length, "
+                + "REGEXP_ILIKE(body, ?) AS matched FROM ("
+                + "SELECT REPEAT(CAST('a' AS LONG VARCHAR(1048576)), 70000) "
+                + "|| CAST('frog2_tail_8c9e1a' AS LONG VARCHAR(1048576)) "
+                + "AS body) generated";
+        try (Connection connection = openReadOnly(database)) {
+            assertLongVarcharContentColumns(connection);
+            try (PreparedStatement statement =
+                    connection.prepareStatement(sql)) {
+                statement.setQueryTimeout(5);
+                statement.setString(1, "frog2_tail_8c9e1a");
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    assertTrue(resultSet.next());
+                    assertEquals(70_017, resultSet.getInt("body_length"));
+                    assertTrue(resultSet.getBoolean("matched"));
+                    assertFalse(resultSet.next());
+                }
+            }
+        }
+    }
+
+    private static void assertLongVarcharContentColumns(
+            Connection connection) throws SQLException {
+        DatabaseMetaData metadata = connection.getMetaData();
+        for (String column : List.of(
+                "overview",
+                "cause_analysis",
+                "error_content",
+                "action_taken",
+                "script_content",
+                "note")) {
+            try (ResultSet columns = metadata.getColumns(
+                    null, null, "troubleshooting", column)) {
+                assertTrue(columns.next(), () -> "Missing column: " + column);
+                assertTrue(
+                        "Long Varchar".equalsIgnoreCase(
+                                columns.getString("TYPE_NAME")),
+                        () -> "Expected LONG VARCHAR: " + column);
+                assertTrue(
+                        columns.getInt("COLUMN_SIZE") > 65_000,
+                        () -> "Content column is still VARCHAR-sized: " + column);
+                assertFalse(columns.next());
             }
         }
     }

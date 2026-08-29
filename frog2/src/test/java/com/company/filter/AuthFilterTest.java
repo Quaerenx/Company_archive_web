@@ -1,5 +1,6 @@
 package com.company.filter;
 
+import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -69,6 +70,23 @@ class AuthFilterTest {
         assertEquals("application/json", response.contentType);
         assertTrue(response.body.toString().contains("\"code\":\"authentication_required\""));
         assertEquals(0, response.redirectCalls.get());
+    }
+
+    @Test
+    void anonymousHtmlCustomerDetailSaveRedirectsToLogin() throws Exception {
+        RequestFixture request = new RequestFixture(
+                "POST", "/frog2/customers", null);
+        request.parameters.put("action", "saveDetail");
+        ResponseFixture response = new ResponseFixture();
+        AtomicInteger chainCalls = new AtomicInteger();
+
+        new AuthFilter().doFilter(
+                request.proxy(), response.proxy(), countingChain(chainCalls));
+
+        assertEquals(0, chainCalls.get());
+        assertEquals("/frog2/login", response.redirect);
+        assertEquals(1, response.redirectCalls.get());
+        assertEquals(null, response.contentType);
     }
 
     @Test
@@ -265,16 +283,4 @@ class AuthFilterTest {
         }
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive() || type == void.class) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
-    }
 }

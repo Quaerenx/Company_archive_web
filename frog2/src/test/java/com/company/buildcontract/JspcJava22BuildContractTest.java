@@ -24,7 +24,9 @@ class JspcJava22BuildContractTest {
 
         assertTrue(jspcBuild.contains("tasks.register('generateJspSources', JavaExec)"));
         assertTrue(jspcBuild.contains("mainClass = 'org.apache.jasper.JspC'"));
-        assertTrue(jspcBuild.contains("orElse('/opt/tomcat-dev-home/current')"));
+        assertFalse(
+                jspcBuild.contains("/opt/tomcat-dev-home/current"),
+                "JspC must not depend on a development-server path");
         assertTrue(jspcBuild.contains(
                 "environmentVariable('FROG2_JSPC_CATALINA_HOME')"));
         assertTrue(jspcBuild.contains(
@@ -33,6 +35,8 @@ class JspcJava22BuildContractTest {
         assertFalse(
                 jspcBuild.contains("environmentVariable('CATALINA_HOME')"),
                 "JspC must not silently select the production Tomcat from CATALINA_HOME");
+        assertTrue(jspcBuild.contains(
+                "JspC validation requires frog2JspcCatalinaHome or"));
         assertTrue(jspcBuild.contains("implementationVersion != expectedJasperVersion.get()"));
         assertTrue(jspcBuild.contains("tasks.register('compileJspJava22', JavaCompile)"));
         assertTrue(jspcBuild.contains("reproducibleSourceTimestamp = 315532800000L"));
@@ -59,4 +63,5 @@ class JspcJava22BuildContractTest {
                 jspcBuild.contains("'-compile'"),
                 "Tomcat's bundled ECJ must not silently compile JSPs as Java 19");
     }
+
 }

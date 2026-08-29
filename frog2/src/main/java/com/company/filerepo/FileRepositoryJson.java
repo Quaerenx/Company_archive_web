@@ -24,15 +24,12 @@ public final class FileRepositoryJson {
             if (index > 0) {
                 json.append(',');
             }
-            json.append("{\"id\":\"").append(escape(file.id()))
-                    .append("\",\"name\":\"").append(escape(file.originalName()))
-                    .append("\",\"size\":").append(file.size()).append('}');
+            json.append("{\"id\":").append(JsonResponse.string(file.id()))
+                    .append(",\"name\":")
+                    .append(JsonResponse.string(file.originalName()))
+                    .append(",\"size\":").append(file.size()).append('}');
         }
         json.append("]}");
         JsonResponse.write(response, HttpServletResponse.SC_CREATED, json.toString());
-    }
-
-    static String escape(String value) {
-        return JsonResponse.escape(value);
     }
 }

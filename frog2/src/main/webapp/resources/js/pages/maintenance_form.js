@@ -11,8 +11,41 @@
         return formatted.endsWith('0') ? formatted.slice(0, -1) : formatted;
     }
 
+    function createLatestRequestGuard() {
+        let sequence = 0;
+        let currentController = null;
+
+        return {
+            begin(key) {
+                sequence += 1;
+                if (currentController) currentController.abort();
+                currentController = key ? new AbortController() : null;
+                return {
+                    controller: currentController,
+                    key: key || '',
+                    sequence
+                };
+            },
+            complete(request) {
+                if (request && request.sequence === sequence
+                        && request.controller === currentController) {
+                    currentController = null;
+                }
+            },
+            isCurrent(request, key) {
+                return Boolean(request && request.controller
+                    && request.sequence === sequence
+                    && request.controller === currentController
+                    && request.key === key);
+            }
+        };
+    }
+
     if (typeof module === 'object' && module.exports) {
-        module.exports = {formatLicensePercentageHalfUp};
+        module.exports = {
+            createLatestRequestGuard,
+            formatLicensePercentageHalfUp
+        };
         return;
     }
 
@@ -85,7 +118,7 @@
     const deleteForm = document.getElementById('deleteFormHeader');
     const maintenanceId = document.querySelector(
         'input[name="maintenance_id"]');
-    let contextController = null;
+    const contextRequestGuard = createLatestRequestGuard();
     let initialFormState = '';
     let submitting = false;
     const calendarController = window.Frog2MaintenanceCalendar.create({
@@ -153,14 +186,14 @@
         const customerName = normalizedValue(customerField && customerField.value);
         const inspectionDate = normalizedValue(
             inspectionDateField && inspectionDateField.value);
+        const requestKey = formContextRequestKey(customerName, inspectionDate);
+        const request = contextRequestGuard.begin(requestKey);
         if (!customerName || !inspectionDate) {
             updatePreviousContext(null);
             updateDuplicateWarning(null);
             showContextStatus(null);
             return;
         }
-        if (contextController) contextController.abort();
-        contextController = new AbortController();
         showContextStatus(null);
         const parameters = new URLSearchParams({
             view: 'formContext',
@@ -173,23 +206,42 @@
 
         fetch(contextPath + '/maintenance?' + parameters.toString(), {
             headers: { Accept: 'application/json' },
-            signal: contextController.signal
+            signal: request.controller.signal
         })
             .then(readJsonResponse)
             .then(function(context) {
+                if (!contextRequestGuard.isCurrent(
+                        request, currentFormContextRequestKey())) return;
                 applyCustomerDefaults(context);
                 updatePreviousContext(context.previous);
                 updateDuplicateWarning(context.duplicate);
                 showContextStatus(null);
             })
             .catch(function(error) {
-                if (error.name !== 'AbortError'
+                if (contextRequestGuard.isCurrent(
+                        request, currentFormContextRequestKey())
+                        && error.name !== 'AbortError'
                         && !window.Frog2Session.isSessionExpired(error)) {
                     console.error('Unable to load maintenance form context:', error);
                     showContextStatus(
                         '이전 점검 정보와 같은 달 등록 여부를 불러오지 못했습니다.');
                 }
+            })
+            .finally(function() {
+                contextRequestGuard.complete(request);
             });
+    }
+
+    function currentFormContextRequestKey() {
+        return formContextRequestKey(
+            normalizedValue(customerField && customerField.value),
+            normalizedValue(inspectionDateField && inspectionDateField.value));
+    }
+
+    function formContextRequestKey(customerName, inspectionDate) {
+        return customerName && inspectionDate
+            ? JSON.stringify([customerName, inspectionDate])
+            : '';
     }
 
     function retryMaintenanceContext() {

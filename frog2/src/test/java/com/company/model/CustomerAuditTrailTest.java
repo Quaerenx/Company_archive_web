@@ -37,13 +37,13 @@ class CustomerAuditTrailTest {
         PaginationJdbcFixture.StatementRecord update = jdbc.statements.get(0);
         assertTrue(update.sql.contains(
                 "updated_at = CURRENT_TIMESTAMP, updated_by = ?"));
-        assertEquals("user-17", update.parameters.get(11));
-        assertEquals("Acme", update.parameters.get(12));
+        assertEquals("user-17", update.parameters.get(20));
+        assertEquals("Acme", update.parameters.get(21));
 
         PaginationJdbcFixture.StatementRecord insert = jdbc.statements.get(1);
         assertTrue(insert.sql.contains("updated_at, updated_by"));
         assertTrue(insert.sql.contains("CURRENT_TIMESTAMP, ?"));
-        assertEquals("user-17", insert.parameters.get(12));
+        assertEquals("user-17", insert.parameters.get(21));
 
         PaginationJdbcFixture.StatementRecord delete = jdbc.statements.get(2);
         assertTrue(delete.sql.contains(
@@ -67,7 +67,7 @@ class CustomerAuditTrailTest {
         PaginationJdbcFixture.StatementRecord update = jdbc.statements.getFirst();
         assertFalse(update.sql.contains("updated_at"));
         assertFalse(update.sql.contains("updated_by"));
-        assertEquals("Acme", update.parameters.get(11));
+        assertEquals("Acme", update.parameters.get(20));
     }
 
     @Test
@@ -85,7 +85,7 @@ class CustomerAuditTrailTest {
                 jdbc.statements.getFirst();
         assertFalse(update.sql.contains("updated_at = CURRENT_TIMESTAMP"));
         assertFalse(update.sql.contains("updated_by"));
-        assertEquals("Acme", update.parameters.get(11));
+        assertEquals("Acme", update.parameters.get(20));
     }
 
     @Test
@@ -160,7 +160,6 @@ class CustomerAuditTrailTest {
     void productionDetailWriteAndReadUseAuditOnlyWhenCapabilityExists() {
         PaginationJdbcFixture writeJdbc = new PaginationJdbcFixture();
         writeJdbc.availableColumns = AUDIT_COLUMNS;
-        writeJdbc.enqueue(PaginationJdbcFixture.row("exists", 1));
         writeJdbc.enqueueUpdate(1);
         CustomerDetailDAO writeDao = new CustomerDetailDAO(
                 writeJdbc::open, new SchemaCapabilityCache());
@@ -169,7 +168,7 @@ class CustomerAuditTrailTest {
 
         assertTrue(writeDao.saveOrUpdateCustomerDetail(detail, "user-17"));
 
-        PaginationJdbcFixture.StatementRecord update = writeJdbc.statements.get(1);
+        PaginationJdbcFixture.StatementRecord update = writeJdbc.statements.getFirst();
         assertTrue(update.sql.contains(
                 "updated_at = CURRENT_TIMESTAMP, updated_by = ?"));
         assertEquals("user-17", update.parameters.get(49));

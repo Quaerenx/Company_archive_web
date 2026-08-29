@@ -2,6 +2,7 @@ package com.company.controller;
 
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDTO;
+import com.company.model.CustomerFieldContract;
 import com.company.util.Pagination;
 import com.company.util.SearchQueryPolicy;
 import com.company.util.StrictDateParser;
@@ -14,28 +15,7 @@ final class CustomerRequestMapper {
     private static final int MAXIMUM_PAGE_SIZE = 100;
 
     CustomerDTO mapCustomer(HttpServletRequest request) {
-        CustomerDTO customer = new CustomerDTO();
-        customer.setCustomerName(request.getParameter("customer_name"));
-        customer.setFirstIntroductionYear(request.getParameter("first_introduction_year"));
-        customer.setDbName(request.getParameter("db_name"));
-        customer.setVerticaVersion(request.getParameter("vertica_version"));
-        customer.setVerticaEos(request.getParameter("vertica_eos"));
-        customer.setMode(request.getParameter("mode"));
-        customer.setOs(request.getParameter("os"));
-        customer.setNodes(request.getParameter("nodes"));
-        customer.setLicenseSize(request.getParameter("license_size"));
-        customer.setManagerName(request.getParameter("manager_name"));
-        customer.setSubManagerName(request.getParameter("sub_manager_name"));
-        customer.setSaid(request.getParameter("said"));
-        customer.setNote(request.getParameter("note"));
-        customer.setOsStorageConfig(request.getParameter("os_storage_config"));
-        customer.setBackupConfig(request.getParameter("backup_config"));
-        customer.setBiTool(request.getParameter("bi_tool"));
-        customer.setEtlTool(request.getParameter("etl_tool"));
-        customer.setDbEncryption(request.getParameter("db_encryption"));
-        customer.setCdcTool(request.getParameter("cdc_tool"));
-        customer.setCustomerType(request.getParameter("customer_type"));
-        return customer;
+        return CustomerFieldContract.fromForm(request::getParameter);
     }
 
     CustomerDetailDTO mapCustomerDetail(HttpServletRequest request) throws ParseException {

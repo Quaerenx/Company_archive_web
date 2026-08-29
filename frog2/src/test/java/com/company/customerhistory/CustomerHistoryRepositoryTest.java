@@ -154,6 +154,8 @@ class CustomerHistoryRepositoryTest {
         assertEquals(
                 RequestPerformanceContext.Operation.CUSTOMER_HISTORY_LIST,
                 performance.operation());
+        assertEquals(0, performance.customerHistoryCacheHits());
+        assertEquals(1, performance.customerHistoryCacheMisses());
         assertEquals(1, performance.customerHistoryScanCount());
         assertEquals(2, performance.customerHistoryRecordFileCount());
         assertTrue(performance.customerHistoryScanDurationNanos() >= 0);
@@ -191,10 +193,16 @@ class CustomerHistoryRepositoryTest {
                 RequestPerformanceContext.finish();
 
         assertEquals(1, first.totalCount());
+        assertEquals(0, firstPerformance.customerHistoryCacheHits());
+        assertEquals(1, firstPerformance.customerHistoryCacheMisses());
         assertEquals(1, firstPerformance.customerHistoryScanCount());
         assertEquals(1, cached.totalCount());
+        assertEquals(1, cachedPerformance.customerHistoryCacheHits());
+        assertEquals(0, cachedPerformance.customerHistoryCacheMisses());
         assertEquals(0, cachedPerformance.customerHistoryScanCount());
         assertEquals(2, refreshed.totalCount());
+        assertEquals(0, refreshedPerformance.customerHistoryCacheHits());
+        assertEquals(1, refreshedPerformance.customerHistoryCacheMisses());
         assertEquals(1, refreshedPerformance.customerHistoryScanCount());
         assertEquals(2, refreshedPerformance.customerHistoryRecordFileCount());
     }
