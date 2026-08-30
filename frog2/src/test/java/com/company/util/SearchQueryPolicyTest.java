@@ -19,4 +19,16 @@ class SearchQueryPolicyTest {
                 IllegalArgumentException.class,
                 () -> SearchQueryPolicy.normalize("가".repeat(101)));
     }
+
+    @Test
+    void buildsLiteralLikeAndRegexPatterns() {
+        assertEquals(
+                "%need!%!_!!le%",
+                SearchQueryPolicy.literalContainsLikePattern(
+                        "need%_!le"));
+        assertEquals(
+                "need\\x{20}\\[le\\]\\.\\*\\#",
+                SearchQueryPolicy.literalContainsRegex(
+                        "need [le].*#"));
+    }
 }

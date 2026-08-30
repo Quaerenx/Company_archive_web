@@ -59,6 +59,10 @@ class HeaderNavViewContractTest {
         assertTrue(troubleshootingLink < resourceMenuStart);
         assertTrue(header.contains("/mypage"));
         assertTrue(header.contains("id=\"logoutLink\""));
+        assertTrue(header.contains("id=\"quickNavStatus\""));
+        assertTrue(header.contains(
+                "data-search-url=\"${pageContext.request.contextPath}/search\""));
+        assertTrue(header.contains("메뉴와 고객사 업무 데이터를 한 번에 검색합니다."));
         assertFalse(header.contains("href=\"#\""));
         assertFalse(header.contains("pageTitle eq"));
 
@@ -74,6 +78,9 @@ class HeaderNavViewContractTest {
         assertTrue(behavior.contains("restoreFocus"));
         assertTrue(behavior.contains("aria-expanded"));
         assertTrue(behavior.contains("event.preventDefault()"));
+        assertTrue(behavior.contains("credentials: 'same-origin'"));
+        assertTrue(behavior.contains("encodeURIComponent(query)"));
+        assertTrue(behavior.contains("queryLength(query) < 2"));
         assertFalse(behavior.contains("window.location.pathname"));
 
         String styles = read("resources/css/pages/header.css");

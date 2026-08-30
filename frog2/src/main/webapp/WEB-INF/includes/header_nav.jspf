@@ -189,7 +189,7 @@
                                 aria-expanded="false"
                                 aria-keyshortcuts="Control+K Meta+K">
                             <i class="fas fa-search mr-1" aria-hidden="true"></i>
-                            <span>빠른 이동</span>
+                            <span>통합 검색</span>
                             <span class="quick-nav-shortcut" aria-hidden="true">Ctrl K</span>
                         </button>
                     </li>
@@ -219,6 +219,7 @@
 
 <div id="quickNavBackdrop"
      class="quick-nav-backdrop"
+     data-search-url="${pageContext.request.contextPath}/search"
      aria-hidden="true"
      hidden>
     <section id="quickNavDialog"
@@ -231,16 +232,16 @@
              tabindex="-1">
         <header class="quick-nav-header">
             <div>
-                <h2 id="quickNavTitle">빠른 이동</h2>
-                <p id="quickNavDescription">메뉴 이름을 검색한 뒤 Enter로 이동하세요.</p>
+                <h2 id="quickNavTitle">통합 검색</h2>
+                <p id="quickNavDescription">메뉴와 고객사 업무 데이터를 한 번에 검색합니다.</p>
             </div>
             <button type="button"
                     id="quickNavCloseButton"
                     class="quick-nav-close ui-touch-target"
-                    aria-label="빠른 이동 닫기">&times;</button>
+                    aria-label="통합 검색 닫기">&times;</button>
         </header>
         <div class="quick-nav-search">
-            <label class="sr-only" for="quickNavInput">메뉴 검색</label>
+            <label class="sr-only" for="quickNavInput">통합 검색</label>
             <i class="fas fa-search" aria-hidden="true"></i>
             <input id="quickNavInput"
                    type="search"
@@ -251,14 +252,20 @@
                    aria-controls="quickNavResults"
                    aria-expanded="false"
                    data-dialog-initial-focus
-                   placeholder="대시보드, 고객사, 정기점검…">
+                   maxlength="100"
+                   placeholder="메뉴, 고객사, 이력, 회의록, 자료 검색…">
         </div>
+        <p id="quickNavStatus"
+           class="quick-nav-status"
+           role="status"
+           aria-live="polite"
+           hidden></p>
         <ul id="quickNavResults"
             class="quick-nav-results"
             role="listbox"
-            aria-label="이동할 메뉴"></ul>
-        <p id="quickNavEmpty" class="quick-nav-empty" role="status" hidden>
-            일치하는 메뉴가 없습니다.
+            aria-label="통합 검색 결과"></ul>
+        <p id="quickNavEmpty" class="quick-nav-empty" hidden>
+            일치하는 결과가 없습니다.
         </p>
         <p class="quick-nav-help">
             <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> 선택</span>

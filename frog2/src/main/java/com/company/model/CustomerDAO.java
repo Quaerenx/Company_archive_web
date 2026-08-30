@@ -31,12 +31,12 @@ public class CustomerDAO {
     private static final String CUSTOMER_COLUMNS =
             CustomerFieldContract.selectColumns("d");
     private static final String SEARCH_PREDICATE =
-            "(CAST(d.customer_name AS VARCHAR(65000)) ILIKE ? "
-                    + "OR CAST(d.vertica_version AS VARCHAR(65000)) ILIKE ? "
-                    + "OR CAST(d.db_mode AS VARCHAR(65000)) ILIKE ? "
-                    + "OR CAST(d.os_info AS VARCHAR(65000)) ILIKE ? "
-                    + "OR CAST(d.said AS VARCHAR(65000)) ILIKE ? "
-                    + "OR CAST(d.main_manager AS VARCHAR(65000)) ILIKE ?)";
+            "(CAST(d.customer_name AS VARCHAR(65000)) ILIKE ? ESCAPE '!' "
+                    + "OR CAST(d.vertica_version AS VARCHAR(65000)) ILIKE ? ESCAPE '!' "
+                    + "OR CAST(d.db_mode AS VARCHAR(65000)) ILIKE ? ESCAPE '!' "
+                    + "OR CAST(d.os_info AS VARCHAR(65000)) ILIKE ? ESCAPE '!' "
+                    + "OR CAST(d.said AS VARCHAR(65000)) ILIKE ? ESCAPE '!' "
+                    + "OR CAST(d.main_manager AS VARCHAR(65000)) ILIKE ? ESCAPE '!')";
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
@@ -111,6 +111,38 @@ public class CustomerDAO {
             String sortField, String sortDirection) {
         return getAllCustomers(
                 sortField, sortDirection, MAINTENANCE_FILTER);
+    }
+
+    public List<CustomerDTO> searchCustomers(String query, int limit) {
+        if (limit <= 0 || limit > 20) {
+            throw new IllegalArgumentException(
+                    "Search limit must be between 1 and 20");
+        }
+        String normalizedQuery = normalizeQuery(query);
+        if (normalizedQuery == null) {
+            return List.of();
+        }
+        String sql = "SELECT " + CUSTOMER_COLUMNS
+                + " FROM vertica_customer_detail d "
+                + "WHERE d.is_deleted = " + ACTIVE_FLAG
+                + " AND " + SEARCH_PREDICATE
+                + " ORDER BY d.customer_name ASC LIMIT ?";
+        try (Connection connection = connectionProvider.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            int parameterIndex = bindSearch(
+                    statement, 1, normalizedQuery);
+            statement.setInt(parameterIndex, limit);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<CustomerDTO> customers = new ArrayList<>();
+                while (resultSet.next()) {
+                    customers.add(CustomerFieldContract.read(resultSet));
+                }
+                return List.copyOf(customers);
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "search active customers", exception);
+        }
     }
 
     public boolean isActiveMaintenanceCustomer(String customerName) {
@@ -492,7 +524,7 @@ public class CustomerDAO {
         if (query == null) {
             return startIndex;
         }
-        String like = "%" + query + "%";
+        String like = SearchQueryPolicy.literalContainsLikePattern(query);
         int parameterIndex = startIndex;
         for (int field = 0; field < 6; field++) {
             statement.setString(parameterIndex++, like);

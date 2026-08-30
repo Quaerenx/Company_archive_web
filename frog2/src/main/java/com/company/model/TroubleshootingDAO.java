@@ -454,48 +454,19 @@ public class TroubleshootingDAO {
             String query,
             boolean includeContent) throws SQLException {
         int parameterIndex = startIndex;
-        String summaryPattern = literalContainsLikePattern(query);
+        String summaryPattern = SearchQueryPolicy.literalContainsLikePattern(
+                query);
         for (int field = 0; field < 3; field++) {
             statement.setString(parameterIndex++, summaryPattern);
         }
         if (includeContent) {
-            String contentPattern = literalContainsRegex(query);
+            String contentPattern = SearchQueryPolicy.literalContainsRegex(
+                    query);
             for (int field = 0; field < 6; field++) {
                 statement.setString(parameterIndex++, contentPattern);
             }
         }
         return parameterIndex;
-    }
-
-    private static String literalContainsLikePattern(String query) {
-        StringBuilder pattern = new StringBuilder(query.length() + 2);
-        pattern.append('%');
-        for (int index = 0; index < query.length(); index++) {
-            char character = query.charAt(index);
-            if (character == '!' || character == '%' || character == '_') {
-                pattern.append('!');
-            }
-            pattern.append(character);
-        }
-        return pattern.append('%').toString();
-    }
-
-    private static String literalContainsRegex(String query) {
-        StringBuilder pattern = new StringBuilder(query.length());
-        for (int index = 0; index < query.length(); index++) {
-            char character = query.charAt(index);
-            if (Character.isWhitespace(character)) {
-                pattern.append("\\x{")
-                        .append(Integer.toHexString(character))
-                        .append('}');
-                continue;
-            }
-            if ("\\.^$|?*+()[]{}#".indexOf(character) >= 0) {
-                pattern.append('\\');
-            }
-            pattern.append(character);
-        }
-        return pattern.toString();
     }
 
     private static String normalizedQuery(String query) {

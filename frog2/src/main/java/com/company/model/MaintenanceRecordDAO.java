@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -460,6 +461,57 @@ public class MaintenanceRecordDAO {
         }
 
         return records;
+    }
+
+    public List<MaintenanceRecordDTO> getLatestMaintenanceRecordsByCustomers(
+            List<String> customerNames) {
+        LinkedHashSet<String> normalizedNames = new LinkedHashSet<>();
+        if (customerNames != null) {
+            for (String customerName : customerNames) {
+                if (!isBlank(customerName)) {
+                    normalizedNames.add(customerName.trim());
+                }
+            }
+        }
+        if (normalizedNames.isEmpty()) {
+            return List.of();
+        }
+
+        try (Connection connection = connectionProvider.getConnection()) {
+            MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(
+                    connection);
+            String columns = selectColumns(schema);
+            String placeholders = String.join(
+                    ", ", java.util.Collections.nCopies(
+                            normalizedNames.size(), "?"));
+            String sql = "SELECT " + columns + " FROM (SELECT "
+                    + columns + ", ROW_NUMBER() OVER ("
+                    + "PARTITION BY customer_name ORDER BY "
+                    + "CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
+                    + "inspection_date DESC, maintenance_id DESC"
+                    + ") AS record_rank FROM maintenance_records "
+                    + "WHERE customer_name IN (" + placeholders + ")"
+                    + ") ranked WHERE record_rank = 1 "
+                    + "ORDER BY customer_name ASC";
+            try (PreparedStatement statement =
+                            connection.prepareStatement(sql)) {
+                int parameter = 1;
+                for (String customerName : normalizedNames) {
+                    statement.setString(parameter++, customerName);
+                }
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<MaintenanceRecordDTO> records = new ArrayList<>();
+                    while (resultSet.next()) {
+                        records.add(mapRowToDto(resultSet, schema));
+                    }
+                    return List.copyOf(records);
+                }
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load latest maintenance records by customers",
+                    exception);
+        }
     }
 
     private void setStringOrNull(PreparedStatement pstmt, int parameterIndex, String value) throws SQLException {

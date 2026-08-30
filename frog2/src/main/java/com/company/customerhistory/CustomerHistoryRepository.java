@@ -451,7 +451,13 @@ public final class CustomerHistoryRepository {
         if (normalizedQuery.isEmpty()) {
             return true;
         }
-        return record.getTitle().toLowerCase(Locale.ROOT).contains(normalizedQuery)
+        return record.getCustomerName().toLowerCase(Locale.ROOT)
+                        .contains(normalizedQuery)
+                || record.getWorkDate().toString().contains(normalizedQuery)
+                || record.getCategory().getLabel().toLowerCase(Locale.ROOT)
+                        .contains(normalizedQuery)
+                || record.getTitle().toLowerCase(Locale.ROOT)
+                        .contains(normalizedQuery)
                 || record.getActionSummary().toLowerCase(Locale.ROOT)
                         .contains(normalizedQuery);
     }

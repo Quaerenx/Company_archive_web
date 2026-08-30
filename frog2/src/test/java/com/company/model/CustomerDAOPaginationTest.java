@@ -7,6 +7,38 @@ import org.junit.jupiter.api.Test;
 
 class CustomerDAOPaginationTest {
     @Test
+    void globalSearchUsesOneBoundedLiteralQuery() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "customer_name", "Acme",
+                "vertica_version", "12.0.4-29",
+                "db_mode", "ENT",
+                "os_info", "Linux",
+                "node_count", "3",
+                "license_info", "10TB",
+                "said", "SAID",
+                "main_manager", "Tester",
+                "sub_manager", null,
+                "db_name", "db",
+                "customer_type", "정기점검 계약 고객사"));
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+
+        var results = dao.searchCustomers(" need%_!le ", 5);
+
+        assertEquals(1, jdbc.statements.size());
+        assertTrue(jdbc.statements.getFirst().sql.contains(
+                "customer_name AS VARCHAR(65000)) ILIKE ? ESCAPE '!'"));
+        assertEquals(
+                "%need!%!_!!le%",
+                jdbc.statements.getFirst().parameters.get(1));
+        assertEquals(
+                "%need!%!_!!le%",
+                jdbc.statements.getFirst().parameters.get(6));
+        assertEquals(5, jdbc.statements.getFirst().parameters.get(7));
+        assertEquals("Acme", results.getFirst().getCustomerName());
+    }
+
+    @Test
     void filterSearchAndSortUseTwoQueriesWithStableOrdering() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(PaginationJdbcFixture.row(

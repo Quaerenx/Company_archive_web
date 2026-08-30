@@ -59,7 +59,9 @@ public final class PerformanceMetricsServlet extends HttpServlet {
                 "{\"troubleshooting\":{\"summarySearch\":"
                         + json(snapshot.summarySearch())
                         + ",\"contentSearch\":"
-                        + json(snapshot.contentSearch()) + "}}");
+                        + json(snapshot.contentSearch())
+                        + "},\"globalSearch\":"
+                        + json(snapshot.globalSearch()) + "}");
     }
 
     private static String json(SearchSnapshot metrics) {

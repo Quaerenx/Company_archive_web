@@ -207,6 +207,31 @@ class CustomerHistoryRepositoryTest {
         assertEquals(2, refreshedPerformance.customerHistoryRecordFileCount());
     }
 
+    @Test
+    void searchMatchesCustomerDateCategoryTitleAndAction() {
+        CustomerHistoryRepository repository = new CustomerHistoryRepository(
+                temporaryDirectory.resolve("search-history"), CLOCK);
+        repository.create(
+                new CustomerHistoryDraft(
+                        "조폐공사",
+                        LocalDate.of(2026, 7, 24),
+                        CustomerHistoryCategory.CONFIGURATION,
+                        "TLS 설정 반영",
+                        "인프라 서버에 암호화 설정을 적용했습니다.",
+                        CustomerHistoryStatus.COMPLETED),
+                "owner-id",
+                "담당자");
+
+        assertEquals(1, repository.findPage(
+                "", "all", "조폐공사", 1, 20).totalCount());
+        assertEquals(1, repository.findPage(
+                "", "all", "2026-07-24", 1, 20).totalCount());
+        assertEquals(1, repository.findPage(
+                "", "all", "설정 변경", 1, 20).totalCount());
+        assertEquals(1, repository.findPage(
+                "", "all", "암호화", 1, 20).totalCount());
+    }
+
     private static CustomerHistoryDraft draft(
             String customerName, String title, String action) {
         return new CustomerHistoryDraft(

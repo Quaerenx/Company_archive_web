@@ -129,6 +129,7 @@ public final class RequestPerformanceContext {
 
     public enum Operation {
         NONE("none"),
+        GLOBAL_SEARCH("globalSearch"),
         TROUBLESHOOTING_SUMMARY_SEARCH("troubleshooting.summarySearch"),
         TROUBLESHOOTING_CONTENT_SEARCH("troubleshooting.contentSearch"),
         CUSTOMER_HISTORY_LIST("customerHistory.list");

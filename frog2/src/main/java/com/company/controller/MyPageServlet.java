@@ -183,6 +183,7 @@ public class MyPageServlet extends HttpServlet {
             request.setAttribute(
                     "troubleshootingCount",
                     viewData.troubleshootingCount());
+            request.setAttribute("workInbox", viewData.workInbox());
         }
 
         request.getRequestDispatcher("/mypage/mypage.jsp").forward(request, response);

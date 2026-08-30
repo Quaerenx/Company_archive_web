@@ -41,8 +41,11 @@ class ClassList {
 function createElement(document, options = {}) {
     const attributes = new Map();
     const listeners = new Map();
+    const children = [...(options.children || [])];
+    let textContent = '';
     const element = {
         classList: new ClassList(),
+        children,
         hidden: false,
         addEventListener(name, listener) {
             if (!listeners.has(name)) {
@@ -50,8 +53,12 @@ function createElement(document, options = {}) {
             }
             listeners.get(name).push(listener);
         },
+        appendChild(child) {
+            children.push(child);
+            return child;
+        },
         contains(candidate) {
-            return candidate === element || (options.children || []).includes(candidate);
+            return candidate === element || children.includes(candidate);
         },
         closest(selector) {
             return options.closest ? options.closest(selector) : null;
@@ -72,20 +79,39 @@ function createElement(document, options = {}) {
             return options.querySelector ? options.querySelector(selector) : null;
         },
         querySelectorAll(selector) {
-            return options.querySelectorAll ? options.querySelectorAll(selector) : [];
+            if (options.querySelectorAll) {
+                return options.querySelectorAll(selector);
+            }
+            if (selector === '[role="option"]') {
+                return children.filter((child) =>
+                    child.getAttribute('role') === 'option');
+            }
+            return [];
         },
         removeAttribute(name) {
             attributes.delete(name);
         },
         setAttribute(name, value) {
             attributes.set(name, String(value));
+        },
+        scrollIntoView() {
         }
     };
+    Object.defineProperty(element, 'textContent', {
+        get() {
+            return textContent;
+        },
+        set(value) {
+            textContent = String(value);
+            children.length = 0;
+        }
+    });
     return element;
 }
 
 function createHarness({ mobile, dropdown = false, quickNav = false,
-        otherDialogOpen = false }) {
+        otherDialogOpen = false, searchPayload = null,
+        searchStatus = 200 }) {
     const documentListeners = new Map();
     const document = {
         activeElement: null,
@@ -106,6 +132,10 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
     const mobileToggle = createElement(document);
     const firstNavLink = createElement(document);
     const lastNavLink = createElement(document);
+    firstNavLink.textContent = '대시보드';
+    firstNavLink.href = '/frog2/dashboard';
+    lastNavLink.textContent = '마이페이지';
+    lastNavLink.href = '/frog2/mypage';
     const menu = createElement(document, {
         querySelector(selector) {
             return selector === 'a[href]' ? menuLink : null;
@@ -149,14 +179,13 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
     const quickNavDialog = quickNav ? createElement(document) : null;
     const quickNavCloseButton = quickNav ? createElement(document) : null;
     const quickNavInput = quickNav ? createElement(document) : null;
-    const quickNavResults = quickNav ? createElement(document, {
-        querySelectorAll() {
-            return [];
-        }
-    }) : null;
+    const quickNavResults = quickNav ? createElement(document) : null;
     const quickNavEmpty = quickNav ? createElement(document) : null;
+    const quickNavStatus = quickNav ? createElement(document) : null;
     if (quickNavInput) {
         quickNavInput.value = '';
+        quickNavBackdrop.setAttribute(
+            'data-search-url', '/frog2/search');
     }
     const header = createElement(document, {
         children: [mobileToggle, primaryNavigation, firstNavLink, lastNavLink,
@@ -182,6 +211,7 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
             if (id === 'quickNavInput') return quickNavInput;
             if (id === 'quickNavResults') return quickNavResults;
             if (id === 'quickNavEmpty') return quickNavEmpty;
+            if (id === 'quickNavStatus') return quickNavStatus;
             return null;
         },
         querySelector(selector) {
@@ -193,14 +223,35 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
         matches: mobile,
         addEventListener() {}
     };
+    const fetchCalls = [];
+    let assignedLocation = null;
     const window = {
+        clearTimeout() {},
+        location: {
+            assign(url) {
+                assignedLocation = url;
+            }
+        },
         matchMedia() {
             return mediaQuery;
         },
         setTimeout(callback) {
             callback();
+            return 1;
         }
     };
+    if (searchPayload !== null) {
+        window.fetch = (url, options) => {
+            fetchCalls.push({ url, options });
+            return Promise.resolve({
+                ok: searchStatus >= 200 && searchStatus < 300,
+                status: searchStatus,
+                json() {
+                    return Promise.resolve(searchPayload);
+                }
+            });
+        };
+    }
     let quickNavOpen = false;
     let quickNavOpenCalls = 0;
     if (quickNav) {
@@ -237,7 +288,15 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
         lastNavLink,
         mobileToggle,
         primaryNavigation,
+        quickNavEmpty,
+        quickNavInput,
         quickNavOpenButton,
+        quickNavResults,
+        quickNavStatus,
+        fetchCalls,
+        get assignedLocation() {
+            return assignedLocation;
+        },
         get quickNavOpenCalls() {
             return quickNavOpenCalls;
         }
@@ -271,6 +330,69 @@ test('mobile menu keeps aria-expanded in sync and Escape restores focus', () => 
     assert.equal(harness.mobileToggle.getAttribute('aria-expanded'), 'false');
     assert.equal(harness.primaryNavigation.getAttribute('aria-hidden'), 'true');
     assert.equal(harness.document.activeElement, harness.mobileToggle);
+});
+
+test('integrated search fetches and renders safe domain results', async () => {
+    const harness = createHarness({
+        mobile: false,
+        quickNav: true,
+        searchPayload: {
+            partial: true,
+            unavailableCategories: ['자료실'],
+            results: [
+                {
+                    category: '고객사',
+                    label: '조폐공사',
+                    description: 'Vertica 12.0.2-1',
+                    url: '/frog2/customers?view=detail&customerName=%EC%A1%B0%ED%8F%90'
+                },
+                {
+                    category: '외부',
+                    label: '차단 대상',
+                    description: '',
+                    url: 'https://example.com'
+                }
+            ]
+        }
+    });
+
+    harness.quickNavOpenButton.dispatch('click');
+    harness.quickNavInput.value = '조폐';
+    harness.quickNavInput.dispatch('input');
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(harness.fetchCalls.length, 1);
+    assert.equal(harness.fetchCalls[0].url,
+        '/frog2/search?q=%EC%A1%B0%ED%8F%90');
+    assert.equal(harness.fetchCalls[0].options.credentials, 'same-origin');
+    assert.equal(harness.quickNavResults.children.length, 1);
+    const option = harness.quickNavResults.children[0];
+    const link = option.children[0];
+    assert.equal(link.children[0].textContent, '고객사');
+    assert.equal(link.children[1].children[0].textContent, '조폐공사');
+    assert.equal(harness.quickNavStatus.textContent,
+        '업무 데이터 검색 결과 1건 · 자료실 제외');
+
+    harness.quickNavInput.dispatch('keydown', keyboardEvent('Enter'));
+    assert.equal(harness.assignedLocation,
+        '/frog2/customers?view=detail&customerName=%EC%A1%B0%ED%8F%90');
+});
+
+test('integrated search waits for two characters before requesting data', () => {
+    const harness = createHarness({
+        mobile: false,
+        quickNav: true,
+        searchPayload: { results: [] }
+    });
+
+    harness.quickNavOpenButton.dispatch('click');
+    harness.quickNavInput.value = '조';
+    harness.quickNavInput.dispatch('input');
+
+    assert.equal(harness.fetchCalls.length, 0);
+    assert.equal(harness.quickNavStatus.textContent,
+        '2자 이상 입력하면 업무 데이터까지 검색합니다.');
 });
 
 test('mobile menu leaves Tab navigation non-modal', () => {

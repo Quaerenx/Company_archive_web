@@ -684,6 +684,34 @@ class FileRepositoryServiceTest {
         assertTrue(second.isHasNext());
     }
 
+    @Test
+    void globalSearchFindsNestedFoldersFilesAndPathNames()
+            throws Exception {
+        Path customerFolder = Files.createDirectories(
+                root.resolve("조폐공사").resolve("점검자료"));
+        byte[] content = "safe report".getBytes(StandardCharsets.UTF_8);
+        var validated = service.validateUpload(
+                "TLS 결과.txt", "text/plain", content.length);
+        service.store(
+                "조폐공사/점검자료",
+                validated,
+                content.length,
+                new ByteArrayInputStream(content));
+
+        List<FileRepositoryEntry> folderMatches = service.search("조폐공사", 5);
+        List<FileRepositoryEntry> fileMatches = service.search("TLS 결과", 5);
+
+        assertTrue(folderMatches.stream().anyMatch(
+                entry -> entry.isDirectory()
+                        && "조폐공사".equals(entry.getName())));
+        assertTrue(folderMatches.stream().anyMatch(
+                entry -> !entry.isDirectory()
+                        && entry.getPath().contains("조폐공사")));
+        assertEquals("TLS 결과.txt", fileMatches.getFirst().getName());
+        assertEquals(customerFolder.toRealPath(),
+                root.resolve(fileMatches.getFirst().getPath()).toRealPath());
+    }
+
     private static List<String> names(FileRepositoryListing listing) {
         return listing.getEntries().stream()
                 .map(FileRepositoryEntry::getName)

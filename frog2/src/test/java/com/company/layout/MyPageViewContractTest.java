@@ -20,6 +20,7 @@ class MyPageViewContractTest {
     void everyMyPageFragmentDeclaresUtf8Encoding() throws Exception {
         for (String fragment : new String[] {
                 "profile_summary.jspf",
+                "work_inbox.jspf",
                 "recent_activity.jspf",
                 "host_summary.jspf",
                 "host_manager.jspf"
@@ -31,12 +32,14 @@ class MyPageViewContractTest {
     }
 
     @Test
-    void overviewKeepsOnlyProfileRecentWorkAndHostSummary() throws Exception {
+    void overviewKeepsProfileInboxRecentWorkAndHostSummary() throws Exception {
         String page = read("mypage/mypage.jsp");
         String profile = read(
                 "WEB-INF/includes/mypage/profile_summary.jspf");
         String activity = read(
                 "WEB-INF/includes/mypage/recent_activity.jspf");
+        String workInbox = read(
+                "WEB-INF/includes/mypage/work_inbox.jspf");
         String hostSummary = read(
                 "WEB-INF/includes/mypage/host_summary.jspf");
 
@@ -46,6 +49,7 @@ class MyPageViewContractTest {
         assertTrue(page.contains("/resources/css/pages/mypage_hosts.css"));
         assertTrue(page.contains("/resources/js/pages/mypage_hosts.js"));
         assertTrue(page.contains("profile_summary.jspf"));
+        assertTrue(page.contains("work_inbox.jspf"));
         assertTrue(page.contains("recent_activity.jspf"));
         assertTrue(page.contains("host_summary.jspf"));
 
@@ -54,6 +58,14 @@ class MyPageViewContractTest {
         assertTrue(profile.contains("${userInfo.department}"));
         assertTrue(profile.contains("mypage?action=editProfile"));
         assertTrue(profile.contains("mypage?action=changePassword"));
+
+        assertTrue(workInbox.contains("업무 인박스"));
+        assertTrue(workInbox.contains("workInbox.items"));
+        assertTrue(workInbox.contains("workInbox.dangerCount"));
+        assertTrue(workInbox.contains("workInbox.warningCount"));
+        assertTrue(workInbox.contains("workInbox.infoCount"));
+        assertTrue(workInbox.contains("${item.path}"));
+        assertTrue(workInbox.contains("${item.severityLabel}"));
 
         assertTrue(activity.contains("mypage?action=monthlyResponse"));
         assertTrue(activity.contains("recentMaintenanceRecords"));
@@ -135,6 +147,7 @@ class MyPageViewContractTest {
                 "userVmHostDAO.getActiveHostCountByOwner(userId)"));
         assertTrue(controller.contains("recentMaintenanceRecords"));
         assertTrue(controller.contains("recentTroubleshootings"));
+        assertTrue(controller.contains("workInbox"));
         assertTrue(controller.contains("queryService.loadOverview("));
         assertTrue(queryService.contains("userId, 1, recentActivityLimit"));
         assertFalse(controller.contains("Pagination.requestedPage("));

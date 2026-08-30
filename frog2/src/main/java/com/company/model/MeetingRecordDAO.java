@@ -10,6 +10,7 @@ import java.util.Objects;
 
 import com.company.util.DBConnection;
 import com.company.util.Pagination;
+import com.company.util.SearchQueryPolicy;
 
 public class MeetingRecordDAO {
     private static final int PAGE_SIZE = 20;
@@ -87,6 +88,49 @@ public class MeetingRecordDAO {
             return countMeetingRecords(connection);
         } catch (SQLException e) {
             throw DataAccessException.from(e);
+        }
+    }
+
+    public List<MeetingRecordDTO> searchMeetingRecords(
+            String query, int limit) {
+        if (limit <= 0 || limit > 20) {
+            throw new IllegalArgumentException(
+                    "Search limit must be between 1 and 20");
+        }
+        String normalizedQuery = SearchQueryPolicy.normalize(query);
+        if (normalizedQuery == null) {
+            return List.of();
+        }
+        String sql = "SELECT meeting_id, title, meeting_type, "
+                + "author_name, meeting_datetime FROM meeting_records "
+                + "WHERE title ILIKE ? ESCAPE '!' "
+                + "OR meeting_type ILIKE ? ESCAPE '!' "
+                + "OR author_name ILIKE ? ESCAPE '!' "
+                + "OR REGEXP_ILIKE(content, ?) "
+                + "ORDER BY meeting_datetime DESC, meeting_id DESC LIMIT ?";
+        try (Connection connection = connectionProvider.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            String likePattern =
+                    SearchQueryPolicy.literalContainsLikePattern(
+                            normalizedQuery);
+            for (int parameter = 1; parameter <= 3; parameter++) {
+                statement.setString(parameter, likePattern);
+            }
+            statement.setString(
+                    4,
+                    SearchQueryPolicy.literalContainsRegex(
+                            normalizedQuery));
+            statement.setInt(5, limit);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<MeetingRecordDTO> records = new ArrayList<>();
+                while (resultSet.next()) {
+                    records.add(mapListRow(resultSet));
+                }
+                return List.copyOf(records);
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "search meeting records", exception);
         }
     }
 

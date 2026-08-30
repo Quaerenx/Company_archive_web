@@ -34,6 +34,7 @@ class PerformanceMetricsServletTest {
         PerformanceMetricsServlet servlet = new PerformanceMetricsServlet(
                 () -> new Snapshot(
                         summary,
+                        new SearchSnapshot(0, 0, 0, 0, 0, 0),
                         new SearchSnapshot(0, 0, 0, 0, 0, 0)));
         ResponseFixture response = new ResponseFixture();
 
@@ -46,6 +47,7 @@ class PerformanceMetricsServletTest {
         assertTrue(response.body.toString().contains("\"count\":2"));
         assertTrue(response.body.toString().contains(
                 "\"averageSqlMs\":50.000"));
+        assertTrue(response.body.toString().contains("\"globalSearch\""));
         assertTrue(!response.body.toString().contains("query"));
     }
 
@@ -55,6 +57,7 @@ class PerformanceMetricsServletTest {
                 AdminAccessPolicy.ADMIN_USER_IDS_PROPERTY, "admin-user");
         PerformanceMetricsServlet servlet = new PerformanceMetricsServlet(
                 () -> new Snapshot(
+                        new SearchSnapshot(0, 0, 0, 0, 0, 0),
                         new SearchSnapshot(0, 0, 0, 0, 0, 0),
                         new SearchSnapshot(0, 0, 0, 0, 0, 0)));
         ResponseFixture response = new ResponseFixture();
@@ -71,6 +74,7 @@ class PerformanceMetricsServletTest {
     void anonymousRequestCannotReadMetrics() throws Exception {
         PerformanceMetricsServlet servlet = new PerformanceMetricsServlet(
                 () -> new Snapshot(
+                        new SearchSnapshot(0, 0, 0, 0, 0, 0),
                         new SearchSnapshot(0, 0, 0, 0, 0, 0),
                         new SearchSnapshot(0, 0, 0, 0, 0, 0)));
         ResponseFixture response = new ResponseFixture();

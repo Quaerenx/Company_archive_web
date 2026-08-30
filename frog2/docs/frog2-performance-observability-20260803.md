@@ -13,6 +13,8 @@ Date: 2026-08-03
 - Troubleshooting searches identify summary-only and explicit full-content operations separately. Full-content search covers complete `LONG VARCHAR` fields; it remains a bounded-time contains scan unless a separately approved Vertica text index is introduced.
 - File-repository requests report snapshot cache hits/misses and scan count/duration.
 - Customer-history requests report snapshot cache hits/misses, scanned record-file count, and scan duration without logging record content or customer names.
+- Authenticated global searches are measured separately from troubleshooting searches. The admin metrics endpoint exposes aggregate request/SQL counts and durations only; search text and result content are not retained.
+- A failing global-search source is isolated so available sources can still return results. The response names unavailable categories, while an outage of all five sources returns HTTP 503.
 
 ## Settings
 

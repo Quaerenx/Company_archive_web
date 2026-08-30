@@ -4,6 +4,7 @@ import com.company.filerepo.FileRepositoryCursorCodec.SortKey;
 import com.company.filerepo.FileRepositoryFilePolicy.ValidatedFile;
 import com.company.filerepo.FileRepositoryPathPolicy.ResolvedDirectory;
 import com.company.performance.RequestPerformanceContext;
+import com.company.util.SearchQueryPolicy;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -47,6 +49,7 @@ public final class FileRepositoryService {
     static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_CACHED_DIRECTORIES = 32;
     private static final int MAX_CACHED_ENTRIES = 50_000;
+    private static final int MAX_SEARCHED_ENTRIES = 50_000;
     private static final int MAX_SNAPSHOT_LOAD_ATTEMPTS = 3;
     private static final long MAX_CACHE_AGE_NANOS =
             Duration.ofSeconds(60).toNanos();
@@ -141,6 +144,57 @@ public final class FileRepositoryService {
                 totalPages,
                 totalCount,
                 pageSize);
+    }
+
+    public List<FileRepositoryEntry> search(String query, int limit)
+            throws FileRepositoryException {
+        if (limit <= 0 || limit > 20) {
+            throw new IllegalArgumentException(
+                    "Search limit must be between 1 and 20");
+        }
+        String normalizedQuery = SearchQueryPolicy.normalize(query);
+        if (normalizedQuery == null) {
+            return List.of();
+        }
+        String needle = normalizedQuery.toLowerCase(Locale.ROOT);
+        List<FileRepositoryEntry> matches = new ArrayList<>(limit);
+        ArrayDeque<String> directories = new ArrayDeque<>();
+        directories.add("");
+        int inspectedEntries = 0;
+
+        while (!directories.isEmpty()
+                && matches.size() < limit
+                && inspectedEntries < MAX_SEARCHED_ENTRIES) {
+            ResolvedDirectory directory = paths.resolveExistingDirectory(
+                    directories.removeFirst());
+            for (Candidate candidate : directorySnapshot(directory).candidates()) {
+                FileRepositoryEntry entry = candidate.entry();
+                inspectedEntries++;
+                if (entry.isDirectory()) {
+                    directories.addLast(entry.getPath());
+                }
+                if (matchesSearch(entry, needle)) {
+                    matches.add(entry);
+                    if (matches.size() == limit) {
+                        break;
+                    }
+                }
+                if (inspectedEntries == MAX_SEARCHED_ENTRIES) {
+                    break;
+                }
+            }
+        }
+        return List.copyOf(matches);
+    }
+
+    private static boolean matchesSearch(
+            FileRepositoryEntry entry, String needle) {
+        return entry.getName().toLowerCase(Locale.ROOT).contains(needle)
+                || entry.getDescription().toLowerCase(Locale.ROOT)
+                        .contains(needle)
+                || (!entry.isDirectory()
+                        && entry.getPath().toLowerCase(Locale.ROOT)
+                                .contains(needle));
     }
 
     private DirectorySnapshot directorySnapshot(ResolvedDirectory directory)

@@ -23,6 +23,7 @@ Every mapped request crosses the filters in this order:
 | `/login` | POST | `LoginServlet.doPost` | `UserDAO.authenticateUser` | SELECT | submitted login ID is authentication input only |
 | `/logout` | POST | `LogoutServlet.doPost` | none | none | session |
 | `/dashboard` | GET/HEAD | `DashboardServlet.doGet` | `MaintenanceRecordDAO`, `CustomerDAO` | SELECT | session; dashboard data is shared read data |
+| `/search` | GET/HEAD | `GlobalSearchServlet.doGet` | `CustomerDAO`, `TroubleshootingDAO`, `MeetingRecordDAO`; customer-history and file repositories | SELECT + filesystem reads | authenticated session; shared read data, no query values in logs |
 | `/customers` | GET/HEAD | `CustomersServlet -> CustomerQueryController` | `CustomerDAO`, `CustomerDetailDAO`, `VerticaEosDAO` | SELECT | session; shared customer data |
 | `/customers` | POST | `CustomersServlet -> CustomerCommandController -> CustomerCommandService` | `CustomerDAO`, `CustomerDetailDAO` | SELECT + INSERT/UPDATE | session; no request owner ID |
 | `/maintenance` | GET/HEAD | `MaintenanceServlet.doGet` | `CustomerDAO`, `MaintenanceRecordDAO` | SELECT | session userId for edit authorization |
@@ -32,7 +33,7 @@ Every mapped request crosses the filters in this order:
 | `/comment` | POST | `CommentServlet.doPost` | `MeetingCommentDAO` | INSERT/UPDATE/DELETE | session `userId` written/compared in SQL |
 | `/troubleshooting` | GET/HEAD | `TroubleshootingServlet.doGet` | `TroubleshootingDAO`, `CustomerDAO` | SELECT | session userId for edit authorization |
 | `/troubleshooting` | POST | `TroubleshootingServlet.doPost` | `TroubleshootingDAO` | INSERT/UPDATE/DELETE | session `userId` written/compared in SQL |
-| `/mypage` | GET/HEAD | `MyPageServlet.doGet` | `UserDAO`, `MaintenanceRecordDAO`, `TroubleshootingDAO`, `MonthlyCustomerResponseDAO`, `UserVmHostDAO` | SELECT | session `userId`; no display-name fallback |
+| `/mypage` | GET/HEAD | `MyPageServlet.doGet` | `UserDAO`, `CustomerDAO`, `MaintenanceRecordDAO`, `TroubleshootingDAO`, `MonthlyCustomerResponseDAO`, `UserVmHostDAO` | SELECT | session `userId`; stored user name is used only to match main/sub customer assignments for the read-only work inbox |
 | `/mypage` | POST | `MyPageServlet.doPost` | `UserDAO`, `MonthlyCustomerResponseDAO` | SELECT + INSERT/UPDATE/DELETE | session `userId` only |
 | `/vm-hosts` | GET/HEAD | `UserVmHostServlet.doGet` | `UserVmHostDAO` | SELECT | session `userId` in SQL |
 | `/vm-hosts` | POST | `UserVmHostServlet.doPost` | `UserVmHostDAO` | SELECT + INSERT/UPDATE/DELETE | session `userId` in SQL; request owner ignored |

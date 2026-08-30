@@ -27,6 +27,7 @@ a new role model.
 | `/logout` | POST | Authenticated | Session invalidation and cookie expiry | Yes | Current session |
 | `/logout` | GET | Authenticated | None; 405 with `Allow: POST` | No | None |
 | `/dashboard` | GET | Authenticated | Shared dashboard read | No | None |
+| `/search` | GET | Authenticated | Read-only cross-domain search; response is not cached | No | Shared customer, history, troubleshooting, meeting, and repository data |
 | `/customers` list/detail/edit/add forms and JSON actions | GET | Authenticated | Shared customer read | No | None |
 | `/customers` `add`, `update`, `delete`, `saveDetail` | POST | Authenticated | Customer mutation | Yes | Accepted policy permits all authenticated users; dev read-only still blocks DB writes |
 | `/customer-history` list/add/edit forms | GET | Authenticated | Shared major-work history read | No | All authenticated users may read; no maintenance data is included |
@@ -54,7 +55,7 @@ a new role model.
 | `/file-repository/download` | GET | Authenticated | Attachment-only download | No | Shared repository policy |
 | `/health/*` (`live`, `ready`) | GET | Public | Process liveness or dependency readiness state | No | No paths, credentials, query values, or record counts are exposed |
 | `/admin/pool-status` | GET | Configured administrator IDs | Read-only pool check | No | Exact fail-closed administrator allowlist |
-| `/admin/performance-metrics` | GET | Configured administrator IDs | Aggregate troubleshooting search timing read | No | Numeric aggregates only; no query or customer data |
+| `/admin/performance-metrics` | GET | Configured administrator IDs | Aggregate troubleshooting and global-search timing read | No | Numeric aggregates only; no query or customer data |
 | `/favicon.ico` | GET | Public | Redirect to packaged favicon | No | None |
 | configured error pages | GET/error dispatch | Public | Generic error display | No | None |
 | allowlisted `/resources/`, `/images/`, `/css/`, `/js/`, `/webjars/` assets | GET/HEAD | Public | Static read | No | Extension and normalized-path allowlist |

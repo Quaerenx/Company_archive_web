@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.LongAdder;
 public final class PerformanceMetricsRegistry {
     private static final SearchMetrics SUMMARY_SEARCH = new SearchMetrics();
     private static final SearchMetrics CONTENT_SEARCH = new SearchMetrics();
+    private static final SearchMetrics GLOBAL_SEARCH = new SearchMetrics();
     private static final long SLOW_SEARCH_NANOS = TimeUnit.MILLISECONDS.toNanos(
             positiveLongProperty("frog2.performance.slowSearchMs", 500));
 
@@ -19,6 +20,7 @@ public final class PerformanceMetricsRegistry {
             long requestNanos,
             long sqlNanos) {
         SearchMetrics metrics = switch (operation) {
+            case GLOBAL_SEARCH -> GLOBAL_SEARCH;
             case TROUBLESHOOTING_SUMMARY_SEARCH -> SUMMARY_SEARCH;
             case TROUBLESHOOTING_CONTENT_SEARCH -> CONTENT_SEARCH;
             default -> null;
@@ -31,17 +33,20 @@ public final class PerformanceMetricsRegistry {
     public static Snapshot snapshot() {
         return new Snapshot(
                 SUMMARY_SEARCH.snapshot(),
-                CONTENT_SEARCH.snapshot());
+                CONTENT_SEARCH.snapshot(),
+                GLOBAL_SEARCH.snapshot());
     }
 
     static void resetForTests() {
         SUMMARY_SEARCH.reset();
         CONTENT_SEARCH.reset();
+        GLOBAL_SEARCH.reset();
     }
 
     public record Snapshot(
             SearchSnapshot summarySearch,
-            SearchSnapshot contentSearch) {
+            SearchSnapshot contentSearch,
+            SearchSnapshot globalSearch) {
     }
 
     public record SearchSnapshot(

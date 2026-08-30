@@ -8,6 +8,29 @@ import org.junit.jupiter.api.Test;
 
 class MeetingRecordDAOPaginationTest {
     @Test
+    void globalSearchCoversSummaryAndContentWithLiteralPatterns() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(meetingRow(23L, 1));
+        MeetingRecordDAO dao = new MeetingRecordDAO(jdbc::open);
+
+        var results = dao.searchMeetingRecords(" need [me].*# ", 5);
+
+        assertEquals(1, jdbc.statements.size());
+        assertTrue(jdbc.statements.getFirst().sql.contains(
+                "title ILIKE ? ESCAPE '!'"));
+        assertTrue(jdbc.statements.getFirst().sql.contains(
+                "REGEXP_ILIKE(content, ?)"));
+        assertEquals(
+                "%need [me].*#%",
+                jdbc.statements.getFirst().parameters.get(1));
+        assertEquals(
+                "need\\x{20}\\[me\\]\\.\\*\\#",
+                jdbc.statements.getFirst().parameters.get(4));
+        assertEquals(5, jdbc.statements.getFirst().parameters.get(5));
+        assertEquals(23L, results.getFirst().getMeetingId());
+    }
+
+    @Test
     void aNormalPageUsesOneWindowCountQuery() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(meetingRow(17L, 41));

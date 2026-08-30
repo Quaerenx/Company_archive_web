@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var quickNavInput = document.getElementById('quickNavInput');
     var quickNavResults = document.getElementById('quickNavResults');
     var quickNavEmpty = document.getElementById('quickNavEmpty');
+    var quickNavStatus = document.getElementById('quickNavStatus');
 
     if (!mobileToggle || !primaryNavigation) {
         return;
@@ -197,15 +198,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeQuickNavigation() {
         if (!quickNavOpenButton || !quickNavBackdrop || !quickNavDialog
                 || !quickNavCloseButton || !quickNavInput || !quickNavResults
-                || !quickNavEmpty || !window.Frog2UI) {
+                || !quickNavEmpty || !quickNavStatus || !window.Frog2UI) {
             return;
         }
 
         var dialogController = window.Frog2UI.createDialogController(quickNavDialog);
-        var entries = [];
+        var menuEntries = [];
+        var remoteEntries = [];
         var seen = new Set();
         var visibleEntries = [];
         var activeIndex = -1;
+        var requestVersion = 0;
+        var searchTimer = null;
+        var searchEndpoint = quickNavBackdrop.getAttribute('data-search-url');
 
         primaryNavigation.querySelectorAll('a[href]:not(#logoutLink)').forEach(function(link) {
             var label = link.textContent.replace(/\s+/g, ' ').trim();
@@ -215,12 +220,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             seen.add(key);
-            entries.push({
+            menuEntries.push({
+                category: '메뉴',
                 label: label,
+                description: '',
                 normalizedLabel: label.toLocaleLowerCase('ko-KR'),
                 url: url
             });
         });
+
+        function queryLength(query) {
+            return Array.from(query).length;
+        }
+
+        function setStatus(message) {
+            quickNavStatus.textContent = message || '';
+            quickNavStatus.hidden = !message;
+        }
+
+        function cancelPendingSearch() {
+            requestVersion += 1;
+            if (searchTimer !== null) {
+                window.clearTimeout(searchTimer);
+                searchTimer = null;
+            }
+        }
 
         function setActive(index) {
             if (!visibleEntries.length) {
@@ -242,9 +266,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function renderResults() {
             var query = quickNavInput.value.trim().toLocaleLowerCase('ko-KR');
-            visibleEntries = entries.filter(function(entry) {
+            var matchingMenus = menuEntries.filter(function(entry) {
                 return !query || entry.normalizedLabel.indexOf(query) >= 0;
             });
+            visibleEntries = matchingMenus.concat(remoteEntries);
             quickNavResults.textContent = '';
 
             visibleEntries.forEach(function(entry, index) {
@@ -258,7 +283,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 link.className = 'quick-nav-result-link';
                 link.href = entry.url;
                 link.tabIndex = -1;
-                link.textContent = entry.label;
+
+                var category = document.createElement('span');
+                category.className = 'quick-nav-result-type';
+                category.textContent = entry.category;
+                link.appendChild(category);
+
+                var copy = document.createElement('span');
+                copy.className = 'quick-nav-result-copy';
+                var label = document.createElement('strong');
+                label.className = 'quick-nav-result-label';
+                label.textContent = entry.label;
+                copy.appendChild(label);
+                if (entry.description) {
+                    var description = document.createElement('span');
+                    description.className = 'quick-nav-result-description';
+                    description.textContent = entry.description;
+                    copy.appendChild(description);
+                }
+                link.appendChild(copy);
                 link.addEventListener('mouseenter', function() {
                     setActive(index);
                 });
@@ -270,7 +313,121 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             quickNavEmpty.hidden = visibleEntries.length !== 0;
+            if (!quickNavEmpty.hidden) {
+                quickNavEmpty.textContent = queryLength(query) < 2
+                        ? '2자 이상 입력하면 업무 데이터까지 검색합니다.'
+                        : '일치하는 결과가 없습니다.';
+            }
             setActive(visibleEntries.length ? 0 : -1);
+        }
+
+        function normalizeRemoteEntries(payload) {
+            if (!payload || !Array.isArray(payload.results)) {
+                return [];
+            }
+            return payload.results.filter(function(entry) {
+                return entry
+                        && typeof entry.category === 'string'
+                        && typeof entry.label === 'string'
+                        && typeof entry.url === 'string'
+                        && entry.url.indexOf('/') === 0
+                        && entry.url.indexOf('//') !== 0;
+            }).map(function(entry) {
+                return {
+                    category: entry.category,
+                    label: entry.label,
+                    description: typeof entry.description === 'string'
+                            ? entry.description
+                            : '',
+                    url: entry.url
+                };
+            });
+        }
+
+        function normalizeUnavailableCategories(payload) {
+            if (!payload || !Array.isArray(payload.unavailableCategories)) {
+                return [];
+            }
+            return payload.unavailableCategories.filter(function(category) {
+                return typeof category === 'string' && category.trim();
+            }).map(function(category) {
+                return category.trim();
+            });
+        }
+
+        function runRemoteSearch(query, version) {
+            searchTimer = null;
+            window.fetch(
+                    searchEndpoint + '?q=' + encodeURIComponent(query),
+                    {
+                        credentials: 'same-origin',
+                        headers: {'Accept': 'application/json'}
+                    })
+                    .then(function(response) {
+                        if (!response.ok) {
+                            var error = new Error('Search request failed');
+                            error.status = response.status;
+                            throw error;
+                        }
+                        return response.json();
+                    })
+                    .then(function(payload) {
+                        if (version !== requestVersion
+                                || quickNavInput.value.trim() !== query) {
+                            return;
+                        }
+                        remoteEntries = normalizeRemoteEntries(payload);
+                        var unavailableCategories =
+                                normalizeUnavailableCategories(payload);
+                        var unavailableSuffix = unavailableCategories.length
+                                ? ' · ' + unavailableCategories.join(', ')
+                                        + ' 제외'
+                                : '';
+                        setStatus(remoteEntries.length
+                                ? '업무 데이터 검색 결과 '
+                                        + remoteEntries.length + '건'
+                                        + unavailableSuffix
+                                : unavailableCategories.length
+                                        ? unavailableCategories.join(', ')
+                                                + ' 검색원을 제외하고 일치하는 결과가 없습니다.'
+                                        : '업무 데이터에서 일치하는 결과가 없습니다.');
+                        renderResults();
+                    })
+                    .catch(function(error) {
+                        if (version !== requestVersion) {
+                            return;
+                        }
+                        remoteEntries = [];
+                        setStatus(error && error.status === 401
+                                ? '로그인이 만료되었습니다. 새로고침 후 다시 시도해 주세요.'
+                                : '업무 데이터 검색을 일시적으로 사용할 수 없습니다.');
+                        renderResults();
+                    });
+        }
+
+        function searchInputChanged() {
+            cancelPendingSearch();
+            remoteEntries = [];
+            var query = quickNavInput.value.trim();
+            if (queryLength(query) < 2) {
+                setStatus(query
+                        ? '2자 이상 입력하면 업무 데이터까지 검색합니다.'
+                        : '');
+                renderResults();
+                return;
+            }
+            if (!searchEndpoint || typeof window.fetch !== 'function') {
+                setStatus('이 브라우저에서는 메뉴 검색만 사용할 수 있습니다.');
+                renderResults();
+                return;
+            }
+
+            setStatus('업무 데이터를 검색하는 중입니다…');
+            renderResults();
+            var version = requestVersion;
+            searchTimer = window.setTimeout(function() {
+                runRemoteSearch(query, version);
+            }, 180);
         }
 
         function openQuickNavigation(trigger) {
@@ -294,6 +451,9 @@ document.addEventListener('DOMContentLoaded', function() {
             quickNavOpenButton.setAttribute('aria-expanded', 'true');
             quickNavInput.value = '';
             quickNavInput.setAttribute('aria-expanded', 'true');
+            cancelPendingSearch();
+            remoteEntries = [];
+            setStatus('');
             renderResults();
             dialogController.open(focusReturnTarget);
         }
@@ -308,6 +468,9 @@ document.addEventListener('DOMContentLoaded', function() {
             quickNavOpenButton.setAttribute('aria-expanded', 'false');
             quickNavInput.setAttribute('aria-expanded', 'false');
             quickNavInput.removeAttribute('aria-activedescendant');
+            cancelPendingSearch();
+            remoteEntries = [];
+            setStatus('');
         }
 
         quickNavOpenButton.addEventListener('click', function() {
@@ -326,7 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeQuickNavigation();
             }
         });
-        quickNavInput.addEventListener('input', renderResults);
+        quickNavInput.addEventListener('input', searchInputChanged);
         quickNavInput.addEventListener('keydown', function(event) {
             if (event.key === 'ArrowDown') {
                 event.preventDefault();

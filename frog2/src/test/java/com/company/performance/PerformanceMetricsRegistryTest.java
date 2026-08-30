@@ -27,6 +27,10 @@ class PerformanceMetricsRegistryTest {
                 700_000_000,
                 600_000_000);
         PerformanceMetricsRegistry.record(
+                Operation.GLOBAL_SEARCH,
+                250_000_000,
+                120_000_000);
+        PerformanceMetricsRegistry.record(
                 Operation.NONE,
                 900_000_000,
                 900_000_000);
@@ -41,5 +45,8 @@ class PerformanceMetricsRegistryTest {
         assertEquals(1, snapshot.contentSearch().count());
         assertEquals(1, snapshot.contentSearch().slowCount());
         assertEquals(600.0, snapshot.contentSearch().maxSqlMillis());
+        assertEquals(1, snapshot.globalSearch().count());
+        assertEquals(250.0, snapshot.globalSearch().maxRequestMillis());
+        assertEquals(120.0, snapshot.globalSearch().averageSqlMillis());
     }
 }

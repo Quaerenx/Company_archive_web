@@ -5,10 +5,55 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class MaintenanceRecordDAOPaginationTest {
+    @Test
+    void latestCustomerRecordsUseOneWindowedBatchQuery() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 41L,
+                "customer_name", "Alpha",
+                "inspector_name", "Tester",
+                "inspection_date", Date.valueOf("2026-08-10"),
+                "vertica_version", "23.4",
+                "note", null,
+                "created_at", null,
+                "updated_at", null));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        List<MaintenanceRecordDTO> records =
+                dao.getLatestMaintenanceRecordsByCustomers(
+                        List.of(" Alpha ", "Beta", "Alpha"));
+
+        assertEquals(1, jdbc.statements.size());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "ROW_NUMBER() OVER (PARTITION BY customer_name"));
+        assertTrue(statement.sql.contains("customer_name IN (?, ?)"));
+        assertTrue(statement.sql.contains("WHERE record_rank = 1"));
+        assertEquals("Alpha", statement.parameters.get(1));
+        assertEquals("Beta", statement.parameters.get(2));
+        assertEquals("Alpha", records.getFirst().getCustomerName());
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void emptyLatestCustomerRequestDoesNotOpenAConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        assertTrue(dao.getLatestMaintenanceRecordsByCustomers(
+                List.of(" ")).isEmpty());
+        assertEquals(0, jdbc.openCount);
+    }
+
     @Test
     void customerHistoryUsesOneBoundedQueryWithStableOrder() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
