@@ -75,6 +75,14 @@ class DevelopmentServerSmokeTest {
     @Test
     @Order(1)
     void loginPageAndStaticAssetsAreHealthy() throws Exception {
+        HttpResponse<String> live = get("health/live", "application/json");
+        assertEquals(200, live.statusCode());
+        assertTrue(live.body().contains("\"status\":\"ok\""));
+
+        HttpResponse<String> ready = get("health/ready", "application/json");
+        assertEquals(200, ready.statusCode());
+        assertTrue(ready.body().contains("\"status\":\"ready\""));
+
         HttpResponse<String> login = get("login", "text/html");
 
         assertEquals(200, login.statusCode());

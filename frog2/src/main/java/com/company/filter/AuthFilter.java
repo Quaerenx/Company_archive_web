@@ -28,6 +28,7 @@ public class AuthFilter implements Filter {
         String path = RequestPaths.relativePath(request);
         boolean authenticated = SessionPrincipal.expose(request) != null;
         boolean open = RequestPaths.isLoginPath(path)
+                || RequestPaths.isHealthPath(path)
                 || RequestPaths.isPublicStaticRequest(request)
                 || RequestPaths.isErrorPage(path);
         if (open || authenticated) {

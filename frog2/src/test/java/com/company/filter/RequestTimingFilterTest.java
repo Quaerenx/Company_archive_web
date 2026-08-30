@@ -47,7 +47,9 @@ class RequestTimingFilterTest {
         assertEquals(25_000_000, event.elapsedNanos());
         assertEquals(1, event.sqlCount());
         assertEquals(7_000_000, event.sqlDurationNanos());
-        assertEquals("troubleshooting.summarySearch", event.operation());
+        assertEquals(
+                RequestPerformanceContext.Operation.TROUBLESHOOTING_SUMMARY_SEARCH,
+                event.operation());
         assertEquals(1, event.dbAcquisitionCount());
         assertEquals(3_000_000, event.dbAcquisitionDurationNanos());
         assertEquals(0, event.fileSnapshotCacheHits());

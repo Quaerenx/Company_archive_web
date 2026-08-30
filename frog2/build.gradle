@@ -1,5 +1,6 @@
 import java.nio.file.Path
 import java.security.MessageDigest
+import java.net.URI
 import java.util.zip.ZipFile
 
 plugins {
@@ -184,31 +185,62 @@ tasks.register('verifyVerticaDriver') {
 }
 
 def packagedWar = tasks.named('war')
-def verifyDevelopmentDeployment = tasks.register(
-        'verifyDevelopmentDeployment') {
-    description = 'Verifies that the development deployment matches the current WAR.'
+def verifyE2eDeployment = tasks.register(
+        'verifyE2eDeployment') {
+    description = 'Verifies that the selected E2E deployment matches the current WAR.'
     group = 'verification'
     dependsOn packagedWar
     inputs.file(packagedWar.flatMap { it.archiveFile })
     outputs.upToDateWhen { false }
     doLast {
+        URI targetUri = URI.create(providers.systemProperty(
+                'frog2.e2e.baseUrl')
+                .getOrElse('http://127.0.0.1:18081/frog2/'))
+        String targetHost = targetUri.host == null
+                ? '' : targetUri.host.toLowerCase(Locale.ROOT)
+        if (targetUri.scheme != 'http'
+                || !['127.0.0.1', 'localhost'].contains(targetHost)
+                || targetUri.userInfo != null
+                || targetUri.rawQuery != null
+                || targetUri.rawFragment != null
+                || targetUri.path != '/frog2/') {
+            throw new GradleException(
+                    'E2E base URL must be the approved loopback application URL')
+        }
+        Map<String, Map<String, String>> allowedTargets = [
+                '18081': [
+                        base: '/opt/tomcat-dev',
+                        war: '/opt/tomcat-dev/webapps/frog2.war'],
+                '8080': [
+                        base: '/opt/tomcat-prod-base',
+                        war: '/opt/tomcat-prod-base/webapps/frog2.war']]
+        Map<String, String> target = allowedTargets[
+                Integer.toString(targetUri.port)]
+        if (target == null) {
+            throw new GradleException(
+                    'E2E deployment verification supports only ports 18081 and 8080')
+        }
         String deployedPath = providers.systemProperty(
                 'frog2.e2e.deployedWar')
-                .getOrElse('/opt/tomcat-dev/webapps/frog2.war')
-        File configuredDevelopmentBase = file('/opt/tomcat-dev')
-        Path developmentBasePath = configuredDevelopmentBase.toPath()
-                .toAbsolutePath().normalize()
-        Path canonicalDevelopmentBase = configuredDevelopmentBase
-                .canonicalFile.toPath()
-        if (developmentBasePath != canonicalDevelopmentBase) {
+                .getOrElse(target.war)
+        if (deployedPath != target.war) {
             throw new GradleException(
-                    'Development CATALINA_BASE must not be a symbolic link or aliased path')
+                    'E2E WAR path must match the selected server port')
+        }
+        File configuredBase = file(target.base)
+        Path configuredBasePath = configuredBase.toPath()
+                .toAbsolutePath().normalize()
+        Path canonicalBase = configuredBase
+                .canonicalFile.toPath()
+        if (configuredBasePath != canonicalBase) {
+            throw new GradleException(
+                    'E2E CATALINA_BASE must not be a symbolic link or aliased path')
         }
 
         Path configuredWarPath = Path.of(deployedPath)
         if (!configuredWarPath.isAbsolute()) {
             throw new GradleException(
-                    'Development WAR path must be absolute')
+                    'E2E WAR path must be absolute')
         }
         File configuredWar = configuredWarPath.toFile()
         Path normalizedWarPath = configuredWarPath
@@ -217,19 +249,19 @@ def verifyDevelopmentDeployment = tasks.register(
         if (configuredWarPath != normalizedWarPath
                 || normalizedWarPath != canonicalWarPath) {
             throw new GradleException(
-                    'Development WAR path must not contain symbolic links or aliases')
+                    'E2E WAR path must not contain symbolic links or aliases')
         }
-        if (canonicalWarPath == canonicalDevelopmentBase
-                || !canonicalWarPath.startsWith(canonicalDevelopmentBase)
-                || !canonicalWarPath.fileName.toString().endsWith('.war')) {
+        if (canonicalWarPath == canonicalBase
+                || !canonicalWarPath.startsWith(canonicalBase)
+                || canonicalWarPath != Path.of(target.war)) {
             throw new GradleException(
-                    'Development WAR must be a .war file inside /opt/tomcat-dev')
+                    'E2E WAR must be the approved deployment artifact')
         }
 
         File deployedWar = canonicalWarPath.toFile()
         if (!deployedWar.isFile()) {
             throw new GradleException(
-                    "Development WAR is unavailable: ${deployedWar}")
+                    "E2E WAR is unavailable: ${deployedWar}")
         }
 
         File currentWar = packagedWar.get()
@@ -238,18 +270,18 @@ def verifyDevelopmentDeployment = tasks.register(
         String deployedHash = sha256(deployedWar)
         if (currentHash != deployedHash) {
             throw new GradleException(
-                    'Development deployment does not match the current build. '
+                    'E2E deployment does not match the current build. '
                             + "built=${currentHash}, deployed=${deployedHash}")
         }
     }
 }
 
 tasks.named('e2eSmoke') {
-    dependsOn verifyDevelopmentDeployment
+    dependsOn verifyE2eDeployment
 }
 
 tasks.named('e2eAuthenticatedSmoke') {
-    dependsOn verifyDevelopmentDeployment
+    dependsOn verifyE2eDeployment
 }
 
 tasks.named('classes') {

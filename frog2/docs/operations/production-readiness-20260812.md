@@ -1,5 +1,11 @@
 # Archive production runtime readiness — 2026-08-12
 
+> Historical snapshot: this document records the 2026-08-12 migration decision
+> and is no longer the current runtime runbook. Both environments now use Tomcat
+> 10.1.59 with separate Catalina bases. Use
+> [`current-runtime-baseline.md`](current-runtime-baseline.md) and
+> [`release-automation.md`](release-automation.md) for current operations.
+
 ## Decision
 
 **Conditional NO-GO for production change today.** Development is already

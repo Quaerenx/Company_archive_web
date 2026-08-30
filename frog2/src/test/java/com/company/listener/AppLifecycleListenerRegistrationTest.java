@@ -39,6 +39,20 @@ class AppLifecycleListenerRegistrationTest {
         assertEquals(1, occurrences(webXml, "<url-pattern>/admin/pool-status</url-pattern>"));
     }
 
+    @Test
+    void operationalEndpointsUseExplicitWebXmlRegistrations() throws Exception {
+        String webXml = Files.readString(WEB_XML);
+
+        assertEquals(1, occurrences(webXml,
+                "<servlet-class>com.company.controller.HealthServlet</servlet-class>"));
+        assertEquals(1, occurrences(webXml,
+                "<url-pattern>/health/*</url-pattern>"));
+        assertEquals(1, occurrences(webXml,
+                "<servlet-class>com.company.controller.PerformanceMetricsServlet</servlet-class>"));
+        assertEquals(1, occurrences(webXml,
+                "<url-pattern>/admin/performance-metrics</url-pattern>"));
+    }
+
     private static int occurrences(String source, String target) {
         int count = 0;
         int offset = 0;

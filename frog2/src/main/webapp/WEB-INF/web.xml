@@ -123,6 +123,24 @@
     </filter-mapping>
 
     <servlet>
+        <servlet-name>HealthServlet</servlet-name>
+        <servlet-class>com.company.controller.HealthServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>HealthServlet</servlet-name>
+        <url-pattern>/health/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PerformanceMetricsServlet</servlet-name>
+        <servlet-class>com.company.controller.PerformanceMetricsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PerformanceMetricsServlet</servlet-name>
+        <url-pattern>/admin/performance-metrics</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>LoginServlet</servlet-name>
         <servlet-class>com.company.controller.LoginServlet</servlet-class>
     </servlet>

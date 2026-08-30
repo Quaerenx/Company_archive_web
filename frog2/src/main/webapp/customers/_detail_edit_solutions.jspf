@@ -1,0 +1,46 @@
+            <!-- 외부 솔루션 섹션 -->
+            <section id="customerDetailSolutions"
+                     class="detail-section"
+                     aria-labelledby="customerDetailSolutionsTitle">
+                <h2 id="customerDetailSolutionsTitle" class="detail-section-title">
+                    <i class="fas fa-puzzle-piece"></i>
+                    외부 솔루션
+                </h2>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label class="detail-label" for="etlTool">ETL</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="etlTool" name="etlTool"
+                                   value="<c:out value="${not empty customerDetail.etlTool ? customerDetail.etlTool : customer.etlTool}" />"
+                                   placeholder="예: Informatica, DataStage">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="biTool">BI</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="biTool" name="biTool"
+                                   value="<c:out value="${not empty customerDetail.biTool ? customerDetail.biTool : customer.biTool}" />"
+                                   placeholder="예: Tableau, PowerBI">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="dbEncryption">DB암호화</label>
+                        <div class="detail-value">
+                            <select class="form-control" id="dbEncryption" name="dbEncryption">
+                                <option value="">선택하세요</option>
+                                <option value="적용" ${(not empty customerDetail.dbEncryption and customerDetail.dbEncryption == '적용') or (empty customerDetail.dbEncryption and customer.dbEncryption == '적용') ? 'selected' : ''}>적용</option>
+                                <option value="미적용" ${(not empty customerDetail.dbEncryption and customerDetail.dbEncryption == '미적용') or (empty customerDetail.dbEncryption and customer.dbEncryption == '미적용') ? 'selected' : ''}>미적용</option>
+                                <option value="부분적용" ${(not empty customerDetail.dbEncryption and customerDetail.dbEncryption == '부분적용') or (empty customerDetail.dbEncryption and customer.dbEncryption == '부분적용') ? 'selected' : ''}>부분적용</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="cdcTool">CDC</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="cdcTool" name="cdcTool"
+                                   value="<c:out value="${not empty customerDetail.cdcTool ? customerDetail.cdcTool : customer.cdcTool}" />"
+                                   placeholder="예: Oracle GoldenGate">
+                        </div>
+                    </div>
+                </div>
+            </section>

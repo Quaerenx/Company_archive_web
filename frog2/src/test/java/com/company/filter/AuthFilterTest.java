@@ -103,6 +103,23 @@ class AuthFilterTest {
     }
 
     @Test
+    void healthEndpointsRemainAvailableWithoutAuthentication()
+            throws Exception {
+        for (String path : new String[] {
+                "/frog2/health/live", "/frog2/health/ready"}) {
+            RequestFixture request = new RequestFixture("GET", path, null);
+            ResponseFixture response = new ResponseFixture();
+            AtomicInteger calls = new AtomicInteger();
+
+            new AuthFilter().doFilter(
+                    request.proxy(), response.proxy(), countingChain(calls));
+
+            assertEquals(1, calls.get(), path);
+            assertEquals(0, response.redirectCalls.get(), path);
+        }
+    }
+
+    @Test
     void authenticatedRequestContinues() throws Exception {
         SessionFixture session = new SessionFixture();
         UserDTO user = new UserDTO("tester", "", "Tester", "QA");

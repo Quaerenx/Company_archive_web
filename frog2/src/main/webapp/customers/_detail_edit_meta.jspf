@@ -1,0 +1,97 @@
+            <!-- 메타정보 섹션 -->
+            <section id="customerDetailMeta"
+                     class="detail-section"
+                     aria-labelledby="customerDetailMetaTitle">
+                <h2 id="customerDetailMetaTitle" class="detail-section-title">
+                    <i class="fas fa-info-circle"></i>
+                    기본·담당자 정보
+                </h2>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label class="detail-label" for="customerName">고객사</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control readonly" id="customerName" name="customerName"
+                                   value="<c:out value="${not empty customerDetail.customerName ? customerDetail.customerName : customer.customerName}" />"
+                                   readonly>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="systemName">시스템명</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="systemName" name="systemName"
+                                   value="<c:out value="${not empty customerDetail.systemName ? customerDetail.systemName : ''}" />"
+                                   placeholder="시스템명을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="customerManager">고객사 담당자</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="customerManager" name="customerManager"
+                                   value="<c:out value="${not empty customerDetail.customerManager ? customerDetail.customerManager : ''}" />"
+                                   placeholder="고객사 담당자를 입력하세요">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="siCompany">담당 SI</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="siCompany" name="siCompany"
+                                   value="<c:out value="${not empty customerDetail.siCompany ? customerDetail.siCompany : ''}" />"
+                                   placeholder="SI 회사명을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="siManager">SI 담당자</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="siManager" name="siManager"
+                                   value="<c:out value="${not empty customerDetail.siManager ? customerDetail.siManager : ''}" />"
+                                   placeholder="SI 담당자를 입력하세요">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="creator">작성자</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="creator" name="creator"
+                                   value="<c:out value="${not empty customerDetail.creator ? customerDetail.creator : ''}" />"
+                                   placeholder="작성자를 입력하세요">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="createDate">작성일자</label>
+                        <div class="detail-value">
+                            <input type="date" class="form-control" id="createDate" name="createDate"
+                                   value="<c:if test='${not empty customerDetail.createDate}'><fmt:formatDate value='${customerDetail.createDate}' pattern='yyyy-MM-dd' /></c:if>">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="mainManager">담당자 정</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="mainManager" name="mainManager"
+                                   value="<c:out value="${not empty customerDetail.mainManager ? customerDetail.mainManager : customer.managerName}" />"
+                                   placeholder="주 담당자를 입력하세요">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="subManager">담당자 부</label>
+                        <div class="detail-value">
+                            <input type="text" class="form-control" id="subManager" name="subManager"
+                                   value="<c:out value="${not empty customerDetail.subManager ? customerDetail.subManager : customer.subManagerName}" />"
+                                   placeholder="부 담당자를 입력하세요">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="installDate">설치일자</label>
+                        <div class="detail-value">
+                            <input type="date" class="form-control" id="installDate" name="installDate"
+                                   value="<c:if test='${not empty customerDetail.installDate}'><fmt:formatDate value='${customerDetail.installDate}' pattern='yyyy-MM-dd' /></c:if>">
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label" for="introductionYear">도입년도</label>
+                        <div class="detail-value">
+                            <input type="number" class="form-control" id="introductionYear" name="introductionYear"
+                                   value="<c:out value="${not empty customerDetail.introductionYear ? customerDetail.introductionYear : customer.firstIntroductionYear}" />"
+                                   min="2000" placeholder="YYYY">
+                        </div>
+                    </div>
+                </div>
+            </section>

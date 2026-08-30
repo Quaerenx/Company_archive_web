@@ -6,6 +6,8 @@ import java.util.Set;
 
 public final class RequestPaths {
     private static final Set<String> LOGIN_PATHS = Set.of("/login", "/login.jsp");
+    private static final Set<String> HEALTH_PATHS =
+            Set.of("/health/live", "/health/ready");
     private static final Set<String> FAVICON_PATHS =
             Set.of("/favicon.ico", "/favicon.png", "/favicon.svg");
     private static final Set<String> BRAND_ASSET_PATHS =
@@ -80,5 +82,9 @@ public final class RequestPaths {
 
     public static boolean isLoginPath(String path) {
         return LOGIN_PATHS.contains(path);
+    }
+
+    public static boolean isHealthPath(String path) {
+        return HEALTH_PATHS.contains(path);
     }
 }

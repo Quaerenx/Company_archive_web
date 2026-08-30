@@ -1,5 +1,6 @@
 package com.company.filerepo;
 
+import com.company.filerepo.FileRepositoryCursorCodec.SortKey;
 import com.company.filerepo.FileRepositoryFilePolicy.ValidatedFile;
 import com.company.filerepo.FileRepositoryPathPolicy.ResolvedDirectory;
 import com.company.performance.RequestPerformanceContext;
@@ -15,14 +16,10 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -48,7 +45,6 @@ public final class FileRepositoryService {
     private static final String QUARANTINE_DIRECTORY = ".frog2-quarantine";
     private static final int MAX_METADATA_BYTES = 8 * 1024;
     static final int DEFAULT_PAGE_SIZE = 50;
-    private static final int MAX_CURSOR_BYTES = 2048;
     private static final int MAX_CACHED_DIRECTORIES = 32;
     private static final int MAX_CACHED_ENTRIES = 50_000;
     private static final int MAX_SNAPSHOT_LOAD_ATTEMPTS = 3;
@@ -63,10 +59,6 @@ public final class FileRepositoryService {
             "^\\.frog2-(?:upload|meta)-.+\\.tmp$");
     private static final Pattern POTENTIAL_MANAGED_FILE = Pattern.compile(
             "^\\.frog2-.+\\.(?:data|meta)$");
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)
-            .withZone(ZoneId.systemDefault());
-
     private final FileRepositoryPathPolicy paths;
     private final FileRepositoryFilePolicy files = new FileRepositoryFilePolicy();
     private static final Object SNAPSHOT_CACHE_LOCK = new Object();
@@ -106,7 +98,7 @@ public final class FileRepositoryService {
             throw new IllegalArgumentException("Page size must be between 1 and 100");
         }
         ResolvedDirectory directory = paths.resolveExistingDirectory(rawPath);
-        SortKey cursor = decodeCursor(rawCursor);
+        SortKey cursor = FileRepositoryCursorCodec.decode(rawCursor);
         DirectorySnapshot snapshot = directorySnapshot(directory);
         List<Candidate> candidates = snapshot.candidates();
         int startIndex = firstCandidateAfter(candidates, cursor);
@@ -122,11 +114,12 @@ public final class FileRepositoryService {
                 .map(Candidate::entry)
                 .toList();
         String nextCursor = hasNext && !visible.isEmpty()
-                ? encodeCursor(visible.getLast().key())
+                ? FileRepositoryCursorCodec.encode(visible.getLast().key())
                 : null;
         int previousStartIndex = Math.max(0, startIndex - pageSize);
         String previousCursor = hasPrevious && previousStartIndex > 0
-                ? encodeCursor(candidates.get(previousStartIndex - 1).key())
+                ? FileRepositoryCursorCodec.encode(
+                        candidates.get(previousStartIndex - 1).key())
                 : null;
         int totalCount = candidates.size();
         int totalPages = Math.max(1, (totalCount + pageSize - 1) / pageSize);
@@ -139,7 +132,7 @@ public final class FileRepositoryService {
                 snapshot.directoryCount(),
                 snapshot.fileCount(),
                 snapshot.invalidEntryCount(),
-                formatSize(snapshot.totalSize()),
+                FileRepositoryPresentation.formatSize(snapshot.totalSize()),
                 previousCursor,
                 nextCursor,
                 hasPrevious,
@@ -652,7 +645,7 @@ public final class FileRepositoryService {
                 return new EntryInspection(
                         new FileRepositoryEntry(
                                 true, null, serverName, childPath,
-                                DATE_FORMAT.format(Files.getLastModifiedTime(child).toInstant()),
+                                FileRepositoryPresentation.modifiedText(child),
                                 0, "-", "📁", "폴더"),
                         null);
             }
@@ -679,7 +672,7 @@ public final class FileRepositoryService {
             Path dataPath = paths.resolveManagedFile(directory, storageId, DATA_SUFFIX);
             StoredMetadata metadata = readMetadata(child, dataPath, storageId);
             return new EntryInspection(
-                    fileEntry(
+                    FileRepositoryPresentation.fileEntry(
                             directory.relativePath(),
                             storageId,
                             dataPath,
@@ -707,81 +700,6 @@ public final class FileRepositoryService {
                 entry.getName().toLowerCase(Locale.ROOT),
                 entry.getName(),
                 entry.isDirectory() ? entry.getPath() : entry.getId());
-    }
-
-    private static String encodeCursor(SortKey key) {
-        String value = key.kind() + "\u0000" + key.foldedName() + "\u0000"
-                + key.name() + "\u0000" + key.uniqueId();
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(
-                value.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static SortKey decodeCursor(String rawCursor)
-            throws FileRepositoryException {
-        if (rawCursor == null || rawCursor.isBlank()) {
-            return null;
-        }
-        try {
-            byte[] decoded = Base64.getUrlDecoder().decode(rawCursor.trim());
-            if (decoded.length == 0 || decoded.length > MAX_CURSOR_BYTES) {
-                throw new IllegalArgumentException();
-            }
-            String[] parts = new String(decoded, StandardCharsets.UTF_8)
-                    .split("\u0000", -1);
-            if (parts.length != 4) {
-                throw new IllegalArgumentException();
-            }
-            int kind = Integer.parseInt(parts[0]);
-            if ((kind != 0 && kind != 1)
-                    || parts[1].isEmpty()
-                    || parts[2].isEmpty()
-                    || parts[3].isEmpty()) {
-                throw new IllegalArgumentException();
-            }
-            return new SortKey(kind, parts[1], parts[2], parts[3]);
-        } catch (IllegalArgumentException exception) {
-            throw new FileRepositoryException(
-                    400, "invalid_cursor", "Repository cursor is invalid");
-        }
-    }
-
-    private FileRepositoryEntry fileEntry(
-            String relativePath, String storageId, Path dataPath, StoredMetadata metadata) throws IOException {
-        String extension = extension(metadata.originalName());
-        String icon = "📄";
-        String description = "파일";
-        if (SetGroups.IMAGES.contains(extension)) {
-            icon = "🖼️";
-            description = "이미지 파일";
-        } else if ("pdf".equals(extension)) {
-            icon = "📋";
-            description = "PDF 문서";
-        } else if (SetGroups.DOCUMENTS.contains(extension)) {
-            icon = "📝";
-            description = "문서 파일";
-        } else if (SetGroups.SPREADSHEETS.contains(extension)) {
-            icon = "📊";
-            description = "스프레드시트";
-        } else if (SetGroups.ARCHIVES.contains(extension)) {
-            icon = "📦";
-            description = "압축 파일";
-        } else if ("rpm".equals(extension)) {
-            icon = "📦";
-            description = "RPM 패키지";
-        } else if (SetGroups.TEXT.contains(extension)) {
-            icon = "📃";
-            description = "텍스트 파일";
-        }
-        return new FileRepositoryEntry(
-                false,
-                storageId,
-                metadata.originalName(),
-                relativePath,
-                DATE_FORMAT.format(Files.getLastModifiedTime(dataPath).toInstant()),
-                metadata.size(),
-                formatSize(metadata.size()),
-                icon,
-                description);
     }
 
     StoredMetadata readMetadata(Path metadataPath, Path dataPath, String expectedId)
@@ -909,25 +827,6 @@ public final class FileRepositoryService {
         return result;
     }
 
-    private static String extension(String name) {
-        int dot = name.lastIndexOf('.');
-        return dot < 0 ? "" : name.substring(dot + 1).toLowerCase(Locale.ROOT);
-    }
-
-    private static String formatSize(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        }
-        String[] units = { "KB", "MB", "GB", "TB" };
-        double value = bytes;
-        int unit = -1;
-        do {
-            value /= 1024.0;
-            unit++;
-        } while (value >= 1024 && unit < units.length - 1);
-        return String.format(Locale.ROOT, "%.1f %s", value, units[unit]);
-    }
-
     private record CopyResult(long size, byte[] prefix) {
     }
 
@@ -982,35 +881,6 @@ public final class FileRepositoryService {
     @FunctionalInterface
     interface SnapshotScanObserver {
         void beforeScan(Path path);
-    }
-
-    private record SortKey(
-            int kind, String foldedName, String name, String uniqueId)
-            implements Comparable<SortKey> {
-        @Override
-        public int compareTo(SortKey other) {
-            int comparison = Integer.compare(kind, other.kind);
-            if (comparison == 0) {
-                comparison = foldedName.compareTo(other.foldedName);
-            }
-            if (comparison == 0) {
-                comparison = name.compareTo(other.name);
-            }
-            return comparison == 0
-                    ? uniqueId.compareTo(other.uniqueId)
-                    : comparison;
-        }
-    }
-
-    private static final class SetGroups {
-        private static final java.util.Set<String> IMAGES = java.util.Set.of("jpg", "jpeg", "png", "gif");
-        private static final java.util.Set<String> DOCUMENTS = java.util.Set.of("doc", "docx", "ppt", "pptx");
-        private static final java.util.Set<String> SPREADSHEETS = java.util.Set.of("xls", "xlsx", "csv");
-        private static final java.util.Set<String> ARCHIVES = java.util.Set.of("zip", "7z", "rar", "gz", "tar");
-        private static final java.util.Set<String> TEXT = java.util.Set.of("txt", "log");
-
-        private SetGroups() {
-        }
     }
 
     public record StoredFile(String relativePath, String id, String originalName, long size) {

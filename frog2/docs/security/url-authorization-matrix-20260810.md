@@ -1,13 +1,14 @@
 # Archive URL authorization matrix
 
 Status: verified against `WEB-INF/web.xml`, filters, and Servlet handlers on
-2026-08-20. This document records the accepted behavior; it does not introduce
+2026-08-30. This document records the accepted behavior; it does not introduce
 a new role model.
 
 ## Global rules
 
-- `AuthFilter` allows only `/login`, `/login.jsp`, configured error pages, and
-  GET/HEAD requests for allowlisted static assets without authentication.
+- `AuthFilter` allows only `/login`, `/login.jsp`, `/health/live`,
+  `/health/ready`, configured error pages, and GET/HEAD requests for allowlisted
+  static assets without authentication.
 - All other routes require a typed `UserDTO` session principal.
 - `CsrfFilter` requires the session CSRF token for every method except GET,
   HEAD, and OPTIONS. Unsupported methods are still rejected by the target
@@ -51,7 +52,9 @@ a new role model.
 | `/file-repository/upload` | POST | Authenticated | File upload | Yes | Shared repository policy; no delete API |
 | `/file-repository/import` | POST | Configured administrator IDs | Index server-copied files | Yes | Exact fail-closed administrator allowlist; current folder and safe descendants only |
 | `/file-repository/download` | GET | Authenticated | Attachment-only download | No | Shared repository policy |
+| `/health/*` (`live`, `ready`) | GET | Public | Process liveness or dependency readiness state | No | No paths, credentials, query values, or record counts are exposed |
 | `/admin/pool-status` | GET | Configured administrator IDs | Read-only pool check | No | Exact fail-closed administrator allowlist |
+| `/admin/performance-metrics` | GET | Configured administrator IDs | Aggregate troubleshooting search timing read | No | Numeric aggregates only; no query or customer data |
 | `/favicon.ico` | GET | Public | Redirect to packaged favicon | No | None |
 | configured error pages | GET/error dispatch | Public | Generic error display | No | None |
 | allowlisted `/resources/`, `/images/`, `/css/`, `/js/`, `/webjars/` assets | GET/HEAD | Public | Static read | No | Extension and normalized-path allowlist |

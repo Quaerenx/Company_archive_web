@@ -9,34 +9,38 @@ import org.junit.jupiter.api.Test;
 
 class ReleaseVerificationBuildContractTest {
     @Test
-    void e2eTasksRequireTheBuiltAndDevelopmentWarToMatch()
+    void e2eTasksRequireTheBuiltAndSelectedServerWarToMatch()
             throws Exception {
         String build = Files.readString(Path.of("build.gradle"));
 
         assertTrue(build.contains(
-                "tasks.register(\n        'verifyDevelopmentDeployment')"));
+                "tasks.register(\n        'verifyE2eDeployment')"));
         assertTrue(build.contains(
                 "'/opt/tomcat-dev/webapps/frog2.war'"));
         assertTrue(build.contains(
-                "File configuredDevelopmentBase = file('/opt/tomcat-dev')"));
+                "'/opt/tomcat-prod-base/webapps/frog2.war'"));
+        assertTrue(build.contains(
+                "'E2E base URL must be the approved loopback application URL'"));
+        assertTrue(build.contains(
+                "!['127.0.0.1', 'localhost'].contains(targetHost)"));
         assertTrue(build.contains(
                 "if (!configuredWarPath.isAbsolute())"));
         assertTrue(build.contains(
                 "if (configuredWarPath != normalizedWarPath\n"
                         + "                || normalizedWarPath != canonicalWarPath)"));
         assertTrue(build.contains(
-                "!canonicalWarPath.startsWith(canonicalDevelopmentBase)"));
+                "!canonicalWarPath.startsWith(canonicalBase)"));
         assertTrue(build.contains(
-                "'Development WAR must be a .war file inside /opt/tomcat-dev'"));
+                "'E2E WAR must be the approved deployment artifact'"));
         assertTrue(build.contains(
-                "'Development WAR path must not contain symbolic links or aliases'"));
+                "'E2E WAR path must not contain symbolic links or aliases'"));
         assertFalse(build.contains(
                 "'/opt/tomcat/webapps/frog2.war'"));
         assertTrue(build.contains(
                 "tasks.named('e2eSmoke') {\n"
-                        + "    dependsOn verifyDevelopmentDeployment"));
+                        + "    dependsOn verifyE2eDeployment"));
         assertTrue(build.contains(
                 "tasks.named('e2eAuthenticatedSmoke') {\n"
-                        + "    dependsOn verifyDevelopmentDeployment"));
+                        + "    dependsOn verifyE2eDeployment"));
     }
 }

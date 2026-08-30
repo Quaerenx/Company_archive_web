@@ -24,6 +24,18 @@ bounded test window; development and test environments remain read-only.
 everyone unless the authenticated stable user ID is listed in
 `frog2.adminUserIds` (or `FROG2_ADMIN_USER_IDS`). Do not put passwords or other
 secrets in that list.
+The same administrator policy protects `/admin/performance-metrics`, which
+reports aggregate troubleshooting search latency without query text or customer
+data. Aggregates cover the current application process and reset on restart. Its
+slow-search threshold defaults to 500 ms and may be changed with:
+
+```text
+-Dfrog2.performance.slowSearchMs=500
+```
+
+`/health/live` and `/health/ready` are public operational probes. Readiness
+reports only component up/down state and must not be used as a source of secrets
+or detailed diagnostics.
 
 ## Reproducible verification
 

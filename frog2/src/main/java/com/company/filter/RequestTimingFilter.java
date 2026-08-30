@@ -2,6 +2,7 @@ package com.company.filter;
 
 import com.company.performance.RequestPerformanceContext;
 import com.company.performance.RequestPerformanceContext.Snapshot;
+import com.company.performance.PerformanceMetricsRegistry;
 import com.company.web.RequestPaths;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -33,7 +34,7 @@ public final class RequestTimingFilter implements Filter {
         this(
                 System::nanoTime,
                 positiveLongProperty("frog2.performance.slowRequestMs", 500),
-                RequestTimingFilter::writeLog);
+                RequestTimingFilter::recordAndWriteLog);
     }
 
     RequestTimingFilter(
@@ -80,7 +81,7 @@ public final class RequestTimingFilter implements Filter {
                         performance.sqlCount(),
                         performance.sqlDurationNanos(),
                         performance.maxSqlNanos(),
-                        performance.operation().logValue(),
+                        performance.operation(),
                         performance.dbAcquisitionCount(),
                         performance.dbAcquisitionDurationNanos(),
                         performance.maxDbAcquisitionNanos(),
@@ -116,7 +117,7 @@ public final class RequestTimingFilter implements Filter {
                 event.path(),
                 event.status(),
                 millis(event.elapsedNanos()),
-                event.operation(),
+                event.operation().logValue(),
                 event.sqlCount(),
                 millis(event.sqlDurationNanos()),
                 millis(event.maxSqlNanos()),
@@ -140,6 +141,14 @@ public final class RequestTimingFilter implements Filter {
         } else {
             logger.info(message, values);
         }
+    }
+
+    private static void recordAndWriteLog(RequestEvent event) {
+        PerformanceMetricsRegistry.record(
+                event.operation(),
+                event.elapsedNanos(),
+                event.sqlDurationNanos());
+        writeLog(event);
     }
 
     private static String safePath(String path) {
@@ -192,7 +201,7 @@ public final class RequestTimingFilter implements Filter {
             int sqlCount,
             long sqlDurationNanos,
             long maxSqlNanos,
-            String operation,
+            RequestPerformanceContext.Operation operation,
             int dbAcquisitionCount,
             long dbAcquisitionDurationNanos,
             long maxDbAcquisitionNanos,

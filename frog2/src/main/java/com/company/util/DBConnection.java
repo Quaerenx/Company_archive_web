@@ -203,6 +203,38 @@ public class DBConnection {
             pool.getThreadsAwaitingConnection()
         );
     }
+
+    public static PoolSnapshot getPoolSnapshot() {
+        HikariDataSource currentDataSource = DATA_SOURCE.get();
+        if (currentDataSource == null || currentDataSource.isClosed()) {
+            return PoolSnapshot.unavailable();
+        }
+        HikariPoolMXBean pool = currentDataSource.getHikariPoolMXBean();
+        if (pool == null) {
+            return PoolSnapshot.unavailable();
+        }
+        return new PoolSnapshot(
+                true,
+                pool.getActiveConnections(),
+                pool.getIdleConnections(),
+                pool.getTotalConnections(),
+                pool.getThreadsAwaitingConnection());
+    }
+
+    public record PoolSnapshot(
+            boolean available,
+            int active,
+            int idle,
+            int total,
+            int waiting) {
+        public static PoolSnapshot unavailable() {
+            return new PoolSnapshot(false, 0, 0, 0, 0);
+        }
+
+        public boolean ready() {
+            return available && total > 0;
+        }
+    }
     
     /**
      * 애플리케이션 종료 시 Connection Pool 정리

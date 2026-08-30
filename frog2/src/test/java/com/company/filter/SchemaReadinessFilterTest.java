@@ -122,8 +122,11 @@ class SchemaReadinessFilterTest {
                 {"GET", "/frog2/resources/css/base.css"},
                 {"GET", "/frog2/error/503.jsp"},
                 {"GET", "/frog2/file-repository"},
+                {"GET", "/frog2/health/live"},
+                {"GET", "/frog2/health/ready"},
                 {"POST", "/frog2/logout"},
                 {"GET", "/frog2/admin/pool-status"},
+                {"GET", "/frog2/admin/performance-metrics"},
                 {"GET", "/frog2/not-found"}
         }) {
             RequestFixture request = new RequestFixture(

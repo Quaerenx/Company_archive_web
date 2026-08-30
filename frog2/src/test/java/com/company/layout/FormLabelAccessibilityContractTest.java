@@ -24,7 +24,7 @@ class FormLabelAccessibilityContractTest {
 
     @Test
     void customerDetailEditLabelsEveryVisibleNamedControl() throws Exception {
-        String page = read("customers/customers_detail_edit.jsp");
+        String page = readCustomerDetailEditForm();
         Set<String> labelTargets = labelTargets(page);
         Matcher controls = NAMED_CONTROL.matcher(page);
         int visibleControlCount = 0;
@@ -79,5 +79,16 @@ class FormLabelAccessibilityContractTest {
 
     private static String read(String relativePath) throws Exception {
         return Files.readString(WEBAPP.resolve(relativePath));
+    }
+
+    private static String readCustomerDetailEditForm() throws Exception {
+        StringBuilder source = new StringBuilder(
+                read("customers/customers_detail_edit.jsp"));
+        for (String section : new String[] {
+                "meta", "vertica", "environment", "solutions", "other"}) {
+            source.append(read(
+                    "customers/_detail_edit_" + section + ".jspf"));
+        }
+        return source.toString();
     }
 }

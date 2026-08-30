@@ -11,8 +11,7 @@ class CustomerDetailEditUxContractTest {
 
     @Test
     void longFormProvidesSemanticSectionNavigationAndErrorSummary() throws Exception {
-        String page = Files.readString(
-                WEBAPP.resolve("customers/customers_detail_edit.jsp"));
+        String page = readFormMarkup();
 
         assertTrue(page.contains("page-customer-detail-edit"));
         assertTrue(page.contains("aria-label=\"상세정보 수정 섹션\""));
@@ -40,5 +39,16 @@ class CustomerDetailEditUxContractTest {
         assertTrue(script.contains("form.addEventListener('change', markDirty)"));
         assertTrue(script.contains("window.addEventListener('beforeunload'"));
         assertTrue(script.contains("isSubmitting = true"));
+    }
+
+    private static String readFormMarkup() throws Exception {
+        StringBuilder source = new StringBuilder(Files.readString(
+                WEBAPP.resolve("customers/customers_detail_edit.jsp")));
+        for (String section : new String[] {
+                "meta", "vertica", "environment", "solutions", "other"}) {
+            source.append(Files.readString(WEBAPP.resolve(
+                    "customers/_detail_edit_" + section + ".jspf")));
+        }
+        return source.toString();
     }
 }
