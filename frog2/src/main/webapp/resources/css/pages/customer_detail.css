@@ -258,6 +258,74 @@
     margin: var(--space-12) 0 0;
 }
 
+.customer-detail--edit .customer-detail-environment-form {
+    margin: 0;
+}
+
+.customer-detail--edit .customer-detail-error-summary {
+    align-items: baseline;
+    border-radius: 0;
+    gap: var(--space-8);
+    margin: 0;
+}
+
+.ui-system .customer-detail--edit .detail-value {
+    align-items: center;
+    display: flex;
+}
+
+.customer-detail--edit .customer-detail-edit-control {
+    min-block-size: var(--control-height-md);
+}
+
+.customer-detail--edit .detail-item.is-conditionally-disabled .detail-label {
+    color: var(--color-text-disabled);
+}
+
+.customer-detail--edit .detail-item.is-conditionally-disabled
+        .customer-detail-edit-control:disabled {
+    background: var(--color-surface-subtle);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.customer-detail--edit textarea.customer-detail-edit-control {
+    line-height: var(--line-height-relaxed);
+    min-block-size: 176px;
+}
+
+.customer-detail--edit .customer-detail-form-actions {
+    background: var(--color-surface);
+    border: 0;
+    border-block-start: 1px solid var(--color-border);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    bottom: 0;
+    box-shadow: var(--shadow-sm);
+    gap: var(--space-8);
+    justify-content: flex-end;
+    margin: 0;
+    padding: var(--space-12) var(--space-24);
+    position: sticky;
+    z-index: var(--z-table-sticky);
+}
+
+.customer-detail--edit .customer-detail-save-context {
+    margin-inline-end: auto;
+}
+
+.customer-detail--edit .tab-btn.is-dirty::after {
+    background: var(--color-warning-accent);
+    block-size: 5px;
+    border-radius: var(--radius-pill);
+    content: '';
+    display: inline-block;
+    inline-size: 5px;
+    margin-inline-start: var(--space-8);
+    vertical-align: middle;
+}
+
 @media (max-width: 768px) {
     .ui-system .customer-detail--view .environment-detail .detail-section {
         padding: var(--space-16);
@@ -282,6 +350,17 @@
     .customer-detail--view .header-actions {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .customer-detail--edit .customer-detail-form-actions {
+        align-items: stretch;
+        border-radius: 0;
+        padding-inline: var(--space-16);
+        position: static;
+    }
+
+    .customer-detail--edit .customer-detail-save-context {
+        margin: 0 0 var(--space-4);
     }
 }
 

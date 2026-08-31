@@ -416,7 +416,9 @@ class UiDesignSystemContractTest {
         String troubleshooting = read("troubleshooting/troubleshooting_view.jsp");
         assertTrue(customerView.contains("class=\"environment-detail ui-detail\""));
         assertTrue(customerEdit.contains(
-                "class=\"detail-container ui-detail ui-work-surface\""));
+                "class=\"detail-container env-tabs ui-work-surface\""));
+        assertTrue(customerEdit.contains(
+                "class=\"environment-detail ui-detail\""));
         assertTrue(troubleshooting.contains(
                 "class=\"detail-container ui-detail troubleshooting-report ui-work-surface\""));
 

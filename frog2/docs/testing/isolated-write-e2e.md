@@ -9,6 +9,9 @@ The `e2eWrite` task remains disabled unless all of these are explicit:
 
 - `FROG2_E2E_WRITE_ENABLED=true`
 - loopback-only `FROG2_E2E_BASE_URL`
+- a dedicated Tomcat port other than shared development `18081` and production
+  `8080`
+- `FROG2_E2E_DEPLOYED_WAR` below `/opt/frog2-dev/e2e`
 - a separate `FROG2_E2E_DB_CONFIG`
 - the shared reference `FROG2_E2E_SHARED_DB_CONFIG`
 - `frog2.e2e.isolated=true` in the isolated config
@@ -16,6 +19,10 @@ The `e2eWrite` task remains disabled unless all of these are explicit:
 - different non-secret `frog2.databaseIdentity` values
 
 Both config files must be distinct regular files below `/opt/frog2-dev`. The identity check prevents query-string or role-option changes from disguising the same database as a different target.
+
+Before any write begins, Gradle builds the current WAR and compares its
+SHA-256 with `FROG2_E2E_DEPLOYED_WAR`. A stale deployment, a shared Tomcat
+port, or a WAR outside the isolated runtime root fails closed.
 
 ## Prepared executable scenario
 
@@ -29,7 +36,7 @@ Both config files must be distinct regular files below `/opt/frog2-dev`. The ide
 6. bounded read checks;
 7. cleanup in `finally`.
 
-The runner command is `./gradlew e2eWrite`. It must never be pointed at the shared development/production database.
+The runner command is `./gradlew e2eWrite`. It must never be pointed at the shared development/production database or Tomcat.
 
 ## Remaining scenario gates
 

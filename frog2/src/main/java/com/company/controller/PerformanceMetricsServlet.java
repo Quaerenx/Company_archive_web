@@ -2,6 +2,7 @@ package com.company.controller;
 
 import com.company.model.UserDTO;
 import com.company.performance.PerformanceMetricsRegistry;
+import com.company.performance.PerformanceMetricsRegistry.PageSnapshot;
 import com.company.performance.PerformanceMetricsRegistry.SearchSnapshot;
 import com.company.security.AdminAccessPolicy;
 import com.company.security.SessionPrincipal;
@@ -61,7 +62,13 @@ public final class PerformanceMetricsServlet extends HttpServlet {
                         + ",\"contentSearch\":"
                         + json(snapshot.contentSearch())
                         + "},\"globalSearch\":"
-                        + json(snapshot.globalSearch()) + "}");
+                        + json(snapshot.globalSearch())
+                        + ",\"pages\":{\"dashboard\":"
+                        + json(snapshot.dashboardPage())
+                        + ",\"customers\":"
+                        + json(snapshot.customersPage())
+                        + ",\"mypage\":"
+                        + json(snapshot.myPage()) + "}}");
     }
 
     private static String json(SearchSnapshot metrics) {
@@ -78,5 +85,25 @@ public final class PerformanceMetricsServlet extends HttpServlet {
                 metrics.averageSqlMillis(),
                 metrics.maxRequestMillis(),
                 metrics.maxSqlMillis());
+    }
+
+    private static String json(PageSnapshot metrics) {
+        return String.format(
+                Locale.ROOT,
+                "{\"count\":%d,\"slowCount\":%d,"
+                        + "\"averageRequestMs\":%.3f,"
+                        + "\"averageSqlMs\":%.3f,"
+                        + "\"averageDataLoadMs\":%.3f,"
+                        + "\"averageViewRenderMs\":%.3f,"
+                        + "\"averageUnattributedMs\":%.3f,"
+                        + "\"maxRequestMs\":%.3f}",
+                metrics.count(),
+                metrics.slowCount(),
+                metrics.averageRequestMillis(),
+                metrics.averageSqlMillis(),
+                metrics.averageDataLoadMillis(),
+                metrics.averageViewRenderMillis(),
+                metrics.averageUnattributedMillis(),
+                metrics.maxRequestMillis());
     }
 }

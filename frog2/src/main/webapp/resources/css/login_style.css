@@ -37,6 +37,22 @@ body.login-page {
     --peek-duration: 410ms;
     --peek-fade: 246ms;
     --peek-ease: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+    /* 로고 눈 튜닝 지점. peek이 다 펼쳐진 뒤(410ms + 70ms 스태거)에 올라오도록
+       --eye-rise-delay를 그보다 뒤에 둔다. 아래 규칙은 전부 이 값에서 파생된다. */
+    --eye-size: 24px;
+    --eye-gap: 13px;
+    --eye-reveal: 0.58;      /* 0~1. 눈이 난간 위로 얼마나 나오는지 */
+    --eye-shift-x: 0px;      /* 로고 중앙 기준 좌우 미세 조정 */
+    --eye-pupil-size: 0.4;   /* 눈 지름 대비 */
+    --eye-pupil-top: 0.24;   /* 눈 위쪽에서부터, 지름 대비 */
+    --eye-rise-delay: 620ms;
+    --eye-rise-duration: 420ms;
+    --eye-rise-ease: cubic-bezier(0.34, 1.5, 0.64, 1);
+    --glance-cycle: 3.6s;    /* 흘긋 한 바퀴 */
+    --glance-travel: 4px;    /* 눈동자 좌우 이동 폭 */
+    --duck-cycle: 7.4s;      /* 가끔 숨었다 나오는 주기 */
+
     inline-size: min(100%, 408px);
     isolation: isolate;
     position: relative;
@@ -81,6 +97,93 @@ body.login-page::after {
     display: flex;
     inline-size: 100%;
     justify-content: center;
+    position: relative;
+}
+
+/* 로고 눈 ------------------------------------------------------------------
+   .brand-eyes는 로고 바로 위에 붙는 좁은 창이다. 창 높이가 눈 지름보다 작고
+   overflow: hidden이라, 눈이 아래에서 올라오면 위쪽 일부만 보인다. 로고 SVG는
+   배경이 투명해서 로고 자체로는 가릴 수 없기 때문에, 잘리는 선이 난간 역할을
+   대신한다. viewBox를 그림 경계에 맞춰 둔 덕에 그 선이 글자 윗변과 정확히 맞다.
+
+   올라오기는 transition(translate), 숨기와 흘긋대기는 animation(transform)으로
+   나눠 건다. 개별 변환 속성이라 서로 덮어쓰지 않고 합성된다.                  */
+
+.login-page .brand-eyes {
+    block-size: calc(var(--eye-size) * var(--eye-reveal));
+    bottom: 100%;
+    display: flex;
+    gap: var(--eye-gap);
+    inset-inline-start: 50%;
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute;
+    translate: calc(-50% + var(--eye-shift-x)) 0;
+}
+
+.login-page .brand-eye {
+    background: var(--color-login-field-focus);
+    border: 1px solid var(--color-login-field-border);
+    border-radius: 50%;
+    block-size: var(--eye-size);
+    flex: 0 0 auto;
+    inline-size: var(--eye-size);
+    position: relative;
+    /* 대기 상태에서는 난간 아래로 완전히 내려가 있다. */
+    translate: 0 100%;
+    transition: translate var(--eye-rise-duration) var(--eye-rise-ease);
+    /* 접힐 때는 기다리지 않고 바로 내려간다. */
+    transition-delay: 0ms;
+}
+
+.login-page .brand-pupil {
+    background: var(--palette-brand-hover);
+    border-radius: 50%;
+    block-size: calc(var(--eye-size) * var(--eye-pupil-size));
+    inline-size: calc(var(--eye-size) * var(--eye-pupil-size));
+    inset-block-start: calc(var(--eye-size) * var(--eye-pupil-top));
+    inset-inline-start: 50%;
+    position: absolute;
+    translate: -50% 0;
+}
+
+/* 두 눈은 완전히 동기화한다. 종이는 어긋나야 자연스럽지만 눈은 반대다 —
+   좌우가 미세하게라도 어긋나면 사시처럼 보인다.                              */
+@keyframes archive-eye-glance {
+    0%, 14% {
+        animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+        transform: translateX(0);
+    }
+    20%, 34% {
+        animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+        transform: translateX(calc(var(--glance-travel) * -1));
+    }
+    40%, 52% {
+        animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+        transform: translateX(0);
+    }
+    58%, 72% {
+        animation-timing-function: cubic-bezier(0.3, 0, 0.15, 1);
+        transform: translateX(var(--glance-travel));
+    }
+    78%, 100% {
+        transform: translateX(0);
+    }
+}
+
+/* 흘긋대다 가끔 난간 아래로 쏙 숨는다. 내려갈 때는 빠르게, 올라올 때는 반동. */
+@keyframes archive-eye-duck {
+    0%, 88% {
+        animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.3);
+        transform: translateY(0);
+    }
+    92%, 95% {
+        animation-timing-function: var(--eye-rise-ease);
+        transform: translateY(105%);
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
 
 .login-page .login-brand-logo {
@@ -385,6 +488,24 @@ body.login-page::after {
             scale(var(--peek-scale));
         transition-delay: var(--peek-delay);
     }
+
+    /* 눈은 peek과 같은 조건에서 깨어난다. 흘긋/숨기 루프는 다 올라온 뒤부터
+       시작해야 올라오는 도중에 눈동자가 움직이지 않는다.                      */
+    .login-page .login-shell:hover .brand-eye,
+    .login-page .login-shell:focus-within .brand-eye,
+    .login-page .login-shell:has(.login-submit.is-loading) .brand-eye {
+        animation: archive-eye-duck var(--duck-cycle) linear
+            calc(var(--eye-rise-delay) + var(--eye-rise-duration)) infinite;
+        transition-delay: var(--eye-rise-delay);
+        translate: 0 0;
+    }
+
+    .login-page .login-shell:hover .brand-pupil,
+    .login-page .login-shell:focus-within .brand-pupil,
+    .login-page .login-shell:has(.login-submit.is-loading) .brand-pupil {
+        animation: archive-eye-glance var(--glance-cycle) linear
+            calc(var(--eye-rise-delay) + var(--eye-rise-duration)) infinite;
+    }
 }
 
 /* 감소 모션에서는 펼침을 즉시 끝낸다. 지속 시간이 토큰이 아니라 로컬 값이라
@@ -394,6 +515,17 @@ body.login-page::after {
     .login-page .login-shell {
         --peek-duration: 0.01ms;
         --peek-fade: 0.01ms;
+        /* 눈도 즉시 자리를 잡는다. 파일 하단의 포괄 규칙보다 명시도가 높아
+           여기서 직접 꺼야 하는 것은 peek과 같은 사정이다. */
+        --eye-rise-delay: 0ms;
+        --eye-rise-duration: 0.01ms;
+    }
+
+    /* 반복 루프는 감소 모션에서 가장 거슬리는 종류다. 지속 시간을 줄이는 것으로는
+       부족하고 아예 돌지 않아야 한다. */
+    .login-page .brand-eye,
+    .login-page .brand-pupil {
+        animation: none !important;
     }
 }
 

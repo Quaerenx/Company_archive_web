@@ -45,4 +45,33 @@ class OperationsAutomationContractTest {
         assertTrue(script.contains("FROG2_E2E_PASSWORD"));
         assertTrue(script.contains("e2eAuthenticatedSmoke"));
     }
+
+    @Test
+    void writeE2eRejectsSharedTomcatAndStaleWar() throws Exception {
+        String build = Files.readString(Path.of("build.gradle"));
+
+        assertTrue(build.contains("verifyIsolatedE2eDeployment"));
+        assertTrue(build.contains("[18081, 8080].contains(targetUri.port)"));
+        assertTrue(build.contains("/opt/frog2-dev/e2e"));
+        assertTrue(build.contains("currentHash != deployedHash"));
+        assertTrue(build.contains(
+                "tasks.named('e2eWrite') {\n    dependsOn verifyIsolatedE2eDeployment"));
+    }
+
+    @Test
+    void customerAuditMigrationRemainsExplicitAndBackupGated()
+            throws Exception {
+        String build = Files.readString(Path.of("build.gradle"));
+        String migrationTest = Files.readString(Path.of(
+                "src/test/java/com/company/model/"
+                        + "CustomerAuditMigrationE2ETest.java"));
+
+        assertTrue(build.contains("'e2e-customer-audit-migration'"));
+        assertTrue(build.contains("customerAuditMigration"));
+        assertTrue(migrationTest.contains(
+                "FROG2_CUSTOMER_AUDIT_MIGRATION_APPROVED"));
+        assertTrue(migrationTest.contains("FROG2_CUSTOMER_AUDIT_BACKUP"));
+        assertTrue(migrationTest.contains(
+                "Schema migration must not change customer rows"));
+    }
 }

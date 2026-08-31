@@ -101,6 +101,42 @@ class CustomerDAOMaintenanceAssignmentTest {
     }
 
     @Test
+    void assigneeSchedulesAreFilteredBeforeRowsAreLoaded() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "customer_maintenance_schedule.interval_months");
+        jdbc.enqueue(scheduleRow(
+                "Assigned", "Manager A", 3, "2025-02-01", true));
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+
+        List<MaintenanceCustomerAssignment> assignments =
+                dao.getMaintenanceCustomerAssignmentsByAssignee(
+                        " Manager A ");
+
+        assertEquals(List.of("Assigned"), assignments.stream()
+                .map(MaintenanceCustomerAssignment::customerName)
+                .toList());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "LOWER(TRIM(d.main_manager)) = LOWER(?) "
+                        + "OR LOWER(TRIM(d.sub_manager)) = LOWER(?)"));
+        assertEquals("정기점검 계약 고객사", statement.parameters.get(1));
+        assertEquals("Manager A", statement.parameters.get(2));
+        assertEquals("Manager A", statement.parameters.get(3));
+    }
+
+    @Test
+    void blankAssigneeDoesNotOpenAnAssignmentConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+
+        assertTrue(dao.getMaintenanceCustomerAssignmentsByAssignee(" ")
+                .isEmpty());
+        assertEquals(0, jdbc.openCount);
+    }
+
+    @Test
     void defaultScheduleFilterUsesSeoulMonthAtUtcBoundary() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.availableColumns = Set.of(

@@ -82,6 +82,10 @@ public final class RequestTimingFilter implements Filter {
                         performance.sqlDurationNanos(),
                         performance.maxSqlNanos(),
                         performance.operation(),
+                        performance.dataLoadCount(),
+                        performance.dataLoadDurationNanos(),
+                        performance.viewRenderCount(),
+                        performance.viewRenderDurationNanos(),
                         performance.dbAcquisitionCount(),
                         performance.dbAcquisitionDurationNanos(),
                         performance.maxDbAcquisitionNanos(),
@@ -109,7 +113,7 @@ public final class RequestTimingFilter implements Filter {
 
     private static void writeLog(RequestEvent event) {
         String message =
-                "{} requestId={} method={} path={} status={} durationMs={} operation={} sqlCount={} sqlDurationMs={} maxSqlMs={} dbAcquireCount={} dbAcquireDurationMs={} maxDbAcquireMs={} fileCacheHits={} fileCacheMisses={} fileScanCount={} fileScanDurationMs={} maxFileScanMs={} customerHistoryCacheHits={} customerHistoryCacheMisses={} customerHistoryScanCount={} customerHistoryRecordFiles={} customerHistoryScanDurationMs={} maxCustomerHistoryScanMs={}";
+                "{} requestId={} method={} path={} status={} durationMs={} operation={} sqlCount={} sqlDurationMs={} maxSqlMs={} dataLoadCount={} dataLoadDurationMs={} viewRenderCount={} viewRenderDurationMs={} dbAcquireCount={} dbAcquireDurationMs={} maxDbAcquireMs={} fileCacheHits={} fileCacheMisses={} fileScanCount={} fileScanDurationMs={} maxFileScanMs={} customerHistoryCacheHits={} customerHistoryCacheMisses={} customerHistoryScanCount={} customerHistoryRecordFiles={} customerHistoryScanDurationMs={} maxCustomerHistoryScanMs={}";
         Object[] values = {
                 event.slow() ? "Slow HTTP request" : "HTTP request completed",
                 event.requestId(),
@@ -121,6 +125,10 @@ public final class RequestTimingFilter implements Filter {
                 event.sqlCount(),
                 millis(event.sqlDurationNanos()),
                 millis(event.maxSqlNanos()),
+                event.dataLoadCount(),
+                millis(event.dataLoadDurationNanos()),
+                event.viewRenderCount(),
+                millis(event.viewRenderDurationNanos()),
                 event.dbAcquisitionCount(),
                 millis(event.dbAcquisitionDurationNanos()),
                 millis(event.maxDbAcquisitionNanos()),
@@ -147,7 +155,9 @@ public final class RequestTimingFilter implements Filter {
         PerformanceMetricsRegistry.record(
                 event.operation(),
                 event.elapsedNanos(),
-                event.sqlDurationNanos());
+                event.sqlDurationNanos(),
+                event.dataLoadDurationNanos(),
+                event.viewRenderDurationNanos());
         writeLog(event);
     }
 
@@ -202,6 +212,10 @@ public final class RequestTimingFilter implements Filter {
             long sqlDurationNanos,
             long maxSqlNanos,
             RequestPerformanceContext.Operation operation,
+            int dataLoadCount,
+            long dataLoadDurationNanos,
+            int viewRenderCount,
+            long viewRenderDurationNanos,
             int dbAcquisitionCount,
             long dbAcquisitionDurationNanos,
             long maxDbAcquisitionNanos,

@@ -17,7 +17,32 @@ function createHarness(year, monthIndex, day) {
         dateInput('installDate'),
         dateInput('eosDate')
     ];
-    const form = { addEventListener() {} };
+    const form = {
+        classList: { add() {}, remove() {} },
+        addEventListener() {},
+        getAttribute(name) {
+            if (name === 'data-environment') return 'prod';
+            if (name === 'data-environment-label') return '운영';
+            return null;
+        },
+        querySelector(selector) {
+            if (selector === 'input[name="customerName"]') {
+                return { value: 'Acme' };
+            }
+            return null;
+        },
+        querySelectorAll(selector) {
+            if (selector === 'input[type="date"]') return dateInputs;
+            return [];
+        }
+    };
+    const root = {
+        querySelector() { return null; },
+        querySelectorAll(selector) {
+            return selector === '[data-customer-detail-form]' ? [form] : [];
+        },
+        setAttribute() {}
+    };
 
     class FixedLocalDate {
         getDate() { return day; }
@@ -29,8 +54,8 @@ function createHarness(year, monthIndex, day) {
         addEventListener(name, listener) {
             documentListeners.set(name, listener);
         },
-        getElementById(id) {
-            return id === 'customerDetailForm' ? form : null;
+        querySelector(selector) {
+            return selector === '.customer-detail--edit' ? root : null;
         },
         querySelectorAll(selector) {
             return selector === 'input[type="date"]' ? dateInputs : [];
@@ -38,10 +63,17 @@ function createHarness(year, monthIndex, day) {
     };
 
     vm.runInNewContext(source, {
+        Array,
         Date: FixedLocalDate,
         document,
+        Set,
         String,
-        window: {}
+        URL,
+        URLSearchParams,
+        window: {
+            addEventListener() {},
+            location: { href: 'http://localhost/customers?env=prod', search: '?env=prod' }
+        }
     });
     documentListeners.get('DOMContentLoaded')();
 

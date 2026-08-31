@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.UserDTO;
+import com.company.performance.PerformanceMetricsRegistry.PageSnapshot;
 import com.company.performance.PerformanceMetricsRegistry.SearchSnapshot;
 import com.company.performance.PerformanceMetricsRegistry.Snapshot;
 import com.company.security.AdminAccessPolicy;
@@ -35,7 +36,12 @@ class PerformanceMetricsServletTest {
                 () -> new Snapshot(
                         summary,
                         new SearchSnapshot(0, 0, 0, 0, 0, 0),
-                        new SearchSnapshot(0, 0, 0, 0, 0, 0)));
+                        new SearchSnapshot(0, 0, 0, 0, 0, 0),
+                        new PageSnapshot(
+                                2, 1, 1_000_000_000, 100_000_000,
+                                400_000_000, 300_000_000, 700_000_000),
+                        emptyPage(),
+                        emptyPage()));
         ResponseFixture response = new ResponseFixture();
 
         servlet.doGet(
@@ -48,6 +54,9 @@ class PerformanceMetricsServletTest {
         assertTrue(response.body.toString().contains(
                 "\"averageSqlMs\":50.000"));
         assertTrue(response.body.toString().contains("\"globalSearch\""));
+        assertTrue(response.body.toString().contains("\"pages\""));
+        assertTrue(response.body.toString().contains(
+                "\"averageDataLoadMs\":200.000"));
         assertTrue(!response.body.toString().contains("query"));
     }
 
@@ -59,7 +68,10 @@ class PerformanceMetricsServletTest {
                 () -> new Snapshot(
                         new SearchSnapshot(0, 0, 0, 0, 0, 0),
                         new SearchSnapshot(0, 0, 0, 0, 0, 0),
-                        new SearchSnapshot(0, 0, 0, 0, 0, 0)));
+                        new SearchSnapshot(0, 0, 0, 0, 0, 0),
+                        emptyPage(),
+                        emptyPage(),
+                        emptyPage()));
         ResponseFixture response = new ResponseFixture();
 
         servlet.doGet(
@@ -76,7 +88,10 @@ class PerformanceMetricsServletTest {
                 () -> new Snapshot(
                         new SearchSnapshot(0, 0, 0, 0, 0, 0),
                         new SearchSnapshot(0, 0, 0, 0, 0, 0),
-                        new SearchSnapshot(0, 0, 0, 0, 0, 0)));
+                        new SearchSnapshot(0, 0, 0, 0, 0, 0),
+                        emptyPage(),
+                        emptyPage(),
+                        emptyPage()));
         ResponseFixture response = new ResponseFixture();
 
         servlet.doGet(request(null), response.proxy());
@@ -101,6 +116,10 @@ class PerformanceMetricsServletTest {
                     case "getHeader" -> "application/json";
                     default -> defaultValue(method.getReturnType());
                 });
+    }
+
+    private static PageSnapshot emptyPage() {
+        return new PageSnapshot(0, 0, 0, 0, 0, 0, 0);
     }
 
     private static final class ResponseFixture {

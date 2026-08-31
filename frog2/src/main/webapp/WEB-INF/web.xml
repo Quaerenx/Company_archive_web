@@ -8,7 +8,7 @@
 
     <context-param>
         <param-name>frog2AssetVersion</param-name>
-        <param-value>20260830-global-search-1</param-value>
+        <param-value>20260830-brand-eyes-1</param-value>
     </context-param>
 
     <session-config>

@@ -13,39 +13,40 @@ import org.junit.jupiter.api.Test;
 
 class FormLabelAccessibilityContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
-    private static final Pattern NAMED_CONTROL = Pattern.compile(
-            "<(input|select|textarea)\\b([^>]*\\bname=\"([^\"]+)\"[^>]*)>",
+    private static final Pattern EDIT_FIELD_TAG = Pattern.compile(
+            "<t:customerDetailEditField\\b(.*?)/>",
             Pattern.DOTALL);
-    private static final Pattern ID_ATTRIBUTE = Pattern.compile(
-            "\\bid=\"([^\"]+)\"");
-    private static final Pattern LABEL_TARGET = Pattern.compile(
-            "<label\\b[^>]*\\bfor=\"([^\"]+)\"",
-            Pattern.DOTALL);
+    private static final Pattern NAME_ATTRIBUTE = Pattern.compile(
+            "\\bname=\"([^\"]+)\"");
 
     @Test
     void customerDetailEditLabelsEveryVisibleNamedControl() throws Exception {
-        String page = readCustomerDetailEditForm();
-        Set<String> labelTargets = labelTargets(page);
-        Matcher controls = NAMED_CONTROL.matcher(page);
-        int visibleControlCount = 0;
+        String fields = readCustomerDetailEditFields();
+        String tag = read("WEB-INF/tags/customerDetailEditField.tag");
+        Set<String> fieldNames = new HashSet<>();
+        Matcher fieldTags = EDIT_FIELD_TAG.matcher(fields);
+        int fieldCount = 0;
 
-        while (controls.find()) {
-            String attributes = controls.group(2);
-            if (attributes.contains("type=\"hidden\"")) {
-                continue;
-            }
-
-            String name = controls.group(3);
-            Matcher idAttribute = ID_ATTRIBUTE.matcher(attributes);
-            assertTrue(idAttribute.find(), "Missing id for control: " + name);
-            String id = idAttribute.group(1);
-            assertEquals(name, id, "Control id should remain stable with its name: " + name);
-            assertTrue(labelTargets.contains(id), "Missing label for control: " + name);
-            visibleControlCount++;
+        while (fieldTags.find()) {
+            String attributes = fieldTags.group(1);
+            Matcher nameAttribute = NAME_ATTRIBUTE.matcher(attributes);
+            assertTrue(nameAttribute.find(), "Missing name on edit field tag");
+            assertTrue(attributes.contains("label=\""),
+                    "Missing label on edit field: " + nameAttribute.group(1));
+            assertTrue(fieldNames.add(nameAttribute.group(1)),
+                    "Duplicate edit field: " + nameAttribute.group(1));
+            fieldCount++;
         }
 
-        assertEquals(49, visibleControlCount);
-        assertEquals(49, labelTargets.size());
+        assertEquals(49, fieldCount);
+        assertEquals(49, fieldNames.size());
+        assertTrue(tag.contains("value=\"${idPrefix}-${name}\""));
+        assertTrue(tag.contains(
+                "<label class=\"detail-label\" for=\"<c:out value='${fieldId}' />\""));
+        assertEquals(3, occurrences(
+                tag, "id=\"<c:out value='${fieldId}' />\""));
+        assertEquals(3, occurrences(
+                tag, "name=\"<c:out value='${name}' />\""));
     }
 
     @Test
@@ -68,27 +69,27 @@ class FormLabelAccessibilityContractTest {
                 "<input type=\"text\" id=\"troubleshooting_creator_display\""));
     }
 
-    private static Set<String> labelTargets(String source) {
-        Set<String> targets = new HashSet<>();
-        Matcher labels = LABEL_TARGET.matcher(source);
-        while (labels.find()) {
-            targets.add(labels.group(1));
-        }
-        return targets;
-    }
-
     private static String read(String relativePath) throws Exception {
         return Files.readString(WEBAPP.resolve(relativePath));
     }
 
-    private static String readCustomerDetailEditForm() throws Exception {
-        StringBuilder source = new StringBuilder(
-                read("customers/customers_detail_edit.jsp"));
+    private static String readCustomerDetailEditFields() throws Exception {
+        StringBuilder source = new StringBuilder();
         for (String section : new String[] {
-                "meta", "vertica", "environment", "solutions", "other"}) {
+                "summary", "meta", "vertica", "environment", "solutions", "other"}) {
             source.append(read(
                     "customers/_detail_edit_" + section + ".jspf"));
         }
         return source.toString();
+    }
+
+    private static int occurrences(String value, String token) {
+        int count = 0;
+        int offset = 0;
+        while ((offset = value.indexOf(token, offset)) >= 0) {
+            count++;
+            offset += token.length();
+        }
+        return count;
     }
 }

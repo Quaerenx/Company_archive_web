@@ -34,6 +34,12 @@ class PerformanceMetricsRegistryTest {
                 Operation.NONE,
                 900_000_000,
                 900_000_000);
+        PerformanceMetricsRegistry.record(
+                Operation.DASHBOARD_VIEW,
+                800_000_000,
+                40_000_000,
+                300_000_000,
+                200_000_000);
 
         PerformanceMetricsRegistry.Snapshot snapshot =
                 PerformanceMetricsRegistry.snapshot();
@@ -48,5 +54,13 @@ class PerformanceMetricsRegistryTest {
         assertEquals(1, snapshot.globalSearch().count());
         assertEquals(250.0, snapshot.globalSearch().maxRequestMillis());
         assertEquals(120.0, snapshot.globalSearch().averageSqlMillis());
+        assertEquals(1, snapshot.dashboardPage().count());
+        assertEquals(1, snapshot.dashboardPage().slowCount());
+        assertEquals(800.0, snapshot.dashboardPage().averageRequestMillis());
+        assertEquals(40.0, snapshot.dashboardPage().averageSqlMillis());
+        assertEquals(300.0, snapshot.dashboardPage().averageDataLoadMillis());
+        assertEquals(200.0, snapshot.dashboardPage().averageViewRenderMillis());
+        assertEquals(300.0, snapshot.dashboardPage().averageUnattributedMillis());
+        assertEquals(0, snapshot.customersPage().count());
     }
 }

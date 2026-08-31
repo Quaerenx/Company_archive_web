@@ -199,23 +199,36 @@ class LoginViewContractTest {
     }
 
     @Test
-    void loginPeekAnimationIsDecorativeResponsiveAndMotionSafe() throws Exception {
+    void loginPeekAndEyeAnimationsAreDecorativeResponsiveAndMotionSafe() throws Exception {
         String page = read("login.jsp");
         String styles = read("resources/css/login_style.css");
 
         assertTrue(page.contains("class=\"login-peek\" aria-hidden=\"true\""));
         assertTrue(page.contains("class=\"peek-doc\""));
         assertTrue(page.contains("class=\"peek-sheet\""));
+        assertTrue(page.contains("class=\"brand-eyes\" aria-hidden=\"true\""));
+        assertTrue(page.contains("class=\"brand-eye\""));
+        assertTrue(page.contains("class=\"brand-pupil\""));
         assertTrue(styles.contains(".login-page .login-shell:hover .peek-sheet"));
         assertTrue(styles.contains(".login-page .login-shell:focus-within .peek-sheet"));
+        assertTrue(styles.contains("@keyframes archive-eye-glance"));
+        assertTrue(styles.contains("@keyframes archive-eye-duck"));
+        assertTrue(styles.contains(".login-page .login-shell:hover .brand-eye"));
+        assertTrue(styles.contains(".login-page .login-shell:focus-within .brand-pupil"));
         assertTrue(styles.contains("@media (hover: hover) and (pointer: fine)"));
         assertTrue(styles.contains("@media (max-width: 640px)"));
         assertTrue(styles.matches(
                 "(?s).*@media \\(prefers-reduced-motion: reduce\\)\\s*\\{.*"
                         + "--peek-duration:\\s*0\\.01ms;.*"
-                        + "--peek-fade:\\s*0\\.01ms;.*"));
+                        + "--peek-fade:\\s*0\\.01ms;.*"
+                        + "\\.login-page \\.brand-eye,.*"
+                        + "\\.login-page \\.brand-pupil\\s*\\{[^}]*"
+                        + "animation:\\s*none !important;.*"));
         assertTrue(styles.matches(
                 "(?s).*\\.login-page \\.login-peek\\s*\\{[^}]*"
+                        + "pointer-events:\\s*none;.*"));
+        assertTrue(styles.matches(
+                "(?s).*\\.login-page \\.brand-eyes\\s*\\{[^}]*"
                         + "pointer-events:\\s*none;.*"));
     }
 

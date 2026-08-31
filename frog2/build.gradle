@@ -76,7 +76,8 @@ tasks.withType(Test).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform {
-        excludeTags 'e2e', 'e2e-write', 'e2e-schema', 'e2e-https'
+        excludeTags 'e2e', 'e2e-write', 'e2e-schema', 'e2e-https',
+                'e2e-customer-audit-migration'
     }
 }
 
@@ -152,6 +153,17 @@ tasks.register('httpsCookieAudit', Test) {
     outputs.upToDateWhen { false }
     useJUnitPlatform {
         includeTags 'e2e-https'
+    }
+}
+
+tasks.register('customerAuditMigration', Test) {
+    description = 'Applies and verifies the approved customer audit-column migration.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    useJUnitPlatform {
+        includeTags 'e2e-customer-audit-migration'
     }
 }
 
@@ -282,6 +294,67 @@ tasks.named('e2eSmoke') {
 
 tasks.named('e2eAuthenticatedSmoke') {
     dependsOn verifyE2eDeployment
+}
+
+def verifyIsolatedE2eDeployment = tasks.register(
+        'verifyIsolatedE2eDeployment') {
+    description = 'Verifies the explicitly isolated write-E2E deployment and WAR.'
+    group = 'verification'
+    dependsOn packagedWar
+    inputs.file(packagedWar.flatMap { it.archiveFile })
+    outputs.upToDateWhen { false }
+    doLast {
+        if (!'true'.equalsIgnoreCase(
+                providers.environmentVariable('FROG2_E2E_WRITE_ENABLED')
+                        .getOrElse(''))) {
+            throw new GradleException(
+                    'FROG2_E2E_WRITE_ENABLED=true is required')
+        }
+        URI targetUri = URI.create(providers.environmentVariable(
+                'FROG2_E2E_BASE_URL').getOrElse(''))
+        String targetHost = targetUri.host == null
+                ? '' : targetUri.host.toLowerCase(Locale.ROOT)
+        if (targetUri.scheme != 'http'
+                || !['127.0.0.1', 'localhost', '::1'].contains(targetHost)
+                || targetUri.userInfo != null
+                || targetUri.rawQuery != null
+                || targetUri.rawFragment != null
+                || targetUri.path != '/frog2/'
+                || targetUri.port <= 0
+                || [18081, 8080].contains(targetUri.port)) {
+            throw new GradleException(
+                    'Write E2E requires a dedicated loopback Tomcat outside shared ports 18081 and 8080')
+        }
+
+        String deployedWarValue = providers.environmentVariable(
+                'FROG2_E2E_DEPLOYED_WAR').getOrElse('')
+        if (deployedWarValue.isBlank()) {
+            throw new GradleException(
+                    'FROG2_E2E_DEPLOYED_WAR is required')
+        }
+        Path isolatedRoot = Path.of('/opt/frog2-dev/e2e')
+                .toRealPath().normalize()
+        Path deployedWar = Path.of(deployedWarValue)
+                .toRealPath().normalize()
+        if (!deployedWar.startsWith(isolatedRoot)
+                || !deployedWar.toFile().isFile()) {
+            throw new GradleException(
+                    'Write E2E WAR must be a regular file under /opt/frog2-dev/e2e')
+        }
+
+        String currentHash = sha256(
+                packagedWar.get().archiveFile.get().asFile)
+        String deployedHash = sha256(deployedWar.toFile())
+        if (currentHash != deployedHash) {
+            throw new GradleException(
+                    'Write E2E deployment does not match the current build. '
+                            + "built=${currentHash}, deployed=${deployedHash}")
+        }
+    }
+}
+
+tasks.named('e2eWrite') {
+    dependsOn verifyIsolatedE2eDeployment
 }
 
 tasks.named('classes') {

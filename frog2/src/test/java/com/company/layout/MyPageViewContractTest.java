@@ -88,6 +88,16 @@ class MyPageViewContractTest {
     }
 
     @Test
+    void workInboxBadgesCenterTheirLabels() throws Exception {
+        String styles = read("resources/css/pages/mypage.css");
+
+        assertTrue(styles.contains(
+                ".page-mypage .work-inbox__link .ui-badge {"));
+        assertTrue(styles.contains("justify-content: center;"));
+        assertTrue(styles.contains("text-align: center;"));
+    }
+
+    @Test
     void hostManagerKeepsExistingOwnershipFormAndDialogContracts()
             throws Exception {
         String hosts = read("WEB-INF/includes/mypage/host_manager.jspf");

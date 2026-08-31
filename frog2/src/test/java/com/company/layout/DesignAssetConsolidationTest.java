@@ -150,7 +150,8 @@ class DesignAssetConsolidationTest {
                         + "/resources/css/pages/customer_detail.css");
         expectedPageStyles.put(
                 "customers/customers_detail_edit.jsp",
-                "/resources/css/pages/customers.css");
+                "/resources/css/pages/customers.css,"
+                        + "/resources/css/pages/customer_detail.css");
         expectedPageStyles.put(
                 "customers/customers_edit.jsp",
                 "/resources/css/pages/customers.css");

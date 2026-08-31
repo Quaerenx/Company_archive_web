@@ -40,6 +40,22 @@ public final class RequestPerformanceContext {
         }
     }
 
+    public static void recordDataLoad(long elapsedNanos) {
+        State state = CURRENT.get();
+        if (state != null) {
+            state.dataLoadCount++;
+            state.dataLoadDurationNanos += Math.max(0, elapsedNanos);
+        }
+    }
+
+    public static void recordViewRender(long elapsedNanos) {
+        State state = CURRENT.get();
+        if (state != null) {
+            state.viewRenderCount++;
+            state.viewRenderDurationNanos += Math.max(0, elapsedNanos);
+        }
+    }
+
     public static void recordFileSnapshotCacheHit() {
         State state = CURRENT.get();
         if (state != null) {
@@ -104,6 +120,7 @@ public final class RequestPerformanceContext {
                     0, 0, 0,
                     0, 0, 0, 0, 0,
                     0, 0,
+                    0, 0, 0, 0,
                     0, 0, 0, 0);
         }
         return new Snapshot(
@@ -124,7 +141,11 @@ public final class RequestPerformanceContext {
                 state.customerHistoryScanCount,
                 state.customerHistoryRecordFileCount,
                 state.customerHistoryScanDurationNanos,
-                state.maxCustomerHistoryScanNanos);
+                state.maxCustomerHistoryScanNanos,
+                state.dataLoadCount,
+                state.dataLoadDurationNanos,
+                state.viewRenderCount,
+                state.viewRenderDurationNanos);
     }
 
     public enum Operation {
@@ -132,7 +153,10 @@ public final class RequestPerformanceContext {
         GLOBAL_SEARCH("globalSearch"),
         TROUBLESHOOTING_SUMMARY_SEARCH("troubleshooting.summarySearch"),
         TROUBLESHOOTING_CONTENT_SEARCH("troubleshooting.contentSearch"),
-        CUSTOMER_HISTORY_LIST("customerHistory.list");
+        CUSTOMER_HISTORY_LIST("customerHistory.list"),
+        DASHBOARD_VIEW("page.dashboard"),
+        CUSTOMERS_LIST("page.customers"),
+        MYPAGE_OVERVIEW("page.mypage");
 
         private final String logValue;
 
@@ -163,7 +187,11 @@ public final class RequestPerformanceContext {
             int customerHistoryScanCount,
             int customerHistoryRecordFileCount,
             long customerHistoryScanDurationNanos,
-            long maxCustomerHistoryScanNanos) {
+            long maxCustomerHistoryScanNanos,
+            int dataLoadCount,
+            long dataLoadDurationNanos,
+            int viewRenderCount,
+            long viewRenderDurationNanos) {
     }
 
     private static final class State {
@@ -185,5 +213,9 @@ public final class RequestPerformanceContext {
         private int customerHistoryRecordFileCount;
         private long customerHistoryScanDurationNanos;
         private long maxCustomerHistoryScanNanos;
+        private int dataLoadCount;
+        private long dataLoadDurationNanos;
+        private int viewRenderCount;
+        private long viewRenderDurationNanos;
     }
 }

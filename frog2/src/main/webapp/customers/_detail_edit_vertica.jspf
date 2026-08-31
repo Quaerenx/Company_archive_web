@@ -1,140 +1,30 @@
 <%@ page pageEncoding="UTF-8" %>
-            <!-- Vertica 정보 섹션 -->
-            <section id="customerDetailVertica"
-                     class="detail-section"
-                     aria-labelledby="customerDetailVerticaTitle">
-                <h2 id="customerDetailVerticaTitle" class="detail-section-title">
-                    <i class="fas fa-database"></i>
-                    Vertica 정보
-                </h2>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label class="detail-label" for="dbName">DB명</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="dbName" name="dbName"
-                                   value="<c:out value="${not empty customerDetail.dbName ? customerDetail.dbName : customer.dbName}" />"
-                                   placeholder="데이터베이스명을 입력하세요">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="dbMode">DB mode</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="dbMode" name="dbMode">
-                                <option value="">선택하세요</option>
-                                <option value="ENT" ${(not empty customerDetail.dbMode and customerDetail.dbMode == 'ENT') or (empty customerDetail.dbMode and customer.mode == 'ENT') ? 'selected' : ''}>ENT</option>
-                                <option value="EON" ${(not empty customerDetail.dbMode and customerDetail.dbMode == 'EON') or (empty customerDetail.dbMode and customer.mode == 'EON') ? 'selected' : ''}>EON</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="verticaVersion">Version</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="verticaVersion" name="verticaVersion"
-                                   value="<c:out value="${not empty customerDetail.verticaVersion ? customerDetail.verticaVersion : customer.verticaVersion}" />"
-                                   placeholder="예: 12.0.4">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="licenseInfo">라이센스</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="licenseInfo" name="licenseInfo"
-                                   value="<c:out value="${not empty customerDetail.licenseInfo ? customerDetail.licenseInfo : customer.licenseSize}" />"
-                                   placeholder="라이센스 정보를 입력하세요">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="said">SAID</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="said" name="said"
-                                   value="<c:out value="${not empty customerDetail.said ? customerDetail.said : customer.said}" />"
-                                   placeholder="Service Agreement ID">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="nodeCount">노드 수</label>
-                        <div class="detail-value">
-                            <input type="number" class="form-control" id="nodeCount" name="nodeCount"
-                                   value="<c:out value="${not empty customerDetail.nodeCount ? customerDetail.nodeCount : customer.nodes}" />"
-                                   min="1" placeholder="노드 수">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="verticaAdmin">Vertica admin</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="verticaAdmin" name="verticaAdmin"
-                                   value="<c:out value="${not empty customerDetail.verticaAdmin ? customerDetail.verticaAdmin : ''}" />"
-                                   placeholder="Vertica 관리자 계정">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="subclusterYn">Subcluster 유무</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="subclusterYn" name="subclusterYn">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.subclusterYn == 'Y' ? 'selected' : ''}>있음</option>
-                                <option value="N" ${customerDetail.subclusterYn == 'N' ? 'selected' : ''}>없음</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="mcYn">MC 여부</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="mcYn" name="mcYn">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.mcYn == 'Y' ? 'selected' : ''}>사용</option>
-                                <option value="N" ${customerDetail.mcYn == 'N' ? 'selected' : ''}>미사용</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="mcHost">MC host</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="mcHost" name="mcHost"
-                                   value="<c:out value="${not empty customerDetail.mcHost ? customerDetail.mcHost : ''}" />"
-                                   placeholder="MC 호스트 정보">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="mcVersion">MC version</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="mcVersion" name="mcVersion"
-                                   value="<c:out value="${not empty customerDetail.mcVersion ? customerDetail.mcVersion : ''}" />"
-                                   placeholder="MC 버전">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="mcAdmin">MC admin</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="mcAdmin" name="mcAdmin"
-                                   value="<c:out value="${not empty customerDetail.mcAdmin ? customerDetail.mcAdmin : ''}" />"
-                                   placeholder="MC 관리자 계정">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="backupYn">백업 여부</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="backupYn" name="backupYn">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.backupYn == 'Y' ? 'selected' : ''}>사용</option>
-                                <option value="N" ${customerDetail.backupYn == 'N' ? 'selected' : ''}>미사용</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="customResourcePoolYn">사용자 정의 리소스풀 여부</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="customResourcePoolYn" name="customResourcePoolYn">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.customResourcePoolYn == 'Y' ? 'selected' : ''}>사용</option>
-                                <option value="N" ${customerDetail.customResourcePoolYn == 'N' ? 'selected' : ''}>미사용</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="detail-item full-width mt-4">
-                    <label class="detail-label" for="backupNote">백업비고</label>
-                    <div class="detail-value">
-                        <textarea class="form-control" id="backupNote" name="backupNote" placeholder="백업 관련 상세 정보를 입력하세요"><c:out value="${not empty customerDetail.backupNote ? customerDetail.backupNote : customer.backupConfig}" /></textarea>
-                    </div>
-                </div>
-            </section>
+<details class="detail-section detail-section--collapsible" data-detail-section open>
+    <summary class="detail-section-title">
+        <i class="fas fa-database" aria-hidden="true"></i>
+        Vertica 운영 설정
+        <span class="detail-section-count" data-detail-section-count></span>
+    </summary>
+    <div class="detail-grid">
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="verticaAdmin" label="Vertica 관리자"
+                value="${editDetail.verticaAdmin}" placeholder="Vertica 관리자 계정" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="subclusterYn" label="Subcluster 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.subclusterYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcYn" label="MC 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.mcYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcHost" label="MC 호스트"
+                value="${editDetail.mcHost}" placeholder="MC 호스트" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcVersion" label="MC 버전"
+                value="${editDetail.mcVersion}" placeholder="MC 버전" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcAdmin" label="MC 관리자"
+                value="${editDetail.mcAdmin}" placeholder="MC 관리자" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="backupYn" label="백업 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.backupYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="customResourcePoolYn" label="사용자 정의 리소스 풀"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.customResourcePoolYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="backupNote" label="백업 비고"
+                inputType="textarea" fullWidth="${true}"
+                value="${not empty editDetail.backupNote ? editDetail.backupNote : customer.backupConfig}"
+                placeholder="백업 관련 참고사항" />
+    </div>
+</details>

@@ -19,6 +19,8 @@ class RequestPerformanceContextTest {
         RequestPerformanceContext.recordCustomerHistoryCacheMiss();
         RequestPerformanceContext.recordCustomerHistoryCacheHit();
         RequestPerformanceContext.recordCustomerHistoryScan(92, 6_000_000);
+        RequestPerformanceContext.recordDataLoad(11_000_000);
+        RequestPerformanceContext.recordViewRender(13_000_000);
 
         RequestPerformanceContext.Snapshot snapshot =
                 RequestPerformanceContext.finish();
@@ -43,6 +45,10 @@ class RequestPerformanceContextTest {
         assertEquals(92, snapshot.customerHistoryRecordFileCount());
         assertEquals(6_000_000, snapshot.customerHistoryScanDurationNanos());
         assertEquals(6_000_000, snapshot.maxCustomerHistoryScanNanos());
+        assertEquals(1, snapshot.dataLoadCount());
+        assertEquals(11_000_000, snapshot.dataLoadDurationNanos());
+        assertEquals(1, snapshot.viewRenderCount());
+        assertEquals(13_000_000, snapshot.viewRenderDurationNanos());
         RequestPerformanceContext.Snapshot cleared =
                 RequestPerformanceContext.finish();
         assertEquals(0, cleared.sqlCount());

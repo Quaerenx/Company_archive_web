@@ -1,151 +1,42 @@
 <%@ page pageEncoding="UTF-8" %>
-            <!-- 환경 정보 섹션 -->
-            <section id="customerDetailEnvironment"
-                     class="detail-section"
-                     aria-labelledby="customerDetailEnvironmentTitle">
-                <h2 id="customerDetailEnvironmentTitle" class="detail-section-title">
-                    <i class="fas fa-server"></i>
-                    환경·네트워크
-                </h2>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label class="detail-label" for="osInfo">OS</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="osInfo" name="osInfo"
-                                   value="<c:out value="${not empty customerDetail.osInfo ? customerDetail.osInfo : customer.os}" />"
-                                   placeholder="예: RHEL 8.6">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="memoryInfo">메모리</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="memoryInfo" name="memoryInfo"
-                                   value="<c:out value="${not empty customerDetail.memoryInfo ? customerDetail.memoryInfo : ''}" />"
-                                   placeholder="예: 64GB">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="infraType">인프라 구분</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="infraType" name="infraType">
-                                <option value="">선택하세요</option>
-                                <option value="온프레미스" ${customerDetail.infraType == '온프레미스' ? 'selected' : ''}>온프레미스</option>
-                                <option value="클라우드" ${customerDetail.infraType == '클라우드' ? 'selected' : ''}>클라우드</option>
-                                <option value="하이브리드" ${customerDetail.infraType == '하이브리드' ? 'selected' : ''}>하이브리드</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="cpuSocket">CPU 소켓</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="cpuSocket" name="cpuSocket"
-                                   value="<c:out value="${not empty customerDetail.cpuSocket ? customerDetail.cpuSocket : ''}" />"
-                                   placeholder="예: 2">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="hyperThreading">HyperThreading</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="hyperThreading" name="hyperThreading">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.hyperThreading == 'Y' ? 'selected' : ''}>사용</option>
-                                <option value="N" ${customerDetail.hyperThreading == 'N' ? 'selected' : ''}>미사용</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="cpuCore">CPU 코어</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="cpuCore" name="cpuCore"
-                                   value="<c:out value="${not empty customerDetail.cpuCore ? customerDetail.cpuCore : ''}" />"
-                                   placeholder="예: 16">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="dataArea">/data 영역</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="dataArea" name="dataArea"
-                                   value="<c:out value="${not empty customerDetail.dataArea ? customerDetail.dataArea : ''}" />"
-                                   placeholder="예: 1TB">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="depotArea">Depot 영역</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="depotArea" name="depotArea"
-                                   value="<c:out value="${not empty customerDetail.depotArea ? customerDetail.depotArea : ''}" />"
-                                   placeholder="예: 500GB">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="catalogArea">/catalog 영역</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="catalogArea" name="catalogArea"
-                                   value="<c:out value="${not empty customerDetail.catalogArea ? customerDetail.catalogArea : ''}" />"
-                                   placeholder="예: 50GB">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="objectArea">object 영역</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="objectArea" name="objectArea"
-                                   value="<c:out value="${not empty customerDetail.objectArea ? customerDetail.objectArea : ''}" />"
-                                   placeholder="예: 100GB">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="publicYn">Public 여부</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="publicYn" name="publicYn">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.publicYn == 'Y' ? 'selected' : ''}>사용</option>
-                                <option value="N" ${customerDetail.publicYn == 'N' ? 'selected' : ''}>미사용</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="publicNetwork">Public 대역</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="publicNetwork" name="publicNetwork"
-                                   value="<c:out value="${not empty customerDetail.publicNetwork ? customerDetail.publicNetwork : ''}" />"
-                                   placeholder="예: 192.168.1.0/24">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="privateYn">Private 여부</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="privateYn" name="privateYn">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.privateYn == 'Y' ? 'selected' : ''}>사용</option>
-                                <option value="N" ${customerDetail.privateYn == 'N' ? 'selected' : ''}>미사용</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="privateNetwork">Private 대역</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="privateNetwork" name="privateNetwork"
-                                   value="<c:out value="${not empty customerDetail.privateNetwork ? customerDetail.privateNetwork : ''}" />"
-                                   placeholder="예: 10.0.0.0/24">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="storageYn">storage 여부</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="storageYn" name="storageYn">
-                                <option value="">선택하세요</option>
-                                <option value="Y" ${customerDetail.storageYn == 'Y' ? 'selected' : ''}>사용</option>
-                                <option value="N" ${customerDetail.storageYn == 'N' ? 'selected' : ''}>미사용</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="storageNetwork">Storage 대역</label>
-                        <div class="detail-value">
-                            <input type="text" class="form-control" id="storageNetwork" name="storageNetwork"
-                                   value="<c:out value="${not empty customerDetail.storageNetwork ? customerDetail.storageNetwork : ''}" />"
-                                   placeholder="예: 172.16.0.0/24">
-                        </div>
-                    </div>
-                </div>
-            </section>
+<details class="detail-section detail-section--collapsible" data-detail-section open>
+    <summary class="detail-section-title">
+        <i class="fas fa-server" aria-hidden="true"></i>
+        인프라·네트워크
+        <span class="detail-section-count" data-detail-section-count></span>
+    </summary>
+    <div class="detail-grid">
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="memoryInfo" label="메모리"
+                value="${editDetail.memoryInfo}" placeholder="예: 512GB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="infraType" label="인프라 유형"
+                inputType="select"
+                options="온프레미스:온프레미스|클라우드:클라우드|하이브리드:하이브리드"
+                value="${editDetail.infraType}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="cpuSocket" label="CPU 소켓"
+                value="${editDetail.cpuSocket}" placeholder="CPU 소켓 수" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="hyperThreading" label="하이퍼스레딩"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.hyperThreading}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="cpuCore" label="CPU 코어"
+                value="${editDetail.cpuCore}" placeholder="CPU 코어 수" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="dataArea" label="데이터 영역"
+                value="${editDetail.dataArea}" placeholder="예: 20TB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="depotArea" label="Depot 영역"
+                value="${editDetail.depotArea}" placeholder="예: 2TB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="catalogArea" label="카탈로그 영역"
+                value="${editDetail.catalogArea}" placeholder="예: 500GB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="objectArea" label="Object 영역"
+                value="${editDetail.objectArea}" placeholder="Object Storage 정보" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="publicYn" label="Public 네트워크 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.publicYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="publicNetwork" label="Public 네트워크 대역"
+                value="${editDetail.publicNetwork}" placeholder="Public 네트워크 대역" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="privateYn" label="Private 네트워크 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.privateYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="privateNetwork" label="Private 네트워크 대역"
+                value="${editDetail.privateNetwork}" placeholder="Private 네트워크 대역" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="storageYn" label="스토리지 네트워크 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.storageYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="storageNetwork" label="스토리지 네트워크 대역"
+                value="${editDetail.storageNetwork}" placeholder="스토리지 네트워크 대역" />
+    </div>
+</details>

@@ -55,6 +55,53 @@ class MaintenanceRecordDAOPaginationTest {
     }
 
     @Test
+    void monthlyInboxRecordsUseOneCustomerScopedQuery() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 42L,
+                "customer_name", "Alpha",
+                "inspector_name", "Tester",
+                "inspection_date", Date.valueOf("2026-08-20"),
+                "vertica_version", "23.4",
+                "note", null,
+                "created_at", null,
+                "updated_at", null));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        List<MaintenanceRecordDTO> records =
+                dao.getMaintenanceRecordsByMonthForCustomers(
+                        Date.valueOf("2026-08-01"),
+                        Date.valueOf("2026-09-01"),
+                        List.of(" Alpha ", "Beta", "Alpha"));
+
+        assertEquals(1, jdbc.statements.size());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "inspection_date >= ? AND inspection_date < ?"));
+        assertTrue(statement.sql.contains("customer_name IN (?, ?)"));
+        assertEquals(Date.valueOf("2026-08-01"), statement.parameters.get(1));
+        assertEquals(Date.valueOf("2026-09-01"), statement.parameters.get(2));
+        assertEquals("Alpha", statement.parameters.get(3));
+        assertEquals("Beta", statement.parameters.get(4));
+        assertEquals("Alpha", records.getFirst().getCustomerName());
+    }
+
+    @Test
+    void emptyMonthlyInboxCustomerRequestDoesNotOpenAConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        assertTrue(dao.getMaintenanceRecordsByMonthForCustomers(
+                Date.valueOf("2026-08-01"),
+                Date.valueOf("2026-09-01"),
+                List.of(" ")).isEmpty());
+        assertEquals(0, jdbc.openCount);
+    }
+
+    @Test
     void customerHistoryUsesOneBoundedQueryWithStableOrder() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(PaginationJdbcFixture.row(

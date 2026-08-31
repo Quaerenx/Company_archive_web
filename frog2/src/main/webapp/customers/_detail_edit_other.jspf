@@ -1,42 +1,26 @@
 <%@ page pageEncoding="UTF-8" %>
-            <!-- 기타 정보 섹션 -->
-            <section id="customerDetailOther"
-                     class="detail-section"
-                     aria-labelledby="customerDetailOtherTitle">
-                <h2 id="customerDetailOtherTitle" class="detail-section-title">
-                    <i class="fas fa-sticky-note"></i>
-                    기타 정보
-                </h2>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label class="detail-label" for="eosDate">EOS 일자</label>
-                        <div class="detail-value">
-                            <c:set var="eosInputValue" value="${customer.verticaEos}" />
-                            <c:if test="${not empty customerDetail.eosDate}">
-                                <fmt:formatDate var="eosInputValue" value="${customerDetail.eosDate}" pattern="yyyy-MM-dd" />
-                            </c:if>
-                            <input type="date" class="form-control" id="eosDate" name="eosDate" value="<c:out value='${eosInputValue}' />">
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label class="detail-label" for="customerType">고객 유형</label>
-                        <div class="detail-value">
-                            <select class="form-control" id="customerType" name="customerType">
-                                <option value="">선택하세요</option>
-                                <option value="정기점검 계약 고객사" ${(not empty customerDetail.customerType and customerDetail.customerType == '정기점검 계약 고객사') or (empty customerDetail.customerType and customer.customerType == '정기점검 계약 고객사') ? 'selected' : ''}>정기점검 계약 고객사</option>
-                                <option value="납품 계약 고객사" ${(not empty customerDetail.customerType and customerDetail.customerType == '납품 계약 고객사') or (empty customerDetail.customerType and customer.customerType == '납품 계약 고객사') ? 'selected' : ''}>납품 계약 고객사</option>
-                                <option value="유지보수 종료 고객사" ${(not empty customerDetail.customerType and customerDetail.customerType == '유지보수 종료 고객사') or (empty customerDetail.customerType and customer.customerType == '유지보수 종료 고객사') ? 'selected' : ''}>유지보수 종료 고객사</option>
-                            </select>
-                        </div>
-                    </div>
+<c:remove var="editEosDate" scope="page" />
+<c:set var="editEosDate" value="${customer.verticaEos}" />
+<c:if test="${not empty editDetail.eosDate}">
+    <fmt:formatDate var="editEosDate" value="${editDetail.eosDate}" pattern="yyyy-MM-dd" />
+</c:if>
 
-
-
-                </div>
-                <div class="detail-item full-width mt-4">
-                    <label class="detail-label" for="note">비고</label>
-                    <div class="detail-value">
-                        <textarea class="form-control note-textarea" id="note" name="note" placeholder="기타 참고사항을 입력하세요"><c:out value="${not empty customerDetail.note ? customerDetail.note : customer.note}" /></textarea>
-                    </div>
-                </div>
-            </section>
+<details class="detail-section detail-section--collapsible" data-detail-section open>
+    <summary class="detail-section-title">
+        <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+        기타 정보
+        <span class="detail-section-count" data-detail-section-count></span>
+    </summary>
+    <div class="detail-grid">
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="eosDate" label="EOS 일자"
+                inputType="date" value="${editEosDate}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="customerType" label="고객 유형"
+                inputType="select"
+                options="정기점검 계약 고객사:정기점검 계약 고객사|납품 계약 고객사:납품 계약 고객사|유지보수 종료 고객사:유지보수 종료 고객사"
+                value="${not empty editDetail.customerType ? editDetail.customerType : customer.customerType}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="note" label="비고"
+                inputType="textarea" fullWidth="${true}"
+                value="${not empty editDetail.note ? editDetail.note : customer.note}"
+                placeholder="기타 참고사항" />
+    </div>
+</details>

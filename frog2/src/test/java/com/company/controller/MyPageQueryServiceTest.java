@@ -58,6 +58,7 @@ class MyPageQueryServiceTest {
         assertEquals(1, hostDAO.countCalls);
         assertEquals(1, customerDAO.listCalls);
         assertEquals(0, customerDAO.assignmentCalls);
+        assertEquals("Tester", customerDAO.listAssignee);
     }
 
     @Test
@@ -93,6 +94,9 @@ class MyPageQueryServiceTest {
         assertEquals(1, customerDAO.assignmentCalls);
         assertEquals(1, maintenanceDAO.monthCalls);
         assertEquals(1, maintenanceDAO.latestCalls);
+        assertEquals("Tester", customerDAO.listAssignee);
+        assertEquals("Tester", customerDAO.assignmentAssignee);
+        assertEquals(List.of("Alpha"), maintenanceDAO.monthCustomerNames);
         assertEquals(List.of("Alpha"), maintenanceDAO.latestCustomerNames);
     }
 
@@ -167,6 +171,7 @@ class MyPageQueryServiceTest {
         private int calls;
         private int monthCalls;
         private int latestCalls;
+        private List<String> monthCustomerNames = List.of();
         private List<String> latestCustomerNames = List.of();
         private final List<MaintenanceRecordDTO> monthRecords;
         private final List<MaintenanceRecordDTO> latestRecords;
@@ -190,9 +195,13 @@ class MyPageQueryServiceTest {
         }
 
         @Override
-        public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(
-                Date startDate, Date endDate) {
+        public List<MaintenanceRecordDTO>
+                getMaintenanceRecordsByMonthForCustomers(
+                        Date startDate,
+                        Date endDate,
+                        List<String> customerNames) {
             monthCalls++;
+            monthCustomerNames = List.copyOf(customerNames);
             return monthRecords;
         }
 
@@ -211,6 +220,8 @@ class MyPageQueryServiceTest {
         private final List<MaintenanceCustomerAssignment> assignments;
         private int listCalls;
         private int assignmentCalls;
+        private String listAssignee;
+        private String assignmentAssignee;
 
         private RecordingCustomerDAO() {
             this(List.of(), List.of());
@@ -224,16 +235,19 @@ class MyPageQueryServiceTest {
         }
 
         @Override
-        public List<CustomerDTO> getMaintenanceCustomers(
-                String sortField, String sortDirection) {
+        public List<CustomerDTO> getMaintenanceCustomersByAssignee(
+                String assigneeName) {
             listCalls++;
+            listAssignee = assigneeName;
             return customers;
         }
 
         @Override
         public List<MaintenanceCustomerAssignment>
-                getAllMaintenanceCustomerAssignments() {
+                getMaintenanceCustomerAssignmentsByAssignee(
+                        String assigneeName) {
             assignmentCalls++;
+            assignmentAssignee = assigneeName;
             return assignments;
         }
     }

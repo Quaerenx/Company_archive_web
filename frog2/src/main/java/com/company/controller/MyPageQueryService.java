@@ -109,12 +109,9 @@ final class MyPageQueryService {
         if (user == null || user.getUserName() == null) {
             return WorkInbox.empty();
         }
-        List<CustomerDTO> maintenanceCustomers =
-                customerDAO.getMaintenanceCustomers(
-                        "manager_name", "ASC");
         List<CustomerDTO> assignedCustomers =
-                workInboxService.assignedCustomers(
-                        user.getUserName(), maintenanceCustomers);
+                customerDAO.getMaintenanceCustomersByAssignee(
+                        user.getUserName());
         if (assignedCustomers.isEmpty()) {
             return WorkInbox.empty();
         }
@@ -128,10 +125,11 @@ final class MyPageQueryService {
                 .map(CustomerDTO::getCustomerName)
                 .toList();
         List<MaintenanceCustomerAssignment> assignments =
-                customerDAO.getAllMaintenanceCustomerAssignments();
+                customerDAO.getMaintenanceCustomerAssignmentsByAssignee(
+                        user.getUserName());
         List<MaintenanceRecordDTO> currentMonthRecords =
-                maintenanceDAO.getMaintenanceRecordsByMonth(
-                        monthStart, nextMonthStart);
+                maintenanceDAO.getMaintenanceRecordsByMonthForCustomers(
+                        monthStart, nextMonthStart, customerNames);
         List<MaintenanceRecordDTO> latestRecords =
                 maintenanceDAO.getLatestMaintenanceRecordsByCustomers(
                         customerNames);

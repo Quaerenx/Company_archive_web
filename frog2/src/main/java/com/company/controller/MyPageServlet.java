@@ -4,6 +4,8 @@ import com.company.model.MonthlyCustomerResponseDAO;
 import com.company.model.MonthlyCustomerResponseDTO;
 import com.company.model.UserDAO;
 import com.company.model.UserDTO;
+import com.company.performance.RequestPerformanceContext;
+import com.company.performance.RequestPerformanceContext.Operation;
 import com.company.security.SessionPrincipal;
 import com.company.util.BusinessDate;
 import jakarta.servlet.ServletException;
@@ -155,11 +157,15 @@ public class MyPageServlet extends HttpServlet {
             UserDTO user,
             MyPageQueryService queryService)
             throws ServletException, IOException {
+        RequestPerformanceContext.markOperation(Operation.MYPAGE_OVERVIEW);
+        long dataLoadStart = System.nanoTime();
         String section = resolveSection(request);
         MyPageQueryService.ViewData viewData = HOSTS_SECTION.equals(section)
                 ? queryService.loadHosts(user.getUserId())
                 : queryService.loadOverview(
                         user.getUserId(), RECENT_ACTIVITY_LIMIT);
+        RequestPerformanceContext.recordDataLoad(
+                System.nanoTime() - dataLoadStart);
 
         request.setAttribute("userInfo", viewData.user());
         request.setAttribute("myPageSection", section);
@@ -186,7 +192,14 @@ public class MyPageServlet extends HttpServlet {
             request.setAttribute("workInbox", viewData.workInbox());
         }
 
-        request.getRequestDispatcher("/mypage/mypage.jsp").forward(request, response);
+        long viewRenderStart = System.nanoTime();
+        try {
+            request.getRequestDispatcher("/mypage/mypage.jsp")
+                    .forward(request, response);
+        } finally {
+            RequestPerformanceContext.recordViewRender(
+                    System.nanoTime() - viewRenderStart);
+        }
     }
 
     private static String resolveSection(HttpServletRequest request) {

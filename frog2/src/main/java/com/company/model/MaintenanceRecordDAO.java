@@ -463,16 +463,52 @@ public class MaintenanceRecordDAO {
         return records;
     }
 
-    public List<MaintenanceRecordDTO> getLatestMaintenanceRecordsByCustomers(
+    public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonthForCustomers(
+            Date startDate,
+            Date endDate,
             List<String> customerNames) {
-        LinkedHashSet<String> normalizedNames = new LinkedHashSet<>();
-        if (customerNames != null) {
-            for (String customerName : customerNames) {
-                if (!isBlank(customerName)) {
-                    normalizedNames.add(customerName.trim());
+        LinkedHashSet<String> normalizedNames = normalizedCustomerNames(
+                customerNames);
+        if (normalizedNames.isEmpty()) {
+            return List.of();
+        }
+
+        try (Connection connection = connectionProvider.getConnection()) {
+            MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(
+                    connection);
+            String placeholders = placeholders(normalizedNames.size());
+            String sql = "SELECT " + selectColumns(schema)
+                    + " FROM maintenance_records "
+                    + "WHERE inspection_date >= ? AND inspection_date < ? "
+                    + "AND customer_name IN (" + placeholders + ") "
+                    + "ORDER BY inspection_date ASC, customer_name ASC";
+            try (PreparedStatement statement =
+                            connection.prepareStatement(sql)) {
+                statement.setDate(1, startDate);
+                statement.setDate(2, endDate);
+                int parameter = 3;
+                for (String customerName : normalizedNames) {
+                    statement.setString(parameter++, customerName);
+                }
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<MaintenanceRecordDTO> records = new ArrayList<>();
+                    while (resultSet.next()) {
+                        records.add(mapRowToDto(resultSet, schema));
+                    }
+                    return List.copyOf(records);
                 }
             }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load monthly maintenance records by customers",
+                    exception);
         }
+    }
+
+    public List<MaintenanceRecordDTO> getLatestMaintenanceRecordsByCustomers(
+            List<String> customerNames) {
+        LinkedHashSet<String> normalizedNames = normalizedCustomerNames(
+                customerNames);
         if (normalizedNames.isEmpty()) {
             return List.of();
         }
@@ -481,9 +517,7 @@ public class MaintenanceRecordDAO {
             MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(
                     connection);
             String columns = selectColumns(schema);
-            String placeholders = String.join(
-                    ", ", java.util.Collections.nCopies(
-                            normalizedNames.size(), "?"));
+            String placeholders = placeholders(normalizedNames.size());
             String sql = "SELECT " + columns + " FROM (SELECT "
                     + columns + ", ROW_NUMBER() OVER ("
                     + "PARTITION BY customer_name ORDER BY "
@@ -512,6 +546,25 @@ public class MaintenanceRecordDAO {
                     "load latest maintenance records by customers",
                     exception);
         }
+    }
+
+    private static LinkedHashSet<String> normalizedCustomerNames(
+            List<String> customerNames) {
+        LinkedHashSet<String> normalizedNames = new LinkedHashSet<>();
+        if (customerNames == null) {
+            return normalizedNames;
+        }
+        for (String customerName : customerNames) {
+            if (!isBlank(customerName)) {
+                normalizedNames.add(customerName.trim());
+            }
+        }
+        return normalizedNames;
+    }
+
+    private static String placeholders(int count) {
+        return String.join(
+                ", ", java.util.Collections.nCopies(count, "?"));
     }
 
     private void setStringOrNull(PreparedStatement pstmt, int parameterIndex, String value) throws SQLException {

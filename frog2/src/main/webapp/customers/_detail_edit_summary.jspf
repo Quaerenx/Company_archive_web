@@ -1,0 +1,35 @@
+<%@ page pageEncoding="UTF-8" %>
+<section class="detail-section detail-section--summary" data-detail-section>
+    <div class="detail-section-title">
+        <i class="fas fa-layer-group" aria-hidden="true"></i>
+        핵심 정보
+        <span class="detail-section-count" data-detail-section-count></span>
+    </div>
+    <div class="detail-grid detail-grid--summary">
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="dbName" label="DB명"
+                value="${not empty editDetail.dbName ? editDetail.dbName : customer.dbName}"
+                placeholder="데이터베이스명" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="verticaVersion" label="Vertica 버전"
+                value="${not empty editDetail.verticaVersion ? editDetail.verticaVersion : customer.verticaVersion}"
+                placeholder="예: 25.3.0-3" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="dbMode" label="DB 모드"
+                inputType="select" options="ENT:ENT|EON:EON"
+                value="${not empty editDetail.dbMode ? editDetail.dbMode : customer.mode}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="nodeCount" label="노드 수"
+                inputType="number" min="1"
+                value="${not empty editDetail.nodeCount ? editDetail.nodeCount : customer.nodes}"
+                placeholder="노드 수" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="licenseInfo" label="라이선스"
+                value="${not empty editDetail.licenseInfo ? editDetail.licenseInfo : customer.licenseSize}"
+                placeholder="예: 20TB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="osInfo" label="OS"
+                value="${not empty editDetail.osInfo ? editDetail.osInfo : customer.os}"
+                placeholder="예: RHEL 9.4" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mainManager" label="주 담당자"
+                value="${not empty editDetail.mainManager ? editDetail.mainManager : customer.managerName}"
+                placeholder="주 담당자" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="said" label="SAID"
+                value="${not empty editDetail.said ? editDetail.said : customer.said}"
+                placeholder="Service Agreement ID" />
+    </div>
+</section>

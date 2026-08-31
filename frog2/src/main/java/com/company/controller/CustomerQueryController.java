@@ -5,9 +5,12 @@ import com.company.model.CustomerCounts;
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDAO;
 import com.company.model.CustomerDetailDTO;
+import com.company.model.CustomerDetailSet;
 import com.company.model.CustomerPage;
 import com.company.model.PageResult;
 import com.company.model.VerticaEosDAO;
+import com.company.performance.RequestPerformanceContext;
+import com.company.performance.RequestPerformanceContext.Operation;
 import com.company.web.ApplicationError;
 import com.company.web.JsonResponse;
 import com.company.util.BusinessDate;
@@ -79,6 +82,8 @@ final class CustomerQueryController {
 
     private void showList(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        RequestPerformanceContext.markOperation(Operation.CUSTOMERS_LIST);
+        long dataLoadStart = System.nanoTime();
         String sortField = defaultValue(request.getParameter("sortField"), "");
         String sortDirection = defaultValue(request.getParameter("sortDirection"), "ASC");
         String filter = defaultValue(request.getParameter("filter"), "maintenance");
@@ -103,6 +108,8 @@ final class CustomerQueryController {
                 mapper.requestedPageSize(request));
         PageResult<CustomerDTO> page = customerPage.result();
         CustomerCounts counts = customerPage.counts();
+        RequestPerformanceContext.recordDataLoad(
+                System.nanoTime() - dataLoadStart);
 
         request.setAttribute("customerList", page.items());
         request.setAttribute("sortField", sortField);
@@ -116,7 +123,17 @@ final class CustomerQueryController {
         request.setAttribute("currentPage", page.page());
         request.setAttribute("pageSize", page.pageSize());
         request.setAttribute("totalPages", page.totalPages());
-        forward(request, response, "/customers/customers_list.jsp", "list");
+        long viewRenderStart = System.nanoTime();
+        try {
+            forward(
+                    request,
+                    response,
+                    "/customers/customers_list.jsp",
+                    "list");
+        } finally {
+            RequestPerformanceContext.recordViewRender(
+                    System.nanoTime() - viewRenderStart);
+        }
     }
 
     private void showDetail(HttpServletRequest request, HttpServletResponse response)
@@ -187,8 +204,20 @@ final class CustomerQueryController {
             return;
         }
 
+        CustomerDetailSet details = detailDAO.getCustomerDetails(customerName);
         request.setAttribute("customer", customer);
-        request.setAttribute("customerDetail", detail(environment, customerName));
+        request.setAttribute("customerDetail", details.production());
+        request.setAttribute("customerDetailStg", details.staging());
+        request.setAttribute("customerDetailDev", details.development());
+        request.setAttribute(
+                "customerDetailEnvironments",
+                List.of(
+                        new CustomerDetailEditEnvironmentView(
+                                "prod", "운영", details.production()),
+                        new CustomerDetailEditEnvironmentView(
+                                "stg", "스테이징", details.staging()),
+                        new CustomerDetailEditEnvironmentView(
+                                "dev", "개발", details.development())));
         request.setAttribute("env", environment.externalValue());
         forward(request, response, "/customers/customers_detail_edit.jsp", "editDetail");
     }
@@ -215,14 +244,6 @@ final class CustomerQueryController {
         List<CustomerDTO> customers =
                 nullToEmpty(customerDAO.getAllCustomers("", "ASC"));
         CustomerJsonResponse.writeMaintenanceOptions(response, customers);
-    }
-
-    private CustomerDetailDTO detail(CustomerEnvironment environment, String customerName) {
-        return switch (environment) {
-            case PROD -> detailDAO.getCustomerDetail(customerName);
-            case STAGING -> detailDAO.getCustomerDetailStg(customerName);
-            case DEVELOPMENT -> detailDAO.getCustomerDetailDev(customerName);
-        };
     }
 
     private static void forward(

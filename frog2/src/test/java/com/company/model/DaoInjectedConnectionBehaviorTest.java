@@ -70,6 +70,39 @@ class DaoInjectedConnectionBehaviorTest {
     }
 
     @Test
+    void assignedMaintenanceCustomersAreFilteredInTheDatabase() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(customerRow("Acme"));
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+
+        List<CustomerDTO> customers =
+                dao.getMaintenanceCustomersByAssignee(" Alice ");
+
+        assertEquals(List.of("Acme"), customers.stream()
+                .map(CustomerDTO::getCustomerName)
+                .toList());
+        assertEquals(1, jdbc.openCount);
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains("d.customer_type = ?"));
+        assertTrue(statement.sql.contains(
+                "LOWER(TRIM(d.main_manager)) = LOWER(?) "
+                        + "OR LOWER(TRIM(d.sub_manager)) = LOWER(?)"));
+        assertEquals("정기점검 계약 고객사", statement.parameters.get(1));
+        assertEquals("Alice", statement.parameters.get(2));
+        assertEquals("Alice", statement.parameters.get(3));
+    }
+
+    @Test
+    void blankAssigneeDoesNotOpenACustomerConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+
+        assertTrue(dao.getMaintenanceCustomersByAssignee(" ").isEmpty());
+        assertEquals(0, jdbc.openCount);
+    }
+
+    @Test
     void activeMaintenanceCustomerValidationUsesTheCustomerType() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(customerRow("Maintenance", "정기점검 계약 고객사"));

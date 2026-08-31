@@ -145,8 +145,24 @@ class CustomerControllerCompatibilityTest {
         ResponseFixture response = new ResponseFixture();
         servlet.doGet(request.proxy(), response.proxy());
 
-        assertEquals(List.of("stg:Acme"), detailDAO.reads);
+        assertEquals(
+                List.of("prod:Acme", "stg:Acme", "dev:Acme"),
+                detailDAO.reads);
         assertEquals("stg", request.attributes.get("env"));
+        @SuppressWarnings("unchecked")
+        List<CustomerDetailEditEnvironmentView> environments =
+                (List<CustomerDetailEditEnvironmentView>)
+                        request.attributes.get("customerDetailEnvironments");
+        assertEquals(3, environments.size());
+        assertEquals("prod", environments.get(0).getValue());
+        assertEquals("운영", environments.get(0).getLabel());
+        assertSame(detailDAO.production, environments.get(0).getDetail());
+        assertEquals(
+                detailDAO.staging,
+                request.attributes.get("customerDetailStg"));
+        assertEquals(
+                detailDAO.development,
+                request.attributes.get("customerDetailDev"));
         assertEquals("editDetail", request.attributes.get("viewType"));
         assertEquals("/customers/customers_detail_edit.jsp", request.forwardedPath);
     }

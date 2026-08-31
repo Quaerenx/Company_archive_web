@@ -39,6 +39,13 @@
         <section class="login-card" aria-label="로그인">
             <header class="login-header">
                 <div class="login-brand">
+                    <%-- 로고 상단 모서리를 난간 삼아 뒤에서 내다보는 장식용 눈.
+                         peek 문서가 다 펼쳐진 뒤에 올라온다. 의미 없는 장식이라
+                         보조기기에서는 감춘다. --%>
+                    <span class="brand-eyes" aria-hidden="true">
+                        <span class="brand-eye"><span class="brand-pupil"></span></span>
+                        <span class="brand-eye"><span class="brand-pupil"></span></span>
+                    </span>
                     <img class="login-brand-logo"
                          src="${pageContext.request.contextPath}/resources/images/archive-logo.svg?v=${initParam.frog2AssetVersion}"
                          width="3664"

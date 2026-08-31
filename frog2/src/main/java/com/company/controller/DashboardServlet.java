@@ -22,6 +22,8 @@ import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.UserDTO;
+import com.company.performance.RequestPerformanceContext;
+import com.company.performance.RequestPerformanceContext.Operation;
 import com.company.security.SessionPrincipal;
 
 import jakarta.servlet.ServletException;
@@ -68,6 +70,8 @@ public class DashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        RequestPerformanceContext.markOperation(Operation.DASHBOARD_VIEW);
+        long dataLoadStart = System.nanoTime();
         YearMonth selectedMonth = parseMaintenanceMonth(request.getParameter("maintenanceMonth"));
         LocalDate monthStart = selectedMonth.atDay(1);
         LocalDate nextMonthStart = selectedMonth.plusMonths(1).atDay(1);
@@ -85,6 +89,8 @@ public class DashboardServlet extends HttpServlet {
                         allAssignments,
                         stateByCustomer,
                         selectedMonth);
+        RequestPerformanceContext.recordDataLoad(
+                System.nanoTime() - dataLoadStart);
 
         request.setAttribute("maintenanceMonthParam", selectedMonth.format(MONTH_PARAM_FORMATTER));
         request.setAttribute("maintenanceMonthLabel", selectedMonth.format(MONTH_LABEL_FORMATTER));
@@ -92,7 +98,14 @@ public class DashboardServlet extends HttpServlet {
         request.setAttribute(
                 "monthlyMaintenanceAssigneeGroups",
                 monthlyMaintenanceAssigneeGroups);
-        request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
+        long viewRenderStart = System.nanoTime();
+        try {
+            request.getRequestDispatcher("/dashboard.jsp")
+                    .forward(request, response);
+        } finally {
+            RequestPerformanceContext.recordViewRender(
+                    System.nanoTime() - viewRenderStart);
+        }
     }
 
     private YearMonth parseMaintenanceMonth(String rawMonth) {

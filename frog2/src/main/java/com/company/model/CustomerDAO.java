@@ -113,6 +113,37 @@ public class CustomerDAO {
                 sortField, sortDirection, MAINTENANCE_FILTER);
     }
 
+    public List<CustomerDTO> getMaintenanceCustomersByAssignee(
+            String assigneeName) {
+        String normalizedAssignee = normalizeAssignee(assigneeName);
+        if (normalizedAssignee == null) {
+            return List.of();
+        }
+        String sql = "SELECT " + CUSTOMER_COLUMNS
+                + " FROM vertica_customer_detail d "
+                + "WHERE d.is_deleted = " + ACTIVE_FLAG
+                + " AND d.customer_type = ? "
+                + "AND (LOWER(TRIM(d.main_manager)) = LOWER(?) "
+                + "OR LOWER(TRIM(d.sub_manager)) = LOWER(?)) "
+                + "ORDER BY d.customer_name ASC";
+        try (Connection connection = connectionProvider.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, MAINTENANCE_CUSTOMER_TYPE);
+            statement.setString(2, normalizedAssignee);
+            statement.setString(3, normalizedAssignee);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<CustomerDTO> customers = new ArrayList<>();
+                while (resultSet.next()) {
+                    customers.add(CustomerFieldContract.read(resultSet));
+                }
+                return List.copyOf(customers);
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load maintenance customers by assignee", exception);
+        }
+    }
+
     public List<CustomerDTO> searchCustomers(String query, int limit) {
         if (limit <= 0 || limit > 20) {
             throw new IllegalArgumentException(
@@ -171,16 +202,37 @@ public class CustomerDAO {
                     MAINTENANCE_SCHEDULE_TABLE,
                     MAINTENANCE_SCHEDULE_CAPABILITY);
             return loadMaintenanceCustomerAssignments(
-                    connection, scheduleAvailable);
+                    connection, scheduleAvailable, null);
         } catch (SQLException exception) {
             throw DataAccessException.from(
                     "load maintenance customer assignments", exception);
         }
     }
 
+    public List<MaintenanceCustomerAssignment>
+            getMaintenanceCustomerAssignmentsByAssignee(String assigneeName) {
+        String normalizedAssignee = normalizeAssignee(assigneeName);
+        if (normalizedAssignee == null) {
+            return List.of();
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            boolean scheduleAvailable = schemaCapabilities.columnExists(
+                    connection,
+                    MAINTENANCE_SCHEDULE_TABLE,
+                    MAINTENANCE_SCHEDULE_CAPABILITY);
+            return loadMaintenanceCustomerAssignments(
+                    connection, scheduleAvailable, normalizedAssignee);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load maintenance customer assignments by assignee",
+                    exception);
+        }
+    }
+
     private List<MaintenanceCustomerAssignment> loadMaintenanceCustomerAssignments(
             Connection connection,
-            boolean scheduleAvailable) throws SQLException {
+            boolean scheduleAvailable,
+            String assigneeName) throws SQLException {
         String scheduleColumns = scheduleAvailable
                 ? ", s.interval_months, s.anchor_month, s.enabled, "
                         + "s.effective_from, s.effective_to "
@@ -195,12 +247,20 @@ public class CustomerDAO {
                 + scheduleJoin
                 + "WHERE d.is_deleted = " + ACTIVE_FLAG
                 + " AND d.customer_type = ? "
+                + (assigneeName == null
+                        ? ""
+                        : "AND (LOWER(TRIM(d.main_manager)) = LOWER(?) "
+                                + "OR LOWER(TRIM(d.sub_manager)) = LOWER(?)) ")
                 + "ORDER BY CASE WHEN d.main_manager IS NULL "
                 + "OR TRIM(d.main_manager) = '' THEN 1 ELSE 0 END, "
                 + "d.main_manager ASC, d.customer_name ASC";
         List<MaintenanceCustomerAssignment> assignments = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, MAINTENANCE_CUSTOMER_TYPE);
+            if (assigneeName != null) {
+                statement.setString(2, assigneeName);
+                statement.setString(3, assigneeName);
+            }
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     MaintenanceSchedule schedule = scheduleAvailable
@@ -534,6 +594,13 @@ public class CustomerDAO {
 
     private static String normalizeQuery(String query) {
         return SearchQueryPolicy.normalize(query);
+    }
+
+    private static String normalizeAssignee(String assigneeName) {
+        if (assigneeName == null || assigneeName.isBlank()) {
+            return null;
+        }
+        return assigneeName.strip();
     }
 
     private static String sortOrder(String sortField, String direction) {
