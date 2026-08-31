@@ -38,6 +38,20 @@ class OutputEncodingWebCoverageTest {
     }
 
     @Test
+    void jspFragmentsWithNonAsciiTextDeclareUtf8Encoding() throws Exception {
+        try (var paths = Files.walk(WEBAPP)) {
+            for (Path path : paths.filter(OutputEncodingWebCoverageTest::isJspFragment).toList()) {
+                String source = Files.readString(path);
+                if (source.codePoints().anyMatch(codePoint -> codePoint > 0x7f)) {
+                    assertTrue(
+                            source.contains("pageEncoding=\"UTF-8\""),
+                            () -> "Non-ASCII JSP fragment without UTF-8 page encoding: " + path);
+                }
+            }
+        }
+    }
+
+    @Test
     void highRiskDynamicValuesUseEncodedDomData() throws Exception {
         String monthly = readWebapp("mypage/monthly_customer_response.jsp");
         assertFalse(monthly.contains("onclick=\"openEditModal("));
@@ -83,6 +97,10 @@ class OutputEncodingWebCoverageTest {
     private static boolean isJspView(Path path) {
         String name = path.getFileName().toString();
         return name.endsWith(".jsp") || name.endsWith(".jspf");
+    }
+
+    private static boolean isJspFragment(Path path) {
+        return path.getFileName().toString().endsWith(".jspf");
     }
 
     private static String readWebapp(String relativePath) throws Exception {

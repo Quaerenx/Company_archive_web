@@ -1,3 +1,4 @@
+<%@ page pageEncoding="UTF-8" %>
             <!-- 기타 정보 섹션 -->
             <section id="customerDetailOther"
                      class="detail-section"
