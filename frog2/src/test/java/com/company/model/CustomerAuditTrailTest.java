@@ -171,8 +171,8 @@ class CustomerAuditTrailTest {
         PaginationJdbcFixture.StatementRecord update = writeJdbc.statements.getFirst();
         assertTrue(update.sql.contains(
                 "updated_at = CURRENT_TIMESTAMP, updated_by = ?"));
-        assertEquals("user-17", update.parameters.get(49));
-        assertEquals("Acme", update.parameters.get(50));
+        assertEquals("user-17", update.parameters.get(50));
+        assertEquals("Acme", update.parameters.get(51));
 
         Timestamp modifiedAt = Timestamp.valueOf("2026-08-25 09:30:00");
         PaginationJdbcFixture readJdbc = new PaginationJdbcFixture();

@@ -23,7 +23,7 @@ class CustomerDetailViewStructureTest {
         assertTrue(fragment.contains(
                 "<fmt:formatDate var=\"detailEosDate\" value=\""
                         + "$" + "{detail.eosDate}\""));
-        assertEquals(49, occurrences(fragment, "<t:detailField "));
+        assertEquals(47, occurrences(fragment, "<t:detailField "));
         assertEquals(5, occurrences(
                 fragment,
                 "class=\"detail-section detail-section--collapsible\" data-detail-section open"));
@@ -111,13 +111,69 @@ class CustomerDetailViewStructureTest {
         String fieldTag = Files.readString(
                 webapp.resolve("WEB-INF/tags/detailField.tag"));
 
-        assertEquals(8, occurrences(fields, "booleanState=\"${true}\""));
+        assertEquals(5, occurrences(fields, "booleanState=\"${true}\""));
         assertTrue(fieldTag.contains("name=\"booleanState\""));
         assertTrue(fieldTag.contains("detail-status--enabled"));
         assertTrue(fieldTag.contains("detail-status--disabled"));
         assertTrue(fieldTag.contains("aria-hidden=\"true\""));
         assertTrue(fieldTag.contains(">사용</span>"));
         assertTrue(fieldTag.contains(">미사용</span>"));
+    }
+
+    @Test
+    void readOnlyDetailKeepsTheRequestedTwoColumnFieldOrder() throws Exception {
+        String fields = Files.readString(Path.of(
+                "src/main/webapp/customers/_detail_sections.jspf"));
+
+        assertAppearsInOrder(fields,
+                "label=\"DB명\"",
+                "label=\"OS\"",
+                "label=\"Vertica 버전\"",
+                "label=\"SAID\"",
+                "label=\"DB 모드\"",
+                "label=\"주 담당자\"",
+                "label=\"노드 수\"",
+                "label=\"부 담당자\"",
+                "label=\"라이선스\"");
+        assertAppearsInOrder(fields,
+                "label=\"고객사\"",
+                "label=\"시스템명\"",
+                "label=\"고객사 담당자\"",
+                "label=\"도입 연도\"",
+                "label=\"담당 SI\"",
+                "label=\"설치일\"",
+                "label=\"SI 담당자\"",
+                "label=\"작성일\"",
+                "label=\"작성자\"");
+        assertAppearsInOrder(fields,
+                "label=\"Vertica 관리자\"",
+                "label=\"MC 사용\"",
+                "label=\"사용자 정의 리소스 풀\"",
+                "label=\"MC 버전\"",
+                "label=\"Subcluster 사용\"",
+                "label=\"MC 호스트\"",
+                "label=\"백업 사용\"",
+                "label=\"MC 관리자\"",
+                "label=\"백업 비고\"");
+        assertAppearsInOrder(fields,
+                "label=\"메모리\"",
+                "label=\"인프라 유형\"",
+                "label=\"SWAP 메모리\"",
+                "label=\"데이터 영역\"",
+                "label=\"CPU 소켓\"",
+                "label=\"카탈로그 영역\"",
+                "label=\"CPU 코어\"",
+                "label=\"Depot 영역\"",
+                "label=\"하이퍼스레딩\"",
+                "label=\"Object 영역\"",
+                "label=\"Public 네트워크\"",
+                "label=\"Private 네트워크\"",
+                "label=\"스토리지 네트워크\"");
+        assertEquals(3, occurrences(fields, "columnStart=\"${true}\""));
+        assertFalse(fields.contains("label=\"Public 네트워크 사용\""));
+        assertFalse(fields.contains("label=\"Private 네트워크 사용\""));
+        assertFalse(fields.contains("label=\"스토리지 네트워크 사용\""));
+        assertEquals(1, occurrences(fields, "label=\"부 담당자\""));
     }
 
     @Test
@@ -159,5 +215,14 @@ class CustomerDetailViewStructureTest {
             offset += token.length();
         }
         return count;
+    }
+
+    private static void assertAppearsInOrder(String value, String... tokens) {
+        int offset = 0;
+        for (String token : tokens) {
+            int index = value.indexOf(token, offset);
+            assertTrue(index >= 0, "Missing or out-of-order token: " + token);
+            offset = index + token.length();
+        }
     }
 }

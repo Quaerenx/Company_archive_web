@@ -142,6 +142,10 @@
     grid-column: 1 / -1;
 }
 
+.ui-system .customer-detail--view .detail-item--column-start {
+    grid-column-start: 1;
+}
+
 .ui-system .customer-detail--view .detail-label {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
@@ -282,11 +286,10 @@
     color: var(--color-text-disabled);
 }
 
-.customer-detail--edit .detail-item.is-conditionally-disabled
-        .customer-detail-edit-control:disabled {
-    background: var(--color-surface-subtle);
-    border-color: var(--color-border);
-    color: var(--color-text-muted);
+.ui-system .customer-detail--edit .customer-detail-edit-control:disabled {
+    background: var(--color-surface-muted);
+    border-color: var(--color-surface-edge);
+    color: var(--color-text-disabled);
     cursor: not-allowed;
     opacity: 1;
 }

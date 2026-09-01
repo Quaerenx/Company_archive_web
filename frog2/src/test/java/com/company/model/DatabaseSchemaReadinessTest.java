@@ -234,4 +234,25 @@ class DatabaseSchemaReadinessTest {
         assertEquals("storage_network", missing.columnName());
         assertTrue(jdbc.statements.isEmpty());
     }
+
+    @Test
+    void missingSwapMemoryReportsItsAdditiveMigration() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = ALL_REQUIRED_COLUMNS.stream()
+                .filter(column -> !column.equals(
+                        "vertica_customer_detail_dev.swap_memory"))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+
+        DatabaseSchemaReadiness.Report report =
+                DatabaseSchemaReadiness.inspect(jdbc::open);
+
+        assertFalse(report.ready());
+        assertEquals(1, report.missingRequirements().size());
+        DatabaseSchemaReadiness.Requirement missing =
+                report.missingRequirements().getFirst();
+        assertEquals("V20260901_10", missing.migrationVersion());
+        assertEquals("vertica_customer_detail_dev", missing.tableName());
+        assertEquals("swap_memory", missing.columnName());
+        assertTrue(jdbc.statements.isEmpty());
+    }
 }

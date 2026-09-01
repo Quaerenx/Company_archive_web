@@ -74,4 +74,21 @@ class OperationsAutomationContractTest {
         assertTrue(migrationTest.contains(
                 "Schema migration must not change customer rows"));
     }
+
+    @Test
+    void customerSwapMemoryMigrationRemainsExplicitAndRowCountGated()
+            throws Exception {
+        String build = Files.readString(Path.of("build.gradle"));
+        String migrationTest = Files.readString(Path.of(
+                "src/test/java/com/company/model/"
+                        + "CustomerSwapMemoryMigrationE2ETest.java"));
+
+        assertTrue(build.contains("'e2e-customer-swap-migration'"));
+        assertTrue(build.contains("customerSwapMemoryMigration"));
+        assertTrue(migrationTest.contains(
+                "FROG2_CUSTOMER_SWAP_MIGRATION_APPROVED"));
+        assertTrue(migrationTest.contains(
+                "Schema migration must not change customer rows"));
+        assertTrue(migrationTest.contains("assertCompatibleExistingColumns"));
+    }
 }

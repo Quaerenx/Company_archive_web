@@ -244,8 +244,8 @@ class CustomerDetailDAOJdbcContractTest {
     }
 
     private static void assertParameters(Map<Integer, Object> actual, List<Object> expected) {
-        assertEquals(49, actual.size());
-        assertEquals(49, expected.size());
+        assertEquals(50, actual.size());
+        assertEquals(50, expected.size());
         for (int index = 1; index <= expected.size(); index++) {
             assertEquals(expected.get(index - 1), actual.get(index), "parameter " + index);
         }
@@ -287,6 +287,7 @@ class CustomerDetailDAOJdbcContractTest {
                 detail.getBackupNote(),
                 detail.getOsInfo(),
                 detail.getMemoryInfo(),
+                detail.getSwapMemory(),
                 detail.getInfraType(),
                 detail.getCpuSocket(),
                 detail.getHyperThreading(),
@@ -340,6 +341,7 @@ class CustomerDetailDAOJdbcContractTest {
         detail.setBackupNote("backup-note");
         detail.setOsInfo("os-info");
         detail.setMemoryInfo("memory-info");
+        detail.setSwapMemory("swap-memory");
         detail.setInfraType("infra-type");
         detail.setCpuSocket("cpu-socket");
         detail.setHyperThreading("hyper-threading");

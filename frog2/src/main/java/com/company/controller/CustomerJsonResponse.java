@@ -70,6 +70,7 @@ final class CustomerJsonResponse {
         append(json, "backupNote", detail.getBackupNote());
         append(json, "osInfo", detail.getOsInfo());
         append(json, "memoryInfo", detail.getMemoryInfo());
+        append(json, "swapMemory", detail.getSwapMemory());
         append(json, "infraType", detail.getInfraType());
         append(json, "cpuSocket", detail.getCpuSocket());
         append(json, "hyperThreading", detail.getHyperThreading());

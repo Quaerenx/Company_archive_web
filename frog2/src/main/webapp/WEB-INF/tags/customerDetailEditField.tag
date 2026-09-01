@@ -9,12 +9,13 @@
 <%@ attribute name="options" required="false" type="java.lang.String" %>
 <%@ attribute name="placeholder" required="false" type="java.lang.String" %>
 <%@ attribute name="fullWidth" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="columnStart" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="readonly" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="min" required="false" type="java.lang.String" %>
 
 <c:set var="fieldId" value="${idPrefix}-${name}" />
 <c:set var="resolvedInputType" value="${empty inputType ? 'text' : inputType}" />
-<div class="detail-item${fullWidth ? ' full-width' : ''}"
+<div class="detail-item${fullWidth ? ' full-width' : ''}${columnStart ? ' detail-item--column-start' : ''}"
      data-customer-detail-field>
     <label class="detail-label" for="<c:out value='${fieldId}' />">
         <c:out value="${label}" />

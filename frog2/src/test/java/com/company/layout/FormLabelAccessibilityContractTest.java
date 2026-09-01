@@ -38,8 +38,8 @@ class FormLabelAccessibilityContractTest {
             fieldCount++;
         }
 
-        assertEquals(49, fieldCount);
-        assertEquals(49, fieldNames.size());
+        assertEquals(47, fieldCount);
+        assertEquals(47, fieldNames.size());
         assertTrue(tag.contains("value=\"${idPrefix}-${name}\""));
         assertTrue(tag.contains(
                 "<label class=\"detail-label\" for=\"<c:out value='${fieldId}' />\""));

@@ -20,11 +20,11 @@ public class CustomerDetailDAO {
                     + "main_manager, sub_manager, install_date, introduction_year, db_name, db_mode, "
                     + "vertica_version, license_info, said, node_count, vertica_admin, subcluster_yn, "
                     + "mc_yn, mc_host, mc_version, mc_admin, backup_yn, custom_resource_pool_yn, "
-                    + "backup_note, os_info, memory_info, infra_type, cpu_socket, hyper_threading, "
+                    + "backup_note, os_info, memory_info, swap_memory, infra_type, cpu_socket, hyper_threading, "
                     + "cpu_core, data_area, depot_area, catalog_area, object_area, public_yn, "
                     + "public_network, private_yn, private_network, storage_yn, storage_network, "
                     + "etl_tool, bi_tool, db_encryption, cdc_tool, eos_date, customer_type, note";
-    private static final String INSERT_PLACEHOLDERS = "?, ".repeat(48) + "?";
+    private static final String INSERT_PLACEHOLDERS = "?, ".repeat(49) + "?";
     private static final String UPDATE_ASSIGNMENTS =
             "system_name = ?, customer_manager = ?, si_company = ?, si_manager = ?, creator = ?, "
                     + "create_date = ?, main_manager = ?, sub_manager = ?, install_date = ?, "
@@ -32,7 +32,7 @@ public class CustomerDetailDAO {
                     + "license_info = ?, said = ?, node_count = ?, vertica_admin = ?, "
                     + "subcluster_yn = ?, mc_yn = ?, mc_host = ?, mc_version = ?, mc_admin = ?, "
                     + "backup_yn = ?, custom_resource_pool_yn = ?, backup_note = ?, os_info = ?, "
-                    + "memory_info = ?, infra_type = ?, cpu_socket = ?, hyper_threading = ?, "
+                    + "memory_info = ?, swap_memory = ?, infra_type = ?, cpu_socket = ?, hyper_threading = ?, "
                     + "cpu_core = ?, data_area = ?, depot_area = ?, catalog_area = ?, object_area = ?, "
                     + "public_yn = ?, public_network = ?, private_yn = ?, private_network = ?, "
                     + "storage_yn = ?, storage_network = ?, etl_tool = ?, bi_tool = ?, "
@@ -345,6 +345,7 @@ public class CustomerDetailDAO {
         statement.setString(index++, detail.getBackupNote());
         statement.setString(index++, detail.getOsInfo());
         statement.setString(index++, detail.getMemoryInfo());
+        statement.setString(index++, detail.getSwapMemory());
         statement.setString(index++, detail.getInfraType());
         statement.setString(index++, detail.getCpuSocket());
         statement.setString(index++, detail.getHyperThreading());
@@ -375,7 +376,7 @@ public class CustomerDetailDAO {
     }
 
     private static void requireNextIndex(int nextIndex) {
-        if (nextIndex != 50) {
+        if (nextIndex != 51) {
             throw new IllegalStateException("Unexpected customer detail parameter count");
         }
     }
@@ -431,6 +432,7 @@ public class CustomerDetailDAO {
         detail.setBackupNote(resultSet.getString("backup_note"));
         detail.setOsInfo(resultSet.getString("os_info"));
         detail.setMemoryInfo(resultSet.getString("memory_info"));
+        detail.setSwapMemory(resultSet.getString("swap_memory"));
         detail.setInfraType(resultSet.getString("infra_type"));
         detail.setCpuSocket(resultSet.getString("cpu_socket"));
         detail.setHyperThreading(resultSet.getString("hyper_threading"));

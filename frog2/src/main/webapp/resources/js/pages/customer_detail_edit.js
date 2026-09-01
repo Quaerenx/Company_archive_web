@@ -16,6 +16,7 @@
         var environmentLinks = Array.prototype.slice.call(
             root.querySelectorAll('[data-customer-environment-link]'));
         var dirtyForms = new Set();
+        var conditionalActiveValues = new WeakMap();
         var isSubmitting = false;
 
         function runAfterLayout(callback) {
@@ -137,7 +138,8 @@
             return mirror;
         }
 
-        function setConditionalControlEnabled(form, name, enabled) {
+        function setConditionalControlEnabled(
+                form, name, enabled, disabledValue) {
             var control = namedControl(form, name);
             if (!control) return;
 
@@ -146,10 +148,23 @@
                 ? control.closest('[data-customer-detail-field]')
                 : null;
             if (enabled) {
+                if (conditionalActiveValues.has(control)) {
+                    control.value = conditionalActiveValues.get(control);
+                    conditionalActiveValues.delete(control);
+                } else if (String(control.value || '') === disabledValue) {
+                    control.value = '';
+                }
                 control.disabled = false;
                 mirror.disabled = true;
             } else {
-                mirror.value = control.value;
+                var currentValue = String(control.value || '');
+                if (!control.disabled
+                        && currentValue !== ''
+                        && currentValue !== disabledValue) {
+                    conditionalActiveValues.set(control, currentValue);
+                }
+                control.value = disabledValue;
+                mirror.value = disabledValue;
                 mirror.disabled = false;
                 control.disabled = true;
             }
@@ -167,15 +182,17 @@
         function syncConditionalFields(form) {
             var eonEnabled = normalizedControlValue(
                 namedControl(form, 'dbMode')) === 'EON';
-            ['objectArea', 'storageYn', 'storageNetwork'].forEach(
-                function(name) {
-                    setConditionalControlEnabled(form, name, eonEnabled);
-                });
+            setConditionalControlEnabled(
+                form, 'depotArea', eonEnabled, '미사용');
+            setConditionalControlEnabled(
+                form, 'objectArea', eonEnabled, '미사용');
+            setConditionalControlEnabled(
+                form, 'storageNetwork', eonEnabled, '미사용');
 
             var mcEnabled = normalizedControlValue(
                 namedControl(form, 'mcYn')) === 'Y';
             ['mcHost', 'mcVersion', 'mcAdmin'].forEach(function(name) {
-                setConditionalControlEnabled(form, name, mcEnabled);
+                setConditionalControlEnabled(form, name, mcEnabled, '미사용');
             });
         }
 

@@ -13,6 +13,7 @@ import java.util.Date;
 final class CustomerRequestMapper {
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAXIMUM_PAGE_SIZE = 100;
+    private static final String UNUSED = "미사용";
 
     CustomerDTO mapCustomer(HttpServletRequest request) {
         return CustomerFieldContract.fromForm(request::getParameter);
@@ -48,6 +49,7 @@ final class CustomerRequestMapper {
         detail.setBackupNote(trimmed(request, "backupNote"));
         detail.setOsInfo(trimmed(request, "osInfo"));
         detail.setMemoryInfo(trimmed(request, "memoryInfo"));
+        detail.setSwapMemory(trimmed(request, "swapMemory"));
         detail.setInfraType(trimmed(request, "infraType"));
         detail.setCpuSocket(trimmed(request, "cpuSocket"));
         detail.setHyperThreading(trimmed(request, "hyperThreading"));
@@ -56,11 +58,8 @@ final class CustomerRequestMapper {
         detail.setDepotArea(trimmed(request, "depotArea"));
         detail.setCatalogArea(trimmed(request, "catalogArea"));
         detail.setObjectArea(trimmed(request, "objectArea"));
-        detail.setPublicYn(trimmed(request, "publicYn"));
         detail.setPublicNetwork(trimmed(request, "publicNetwork"));
-        detail.setPrivateYn(trimmed(request, "privateYn"));
         detail.setPrivateNetwork(trimmed(request, "privateNetwork"));
-        detail.setStorageYn(trimmed(request, "storageYn"));
         detail.setStorageNetwork(trimmed(request, "storageNetwork"));
         detail.setEtlTool(trimmed(request, "etlTool"));
         detail.setBiTool(trimmed(request, "biTool"));
@@ -69,7 +68,36 @@ final class CustomerRequestMapper {
         detail.setEosDate(parseDate(request.getParameter("eosDate")));
         detail.setCustomerType(trimmed(request, "customerType"));
         detail.setNote(trimmed(request, "note"));
+        normalizeConditionalChildren(detail);
         return detail;
+    }
+
+    private static void normalizeConditionalChildren(CustomerDetailDTO detail) {
+        if (equalsIgnoreCase(detail.getDbMode(), "ENT")) {
+            detail.setDepotArea(UNUSED);
+            detail.setObjectArea(UNUSED);
+            detail.setStorageNetwork(UNUSED);
+        }
+        detail.setPublicYn(usageFlag(detail.getPublicNetwork()));
+        detail.setPrivateYn(usageFlag(detail.getPrivateNetwork()));
+        detail.setStorageYn(usageFlag(detail.getStorageNetwork()));
+        if (equalsIgnoreCase(detail.getMcYn(), "N")) {
+            detail.setMcHost(UNUSED);
+            detail.setMcVersion(UNUSED);
+            detail.setMcAdmin(UNUSED);
+        }
+    }
+
+    private static boolean equalsIgnoreCase(String value, String expected) {
+        return value != null && expected.equalsIgnoreCase(value.trim());
+    }
+
+    private static String usageFlag(String networkValue) {
+        return networkValue == null
+                || networkValue.isBlank()
+                || equalsIgnoreCase(networkValue, UNUSED)
+                ? "N"
+                : "Y";
     }
 
     CustomerEnvironment environment(HttpServletRequest request) {

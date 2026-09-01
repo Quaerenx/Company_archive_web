@@ -8,20 +8,20 @@
     <div class="detail-grid">
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="verticaAdmin" label="Vertica 관리자"
                 value="${editDetail.verticaAdmin}" placeholder="Vertica 관리자 계정" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="subclusterYn" label="Subcluster 사용"
-                inputType="select" options="Y:사용|N:미사용" value="${editDetail.subclusterYn}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcYn" label="MC 사용"
                 inputType="select" options="Y:사용|N:미사용" value="${editDetail.mcYn}" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcHost" label="MC 호스트"
-                value="${editDetail.mcHost}" placeholder="MC 호스트" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcVersion" label="MC 버전"
-                value="${editDetail.mcVersion}" placeholder="MC 버전" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcAdmin" label="MC 관리자"
-                value="${editDetail.mcAdmin}" placeholder="MC 관리자" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="backupYn" label="백업 사용"
-                inputType="select" options="Y:사용|N:미사용" value="${editDetail.backupYn}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="customResourcePoolYn" label="사용자 정의 리소스 풀"
                 inputType="select" options="Y:사용|N:미사용" value="${editDetail.customResourcePoolYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcVersion" label="MC 버전"
+                value="${editDetail.mcVersion}" placeholder="MC 버전" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="subclusterYn" label="Subcluster 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.subclusterYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcHost" label="MC 호스트"
+                value="${editDetail.mcHost}" placeholder="MC 호스트" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="backupYn" label="백업 사용"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.backupYn}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcAdmin" label="MC 관리자"
+                value="${editDetail.mcAdmin}" placeholder="MC 관리자" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="backupNote" label="백업 비고"
                 inputType="textarea" fullWidth="${true}"
                 value="${not empty editDetail.backupNote ? editDetail.backupNote : customer.backupConfig}"

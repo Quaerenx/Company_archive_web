@@ -81,6 +81,87 @@ class CustomerDetailEditUxContractTest {
         assertTrue(styles.contains("min-block-size: 176px;"));
     }
 
+    @Test
+    void conditionallyBlockedControlsUseAnObviousMutedSurface() throws Exception {
+        String styles = Files.readString(
+                WEBAPP.resolve("resources/css/pages/customer_detail.css"));
+
+        assertTrue(styles.contains(
+                ".detail-item.is-conditionally-disabled .detail-label"));
+        assertTrue(styles.contains(
+                ".ui-system .customer-detail--edit "
+                        + ".customer-detail-edit-control:disabled"));
+        assertTrue(styles.contains(
+                "background: var(--color-surface-muted);"));
+        assertTrue(styles.contains(
+                "border-color: var(--color-surface-edge);"));
+        assertTrue(styles.contains(
+                "color: var(--color-text-disabled);"));
+        assertTrue(styles.contains("opacity: 1;"));
+    }
+
+    @Test
+    void editFormKeepsTheRequestedTwoColumnFieldOrder() throws Exception {
+        String summary = Files.readString(
+                WEBAPP.resolve("customers/_detail_edit_summary.jspf"));
+        String meta = Files.readString(
+                WEBAPP.resolve("customers/_detail_edit_meta.jspf"));
+        String vertica = Files.readString(
+                WEBAPP.resolve("customers/_detail_edit_vertica.jspf"));
+        String environment = Files.readString(
+                WEBAPP.resolve("customers/_detail_edit_environment.jspf"));
+
+        assertAppearsInOrder(summary,
+                "name=\"dbName\"",
+                "name=\"osInfo\"",
+                "name=\"verticaVersion\"",
+                "name=\"said\"",
+                "name=\"dbMode\"",
+                "name=\"mainManager\"",
+                "name=\"nodeCount\"",
+                "name=\"subManager\"",
+                "name=\"licenseInfo\"");
+        assertAppearsInOrder(meta,
+                "name=\"customerName\"",
+                "name=\"systemName\"",
+                "name=\"customerManager\"",
+                "name=\"introductionYear\"",
+                "name=\"siCompany\"",
+                "name=\"installDate\"",
+                "name=\"siManager\"",
+                "name=\"createDate\"",
+                "name=\"creator\"");
+        assertAppearsInOrder(vertica,
+                "name=\"verticaAdmin\"",
+                "name=\"mcYn\"",
+                "name=\"customResourcePoolYn\"",
+                "name=\"mcVersion\"",
+                "name=\"subclusterYn\"",
+                "name=\"mcHost\"",
+                "name=\"backupYn\"",
+                "name=\"mcAdmin\"",
+                "name=\"backupNote\"");
+        assertAppearsInOrder(environment,
+                "name=\"memoryInfo\"",
+                "name=\"infraType\"",
+                "name=\"swapMemory\"",
+                "name=\"dataArea\"",
+                "name=\"cpuSocket\"",
+                "name=\"catalogArea\"",
+                "name=\"cpuCore\"",
+                "name=\"depotArea\"",
+                "name=\"hyperThreading\"",
+                "name=\"objectArea\"",
+                "name=\"publicNetwork\"",
+                "name=\"privateNetwork\"",
+                "name=\"storageNetwork\"");
+        assertTrue(!environment.contains("name=\"publicYn\""));
+        assertTrue(!environment.contains("name=\"privateYn\""));
+        assertTrue(!environment.contains("name=\"storageYn\""));
+        assertTrue(environment.contains("columnStart=\"${true}\""));
+        assertTrue(!meta.contains("name=\"subManager\""));
+    }
+
     private static String readFormMarkup() throws Exception {
         StringBuilder source = new StringBuilder(Files.readString(
                 WEBAPP.resolve("customers/customers_detail_edit.jsp")));
@@ -90,5 +171,14 @@ class CustomerDetailEditUxContractTest {
                     "customers/_detail_edit_" + section + ".jspf")));
         }
         return source.toString();
+    }
+
+    private static void assertAppearsInOrder(String value, String... tokens) {
+        int offset = 0;
+        for (String token : tokens) {
+            int index = value.indexOf(token, offset);
+            assertTrue(index >= 0, "Missing or out-of-order token: " + token);
+            offset = index + token.length();
+        }
     }
 }

@@ -77,7 +77,8 @@ tasks.withType(Test).configureEach {
 tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'e2e', 'e2e-write', 'e2e-schema', 'e2e-https',
-                'e2e-customer-audit-migration'
+                'e2e-customer-audit-migration',
+                'e2e-customer-swap-migration'
     }
 }
 
@@ -164,6 +165,17 @@ tasks.register('customerAuditMigration', Test) {
     outputs.upToDateWhen { false }
     useJUnitPlatform {
         includeTags 'e2e-customer-audit-migration'
+    }
+}
+
+tasks.register('customerSwapMemoryMigration', Test) {
+    description = 'Applies and verifies the approved customer SWAP-memory migration.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    useJUnitPlatform {
+        includeTags 'e2e-customer-swap-migration'
     }
 }
 

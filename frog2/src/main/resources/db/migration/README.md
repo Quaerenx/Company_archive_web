@@ -29,6 +29,9 @@ Active schema contracts:
   audit columns. Existing rows are not backfilled because an inferred actor or
   timestamp would create false provenance. Application writes use the columns
   only when the complete four-column capability is present.
+- `V20260901_10__add_customer_swap_memory.sql`: nullable SWAP-memory detail
+  field across production, staging and development customer-detail tables.
+  Existing rows remain NULL and legacy application versions ignore the column.
 
 At startup the application performs a read-only metadata readiness check for
 the active schema contracts. It never executes migration SQL. Required
@@ -46,6 +49,11 @@ write. Once all four columns exist, writes require a nonblank stable session
 user ID and never fall back to unaudited SQL. Quiesce every application node,
 apply all four columns together, and restart each node so its metadata cache
 observes the complete capability before requests resume.
+
+Migration 10 is additive and backward compatible. Apply all three statements
+before deploying application code that requires `swap_memory`; the readiness
+check identifies a missing column as `V20260901_10`. No existing customer row
+is updated by this migration.
 
 Until migration 07 is applied, the dashboard intentionally treats every
 maintenance-contract customer as monthly. Review the inferred quarterly rows

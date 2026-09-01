@@ -15,13 +15,14 @@
         </div>
         <div class="detail-grid detail-grid--summary">
             <t:detailField label="DB명" value="${detail.dbName}" />
-            <t:detailField label="Vertica 버전" value="${detail.verticaVersion}" />
-            <t:detailField label="DB 모드" value="${detail.dbMode}" />
-            <t:detailField label="노드 수" value="${detail.nodeCountDisplay}" />
-            <t:detailField label="라이선스" value="${detail.licenseDisplay}" />
             <t:detailField label="OS" value="${detail.osInfo}" />
-            <t:detailField label="주 담당자" value="${detail.mainManager}" />
+            <t:detailField label="Vertica 버전" value="${detail.verticaVersion}" />
             <t:detailField label="SAID" value="${detail.said}" />
+            <t:detailField label="DB 모드" value="${detail.dbMode}" />
+            <t:detailField label="주 담당자" value="${detail.mainManager}" />
+            <t:detailField label="노드 수" value="${detail.nodeCountDisplay}" />
+            <t:detailField label="부 담당자" value="${detail.subManager}" hideWhenEmpty="${true}" />
+            <t:detailField label="라이선스" value="${detail.licenseDisplay}" />
         </div>
     </section>
 
@@ -35,13 +36,12 @@
             <t:detailField label="고객사" value="${detail.customerName}" hideWhenEmpty="${true}" />
             <t:detailField label="시스템명" value="${detail.systemName}" hideWhenEmpty="${true}" />
             <t:detailField label="고객사 담당자" value="${detail.customerManager}" hideWhenEmpty="${true}" />
-            <t:detailField label="SI 담당자" value="${detail.siManager}" hideWhenEmpty="${true}" />
-            <t:detailField label="담당 SI" value="${detail.siCompany}" hideWhenEmpty="${true}" />
-            <t:detailField label="부 담당자" value="${detail.subManager}" hideWhenEmpty="${true}" />
             <t:detailField label="도입 연도" value="${detail.introductionYear}" hideWhenEmpty="${true}" />
+            <t:detailField label="담당 SI" value="${detail.siCompany}" hideWhenEmpty="${true}" />
             <t:detailField label="설치일" value="${detailInstallDate}" hideWhenEmpty="${true}" />
-            <t:detailField label="작성자" value="${detail.creator}" hideWhenEmpty="${true}" />
+            <t:detailField label="SI 담당자" value="${detail.siManager}" hideWhenEmpty="${true}" />
             <t:detailField label="작성일" value="${detailCreateDate}" hideWhenEmpty="${true}" />
+            <t:detailField label="작성자" value="${detail.creator}" hideWhenEmpty="${true}" />
         </div>
     </details>
 
@@ -53,13 +53,13 @@
         </summary>
         <div class="detail-grid">
             <t:detailField label="Vertica 관리자" value="${detail.verticaAdmin}" hideWhenEmpty="${true}" />
-            <t:detailField label="Subcluster 사용" value="${detail.subclusterYn}" booleanState="${true}" hideWhenEmpty="${true}" />
             <t:detailField label="MC 사용" value="${detail.mcYn}" booleanState="${true}" hideWhenEmpty="${true}" />
-            <t:detailField label="MC 호스트" value="${detail.mcHost}" hideWhenEmpty="${true}" />
-            <t:detailField label="MC 버전" value="${detail.mcVersion}" hideWhenEmpty="${true}" />
-            <t:detailField label="MC 관리자" value="${detail.mcAdmin}" hideWhenEmpty="${true}" />
-            <t:detailField label="백업 사용" value="${detail.backupYn}" booleanState="${true}" hideWhenEmpty="${true}" />
             <t:detailField label="사용자 정의 리소스 풀" value="${detail.customResourcePoolYn}" booleanState="${true}" hideWhenEmpty="${true}" />
+            <t:detailField label="MC 버전" value="${detail.mcVersion}" hideWhenEmpty="${true}" />
+            <t:detailField label="Subcluster 사용" value="${detail.subclusterYn}" booleanState="${true}" hideWhenEmpty="${true}" />
+            <t:detailField label="MC 호스트" value="${detail.mcHost}" hideWhenEmpty="${true}" />
+            <t:detailField label="백업 사용" value="${detail.backupYn}" booleanState="${true}" hideWhenEmpty="${true}" />
+            <t:detailField label="MC 관리자" value="${detail.mcAdmin}" hideWhenEmpty="${true}" />
             <t:detailField label="백업 비고" value="${detail.backupNoteDisplay}" fullWidth="${true}" multiline="${true}" hideWhenEmpty="${true}" />
         </div>
     </details>
@@ -73,19 +73,20 @@
         <div class="detail-grid">
             <t:detailField label="메모리" value="${detail.memoryInfo}" hideWhenEmpty="${true}" />
             <t:detailField label="인프라 유형" value="${detail.infraType}" hideWhenEmpty="${true}" />
-            <t:detailField label="CPU 소켓" value="${detail.cpuSocket}" hideWhenEmpty="${true}" />
-            <t:detailField label="하이퍼스레딩" value="${detail.hyperThreading}" booleanState="${true}" hideWhenEmpty="${true}" />
-            <t:detailField label="CPU 코어" value="${detail.cpuCore}" hideWhenEmpty="${true}" />
+            <t:detailField label="SWAP 메모리" value="${detail.swapMemory}" hideWhenEmpty="${true}" />
             <t:detailField label="데이터 영역" value="${detail.dataArea}" hideWhenEmpty="${true}" />
-            <t:detailField label="Depot 영역" value="${detail.depotArea}" hideWhenEmpty="${true}" />
+            <t:detailField label="CPU 소켓" value="${detail.cpuSocket}" hideWhenEmpty="${true}" />
             <t:detailField label="카탈로그 영역" value="${detail.catalogArea}" hideWhenEmpty="${true}" />
+            <t:detailField label="CPU 코어" value="${detail.cpuCore}" hideWhenEmpty="${true}" />
+            <t:detailField label="Depot 영역" value="${detail.depotArea}" hideWhenEmpty="${true}" />
+            <t:detailField label="하이퍼스레딩" value="${detail.hyperThreading}" booleanState="${true}" hideWhenEmpty="${true}" />
             <t:detailField label="Object 영역" value="${detail.objectArea}" hideWhenEmpty="${true}" />
-            <t:detailField label="Public 네트워크 사용" value="${detail.publicYn}" booleanState="${true}" hideWhenEmpty="${true}" />
-            <t:detailField label="Public 네트워크 대역" value="${detail.publicNetwork}" hideWhenEmpty="${true}" />
-            <t:detailField label="Private 네트워크 사용" value="${detail.privateYn}" booleanState="${true}" hideWhenEmpty="${true}" />
-            <t:detailField label="Private 네트워크 대역" value="${detail.privateNetwork}" hideWhenEmpty="${true}" />
-            <t:detailField label="스토리지 네트워크 사용" value="${detail.storageYn}" booleanState="${true}" hideWhenEmpty="${true}" />
-            <t:detailField label="스토리지 네트워크 대역" value="${detail.storageNetwork}" hideWhenEmpty="${true}" />
+            <t:detailField label="Public 네트워크" value="${detail.publicNetwork}"
+                    columnStart="${true}" hideWhenEmpty="${true}" />
+            <t:detailField label="Private 네트워크" value="${detail.privateNetwork}"
+                    columnStart="${true}" hideWhenEmpty="${true}" />
+            <t:detailField label="스토리지 네트워크" value="${detail.storageNetwork}"
+                    columnStart="${true}" hideWhenEmpty="${true}" />
         </div>
     </details>
 

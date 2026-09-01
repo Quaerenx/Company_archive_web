@@ -84,7 +84,7 @@ function createHarness() {
             : { dbMode: 'ENT', mcYn: 'N' };
         const fields = new Map();
         [
-            'dbMode', 'objectArea', 'storageYn', 'storageNetwork',
+            'dbMode', 'depotArea', 'objectArea', 'storageNetwork',
             'mcYn', 'mcHost', 'mcVersion', 'mcAdmin'
         ].forEach(name => {
             const field = eventTarget();
@@ -172,6 +172,7 @@ function createHarness() {
         String,
         URL,
         URLSearchParams,
+        WeakMap,
         window
     });
     documentListeners.get('DOMContentLoaded')();
@@ -238,7 +239,9 @@ test('EON and MC usage control only their dependent fields', () => {
     const prod = harness.forms[0];
     const staging = harness.forms[1];
 
-    for (const name of ['objectArea', 'storageYn', 'storageNetwork']) {
+    for (const name of [
+        'depotArea', 'objectArea', 'storageNetwork'
+    ]) {
         assert.equal(prod.fields.get(name).control.disabled, false);
         assert.equal(staging.fields.get(name).control.disabled, true);
         assert.equal(
@@ -267,26 +270,38 @@ test('EON and MC usage control only their dependent fields', () => {
     staging.fields.get('mcYn').control.dispatch('change');
 
     for (const name of [
-        'objectArea', 'storageYn', 'storageNetwork',
+        'depotArea', 'objectArea', 'storageNetwork',
         'mcHost', 'mcVersion', 'mcAdmin'
     ]) {
         assert.equal(staging.fields.get(name).control.disabled, false);
     }
+    assert.equal(staging.fields.get('depotArea').control.value, 'depotArea-value');
+    assert.equal(staging.fields.get('objectArea').control.value, 'objectArea-value');
+    assert.equal(staging.fields.get('storageNetwork').control.value, 'storageNetwork-value');
+    assert.equal(staging.fields.get('mcHost').control.value, 'mcHost-value');
+    assert.equal(staging.fields.get('mcVersion').control.value, 'mcVersion-value');
+    assert.equal(staging.fields.get('mcAdmin').control.value, 'mcAdmin-value');
 });
 
-test('disabled dependent fields keep hidden submission mirrors', () => {
+test('disabled dependent fields submit explicit unused values', () => {
     const staging = createHarness().forms[1];
 
-    for (const name of [
-        'objectArea', 'storageYn', 'storageNetwork',
-        'mcHost', 'mcVersion', 'mcAdmin'
-    ]) {
+    const unusedValues = {
+        depotArea: '미사용',
+        objectArea: '미사용',
+        storageNetwork: '미사용',
+        mcHost: '미사용',
+        mcVersion: '미사용',
+        mcAdmin: '미사용'
+    };
+    for (const [name, unusedValue] of Object.entries(unusedValues)) {
         const control = staging.fields.get(name).control;
         const mirror = staging.mirrors.find(candidate =>
             candidate.getAttribute('data-conditional-field-mirror') === name);
         assert.ok(mirror);
         assert.equal(mirror.disabled, false);
         assert.equal(mirror.name, name);
-        assert.equal(mirror.value, control.value);
+        assert.equal(control.value, unusedValue);
+        assert.equal(mirror.value, unusedValue);
     }
 });

@@ -138,7 +138,7 @@ public final class DatabaseSchemaReadiness {
                 : CustomerDetailEnvironment.values()) {
             for (String column : CustomerDetailDAO.requiredColumnNames()) {
                 requirements.add(required(
-                        CUSTOMER_DETAIL_BASELINE,
+                        customerDetailMigration(column),
                         environment.tableName(),
                         column));
             }
@@ -148,6 +148,12 @@ public final class DatabaseSchemaReadiness {
                 CustomerDetailEnvironment.PROD.tableName(),
                 "is_deleted"));
         return List.copyOf(requirements);
+    }
+
+    private static String customerDetailMigration(String column) {
+        return "swap_memory".equals(column)
+                ? "V20260901_10"
+                : CUSTOMER_DETAIL_BASELINE;
     }
 
     public static Report inspect() {

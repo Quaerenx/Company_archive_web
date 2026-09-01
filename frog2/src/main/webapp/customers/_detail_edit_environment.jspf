@@ -12,31 +12,30 @@
                 inputType="select"
                 options="온프레미스:온프레미스|클라우드:클라우드|하이브리드:하이브리드"
                 value="${editDetail.infraType}" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="cpuSocket" label="CPU 소켓"
-                value="${editDetail.cpuSocket}" placeholder="CPU 소켓 수" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="hyperThreading" label="하이퍼스레딩"
-                inputType="select" options="Y:사용|N:미사용" value="${editDetail.hyperThreading}" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="cpuCore" label="CPU 코어"
-                value="${editDetail.cpuCore}" placeholder="CPU 코어 수" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="swapMemory" label="SWAP 메모리"
+                value="${editDetail.swapMemory}" placeholder="예: 32GB" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="dataArea" label="데이터 영역"
                 value="${editDetail.dataArea}" placeholder="예: 20TB" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="depotArea" label="Depot 영역"
-                value="${editDetail.depotArea}" placeholder="예: 2TB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="cpuSocket" label="CPU 소켓"
+                value="${editDetail.cpuSocket}" placeholder="CPU 소켓 수" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="catalogArea" label="카탈로그 영역"
                 value="${editDetail.catalogArea}" placeholder="예: 500GB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="cpuCore" label="CPU 코어"
+                value="${editDetail.cpuCore}" placeholder="CPU 코어 수" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="depotArea" label="Depot 영역"
+                value="${editDetail.depotArea}" placeholder="예: 2TB" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="hyperThreading" label="하이퍼스레딩"
+                inputType="select" options="Y:사용|N:미사용" value="${editDetail.hyperThreading}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="objectArea" label="Object 영역"
                 value="${editDetail.objectArea}" placeholder="Object Storage 정보" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="publicYn" label="Public 네트워크 사용"
-                inputType="select" options="Y:사용|N:미사용" value="${editDetail.publicYn}" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="publicNetwork" label="Public 네트워크 대역"
-                value="${editDetail.publicNetwork}" placeholder="Public 네트워크 대역" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="privateYn" label="Private 네트워크 사용"
-                inputType="select" options="Y:사용|N:미사용" value="${editDetail.privateYn}" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="privateNetwork" label="Private 네트워크 대역"
-                value="${editDetail.privateNetwork}" placeholder="Private 네트워크 대역" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="storageYn" label="스토리지 네트워크 사용"
-                inputType="select" options="Y:사용|N:미사용" value="${editDetail.storageYn}" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="storageNetwork" label="스토리지 네트워크 대역"
-                value="${editDetail.storageNetwork}" placeholder="스토리지 네트워크 대역" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="publicNetwork" label="Public 네트워크"
+                value="${editDetail.publicNetwork}" placeholder="대역 또는 미사용"
+                columnStart="${true}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="privateNetwork" label="Private 네트워크"
+                value="${editDetail.privateNetwork}" placeholder="대역 또는 미사용"
+                columnStart="${true}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="storageNetwork" label="스토리지 네트워크"
+                value="${editDetail.storageNetwork}" placeholder="대역 또는 미사용"
+                columnStart="${true}" />
     </div>
 </details>

@@ -43,6 +43,7 @@ public class CustomerDetailDTO {
     // 환경 정보
     private String osInfo;
     private String memoryInfo;
+    private String swapMemory;
     private String infraType;
     private String cpuSocket;
     private String hyperThreading;
@@ -323,6 +324,14 @@ public class CustomerDetailDTO {
 
     public void setMemoryInfo(String memoryInfo) {
         this.memoryInfo = memoryInfo;
+    }
+
+    public String getSwapMemory() {
+        return swapMemory;
+    }
+
+    public void setSwapMemory(String swapMemory) {
+        this.swapMemory = swapMemory;
     }
 
     public String getInfraType() {

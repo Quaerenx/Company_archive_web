@@ -4,12 +4,13 @@
 <%@ attribute name="label" required="true" type="java.lang.String" %>
 <%@ attribute name="value" required="false" type="java.lang.Object" %>
 <%@ attribute name="fullWidth" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="columnStart" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="multiline" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="booleanState" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="hideWhenEmpty" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="suffix" required="false" type="java.lang.String" %>
 
-<div class="detail-item${fullWidth ? ' full-width' : ''}${hideWhenEmpty && empty value ? ' detail-item--empty' : ''}"
+<div class="detail-item${fullWidth ? ' full-width' : ''}${columnStart ? ' detail-item--column-start' : ''}${hideWhenEmpty && empty value ? ' detail-item--empty' : ''}"
      ${hideWhenEmpty && empty value ? 'hidden' : ''}>
     <span class="detail-label"><c:out value="${label}" /></span>
     <c:choose>

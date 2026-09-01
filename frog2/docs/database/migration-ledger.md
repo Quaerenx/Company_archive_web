@@ -1,7 +1,7 @@
 # Archive migration manifest and deployment ledger
 
-Last updated: 2026-08-25
-Status: procedure only; no migration executed and no ledger table created
+Last updated: 2026-09-01
+Status: repository procedure only; execution records remain external and no ledger table exists
 
 ## Immutable migration rule
 
@@ -55,6 +55,10 @@ Keep the actual ledger in the approved deployment record system, not in applicat
   values before any rollback that drops the columns. Quiesce all application
   nodes for the four statements: a partial schema is intentionally treated as
   incompatible, and a complete schema rejects writes without a stable actor.
+- `V20260901_10` adds one nullable `swap_memory` column to each of the three
+  customer-detail tables. Verify compatible VARCHAR types and aggregate row
+  counts before and after; do not backfill values inferred from other fields.
 - Metadata readiness intentionally does not inspect customer rows, backfill completeness, primary keys or check constraints. Those remain approved preflight/post-check items; startup does not perform data queries.
-- No migration was executed during this remediation. `V20260825_09` was added
-  as a review-only artifact and is not an application startup input.
+- Repository contents never prove whether a migration was executed. Consult
+  the external ledger and its post-check evidence before deploying code that
+  requires a versioned schema capability.

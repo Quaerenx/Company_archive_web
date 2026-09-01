@@ -18,22 +18,19 @@
                 value="${editDetail.systemName}" placeholder="시스템명" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="customerManager" label="고객사 담당자"
                 value="${editDetail.customerManager}" placeholder="고객사 담당자" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="siManager" label="SI 담당자"
-                value="${editDetail.siManager}" placeholder="SI 담당자" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="siCompany" label="담당 SI"
-                value="${editDetail.siCompany}" placeholder="담당 SI" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="subManager" label="부 담당자"
-                value="${not empty editDetail.subManager ? editDetail.subManager : customer.subManagerName}"
-                placeholder="부 담당자" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="introductionYear" label="도입 연도"
                 inputType="number" min="2000"
                 value="${not empty editDetail.introductionYear ? editDetail.introductionYear : customer.firstIntroductionYear}"
                 placeholder="YYYY" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="siCompany" label="담당 SI"
+                value="${editDetail.siCompany}" placeholder="담당 SI" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="installDate" label="설치일"
                 inputType="date" value="${editInstallDate}" />
-        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="creator" label="작성자"
-                value="${editDetail.creator}" placeholder="작성자" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="siManager" label="SI 담당자"
+                value="${editDetail.siManager}" placeholder="SI 담당자" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="createDate" label="작성일"
                 inputType="date" value="${editCreateDate}" />
+        <t:customerDetailEditField idPrefix="${editIdPrefix}" name="creator" label="작성자"
+                value="${editDetail.creator}" placeholder="작성자" />
     </div>
 </details>
