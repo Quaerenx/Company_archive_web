@@ -55,6 +55,31 @@
     view-transition-name: archive-stage;
 }
 
+/* 전환 캡처는 일반 DOM과 별도의 최상위 레이어에서 합성된다. 명시적인 깊이
+   사다리를 두어 날아가는 문서가 새 작업 영역을 덮지 않고 그 뒤로 지나가게 한다.
+   로그인 카드와 로고는 기존처럼 문서보다 앞에 남는다. */
+::view-transition-group(root) {
+    z-index: 0;
+}
+
+::view-transition-group(archive-peek-left),
+::view-transition-group(archive-peek-center),
+::view-transition-group(archive-peek-right) {
+    z-index: 1;
+}
+
+::view-transition-group(archive-stage) {
+    z-index: 2;
+}
+
+::view-transition-group(archive-login-card) {
+    z-index: 3;
+}
+
+::view-transition-group(archive-logo) {
+    z-index: 4;
+}
+
 /* 무대 바닥 --------------------------------------------------------------
    이름 붙은 요소는 root 스냅샷에서 빠지므로 old(root)는 사실상 배경뿐이다.
    두 페이지의 --color-ambient-background가 같아서 바닥은 움직이지 않는 것처럼

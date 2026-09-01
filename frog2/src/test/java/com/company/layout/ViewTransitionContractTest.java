@@ -56,6 +56,25 @@ class ViewTransitionContractTest {
                         + "animation-duration:\\s*0\\.01ms !important;.*"));
     }
 
+    @Test
+    void flyingDocumentsStayBehindTheEnteringWorkspace() throws Exception {
+        String styles = read("resources/css/view-transitions.css");
+
+        assertTrue(styles.contains("::view-transition-group(root) {\n    z-index: 0;\n}"));
+        assertTrue(styles.contains(
+                "::view-transition-group(archive-peek-left),\n"
+                        + "::view-transition-group(archive-peek-center),\n"
+                        + "::view-transition-group(archive-peek-right) {\n"
+                        + "    z-index: 1;\n"
+                        + "}"));
+        assertTrue(styles.contains(
+                "::view-transition-group(archive-stage) {\n    z-index: 2;\n}"));
+        assertTrue(styles.contains(
+                "::view-transition-group(archive-login-card) {\n    z-index: 3;\n}"));
+        assertTrue(styles.contains(
+                "::view-transition-group(archive-logo) {\n    z-index: 4;\n}"));
+    }
+
     private static String read(String path) throws Exception {
         return Files.readString(WEBAPP.resolve(path));
     }
