@@ -1,4 +1,6 @@
 <%@ page pageEncoding="UTF-8" %>
+<c:set var="mcFieldsDisabled"
+       value="${empty editDetail.mcYn or editDetail.mcYn ne 'Y'}" />
 <details class="detail-section detail-section--collapsible" data-detail-section open>
     <summary class="detail-section-title">
         <i class="fas fa-database" aria-hidden="true"></i>
@@ -13,15 +15,18 @@
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="customResourcePoolYn" label="사용자 정의 리소스 풀"
                 inputType="select" options="Y:사용|N:미사용" value="${editDetail.customResourcePoolYn}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcVersion" label="MC 버전"
-                value="${editDetail.mcVersion}" placeholder="MC 버전" />
+                value="${mcFieldsDisabled ? '미사용' : editDetail.mcVersion}" placeholder="MC 버전"
+                disabled="${mcFieldsDisabled}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="subclusterYn" label="Subcluster 사용"
                 inputType="select" options="Y:사용|N:미사용" value="${editDetail.subclusterYn}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcHost" label="MC 호스트"
-                value="${editDetail.mcHost}" placeholder="MC 호스트" />
+                value="${mcFieldsDisabled ? '미사용' : editDetail.mcHost}" placeholder="MC 호스트"
+                disabled="${mcFieldsDisabled}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="backupYn" label="백업 사용"
                 inputType="select" options="Y:사용|N:미사용" value="${editDetail.backupYn}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="mcAdmin" label="MC 관리자"
-                value="${editDetail.mcAdmin}" placeholder="MC 관리자" />
+                value="${mcFieldsDisabled ? '미사용' : editDetail.mcAdmin}" placeholder="MC 관리자"
+                disabled="${mcFieldsDisabled}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="backupNote" label="백업 비고"
                 inputType="textarea" fullWidth="${true}"
                 value="${not empty editDetail.backupNote ? editDetail.backupNote : customer.backupConfig}"

@@ -37,6 +37,7 @@ function eventTarget(attributes = {}) {
             if (listener) listener(event);
         },
         getAttribute(name) { return this.attributes.get(name) || null; },
+        removeAttribute(name) { this.attributes.delete(name); },
         setAttribute(name, value) { this.attributes.set(name, String(value)); }
     };
 }
@@ -245,6 +246,13 @@ test('EON and MC usage control only their dependent fields', () => {
         assert.equal(prod.fields.get(name).control.disabled, false);
         assert.equal(staging.fields.get(name).control.disabled, true);
         assert.equal(
+            staging.fields.get(name).control.classList.contains(
+                'customer-detail-edit-control--blocked'),
+            true);
+        assert.equal(
+            staging.fields.get(name).control.getAttribute('aria-disabled'),
+            'true');
+        assert.equal(
             prod.mirrors.find(candidate =>
                 candidate.getAttribute('data-conditional-field-mirror') === name)
                 .disabled,
@@ -274,6 +282,13 @@ test('EON and MC usage control only their dependent fields', () => {
         'mcHost', 'mcVersion', 'mcAdmin'
     ]) {
         assert.equal(staging.fields.get(name).control.disabled, false);
+        assert.equal(
+            staging.fields.get(name).control.classList.contains(
+                'customer-detail-edit-control--blocked'),
+            false);
+        assert.equal(
+            staging.fields.get(name).control.getAttribute('aria-disabled'),
+            null);
     }
     assert.equal(staging.fields.get('depotArea').control.value, 'depotArea-value');
     assert.equal(staging.fields.get('objectArea').control.value, 'objectArea-value');

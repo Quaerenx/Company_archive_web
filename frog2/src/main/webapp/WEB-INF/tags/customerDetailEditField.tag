@@ -11,11 +11,12 @@
 <%@ attribute name="fullWidth" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="columnStart" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="readonly" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="disabled" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="min" required="false" type="java.lang.String" %>
 
 <c:set var="fieldId" value="${idPrefix}-${name}" />
 <c:set var="resolvedInputType" value="${empty inputType ? 'text' : inputType}" />
-<div class="detail-item${fullWidth ? ' full-width' : ''}${columnStart ? ' detail-item--column-start' : ''}"
+<div class="detail-item${fullWidth ? ' full-width' : ''}${columnStart ? ' detail-item--column-start' : ''}${disabled ? ' is-conditionally-disabled' : ''}"
      data-customer-detail-field>
     <label class="detail-label" for="<c:out value='${fieldId}' />">
         <c:out value="${label}" />
@@ -23,9 +24,10 @@
     <div class="detail-value">
         <c:choose>
             <c:when test="${resolvedInputType eq 'select'}">
-                <select class="form-control customer-detail-edit-control"
+                <select class="form-control customer-detail-edit-control${disabled ? ' customer-detail-edit-control--blocked' : ''}"
                         id="<c:out value='${fieldId}' />"
-                        name="<c:out value='${name}' />">
+                        name="<c:out value='${name}' />"
+                        <c:if test="${disabled}">disabled aria-disabled="true"</c:if>>
                     <option value="">선택하세요</option>
                     <c:forTokens items="${options}" delims="|" var="option">
                         <c:set var="separatorIndex" value="${fn:indexOf(option, ':')}" />
@@ -43,21 +45,29 @@
                 </select>
             </c:when>
             <c:when test="${resolvedInputType eq 'textarea'}">
-                <textarea class="form-control customer-detail-edit-control note-textarea"
+                <textarea class="form-control customer-detail-edit-control${disabled ? ' customer-detail-edit-control--blocked' : ''} note-textarea"
                           id="<c:out value='${fieldId}' />"
                           name="<c:out value='${name}' />"
-                          placeholder="<c:out value='${placeholder}' />"><c:out value="${value}" /></textarea>
+                          placeholder="<c:out value='${placeholder}' />"
+                          <c:if test="${disabled}">disabled aria-disabled="true"</c:if>><c:out value="${value}" /></textarea>
             </c:when>
             <c:otherwise>
                 <input type="<c:out value='${resolvedInputType}' />"
-                       class="form-control customer-detail-edit-control${readonly ? ' readonly' : ''}"
+                       class="form-control customer-detail-edit-control${disabled ? ' customer-detail-edit-control--blocked' : ''}${readonly ? ' readonly' : ''}"
                        id="<c:out value='${fieldId}' />"
                        name="<c:out value='${name}' />"
                        value="<c:out value='${value}' />"
                        placeholder="<c:out value='${placeholder}' />"
                        <c:if test="${readonly}">readonly aria-readonly="true"</c:if>
+                       <c:if test="${disabled}">disabled aria-disabled="true"</c:if>
                        <c:if test="${not empty min}">min="<c:out value='${min}' />"</c:if>>
             </c:otherwise>
         </c:choose>
     </div>
+    <c:if test="${disabled}">
+        <input type="hidden"
+               name="<c:out value='${name}' />"
+               value="<c:out value='${value}' />"
+               data-conditional-field-mirror="<c:out value='${name}' />">
+    </c:if>
 </div>

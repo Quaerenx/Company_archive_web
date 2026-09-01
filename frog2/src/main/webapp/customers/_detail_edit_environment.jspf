@@ -1,4 +1,6 @@
 <%@ page pageEncoding="UTF-8" %>
+<c:set var="eonFieldsDisabled"
+       value="${empty editDetail.dbMode or editDetail.dbMode ne 'EON'}" />
 <details class="detail-section detail-section--collapsible" data-detail-section open>
     <summary class="detail-section-title">
         <i class="fas fa-server" aria-hidden="true"></i>
@@ -23,11 +25,13 @@
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="cpuCore" label="CPU 코어"
                 value="${editDetail.cpuCore}" placeholder="CPU 코어 수" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="depotArea" label="Depot 영역"
-                value="${editDetail.depotArea}" placeholder="예: 2TB" />
+                value="${eonFieldsDisabled ? '미사용' : editDetail.depotArea}" placeholder="예: 2TB"
+                disabled="${eonFieldsDisabled}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="hyperThreading" label="하이퍼스레딩"
                 inputType="select" options="Y:사용|N:미사용" value="${editDetail.hyperThreading}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="objectArea" label="Object 영역"
-                value="${editDetail.objectArea}" placeholder="Object Storage 정보" />
+                value="${eonFieldsDisabled ? '미사용' : editDetail.objectArea}" placeholder="Object Storage 정보"
+                disabled="${eonFieldsDisabled}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="publicNetwork" label="Public 네트워크"
                 value="${editDetail.publicNetwork}" placeholder="대역 또는 미사용"
                 columnStart="${true}" />
@@ -35,7 +39,7 @@
                 value="${editDetail.privateNetwork}" placeholder="대역 또는 미사용"
                 columnStart="${true}" />
         <t:customerDetailEditField idPrefix="${editIdPrefix}" name="storageNetwork" label="스토리지 네트워크"
-                value="${editDetail.storageNetwork}" placeholder="대역 또는 미사용"
-                columnStart="${true}" />
+                value="${eonFieldsDisabled ? '미사용' : editDetail.storageNetwork}" placeholder="대역 또는 미사용"
+                columnStart="${true}" disabled="${eonFieldsDisabled}" />
     </div>
 </details>

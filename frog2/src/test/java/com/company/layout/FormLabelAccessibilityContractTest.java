@@ -45,8 +45,10 @@ class FormLabelAccessibilityContractTest {
                 "<label class=\"detail-label\" for=\"<c:out value='${fieldId}' />\""));
         assertEquals(3, occurrences(
                 tag, "id=\"<c:out value='${fieldId}' />\""));
-        assertEquals(3, occurrences(
+        assertEquals(4, occurrences(
                 tag, "name=\"<c:out value='${name}' />\""));
+        assertTrue(tag.contains("<input type=\"hidden\""));
+        assertTrue(tag.contains("data-conditional-field-mirror="));
     }
 
     @Test

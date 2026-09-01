@@ -155,6 +155,7 @@
                     control.value = '';
                 }
                 control.disabled = false;
+                control.removeAttribute('aria-disabled');
                 mirror.disabled = true;
             } else {
                 var currentValue = String(control.value || '');
@@ -167,7 +168,10 @@
                 mirror.value = disabledValue;
                 mirror.disabled = false;
                 control.disabled = true;
+                control.setAttribute('aria-disabled', 'true');
             }
+            control.classList.toggle(
+                'customer-detail-edit-control--blocked', !enabled);
             if (field) {
                 field.classList.toggle('is-conditionally-disabled', !enabled);
             }

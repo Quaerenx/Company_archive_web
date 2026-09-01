@@ -286,6 +286,11 @@
     color: var(--color-text-disabled);
 }
 
+.ui-system .customer-detail--edit
+        .detail-item.is-conditionally-disabled
+        .customer-detail-edit-control,
+.ui-system .customer-detail--edit
+        .customer-detail-edit-control--blocked,
 .ui-system .customer-detail--edit .customer-detail-edit-control:disabled {
     background: var(--color-surface-muted);
     border-color: var(--color-surface-edge);
@@ -294,9 +299,10 @@
     opacity: 1;
 }
 
-.customer-detail--edit textarea.customer-detail-edit-control {
+.ui-system .customer-detail--edit
+        textarea.customer-detail-edit-control.note-textarea {
     line-height: var(--line-height-relaxed);
-    min-block-size: 176px;
+    min-block-size: 192px;
 }
 
 .customer-detail--edit .customer-detail-form-actions {

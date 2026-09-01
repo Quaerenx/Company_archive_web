@@ -333,7 +333,7 @@ body.ui-system .content-shell {
     margin-block-end: var(--space-4);
 }
 
-.ui-system form.ui-form :is(
+.ui-system form.ui-form :where(
     input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
     select,
     textarea,

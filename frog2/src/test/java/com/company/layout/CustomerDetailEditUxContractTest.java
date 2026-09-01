@@ -69,6 +69,10 @@ class CustomerDetailEditUxContractTest {
         assertTrue(tag.contains("name=\"<c:out value='${name}' />\""));
         assertTrue(tag.contains("data-customer-detail-field"));
         assertTrue(tag.contains("readonly aria-readonly=\"true\""));
+        assertTrue(tag.contains("disabled aria-disabled=\"true\""));
+        assertTrue(tag.contains(
+                "customer-detail-edit-control--blocked"));
+        assertTrue(tag.contains("data-conditional-field-mirror="));
     }
 
     @Test
@@ -77,20 +81,26 @@ class CustomerDetailEditUxContractTest {
                 WEBAPP.resolve("resources/css/pages/customer_detail.css"));
 
         assertTrue(styles.contains(
-                ".customer-detail--edit textarea.customer-detail-edit-control"));
-        assertTrue(styles.contains("min-block-size: 176px;"));
+                ".ui-system .customer-detail--edit\n"
+                        + "        textarea.customer-detail-edit-control.note-textarea"));
+        assertTrue(styles.contains("min-block-size: 192px;"));
     }
 
     @Test
     void conditionallyBlockedControlsUseAnObviousMutedSurface() throws Exception {
         String styles = Files.readString(
                 WEBAPP.resolve("resources/css/pages/customer_detail.css"));
+        String uiSystem = Files.readString(
+                WEBAPP.resolve("resources/css/ui-system.css"));
 
         assertTrue(styles.contains(
                 ".detail-item.is-conditionally-disabled .detail-label"));
         assertTrue(styles.contains(
-                ".ui-system .customer-detail--edit "
-                        + ".customer-detail-edit-control:disabled"));
+                ".detail-item.is-conditionally-disabled"));
+        assertTrue(styles.contains(
+                ".customer-detail-edit-control:disabled"));
+        assertTrue(styles.contains(
+                ".customer-detail-edit-control--blocked"));
         assertTrue(styles.contains(
                 "background: var(--color-surface-muted);"));
         assertTrue(styles.contains(
@@ -98,6 +108,12 @@ class CustomerDetailEditUxContractTest {
         assertTrue(styles.contains(
                 "color: var(--color-text-disabled);"));
         assertTrue(styles.contains("opacity: 1;"));
+        assertTrue(uiSystem.contains(
+                ".ui-system form.ui-form :where(\n"
+                        + "    input:not([type=\"hidden\"]):not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"file\"]),"));
+        assertTrue(uiSystem.indexOf(
+                ".ui-system form.ui-form :is(input, select, textarea):disabled")
+                > uiSystem.indexOf(".ui-system form.ui-form :where("));
     }
 
     @Test
@@ -159,6 +175,8 @@ class CustomerDetailEditUxContractTest {
         assertTrue(!environment.contains("name=\"privateYn\""));
         assertTrue(!environment.contains("name=\"storageYn\""));
         assertTrue(environment.contains("columnStart=\"${true}\""));
+        assertTrue(environment.contains("disabled=\"${eonFieldsDisabled}\""));
+        assertTrue(vertica.contains("disabled=\"${mcFieldsDisabled}\""));
         assertTrue(!meta.contains("name=\"subManager\""));
     }
 
