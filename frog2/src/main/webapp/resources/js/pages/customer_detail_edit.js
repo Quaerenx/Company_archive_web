@@ -110,7 +110,6 @@
         function fieldValue(field) {
             var control = field.querySelector('input, select, textarea');
             return control
-                && !control.disabled
                 && String(control.value || '').trim() !== '';
         }
 

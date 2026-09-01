@@ -86,12 +86,16 @@ function createHarness() {
         const fields = new Map();
         [
             'dbMode', 'depotArea', 'objectArea', 'storageNetwork',
-            'mcYn', 'mcHost', 'mcVersion', 'mcAdmin'
+            'verticaAdmin', 'mcYn', 'customResourcePoolYn', 'mcVersion',
+            'subclusterYn', 'mcHost', 'backupYn', 'mcAdmin', 'backupNote'
         ].forEach(name => {
             const field = eventTarget();
             const control = eventTarget();
             control.name = name;
             control.value = fieldValues[name] || `${name}-value`;
+            field.querySelector = function(selector) {
+                return selector === 'input, select, textarea' ? control : null;
+            };
             control.closest = function(selector) {
                 return selector === '[data-customer-detail-field]'
                     ? field
@@ -100,8 +104,29 @@ function createHarness() {
             fields.set(name, { control, field });
         });
         const mirrors = [];
+        function sectionFor(fieldNames) {
+            const count = eventTarget();
+            const section = eventTarget();
+            section.querySelector = function(selector) {
+                return selector === '[data-detail-section-count]' ? count : null;
+            };
+            section.querySelectorAll = function(selector) {
+                return selector === '[data-customer-detail-field]'
+                    ? fieldNames.map(name => fields.get(name).field)
+                    : [];
+            };
+            return { count, section };
+        }
+        const environmentSection = sectionFor([
+            'dbMode', 'depotArea', 'objectArea', 'storageNetwork'
+        ]);
+        const verticaSection = sectionFor([
+            'verticaAdmin', 'mcYn', 'customResourcePoolYn', 'mcVersion',
+            'subclusterYn', 'mcHost', 'backupYn', 'mcAdmin', 'backupNote'
+        ]);
         form.fields = fields;
         form.mirrors = mirrors;
+        form.verticaSectionCount = verticaSection.count;
         form.querySelector = function(selector) {
             if (selector === 'input[name="customerName"]') return customerName;
             const controlMatch = selector.match(
@@ -116,7 +141,11 @@ function createHarness() {
             }
             return null;
         };
-        form.querySelectorAll = function() { return []; };
+        form.querySelectorAll = function(selector) {
+            return selector === '[data-detail-section]'
+                ? [environmentSection.section, verticaSection.section]
+                : [];
+        };
         form.appendChild = function(element) { mirrors.push(element); };
         return form;
     });
@@ -319,4 +348,8 @@ test('disabled dependent fields submit explicit unused values', () => {
         assert.equal(control.value, unusedValue);
         assert.equal(mirror.value, unusedValue);
     }
+    assert.equal(staging.verticaSectionCount.textContent, '9 / 9');
+    assert.equal(
+        staging.verticaSectionCount.getAttribute('aria-label'),
+        '9개 중 9개 입력');
 });
