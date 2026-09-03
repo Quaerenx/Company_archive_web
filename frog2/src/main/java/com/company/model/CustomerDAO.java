@@ -4,14 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import com.company.util.BusinessDate;
 import com.company.util.DBConnection;
 import com.company.util.Pagination;
 import com.company.util.SearchQueryPolicy;
@@ -19,10 +15,6 @@ import com.company.util.SearchQueryPolicy;
 public class CustomerDAO {
     private static final int ACTIVE_FLAG = 1;
     private static final int DELETED_FLAG = 0;
-    private static final String MAINTENANCE_SCHEDULE_TABLE =
-            "customer_maintenance_schedule";
-    private static final String MAINTENANCE_SCHEDULE_CAPABILITY =
-            "interval_months";
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
             new SchemaCapabilityCache();
     private static final String MAINTENANCE_FILTER = "maintenance";
@@ -40,37 +32,22 @@ public class CustomerDAO {
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
-    private final Clock clock;
 
     public CustomerDAO() {
-        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES,
-                BusinessDate.systemClock());
+        this(DBConnection::getConnection, APPLICATION_SCHEMA_CAPABILITIES);
     }
 
     CustomerDAO(JdbcConnectionProvider connectionProvider) {
-        this(connectionProvider, new SchemaCapabilityCache(),
-                BusinessDate.systemClock());
-    }
-
-    CustomerDAO(JdbcConnectionProvider connectionProvider, Clock clock) {
-        this(connectionProvider, new SchemaCapabilityCache(), clock);
+        this(connectionProvider, new SchemaCapabilityCache());
     }
 
     CustomerDAO(
             JdbcConnectionProvider connectionProvider,
             SchemaCapabilityCache schemaCapabilities) {
-        this(connectionProvider, schemaCapabilities, BusinessDate.systemClock());
-    }
-
-    CustomerDAO(
-            JdbcConnectionProvider connectionProvider,
-            SchemaCapabilityCache schemaCapabilities,
-            Clock clock) {
         this.connectionProvider = Objects.requireNonNull(
                 connectionProvider, "connectionProvider");
         this.schemaCapabilities = Objects.requireNonNull(
                 schemaCapabilities, "schemaCapabilities");
-        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     // 모든 고객사 정보 조회 (활성 상태만, 필터 옵션 추가)
@@ -113,37 +90,6 @@ public class CustomerDAO {
                 sortField, sortDirection, MAINTENANCE_FILTER);
     }
 
-    public List<CustomerDTO> getMaintenanceCustomersByAssignee(
-            String assigneeName) {
-        String normalizedAssignee = normalizeAssignee(assigneeName);
-        if (normalizedAssignee == null) {
-            return List.of();
-        }
-        String sql = "SELECT " + CUSTOMER_COLUMNS
-                + " FROM vertica_customer_detail d "
-                + "WHERE d.is_deleted = " + ACTIVE_FLAG
-                + " AND d.customer_type = ? "
-                + "AND (LOWER(TRIM(d.main_manager)) = LOWER(?) "
-                + "OR LOWER(TRIM(d.sub_manager)) = LOWER(?)) "
-                + "ORDER BY d.customer_name ASC";
-        try (Connection connection = connectionProvider.getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, MAINTENANCE_CUSTOMER_TYPE);
-            statement.setString(2, normalizedAssignee);
-            statement.setString(3, normalizedAssignee);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<CustomerDTO> customers = new ArrayList<>();
-                while (resultSet.next()) {
-                    customers.add(CustomerFieldContract.read(resultSet));
-                }
-                return List.copyOf(customers);
-            }
-        } catch (SQLException exception) {
-            throw DataAccessException.from(
-                    "load maintenance customers by assignee", exception);
-        }
-    }
-
     public List<CustomerDTO> searchCustomers(String query, int limit) {
         if (limit <= 0 || limit > 20) {
             throw new IllegalArgumentException(
@@ -180,129 +126,6 @@ public class CustomerDAO {
         CustomerDTO customer = getCustomerByName(customerName);
         return customer != null
                 && MAINTENANCE_CUSTOMER_TYPE.equals(customer.getCustomerType());
-    }
-
-    public List<MaintenanceCustomerAssignment> getMaintenanceCustomerAssignments() {
-        return getMaintenanceCustomerAssignments(
-                BusinessDate.currentMonth(clock));
-    }
-
-    public List<MaintenanceCustomerAssignment> getMaintenanceCustomerAssignments(
-            YearMonth targetMonth) {
-        Objects.requireNonNull(targetMonth, "targetMonth");
-        return getAllMaintenanceCustomerAssignments().stream()
-                .filter(assignment -> assignment.schedule().isDue(targetMonth))
-                .toList();
-    }
-
-    public List<MaintenanceCustomerAssignment> getAllMaintenanceCustomerAssignments() {
-        try (Connection connection = connectionProvider.getConnection()) {
-            boolean scheduleAvailable = schemaCapabilities.columnExists(
-                    connection,
-                    MAINTENANCE_SCHEDULE_TABLE,
-                    MAINTENANCE_SCHEDULE_CAPABILITY);
-            return loadMaintenanceCustomerAssignments(
-                    connection, scheduleAvailable, null);
-        } catch (SQLException exception) {
-            throw DataAccessException.from(
-                    "load maintenance customer assignments", exception);
-        }
-    }
-
-    public List<MaintenanceCustomerAssignment>
-            getMaintenanceCustomerAssignmentsByAssignee(String assigneeName) {
-        String normalizedAssignee = normalizeAssignee(assigneeName);
-        if (normalizedAssignee == null) {
-            return List.of();
-        }
-        try (Connection connection = connectionProvider.getConnection()) {
-            boolean scheduleAvailable = schemaCapabilities.columnExists(
-                    connection,
-                    MAINTENANCE_SCHEDULE_TABLE,
-                    MAINTENANCE_SCHEDULE_CAPABILITY);
-            return loadMaintenanceCustomerAssignments(
-                    connection, scheduleAvailable, normalizedAssignee);
-        } catch (SQLException exception) {
-            throw DataAccessException.from(
-                    "load maintenance customer assignments by assignee",
-                    exception);
-        }
-    }
-
-    private List<MaintenanceCustomerAssignment> loadMaintenanceCustomerAssignments(
-            Connection connection,
-            boolean scheduleAvailable,
-            String assigneeName) throws SQLException {
-        String scheduleColumns = scheduleAvailable
-                ? ", s.interval_months, s.anchor_month, s.enabled, "
-                        + "s.effective_from, s.effective_to "
-                : "";
-        String scheduleJoin = scheduleAvailable
-                ? "LEFT JOIN customer_maintenance_schedule s "
-                        + "ON s.customer_name = d.customer_name "
-                : "";
-        String sql = "SELECT d.customer_name, d.main_manager "
-                + scheduleColumns
-                + "FROM vertica_customer_detail d "
-                + scheduleJoin
-                + "WHERE d.is_deleted = " + ACTIVE_FLAG
-                + " AND d.customer_type = ? "
-                + (assigneeName == null
-                        ? ""
-                        : "AND (LOWER(TRIM(d.main_manager)) = LOWER(?) "
-                                + "OR LOWER(TRIM(d.sub_manager)) = LOWER(?)) ")
-                + "ORDER BY CASE WHEN d.main_manager IS NULL "
-                + "OR TRIM(d.main_manager) = '' THEN 1 ELSE 0 END, "
-                + "d.main_manager ASC, d.customer_name ASC";
-        List<MaintenanceCustomerAssignment> assignments = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, MAINTENANCE_CUSTOMER_TYPE);
-            if (assigneeName != null) {
-                statement.setString(2, assigneeName);
-                statement.setString(3, assigneeName);
-            }
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    MaintenanceSchedule schedule = scheduleAvailable
-                            ? readMaintenanceSchedule(resultSet)
-                            : MaintenanceSchedule.monthlyDefault();
-                    MaintenanceCustomerAssignment assignment =
-                            new MaintenanceCustomerAssignment(
-                                    resultSet.getString("customer_name"),
-                                    resultSet.getString("main_manager"),
-                                    schedule);
-                    assignments.add(assignment);
-                }
-            }
-            return assignments;
-        }
-    }
-
-    private MaintenanceSchedule readMaintenanceSchedule(ResultSet resultSet)
-            throws SQLException {
-        int intervalMonths = resultSet.getInt("interval_months");
-        java.sql.Date anchorDate = resultSet.getDate("anchor_month");
-        java.sql.Date effectiveFromDate = resultSet.getDate("effective_from");
-        if (intervalMonths == 0
-                || anchorDate == null
-                || effectiveFromDate == null) {
-            return MaintenanceSchedule.monthlyDefault();
-        }
-        java.sql.Date effectiveToDate = resultSet.getDate("effective_to");
-        String enabledValue = resultSet.getString("enabled");
-        boolean enabled = enabledValue == null
-                || "1".equals(enabledValue)
-                || "t".equalsIgnoreCase(enabledValue)
-                || "true".equalsIgnoreCase(enabledValue);
-        LocalDate effectiveTo = effectiveToDate == null
-                ? null
-                : effectiveToDate.toLocalDate();
-        return new MaintenanceSchedule(
-                intervalMonths,
-                YearMonth.from(anchorDate.toLocalDate()),
-                effectiveFromDate.toLocalDate(),
-                effectiveTo,
-                enabled);
     }
 
     public CustomerPage getCustomerPage(
@@ -484,8 +307,22 @@ public class CustomerDAO {
         try (Connection connection = connectionProvider.getConnection()) {
             boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
                     connection, schemaCapabilities, actorUserId);
+            CustomerAssignmentSupport.Capability assignmentCapability =
+                    customerAssignmentCapability(connection);
+            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
+                    assignmentCapability
+                            == CustomerAssignmentSupport.Capability.COMPLETE
+                    ? CustomerAssignmentSupport.resolveUserIds(
+                            connection,
+                            customer.getManagerName(),
+                            customer.getSubManagerName())
+                    : null;
             String sql = "UPDATE vertica_customer_detail SET "
                     + CustomerFieldContract.mutableAssignments() + " "
+                    + (assignmentUserIds == null
+                            ? ""
+                            : ", main_manager_user_id = ?, "
+                                    + "sub_manager_user_id = ? ")
                     + (auditAvailable
                             ? ", updated_at = CURRENT_TIMESTAMP, updated_by = ? "
                             : "")
@@ -494,6 +331,10 @@ public class CustomerDAO {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int nextParameter = CustomerFieldContract.bindMutableFields(
                         statement, 1, customer);
+                if (assignmentUserIds != null) {
+                    nextParameter = CustomerAssignmentSupport.bindUserIds(
+                            statement, nextParameter, assignmentUserIds);
+                }
                 if (auditAvailable) {
                     statement.setString(nextParameter++, actorUserId.trim());
                 }
@@ -514,10 +355,24 @@ public class CustomerDAO {
         try (Connection connection = connectionProvider.getConnection()) {
             boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
                     connection, schemaCapabilities, actorUserId);
+            CustomerAssignmentSupport.Capability assignmentCapability =
+                    customerAssignmentCapability(connection);
+            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
+                    assignmentCapability
+                            == CustomerAssignmentSupport.Capability.COMPLETE
+                    ? CustomerAssignmentSupport.resolveUserIds(
+                            connection,
+                            customer.getManagerName(),
+                            customer.getSubManagerName())
+                    : null;
             String columns = CustomerFieldContract.insertColumns()
                     + ", is_deleted";
             String values = CustomerFieldContract.insertPlaceholders() + ", "
                     + ACTIVE_FLAG;
+            if (assignmentUserIds != null) {
+                columns += ", main_manager_user_id, sub_manager_user_id";
+                values += ", ?, ?";
+            }
             if (auditAvailable) {
                 columns += ", updated_at, updated_by";
                 values += ", CURRENT_TIMESTAMP, ?";
@@ -527,6 +382,10 @@ public class CustomerDAO {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int nextParameter = CustomerFieldContract.bindInsertFields(
                         statement, 1, customer);
+                if (assignmentUserIds != null) {
+                    nextParameter = CustomerAssignmentSupport.bindUserIds(
+                            statement, nextParameter, assignmentUserIds);
+                }
                 if (auditAvailable) {
                     statement.setString(nextParameter, actorUserId.trim());
                 }
@@ -535,6 +394,19 @@ public class CustomerDAO {
         } catch (SQLException  e) {
             throw DataAccessException.from(e);
         }
+    }
+
+    private CustomerAssignmentSupport.Capability
+            customerAssignmentCapability(Connection connection)
+            throws SQLException {
+        CustomerAssignmentSupport.Capability capability =
+                CustomerAssignmentSupport.capability(
+                        connection, schemaCapabilities);
+        if (capability == CustomerAssignmentSupport.Capability.PARTIAL) {
+            throw new SQLException(
+                    "Customer assignment user-ID columns are partially applied");
+        }
+        return capability;
     }
 
     // 고객사 삭제 (상세 테이블에서 비활성)
@@ -594,13 +466,6 @@ public class CustomerDAO {
 
     private static String normalizeQuery(String query) {
         return SearchQueryPolicy.normalize(query);
-    }
-
-    private static String normalizeAssignee(String assigneeName) {
-        if (assigneeName == null || assigneeName.isBlank()) {
-            return null;
-        }
-        return assigneeName.strip();
     }
 
     private static String sortOrder(String sortField, String direction) {

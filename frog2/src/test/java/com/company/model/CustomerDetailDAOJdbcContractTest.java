@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -97,6 +98,33 @@ class CustomerDetailDAOJdbcContractTest {
         List<Object> expected = mutableParameters(detail);
         expected.add(detail.getCustomerName());
         assertParameters(jdbc.statements.getFirst().parameters, expected);
+    }
+
+    @Test
+    void productionDetailWriteStoresStableAssigneeIdsInTheSameTransaction() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "vertica_customer_detail.main_manager_user_id",
+                "vertica_customer_detail.sub_manager_user_id");
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "user_id", "main-id", "user_count", 1));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "user_id", "sub-id", "user_count", 1));
+        jdbc.enqueueUpdate(1);
+        CustomerDetailDAO dao = new CustomerDetailDAO(jdbc::open);
+
+        assertTrue(dao.saveOrUpdateCustomerDetail(detail(), "actor-id"));
+
+        assertEquals(3, jdbc.statements.size());
+        PaginationJdbcFixture.StatementRecord update = jdbc.statements.get(2);
+        assertTrue(update.sql.contains("main_manager_user_id = ?"));
+        assertTrue(update.sql.contains("sub_manager_user_id = ?"));
+        assertEquals("main-id", update.parameters.get(50));
+        assertEquals("sub-id", update.parameters.get(51));
+        assertEquals("customer-name", update.parameters.get(52));
+        assertEquals(1, jdbc.commitCount);
+        assertEquals(0, jdbc.rollbackCount);
+        assertEquals(List.of(false, true), jdbc.autoCommitValues);
     }
 
     @Test

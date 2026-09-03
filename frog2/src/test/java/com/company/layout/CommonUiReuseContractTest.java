@@ -85,6 +85,22 @@ class CommonUiReuseContractTest {
     }
 
     @Test
+    void tableViewportBehaviorLivesInItsOwnSharedModule() throws Exception {
+        String footer = read("includes/footer.jsp");
+        String coreStyles = read("WEB-INF/includes/core_styles.jspf");
+        String core = read("resources/js/ui-system.js");
+        String tables = read("resources/js/ui-table.js");
+
+        assertTrue(coreStyles.indexOf("resources/css/ui-system.css")
+                < coreStyles.indexOf("resources/css/ui-table.css"));
+        assertTrue(footer.indexOf("resources/js/ui-system.js")
+                < footer.indexOf("resources/js/ui-table.js"));
+        assertFalse(core.contains("function updateScrollableTableRegions()"));
+        assertTrue(tables.contains("function updateScrollableTableRegions()"));
+        assertTrue(tables.contains("function updateTableStickyOffset()"));
+    }
+
+    @Test
     void fullFormFootersExposeTheCanonicalActionClass() throws Exception {
         for (String page : List.of(
                 "customers/customers_add.jsp",

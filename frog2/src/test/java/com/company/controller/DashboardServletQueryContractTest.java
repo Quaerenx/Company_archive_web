@@ -4,7 +4,7 @@ import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
@@ -42,7 +42,8 @@ class DashboardServletQueryContractTest {
                 maintenanceRecord("future-low", today.plusDays(1), "40"),
                 maintenanceRecord("past-high", today.minusDays(1), "95"),
                 maintenanceRecord("future-high", today.plusDays(1), "95"));
-        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        StubCustomerAssignmentDAO customerDAO =
+                new StubCustomerAssignmentDAO();
         customerDAO.assignments = List.of(
                 new MaintenanceCustomerAssignment("past-low", "Manager A"),
                 new MaintenanceCustomerAssignment("future-low", "Manager A"),
@@ -94,7 +95,8 @@ class DashboardServletQueryContractTest {
         StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
         maintenanceDAO.records = List.of(
                 maintenanceRecord("quarterly-extra", today, "89.95"));
-        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        StubCustomerAssignmentDAO customerDAO =
+                new StubCustomerAssignmentDAO();
         customerDAO.assignments = List.of(
                 new MaintenanceCustomerAssignment(
                         "quarterly-extra",
@@ -134,7 +136,8 @@ class DashboardServletQueryContractTest {
                 maintenanceRecord("mixed-state", today.plusDays(2), "40"),
                 maintenanceRecord("mixed-state", today.minusDays(2), "40"),
                 maintenanceRecord("mixed-state", today.plusDays(1), "95"));
-        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        StubCustomerAssignmentDAO customerDAO =
+                new StubCustomerAssignmentDAO();
         customerDAO.assignments = List.of(
                 new MaintenanceCustomerAssignment(
                         "mixed-state", "Manager C"));
@@ -169,7 +172,8 @@ class DashboardServletQueryContractTest {
                         "boundary-customer",
                         LocalDate.of(2026, 9, 1),
                         "40"));
-        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        StubCustomerAssignmentDAO customerDAO =
+                new StubCustomerAssignmentDAO();
         customerDAO.assignments = List.of(
                 new MaintenanceCustomerAssignment(
                         "boundary-customer", "Manager"));
@@ -212,7 +216,8 @@ class DashboardServletQueryContractTest {
         }
     }
 
-    private static final class StubCustomerDAO extends CustomerDAO {
+    private static final class StubCustomerAssignmentDAO
+            extends CustomerAssignmentDAO {
         private List<MaintenanceCustomerAssignment> assignments = new ArrayList<>();
         private int assignmentCalls;
 

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class DaoInjectedConnectionBehaviorTest {
@@ -73,10 +74,11 @@ class DaoInjectedConnectionBehaviorTest {
     void assignedMaintenanceCustomersAreFilteredInTheDatabase() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(customerRow("Acme"));
-        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
 
         List<CustomerDTO> customers =
-                dao.getMaintenanceCustomersByAssignee(" Alice ");
+                dao.getMaintenanceCustomersByAssignee(
+                        "alice-id", " Alice ");
 
         assertEquals(List.of("Acme"), customers.stream()
                 .map(CustomerDTO::getCustomerName)
@@ -94,11 +96,37 @@ class DaoInjectedConnectionBehaviorTest {
     }
 
     @Test
+    void assignedMaintenanceCustomersUseStableIdsAfterMigration() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "vertica_customer_detail.main_manager_user_id",
+                "vertica_customer_detail.sub_manager_user_id");
+        jdbc.enqueue(customerRow("Acme"));
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
+
+        List<CustomerDTO> customers =
+                dao.getMaintenanceCustomersByAssignee(
+                        "alice-id", "Old Alice Name");
+
+        assertEquals(List.of("Acme"), customers.stream()
+                .map(CustomerDTO::getCustomerName)
+                .toList());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "d.main_manager_user_id = ? "
+                        + "OR d.sub_manager_user_id = ?"));
+        assertEquals("alice-id", statement.parameters.get(2));
+        assertEquals("alice-id", statement.parameters.get(3));
+        assertFalse(statement.sql.contains("LOWER(TRIM(d.main_manager))"));
+    }
+
+    @Test
     void blankAssigneeDoesNotOpenACustomerConnection() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
-        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
 
-        assertTrue(dao.getMaintenanceCustomersByAssignee(" ").isEmpty());
+        assertTrue(dao.getMaintenanceCustomersByAssignee(null, " ").isEmpty());
         assertEquals(0, jdbc.openCount);
     }
 
@@ -169,6 +197,34 @@ class DaoInjectedConnectionBehaviorTest {
                 jdbc.statements.get(1).parameters.get(13));
         assertEquals("customer-note",
                 jdbc.statements.get(1).parameters.get(20));
+    }
+
+    @Test
+    void customerUpdatePersistsResolvedStableAssigneeIds() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "vertica_customer_detail.main_manager_user_id",
+                "vertica_customer_detail.sub_manager_user_id");
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "user_id", "alice-id", "user_count", 1));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "user_id", "bob-id", "user_count", 1));
+        jdbc.enqueueUpdate(1);
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+
+        assertTrue(dao.updateCustomer(customer("Acme")));
+
+        assertEquals(3, jdbc.statements.size());
+        assertTrue(jdbc.statements.get(0).sql.contains(
+                "LOWER(TRIM(userName)) = LOWER(?)"));
+        assertEquals("Alice", jdbc.statements.get(0).parameters.get(1));
+        assertEquals("Bob", jdbc.statements.get(1).parameters.get(1));
+        PaginationJdbcFixture.StatementRecord update = jdbc.statements.get(2);
+        assertTrue(update.sql.contains("main_manager_user_id = ?"));
+        assertTrue(update.sql.contains("sub_manager_user_id = ?"));
+        assertEquals("alice-id", update.parameters.get(20));
+        assertEquals("bob-id", update.parameters.get(21));
+        assertEquals("Acme", update.parameters.get(22));
     }
 
     @Test

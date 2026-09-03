@@ -8,7 +8,7 @@
 
     <context-param>
         <param-name>frog2AssetVersion</param-name>
-        <param-value>20260901-login-flight-depth-1</param-value>
+        <param-value>20260903-ci-assignee-modules-1</param-value>
     </context-param>
 
     <session-config>

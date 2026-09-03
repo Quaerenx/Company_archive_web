@@ -161,7 +161,9 @@ class UiDesignSystemContractTest {
     void workspaceHierarchyAndRowNavigationAreSharedAcrossDomains()
             throws Exception {
         String styles = read("resources/css/ui-system.css");
+        String tableStyles = read("resources/css/ui-table.css");
         String script = read("resources/js/ui-system.js");
+        String tableScript = read("resources/js/ui-table.js");
 
         assertTrue(styles.contains(":where(.ui-work-surface, .table-container)"));
         assertTrue(styles.contains(
@@ -169,15 +171,15 @@ class UiDesignSystemContractTest {
         assertFalse(styles.contains(".ui-system .table-container {"));
         assertTrue(styles.contains(".ui-section-header--flush"));
         assertTrue(styles.contains(".ui-section-body--flush"));
-        assertTrue(styles.contains("@media (min-width: 769px)"));
-        assertTrue(styles.contains(".ui-system .is-table-sticky-ready"));
-        assertTrue(styles.contains("@supports (overflow: clip)"));
-        assertTrue(styles.contains(
+        assertTrue(tableStyles.contains("@media (min-width: 769px)"));
+        assertTrue(tableStyles.contains(".ui-system .is-table-sticky-ready"));
+        assertTrue(tableStyles.contains("@supports (overflow: clip)"));
+        assertTrue(tableStyles.contains(
                 ".ui-table-wrap[data-ui-scrollable=\"false\"]"));
-        assertTrue(styles.contains(
+        assertTrue(tableStyles.contains(
                 "top: var(--table-sticky-offset, 0px);"));
-        assertTrue(styles.contains("z-index: var(--z-table-sticky);"));
-        assertTrue(styles.contains(
+        assertTrue(tableStyles.contains("z-index: var(--z-table-sticky);"));
+        assertTrue(tableStyles.contains(
                 "box-shadow: var(--shadow-table-sticky);"));
         assertTrue(read("resources/css/tokens.css").contains(
                 "--shadow-table-sticky:"));
@@ -189,12 +191,12 @@ class UiDesignSystemContractTest {
         assertFalse(styles.matches(
                 "(?s).*\\.ui-data-table thead th\\s*\\{[^}]*position:\\s*sticky;.*"));
         assertTrue(script.contains(".ui-data-row[data-detail-url]"));
-        assertTrue(script.contains("--table-sticky-offset"));
-        assertTrue(script.contains("is-table-sticky-ready"));
-        assertTrue(script.contains(
+        assertTrue(tableScript.contains("--table-sticky-offset"));
+        assertTrue(tableScript.contains("is-table-sticky-ready"));
+        assertTrue(tableScript.contains(
                 ".ui-work-surface, [data-ui-table-surface]"));
-        assertTrue(script.contains("region.dataset.uiScrollable"));
-        assertTrue(script.contains("!scrollable"));
+        assertTrue(tableScript.contains("region.dataset.uiScrollable"));
+        assertTrue(tableScript.contains("!scrollable"));
         assertTrue(script.contains("window.location.assign(row.dataset.detailUrl)"));
         assertTrue(script.contains("event.defaultPrevented"));
         assertTrue(script.contains("window.getSelection()"));

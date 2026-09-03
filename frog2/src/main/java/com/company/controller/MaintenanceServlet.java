@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceFormHistoryContext;
@@ -40,33 +41,47 @@ public class MaintenanceServlet extends HttpServlet {
             "정기점검 계약 고객사";
     private final MaintenanceRecordDAO maintenanceDAO;
     private final CustomerDAO customerDAO;
+    private final CustomerAssignmentDAO customerAssignmentDAO;
     private final Clock clock;
     private final MaintenanceRecordRequestMapper requestMapper =
             new MaintenanceRecordRequestMapper();
 
     public MaintenanceServlet() {
         this(new MaintenanceRecordDAO(), new CustomerDAO(),
+                new CustomerAssignmentDAO(),
                 BusinessDate.systemClock());
     }
 
     MaintenanceServlet(MaintenanceRecordDAO maintenanceDAO) {
-        this(maintenanceDAO, new CustomerDAO(), BusinessDate.systemClock());
+        this(maintenanceDAO, new CustomerDAO(), new CustomerAssignmentDAO(),
+                BusinessDate.systemClock());
     }
 
     MaintenanceServlet(
             MaintenanceRecordDAO maintenanceDAO,
             CustomerDAO customerDAO) {
-        this(maintenanceDAO, customerDAO, BusinessDate.systemClock());
+        this(maintenanceDAO, customerDAO, new CustomerAssignmentDAO(),
+                BusinessDate.systemClock());
     }
 
     MaintenanceServlet(
             MaintenanceRecordDAO maintenanceDAO,
             CustomerDAO customerDAO,
             Clock clock) {
+        this(maintenanceDAO, customerDAO, new CustomerAssignmentDAO(), clock);
+    }
+
+    MaintenanceServlet(
+            MaintenanceRecordDAO maintenanceDAO,
+            CustomerDAO customerDAO,
+            CustomerAssignmentDAO customerAssignmentDAO,
+            Clock clock) {
         this.maintenanceDAO = Objects.requireNonNull(
                 maintenanceDAO, "maintenanceDAO");
         this.customerDAO = Objects.requireNonNull(
                 customerDAO, "customerDAO");
+        this.customerAssignmentDAO = Objects.requireNonNull(
+                customerAssignmentDAO, "customerAssignmentDAO");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
@@ -111,7 +126,7 @@ public class MaintenanceServlet extends HttpServlet {
         request.setAttribute("inspectorCustomers", inspectorCustomers);
         request.setAttribute(
                 "maintenanceFrequencyLabels",
-                getMaintenanceFrequencyLabels(customerDAO));
+                getMaintenanceFrequencyLabels());
         request.setAttribute("viewType", "cards");
         request.getRequestDispatcher("/maintenance/maintenance_cards.jsp")
                 .forward(request, response);
@@ -246,11 +261,11 @@ public class MaintenanceServlet extends HttpServlet {
         return ordered;
     }
 
-    private Map<String, String> getMaintenanceFrequencyLabels(
-            CustomerDAO customerDAO) {
+    private Map<String, String> getMaintenanceFrequencyLabels() {
         Map<String, String> labels = new LinkedHashMap<>();
         for (MaintenanceCustomerAssignment assignment
-                : customerDAO.getAllMaintenanceCustomerAssignments()) {
+                : customerAssignmentDAO
+                        .getAllMaintenanceCustomerAssignments()) {
             labels.put(
                     assignment.customerName(),
                     assignment.schedule().isQuarterly() ? "분기" : "월별");

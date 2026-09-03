@@ -2,8 +2,9 @@ package com.company.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
@@ -33,7 +34,8 @@ class MyPageQueryServiceTest {
         MaintenanceRecordDTO maintenance = new MaintenanceRecordDTO();
         TroubleshootingDTO troubleshooting = new TroubleshootingDTO();
         RecordingUserVmHostDAO hostDAO = new RecordingUserVmHostDAO();
-        RecordingCustomerDAO customerDAO = new RecordingCustomerDAO();
+        RecordingCustomerAssignmentDAO customerDAO =
+                new RecordingCustomerAssignmentDAO();
         MyPageQueryService service = new MyPageQueryService(
                 new StubUserDAO(user),
                 customerDAO,
@@ -58,6 +60,7 @@ class MyPageQueryServiceTest {
         assertEquals(1, hostDAO.countCalls);
         assertEquals(1, customerDAO.listCalls);
         assertEquals(0, customerDAO.assignmentCalls);
+        assertEquals("user-1", customerDAO.listUserId);
         assertEquals("Tester", customerDAO.listAssignee);
     }
 
@@ -69,7 +72,8 @@ class MyPageQueryServiceTest {
         latest.setCustomerName("Alpha");
         latest.setInspectionDate(Date.valueOf("2026-07-20"));
         latest.setLicenseUsagePct("106.0");
-        RecordingCustomerDAO customerDAO = new RecordingCustomerDAO(
+        RecordingCustomerAssignmentDAO customerDAO =
+                new RecordingCustomerAssignmentDAO(
                 List.of(customer),
                 List.of(new MaintenanceCustomerAssignment(
                         "Alpha", "Tester")));
@@ -94,6 +98,8 @@ class MyPageQueryServiceTest {
         assertEquals(1, customerDAO.assignmentCalls);
         assertEquals(1, maintenanceDAO.monthCalls);
         assertEquals(1, maintenanceDAO.latestCalls);
+        assertEquals("user-3", customerDAO.listUserId);
+        assertEquals("user-3", customerDAO.assignmentUserId);
         assertEquals("Tester", customerDAO.listAssignee);
         assertEquals("Tester", customerDAO.assignmentAssignee);
         assertEquals(List.of("Alpha"), maintenanceDAO.monthCustomerNames);
@@ -111,7 +117,8 @@ class MyPageQueryServiceTest {
                 new RecordingMaintenanceDAO();
         RecordingTroubleshootingDAO troubleshootingDAO =
                 new RecordingTroubleshootingDAO();
-        RecordingCustomerDAO customerDAO = new RecordingCustomerDAO();
+        RecordingCustomerAssignmentDAO customerDAO =
+                new RecordingCustomerAssignmentDAO();
         MyPageQueryService service = new MyPageQueryService(
                 new StubUserDAO(user),
                 customerDAO,
@@ -215,19 +222,22 @@ class MyPageQueryServiceTest {
         }
     }
 
-    private static final class RecordingCustomerDAO extends CustomerDAO {
+    private static final class RecordingCustomerAssignmentDAO
+            extends CustomerAssignmentDAO {
         private final List<CustomerDTO> customers;
         private final List<MaintenanceCustomerAssignment> assignments;
         private int listCalls;
         private int assignmentCalls;
         private String listAssignee;
         private String assignmentAssignee;
+        private String listUserId;
+        private String assignmentUserId;
 
-        private RecordingCustomerDAO() {
+        private RecordingCustomerAssignmentDAO() {
             this(List.of(), List.of());
         }
 
-        private RecordingCustomerDAO(
+        private RecordingCustomerAssignmentDAO(
                 List<CustomerDTO> customers,
                 List<MaintenanceCustomerAssignment> assignments) {
             this.customers = customers;
@@ -236,8 +246,11 @@ class MyPageQueryServiceTest {
 
         @Override
         public List<CustomerDTO> getMaintenanceCustomersByAssignee(
+                String userId,
                 String assigneeName) {
             listCalls++;
+            assertTrue("user-1".equals(userId) || "user-3".equals(userId));
+            listUserId = userId;
             listAssignee = assigneeName;
             return customers;
         }
@@ -245,8 +258,10 @@ class MyPageQueryServiceTest {
         @Override
         public List<MaintenanceCustomerAssignment>
                 getMaintenanceCustomerAssignmentsByAssignee(
+                        String userId,
                         String assigneeName) {
             assignmentCalls++;
+            assignmentUserId = userId;
             assignmentAssignee = assigneeName;
             return assignments;
         }

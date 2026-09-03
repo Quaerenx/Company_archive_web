@@ -2,6 +2,7 @@ package com.company.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
@@ -24,7 +25,7 @@ class CustomerDAOMaintenanceAssignmentTest {
                 PaginationJdbcFixture.row(
                         "customer_name", "Beta",
                         "main_manager", null));
-        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
 
         List<MaintenanceCustomerAssignment> assignments =
                 dao.getMaintenanceCustomerAssignments();
@@ -61,7 +62,7 @@ class CustomerDAOMaintenanceAssignmentTest {
                 scheduleRow("Quarterly due", "Manager B", 3, "2025-02-01", true),
                 scheduleRow("Quarterly later", "Manager C", 3, "2025-01-01", true),
                 scheduleRow("Disabled", "Manager D", 1, "2000-01-01", false));
-        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
 
         List<MaintenanceCustomerAssignment> assignments =
                 dao.getMaintenanceCustomerAssignments(YearMonth.of(2026, 8));
@@ -86,7 +87,7 @@ class CustomerDAOMaintenanceAssignmentTest {
         jdbc.enqueue(
                 scheduleRow("Monthly", "Manager A", 1, "2000-01-01", true),
                 scheduleRow("Quarterly not due", "Manager B", 3, "2025-01-01", true));
-        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
 
         List<MaintenanceCustomerAssignment> assignments =
                 dao.getAllMaintenanceCustomerAssignments();
@@ -107,11 +108,11 @@ class CustomerDAOMaintenanceAssignmentTest {
                 "customer_maintenance_schedule.interval_months");
         jdbc.enqueue(scheduleRow(
                 "Assigned", "Manager A", 3, "2025-02-01", true));
-        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
 
         List<MaintenanceCustomerAssignment> assignments =
                 dao.getMaintenanceCustomerAssignmentsByAssignee(
-                        " Manager A ");
+                        "manager-a", " Manager A ");
 
         assertEquals(List.of("Assigned"), assignments.stream()
                 .map(MaintenanceCustomerAssignment::customerName)
@@ -127,11 +128,51 @@ class CustomerDAOMaintenanceAssignmentTest {
     }
 
     @Test
+    void stableUserIdFiltersAssignmentsAfterTheMigration() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "vertica_customer_detail.main_manager_user_id",
+                "vertica_customer_detail.sub_manager_user_id");
+        jdbc.enqueue(scheduleRow(
+                "Assigned", "Renamed Manager", 1, "2000-01-01", true));
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
+
+        List<MaintenanceCustomerAssignment> assignments =
+                dao.getMaintenanceCustomerAssignmentsByAssignee(
+                        "stable-user-id", "Old Display Name");
+
+        assertEquals(List.of("Assigned"), assignments.stream()
+                .map(MaintenanceCustomerAssignment::customerName)
+                .toList());
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "d.main_manager_user_id = ? "
+                        + "OR d.sub_manager_user_id = ?"));
+        assertEquals("stable-user-id", statement.parameters.get(2));
+        assertEquals("stable-user-id", statement.parameters.get(3));
+        assertFalse(statement.sql.contains("LOWER(TRIM(d.main_manager))"));
+    }
+
+    @Test
+    void partialStableAssignmentSchemaFailsClosed() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "vertica_customer_detail.main_manager_user_id");
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
+
+        assertThrows(
+                DataAccessException.class,
+                dao::getAllMaintenanceCustomerAssignments);
+        assertTrue(jdbc.statements.isEmpty());
+    }
+
+    @Test
     void blankAssigneeDoesNotOpenAnAssignmentConnection() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
-        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
 
-        assertTrue(dao.getMaintenanceCustomerAssignmentsByAssignee(" ")
+        assertTrue(dao.getMaintenanceCustomerAssignmentsByAssignee(null, " ")
                 .isEmpty());
         assertEquals(0, jdbc.openCount);
     }
@@ -157,7 +198,7 @@ class CustomerDAOMaintenanceAssignmentTest {
         Clock utcClockAtSeoulMidnight = Clock.fixed(
                 Instant.parse("2026-08-31T15:00:00Z"),
                 ZoneOffset.UTC);
-        CustomerDAO dao = new CustomerDAO(
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(
                 jdbc::open, utcClockAtSeoulMidnight);
 
         List<MaintenanceCustomerAssignment> assignments =

@@ -32,6 +32,9 @@ Active schema contracts:
 - `V20260901_10__add_customer_swap_memory.sql`: nullable SWAP-memory detail
   field across production, staging and development customer-detail tables.
   Existing rows remain NULL and legacy application versions ignore the column.
+- `V20260903_11__add_customer_assignee_user_ids.sql`: nullable stable user IDs
+  for primary and secondary customer assignees. Unique legacy display names
+  are backfilled; ambiguous or unmatched names remain NULL for review.
 
 At startup the application performs a read-only metadata readiness check for
 the active schema contracts. It never executes migration SQL. Required
@@ -54,6 +57,13 @@ Migration 10 is additive and backward compatible. Apply all three statements
 before deploying application code that requires `swap_memory`; the readiness
 check identifies a missing column as `V20260901_10`. No existing customer row
 is updated by this migration.
+
+Migration 11 is an optional rolling capability while both columns are absent.
+A one-column partial state is incompatible. Deploy the compatible application
+before the migration, quiesce writes while both columns and backfills are
+applied, then restart each application node. Once both columns exist, inbox
+ownership is resolved by stable login ID and profile-name changes only update
+the denormalized display labels.
 
 Until migration 07 is applied, the dashboard intentionally treats every
 maintenance-contract customer as monthly. Review the inferred quarterly rows

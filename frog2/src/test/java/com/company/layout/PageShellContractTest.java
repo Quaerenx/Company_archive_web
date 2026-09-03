@@ -109,23 +109,26 @@ class PageShellContractTest {
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
         assertEquals(1, occurrences(
-                webXml, "20260901-login-flight-depth-1"));
-        assertEquals(6, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
+                webXml, "20260903-ci-assignee-modules-1"));
+        assertEquals(7, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
         assertEquals(4, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("ui-system.js?v=${frog2AssetVersion}"));
+        assertTrue(footer.contains("ui-table.js?v=${frog2AssetVersion}"));
         assertFalse(footer.contains("ambient-background.js?v=${frog2AssetVersion}"));
         assertTrue(footer.contains("${script}?v=${frog2AssetVersion}"));
 
         String login = read("login.jsp");
-        // 스타일시트·route gate 2개와 대시보드 자산 prefetch 6개가 무대 전환용이다.
-        assertEquals(16, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
+        // 스타일시트·route gate 2개와 대시보드 자산 prefetch 7개가 무대 전환용이다.
+        assertEquals(17, occurrences(login, "?v=${initParam.frog2AssetVersion}"));
         assertTrue(login.contains(
                 "/resources/js/ui-system.js?v=${initParam.frog2AssetVersion}"));
         assertTrue(login.contains(
                 "/resources/js/ambient-background.js?v=${initParam.frog2AssetVersion}"));
         assertTrue(login.contains(
                 "/resources/js/pages/login.js?v=${initParam.frog2AssetVersion}"));
+        assertTrue(login.contains(
+                "/resources/css/ui-table.css?v=${initParam.frog2AssetVersion}"));
         assertFalse(login.matches("(?s).*\\?v=202\\d+.*"));
         for (String errorPage : List.of(
                 "error/400.jsp",

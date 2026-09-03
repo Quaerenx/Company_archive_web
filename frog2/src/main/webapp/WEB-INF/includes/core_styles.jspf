@@ -2,5 +2,6 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/base.css?v=${frog2AssetVersion}">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/components.css?v=${frog2AssetVersion}">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/ui-system.css?v=${frog2AssetVersion}">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/ui-table.css?v=${frog2AssetVersion}">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/utilities.css?v=${frog2AssetVersion}">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/ambient-background.css?v=${frog2AssetVersion}">

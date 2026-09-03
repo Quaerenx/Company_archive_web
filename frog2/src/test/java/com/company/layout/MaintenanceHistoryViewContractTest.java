@@ -75,7 +75,7 @@ class MaintenanceHistoryViewContractTest {
         assertTrue(uiStyles.contains(
                 "form.ui-form--compact :is("));
         String uiScript = Files.readString(Path.of(
-                "src/main/webapp/resources/js/ui-system.js"));
+                "src/main/webapp/resources/js/ui-table.js"));
         assertTrue(uiScript.contains("uiScrollHintId"));
         assertTrue(uiScript.contains("hint.hidden = !scrollable"));
         String historyStyles = Files.readString(Path.of(

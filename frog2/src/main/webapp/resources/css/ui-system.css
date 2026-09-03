@@ -760,19 +760,6 @@ body.ui-system .content-shell {
     box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
-.ui-system .ui-table-wrap {
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scrollbar-color: var(--color-border-strong) var(--color-surface-subtle);
-    scrollbar-width: thin;
-}
-
-.ui-system .ui-table-wrap[tabindex="0"]:focus-visible {
-    box-shadow: 0 0 0 3px var(--color-focus-ring);
-    outline: 2px solid var(--color-focus);
-    outline-offset: 2px;
-}
-
 .ui-system .ui-table-toolbar {
     align-items: center;
     background: var(--color-surface);
@@ -825,39 +812,6 @@ body.ui-system .content-shell {
 
 .ui-system [data-ui-disclosure-content].is-disclosure-expanded {
     grid-template-rows: 1fr;
-}
-
-/*
- * Sticky headers are enabled only after JavaScript confirms that the table
- * does not need horizontal scrolling. This avoids competing scroll
- * containers on narrow screens while keeping long desktop lists readable.
- */
-@media (min-width: 769px) {
-    .ui-system .is-table-sticky-ready {
-        overflow: visible;
-    }
-
-    .ui-system .is-table-sticky-ready
-    .ui-table-wrap[data-ui-scrollable="false"] {
-        overflow: visible;
-    }
-
-    .ui-system .is-table-sticky-ready
-    .ui-table-wrap[data-ui-scrollable="false"]
-    .ui-table thead th {
-        box-shadow: var(--shadow-table-sticky);
-        position: sticky;
-        top: var(--table-sticky-offset, 0px);
-        z-index: var(--z-table-sticky);
-    }
-}
-
-@supports (overflow: clip) {
-    @media (min-width: 769px) {
-        .ui-system .is-table-sticky-ready {
-            overflow: clip;
-        }
-    }
 }
 
 .ui-system .ui-table tbody tr {

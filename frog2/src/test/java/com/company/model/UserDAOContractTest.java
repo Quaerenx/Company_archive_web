@@ -86,16 +86,69 @@ class UserDAOContractTest {
 
     @Test
     void updateUserNameDoesNotWriteDepartment() {
-        AtomicReference<String> preparedSql = new AtomicReference<>();
-        Map<Integer, String> bindings = new HashMap<>();
-        UserDAO dao = new UserDAO(() -> updateConnection(preparedSql, bindings));
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueueUpdate(1);
+        UserDAO dao = new UserDAO(jdbc::open);
 
         assertTrue(dao.updateUserName("tester", "Updated User"));
 
         assertEquals(
                 "UPDATE company_users SET userName = ? WHERE userId = ?",
-                preparedSql.get());
-        assertEquals(Map.of(1, "Updated User", 2, "tester"), bindings);
+                jdbc.statements.getFirst().sql);
+        assertEquals(
+                Map.of(1, "Updated User", 2, "tester"),
+                jdbc.statements.getFirst().parameters);
+    }
+
+    @Test
+    void stableAssignmentsSurviveAUserDisplayNameChange() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = java.util.Set.of(
+                "vertica_customer_detail.main_manager_user_id",
+                "vertica_customer_detail.sub_manager_user_id");
+        jdbc.enqueueUpdate(1);
+        jdbc.enqueueUpdate(2);
+        jdbc.enqueueUpdate(1);
+        UserDAO dao = new UserDAO(jdbc::open);
+
+        assertTrue(dao.updateUserName("tester", "Renamed User"));
+
+        assertEquals(3, jdbc.statements.size());
+        assertEquals(
+                "UPDATE company_users SET userName = ? WHERE userId = ?",
+                jdbc.statements.get(0).sql);
+        assertEquals(
+                "UPDATE vertica_customer_detail SET main_manager = ? "
+                        + "WHERE main_manager_user_id = ?",
+                jdbc.statements.get(1).sql);
+        assertEquals(
+                "UPDATE vertica_customer_detail SET sub_manager = ? "
+                        + "WHERE sub_manager_user_id = ?",
+                jdbc.statements.get(2).sql);
+        assertEquals(
+                Map.of(1, "Renamed User", 2, "tester"),
+                jdbc.statements.get(1).parameters);
+        assertEquals(1, jdbc.commitCount);
+        assertEquals(0, jdbc.rollbackCount);
+        assertEquals(java.util.List.of(false, true), jdbc.autoCommitValues);
+    }
+
+    @Test
+    void displayNameChangeRollsBackWhenAssignmentSyncFails() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = java.util.Set.of(
+                "vertica_customer_detail.main_manager_user_id",
+                "vertica_customer_detail.sub_manager_user_id");
+        jdbc.enqueueUpdate(1);
+        UserDAO dao = new UserDAO(jdbc::open);
+
+        assertThrows(
+                DataAccessException.class,
+                () -> dao.updateUserName("tester", "Renamed User"));
+
+        assertEquals(0, jdbc.commitCount);
+        assertEquals(1, jdbc.rollbackCount);
+        assertEquals(java.util.List.of(false, true), jdbc.autoCommitValues);
     }
 
     @Test

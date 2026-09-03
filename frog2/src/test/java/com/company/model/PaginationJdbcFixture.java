@@ -24,6 +24,10 @@ final class PaginationJdbcFixture {
     Set<String> availableColumns = Set.of();
     int openCount;
     int closeCount;
+    int commitCount;
+    int rollbackCount;
+    boolean autoCommit = true;
+    final List<Boolean> autoCommitValues = new ArrayList<>();
 
     @SafeVarargs
     final void enqueue(Map<String, Object>... rows) {
@@ -43,6 +47,20 @@ final class PaginationJdbcFixture {
                     case "prepareStatement" ->
                             statement((String) args[0]);
                     case "getMetaData" -> metadata();
+                    case "getAutoCommit" -> autoCommit;
+                    case "setAutoCommit" -> {
+                        autoCommit = (Boolean) args[0];
+                        autoCommitValues.add(autoCommit);
+                        yield null;
+                    }
+                    case "commit" -> {
+                        commitCount++;
+                        yield null;
+                    }
+                    case "rollback" -> {
+                        rollbackCount++;
+                        yield null;
+                    }
                     case "close" -> {
                         closeCount++;
                         yield null;

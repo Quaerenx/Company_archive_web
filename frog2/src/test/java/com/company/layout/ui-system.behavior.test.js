@@ -5,10 +5,10 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const source = fs.readFileSync(
+const source = [
     'src/main/webapp/resources/js/ui-system.js',
-    'utf8'
-);
+    'src/main/webapp/resources/js/ui-table.js'
+].map((path) => fs.readFileSync(path, 'utf8')).join('\n');
 
 class Element {}
 

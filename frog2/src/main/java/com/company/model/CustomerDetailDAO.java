@@ -226,20 +226,25 @@ public class CustomerDetailDAO {
                 if (originalAutoCommit) {
                     connection.setAutoCommit(false);
                 }
+                CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
+                        resolveAssignmentUserIds(
+                                connection, environment, detail);
 
                 boolean changed = update(
                         connection,
                         environment,
                         detail,
                         actorUserId,
-                        auditAvailable);
+                        auditAvailable,
+                        assignmentUserIds);
                 if (!changed && insertWhenMissing) {
                     changed = insert(
                             connection,
                             environment,
                             detail,
                             actorUserId,
-                            auditAvailable);
+                            auditAvailable,
+                            assignmentUserIds);
                 }
                 connection.commit();
                 return changed;
@@ -271,9 +276,15 @@ public class CustomerDetailDAO {
             CustomerDetailEnvironment environment,
             CustomerDetailDTO detail,
             String actorUserId,
-            boolean auditAvailable) throws SQLException {
+            boolean auditAvailable,
+            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds)
+            throws SQLException {
         String columns = COLUMNS;
         String values = INSERT_PLACEHOLDERS;
+        if (assignmentUserIds != null) {
+            columns += ", main_manager_user_id, sub_manager_user_id";
+            values += ", ?, ?";
+        }
         if (auditAvailable) {
             columns += ", updated_at, updated_by";
             values += ", CURRENT_TIMESTAMP, ?";
@@ -283,10 +294,17 @@ public class CustomerDetailDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, detail.getCustomerName());
             int nextIndex = bindMutableFields(statement, detail, 2);
-            requireNextIndex(nextIndex);
-            if (auditAvailable) {
-                statement.setString(nextIndex, actorUserId.trim());
+            if (assignmentUserIds != null) {
+                nextIndex = CustomerAssignmentSupport.bindUserIds(
+                        statement, nextIndex, assignmentUserIds);
             }
+            if (auditAvailable) {
+                statement.setString(nextIndex++, actorUserId.trim());
+            }
+            requireNextIndex(
+                    nextIndex,
+                    51 + (assignmentUserIds == null ? 0 : 2)
+                            + (auditAvailable ? 1 : 0));
             return statement.executeUpdate() > 0;
         }
     }
@@ -296,8 +314,14 @@ public class CustomerDetailDAO {
             CustomerDetailEnvironment environment,
             CustomerDetailDTO detail,
             String actorUserId,
-            boolean auditAvailable) throws SQLException {
+            boolean auditAvailable,
+            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds)
+            throws SQLException {
         String assignments = UPDATE_ASSIGNMENTS;
+        if (assignmentUserIds != null) {
+            assignments += ", main_manager_user_id = ?, "
+                    + "sub_manager_user_id = ?";
+        }
         if (auditAvailable) {
             assignments += ", updated_at = CURRENT_TIMESTAMP, updated_by = ?";
         }
@@ -305,11 +329,18 @@ public class CustomerDetailDAO {
                 + " WHERE customer_name = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int nextIndex = bindMutableFields(statement, detail, 1);
+            if (assignmentUserIds != null) {
+                nextIndex = CustomerAssignmentSupport.bindUserIds(
+                        statement, nextIndex, assignmentUserIds);
+            }
             if (auditAvailable) {
                 statement.setString(nextIndex++, actorUserId.trim());
             }
-            statement.setString(nextIndex, detail.getCustomerName());
-            requireNextIndex(nextIndex + (auditAvailable ? 0 : 1));
+            statement.setString(nextIndex++, detail.getCustomerName());
+            requireNextIndex(
+                    nextIndex,
+                    51 + (assignmentUserIds == null ? 0 : 2)
+                            + (auditAvailable ? 1 : 0));
             return statement.executeUpdate() > 0;
         }
     }
@@ -370,14 +401,38 @@ public class CustomerDetailDAO {
         return index;
     }
 
+    private CustomerAssignmentSupport.AssignmentUserIds
+            resolveAssignmentUserIds(
+                    Connection connection,
+                    CustomerDetailEnvironment environment,
+                    CustomerDetailDTO detail) throws SQLException {
+        if (environment != CustomerDetailEnvironment.PROD) {
+            return null;
+        }
+        CustomerAssignmentSupport.Capability capability =
+                CustomerAssignmentSupport.capability(
+                        connection, schemaCapabilities);
+        if (capability == CustomerAssignmentSupport.Capability.PARTIAL) {
+            throw new SQLException(
+                    "Customer assignment user-ID columns are partially applied");
+        }
+        return capability == CustomerAssignmentSupport.Capability.COMPLETE
+                ? CustomerAssignmentSupport.resolveUserIds(
+                        connection,
+                        detail.getMainManager(),
+                        detail.getSubManager())
+                : null;
+    }
+
     private static void setTimestamp(
             PreparedStatement statement, int index, java.util.Date value) throws SQLException {
         statement.setTimestamp(index, value == null ? null : new Timestamp(value.getTime()));
     }
 
-    private static void requireNextIndex(int nextIndex) {
-        if (nextIndex != 51) {
-            throw new IllegalStateException("Unexpected customer detail parameter count");
+    private static void requireNextIndex(int nextIndex, int expectedIndex) {
+        if (nextIndex != expectedIndex) {
+            throw new IllegalStateException(
+                    "Unexpected customer detail parameter count");
         }
     }
 

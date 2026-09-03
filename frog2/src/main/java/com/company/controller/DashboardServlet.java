@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.MaintenanceCustomerAssignment;
@@ -35,7 +35,7 @@ public class DashboardServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     private final MaintenanceRecordDAO maintenanceRecordDAO;
-    private final CustomerDAO customerDAO;
+    private final CustomerAssignmentDAO customerAssignmentDAO;
     private final Clock clock;
     private static final DateTimeFormatter MONTH_PARAM_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM");
     private static final DateTimeFormatter MONTH_LABEL_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -43,22 +43,25 @@ public class DashboardServlet extends HttpServlet {
     public DashboardServlet() {
         this(
                 new MaintenanceRecordDAO(),
-                new CustomerDAO(),
+                new CustomerAssignmentDAO(),
                 BusinessDate.systemClock());
     }
 
     DashboardServlet(
             MaintenanceRecordDAO maintenanceRecordDAO,
-            CustomerDAO customerDAO) {
-        this(maintenanceRecordDAO, customerDAO, BusinessDate.systemClock());
+            CustomerAssignmentDAO customerAssignmentDAO) {
+        this(
+                maintenanceRecordDAO,
+                customerAssignmentDAO,
+                BusinessDate.systemClock());
     }
 
     DashboardServlet(
             MaintenanceRecordDAO maintenanceRecordDAO,
-            CustomerDAO customerDAO,
+            CustomerAssignmentDAO customerAssignmentDAO,
             Clock clock) {
         this.maintenanceRecordDAO = maintenanceRecordDAO;
-        this.customerDAO = customerDAO;
+        this.customerAssignmentDAO = customerAssignmentDAO;
         this.clock = clock;
     }
 
@@ -83,7 +86,7 @@ public class DashboardServlet extends HttpServlet {
                                 Date.valueOf(nextMonthStart)),
                         today);
         List<MaintenanceCustomerAssignment> allAssignments =
-                customerDAO.getAllMaintenanceCustomerAssignments();
+                customerAssignmentDAO.getAllMaintenanceCustomerAssignments();
         List<MaintenanceAssigneeGroup> monthlyMaintenanceAssigneeGroups =
                 buildMaintenanceAssigneeGroups(
                         allAssignments,

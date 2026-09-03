@@ -39,8 +39,8 @@ class ResponsiveAccessibilityContractTest {
     @Test
     void overflowingDataTablesBecomeNamedKeyboardRegionsOnlyWhenNeeded()
             throws Exception {
-        String uiCss = read("resources/css/ui-system.css");
-        String uiScript = read("resources/js/ui-system.js");
+        String uiCss = read("resources/css/ui-table.css");
+        String uiScript = read("resources/js/ui-table.js");
 
         assertTrue(uiCss.contains(".ui-system .ui-table-wrap {"));
         assertTrue(uiCss.contains("overflow-x: auto;"));

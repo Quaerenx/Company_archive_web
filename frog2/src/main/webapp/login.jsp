@@ -15,10 +15,11 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/login_style.css?v=${initParam.frog2AssetVersion}">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/view-transitions.css?v=${initParam.frog2AssetVersion}">
     <script src="${pageContext.request.contextPath}/resources/js/view-transition-routing.js?v=${initParam.frog2AssetVersion}"></script>
-    <%-- 대시보드는 로그인이 받지 않는 스타일시트 6개를 처음 요청한다. 미리 받아두지
+    <%-- 대시보드는 로그인이 받지 않는 스타일시트 7개를 처음 요청한다. 미리 받아두지
          않으면 전환 중 새 문서의 첫 페인트가 늦어 이전 화면이 멈춘 것처럼 보인다. --%>
     <link rel="prefetch" as="style" href="${pageContext.request.contextPath}/resources/css/base.css?v=${initParam.frog2AssetVersion}">
     <link rel="prefetch" as="style" href="${pageContext.request.contextPath}/resources/css/components.css?v=${initParam.frog2AssetVersion}">
+    <link rel="prefetch" as="style" href="${pageContext.request.contextPath}/resources/css/ui-table.css?v=${initParam.frog2AssetVersion}">
     <link rel="prefetch" as="style" href="${pageContext.request.contextPath}/resources/css/utilities.css?v=${initParam.frog2AssetVersion}">
     <link rel="prefetch" as="style" href="${pageContext.request.contextPath}/resources/css/pages/header.css?v=${initParam.frog2AssetVersion}">
     <link rel="prefetch" as="style" href="${pageContext.request.contextPath}/resources/css/pages/dashboard.css?v=${initParam.frog2AssetVersion}">

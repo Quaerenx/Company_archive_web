@@ -1,6 +1,6 @@
 package com.company.controller;
 
-import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
@@ -26,7 +26,7 @@ final class MyPageQueryService {
     private static final int WORK_INBOX_DISPLAY_LIMIT = 8;
 
     private final UserDAO userDAO;
-    private final CustomerDAO customerDAO;
+    private final CustomerAssignmentDAO customerAssignmentDAO;
     private final MaintenanceRecordDAO maintenanceDAO;
     private final TroubleshootingDAO troubleshootingDAO;
     private final UserVmHostDAO userVmHostDAO;
@@ -36,7 +36,7 @@ final class MyPageQueryService {
     MyPageQueryService() {
         this(
                 new UserDAO(),
-                new CustomerDAO(),
+                new CustomerAssignmentDAO(),
                 new MaintenanceRecordDAO(),
                 new TroubleshootingDAO(),
                 new UserVmHostDAO(),
@@ -46,14 +46,15 @@ final class MyPageQueryService {
 
     MyPageQueryService(
             UserDAO userDAO,
-            CustomerDAO customerDAO,
+            CustomerAssignmentDAO customerAssignmentDAO,
             MaintenanceRecordDAO maintenanceDAO,
             TroubleshootingDAO troubleshootingDAO,
             UserVmHostDAO userVmHostDAO,
             WorkInboxService workInboxService,
             Clock clock) {
         this.userDAO = Objects.requireNonNull(userDAO, "userDAO");
-        this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
+        this.customerAssignmentDAO = Objects.requireNonNull(
+                customerAssignmentDAO, "customerAssignmentDAO");
         this.maintenanceDAO = Objects.requireNonNull(
                 maintenanceDAO, "maintenanceDAO");
         this.troubleshootingDAO = Objects.requireNonNull(
@@ -110,8 +111,8 @@ final class MyPageQueryService {
             return WorkInbox.empty();
         }
         List<CustomerDTO> assignedCustomers =
-                customerDAO.getMaintenanceCustomersByAssignee(
-                        user.getUserName());
+                customerAssignmentDAO.getMaintenanceCustomersByAssignee(
+                        user.getUserId(), user.getUserName());
         if (assignedCustomers.isEmpty()) {
             return WorkInbox.empty();
         }
@@ -125,8 +126,9 @@ final class MyPageQueryService {
                 .map(CustomerDTO::getCustomerName)
                 .toList();
         List<MaintenanceCustomerAssignment> assignments =
-                customerDAO.getMaintenanceCustomerAssignmentsByAssignee(
-                        user.getUserName());
+                customerAssignmentDAO
+                        .getMaintenanceCustomerAssignmentsByAssignee(
+                                user.getUserId(), user.getUserName());
         List<MaintenanceRecordDTO> currentMonthRecords =
                 maintenanceDAO.getMaintenanceRecordsByMonthForCustomers(
                         monthStart, nextMonthStart, customerNames);

@@ -1,7 +1,8 @@
 # Archive isolated write E2E gate
 
-Date: 2026-08-10
-Status: preflight and executable maintenance scenario are prepared; not executed
+Date: 2026-09-03
+Status: normal CI is automated; isolated write preflight and maintenance
+scenario are prepared but require a dedicated isolated database and runner
 
 ## Mandatory isolation inputs
 
@@ -49,3 +50,15 @@ The runner command is `./gradlew e2eWrite`. It must never be pointed at the shar
 | file metadata + DB recovery | not applicable today | repository is filesystem-only; reassess if DB metadata is introduced |
 
 No real write E2E ran during this work because no approved isolated database/snapshot was supplied.
+
+## CI boundary
+
+`.github/workflows/ci.yml` executes `clean check` in a GitHub-hosted disposable
+runner for pull requests and pushes to `develop`. It downloads the reviewed
+Tomcat/Jasper 10.1.59 toolchain and verifies the published SHA-512 before JspC.
+
+The workflow deliberately does not send pull-request code to an internal
+self-hosted runner or expose a writable staging database. Enable automated
+`e2eWrite` only after a disposable isolated Vertica database and a dedicated
+runner identity have been provisioned. Reusing the development or production
+database is not an acceptable substitute.

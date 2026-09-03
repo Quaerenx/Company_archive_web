@@ -146,14 +146,73 @@ public class UserDAO {
     }
 
     public boolean updateUserName(String userId, String userName) {
+        try (Connection connection = connectionProvider.getConnection()) {
+            CustomerAssignmentSupport.Capability capability =
+                    CustomerAssignmentSupport.capability(
+                            connection, schemaCapabilities);
+            if (capability == CustomerAssignmentSupport.Capability.PARTIAL) {
+                throw new SQLException(
+                        "Customer assignment user-ID columns are partially applied");
+            }
+            if (capability == CustomerAssignmentSupport.Capability.NONE) {
+                return updateUserName(connection, userId, userName);
+            }
+            return updateUserNameAndAssignments(
+                    connection, userId, userName);
+        } catch (SQLException exception) {
+            throw DataAccessException.from("update user name", exception);
+        }
+    }
+
+    private static boolean updateUserNameAndAssignments(
+            Connection connection,
+            String userId,
+            String userName) throws SQLException {
+        boolean originalAutoCommit = connection.getAutoCommit();
+        Throwable primaryFailure = null;
+        try {
+            if (originalAutoCommit) {
+                connection.setAutoCommit(false);
+            }
+            boolean updated = updateUserName(connection, userId, userName);
+            if (updated) {
+                CustomerAssignmentSupport.synchronizeDisplayName(
+                        connection, userId, userName);
+            }
+            connection.commit();
+            return updated;
+        } catch (SQLException | RuntimeException exception) {
+            primaryFailure = exception;
+            try {
+                connection.rollback();
+            } catch (SQLException rollbackFailure) {
+                exception.addSuppressed(rollbackFailure);
+            }
+            throw exception;
+        } finally {
+            if (originalAutoCommit) {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException restoreFailure) {
+                    if (primaryFailure != null) {
+                        primaryFailure.addSuppressed(restoreFailure);
+                    } else {
+                        throw restoreFailure;
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean updateUserName(
+            Connection connection,
+            String userId,
+            String userName) throws SQLException {
         String sql = "UPDATE company_users SET userName = ? WHERE userId = ?";
-        try (Connection connection = connectionProvider.getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, userName);
             statement.setString(2, userId);
             return statement.executeUpdate() > 0;
-        } catch (SQLException exception) {
-            throw DataAccessException.from("update user name", exception);
         }
     }
 

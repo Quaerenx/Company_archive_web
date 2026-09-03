@@ -1,0 +1,51 @@
+name: Frog2 CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frog2-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Clean build and checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+      - name: Set up Java 22
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "22"
+      - name: Set up Node.js 22
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: "22"
+      - name: Install reviewed Tomcat toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=10.1.59
+          archive="apache-tomcat-${version}.tar.gz"
+          base="https://archive.apache.org/dist/tomcat/tomcat-10/v${version}/bin"
+          curl --fail --proto '=https' --tlsv1.2 --location --remote-name "${base}/${archive}"
+          curl --fail --proto '=https' --tlsv1.2 --location --remote-name "${base}/${archive}.sha512"
+          sha512sum --check "${archive}.sha512"
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+      - name: Run clean verification
+        env:
+          FROG2_JSPC_CATALINA_HOME: ${{ runner.temp }}/apache-tomcat-10.1.59
+          FROG2_JSPC_JASPER_VERSION: "10.1.59"
+        run: ./gradlew --no-daemon clean check
