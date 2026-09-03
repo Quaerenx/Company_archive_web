@@ -77,6 +77,7 @@
                         <label for="customer_name">고객사 <span class="required" aria-label="필수">*</span></label>
                         <select id="customer_name"
                                 name="customer_name"
+                                data-ui-customer-combobox
                                 required
                                 aria-describedby="${not empty fieldErrors.customer_name ? 'maintenanceCustomerError' : ''}"
                                 aria-invalid="${not empty fieldErrors.customer_name}">

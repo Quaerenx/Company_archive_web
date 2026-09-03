@@ -179,8 +179,9 @@ class MaintenanceFormAssetContractTest {
                 "<c:forEach var=\"row\" items=\"${historyRows}\">"));
         assertTrue(comparisonTable.contains(
                 "<tbody class=\"history-record-group\">"));
-        assertTrue(comparisonTable.contains(
-                "<tr class=\"history-summary-row\" data-ui-disclosure-row>"));
+        assertTrue(comparisonTable.matches(
+                "(?s).*<tr class=\"history-summary-row\"[^>]*"
+                        + "data-ui-disclosure-row[^>]*>.*"));
         assertTrue(comparisonTable.contains(
                 "scope=\"row\""));
         assertTrue(comparisonTable.contains(

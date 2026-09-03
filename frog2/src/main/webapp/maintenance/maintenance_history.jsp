@@ -21,6 +21,13 @@
         <c:param name="view" value="detail" />
         <c:param name="customerName" value="${customerName}" />
     </c:url>
+    <c:url value="/maintenance" var="maintenanceHistoryExportUrl">
+        <c:param name="view" value="export" />
+        <c:param name="customerName" value="${customerName}" />
+        <c:param name="historyYear" value="${historyYear}" />
+        <c:param name="historyVersion" value="${historyVersion}" />
+        <c:param name="historyQuery" value="${historyQuery}" />
+    </c:url>
     <t:pageHeader>
         <jsp:attribute name="title">
             <a class="maintenance-customer-title-link"
@@ -38,6 +45,8 @@
             </c:if>
         </jsp:attribute>
         <jsp:attribute name="actions">
+            <a href="<c:out value='${maintenanceHistoryExportUrl}' />"
+               class="ui-button button--secondary button--sm"><i class="fas fa-file-csv" aria-hidden="true"></i> 현재 이력 CSV</a>
             <a href="${addHistoryUrl}"
                class="ui-button button--primary button--sm"><i class="fas fa-plus"></i> 새 점검 이력 추가</a>
             <a href="${pageContext.request.contextPath}/maintenance?view=cards"
@@ -222,6 +231,7 @@
                     표를 좌우로 스크롤해 전체 항목을 확인할 수 있습니다.
                 </p>
                 <div class="history-table-scroll ui-table-wrap"
+                     data-ui-return-list
                      data-ui-scroll-region
                      data-ui-scroll-label="정기점검 이력 비교표"
                      data-ui-scroll-hint-id="historyScrollHint">
@@ -243,6 +253,10 @@
                             <c:url var="maintenanceEditUrl" value="/maintenance">
                                 <c:param name="view" value="edit" />
                                 <c:param name="id" value="${row.record.maintenanceId}" />
+                                <c:param name="returnHistoryPage" value="${param.historyPage}" />
+                                <c:param name="returnHistoryYear" value="${param.historyYear}" />
+                                <c:param name="returnHistoryVersion" value="${param.historyVersion}" />
+                                <c:param name="returnHistoryQuery" value="${param.historyQuery}" />
                             </c:url>
                             <c:choose>
                                 <c:when test="${not empty row.record.inspectionDate}">
@@ -255,7 +269,10 @@
                                 </c:otherwise>
                             </c:choose>
                             <tbody class="history-record-group">
-                                <tr class="history-summary-row" data-ui-disclosure-row>
+                                <tr class="history-summary-row"
+                                    data-ui-disclosure-row
+                                    data-ui-return-row
+                                    data-ui-return-key="<c:out value='${row.record.maintenanceId}' />">
                                     <th class="history-date-cell" scope="row">
                                         <button type="button"
                                                 class="history-row-toggle"
@@ -368,6 +385,7 @@
                                                         </c:if>
                                                     </dl>
                                                     <a class="ui-button button--secondary button--sm"
+                                                       data-ui-return-source-key="<c:out value='${row.record.maintenanceId}' />"
                                                        href="<c:out value='${maintenanceEditUrl}' />">이력 수정</a>
                                                 </section>
                                               </div>

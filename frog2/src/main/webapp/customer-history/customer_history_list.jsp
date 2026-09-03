@@ -16,6 +16,12 @@
     <c:param name="returnQ" value="${q}" />
     <c:param name="returnPage" value="${currentPage}" />
 </c:url>
+<c:url var="exportHistoryUrl" value="/customer-history">
+    <c:param name="view" value="export" />
+    <c:param name="customerName" value="${customerName}" />
+    <c:param name="category" value="${category}" />
+    <c:param name="q" value="${q}" />
+</c:url>
 
 <div class="customer-history content-shell">
     <t:pageHeader>
@@ -27,6 +33,11 @@
             주요 장애, 업그레이드, 증설 등 고객사 작업 이력을 관리합니다.
         </jsp:attribute>
         <jsp:attribute name="actions">
+            <a href="<c:out value='${exportHistoryUrl}' />"
+               class="ui-button button--secondary button--md">
+                <i class="fas fa-file-csv" aria-hidden="true"></i>
+                현재 목록 CSV
+            </a>
             <a href="<c:out value='${addHistoryUrl}' />"
                class="ui-button button--primary button--md">
                 <i class="fas fa-plus" aria-hidden="true"></i>
@@ -46,7 +57,7 @@
               data-ui-submit-lock="auto">
             <label class="customer-history-filter-field">
                 <span class="sr-only">고객사</span>
-                <select name="customerName">
+                <select name="customerName" data-ui-customer-combobox>
                     <option value="">전체 고객사</option>
                     <c:forEach var="customer" items="${customerList}">
                         <option value="<c:out value='${customer.customerName}' />"
@@ -91,6 +102,7 @@
         <c:choose>
             <c:when test="${not empty historyRecords}">
                 <div class="ui-table-wrap customer-history-table-wrap"
+                     data-ui-return-list
                      data-ui-scroll-region
                      data-ui-scroll-label="고객사 히스토리 표">
                     <table class="ui-table ui-data-table customer-history-table">
@@ -114,7 +126,9 @@
                                     <c:param name="returnQ" value="${q}" />
                                     <c:param name="returnPage" value="${currentPage}" />
                                 </c:url>
-                                <tr class="customer-history-summary-row">
+                                <tr class="customer-history-summary-row"
+                                    data-ui-return-row
+                                    data-ui-return-key="<c:out value='${history.id}' />">
                                     <td class="col--date">
                                         <time datetime="<c:out value='${history.workDate}' />">
                                             <c:out value="${history.workDate}" />

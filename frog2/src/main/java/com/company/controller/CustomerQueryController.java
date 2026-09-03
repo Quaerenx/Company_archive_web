@@ -15,6 +15,7 @@ import com.company.model.VerticaEosDAO;
 import com.company.performance.RequestPerformanceContext;
 import com.company.performance.RequestPerformanceContext.Operation;
 import com.company.web.ApplicationError;
+import com.company.web.CsvResponse;
 import com.company.web.JsonResponse;
 import com.company.util.BusinessDate;
 import jakarta.servlet.ServletException;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 
 final class CustomerQueryController {
+    private static final int EXPORT_LIMIT = 10_000;
     private final CustomerDAO customerDAO;
     private final CustomerDetailDAO detailDAO;
     private final CustomerDetailQueryService detailQueryService;
@@ -106,12 +108,70 @@ final class CustomerQueryController {
         String view = defaultValue(request.getParameter("view"), "list");
         switch (view) {
             case "list" -> showList(request, response);
+            case "export" -> exportList(request, response);
             case "detail" -> showDetail(request, response);
             case "edit" -> showEdit(request, response);
             case "editDetail" -> showDetailEdit(request, response);
             case "add" -> forward(request, response, "/customers/customers_add.jsp", "add");
             default -> response.sendRedirect("customers?view=list");
         }
+    }
+
+    private void exportList(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        String sortField = defaultValue(request.getParameter("sortField"), "");
+        String sortDirection = defaultValue(
+                request.getParameter("sortDirection"), "ASC");
+        String filter = defaultValue(request.getParameter("filter"), "maintenance");
+        String query;
+        try {
+            query = mapper.searchQuery(request);
+        } catch (IllegalArgumentException exception) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_search_query",
+                    exception.getMessage());
+            return;
+        }
+
+        PageResult<CustomerDTO> page = customerDAO.getCustomerPage(
+                sortField,
+                sortDirection,
+                filter,
+                query,
+                1,
+                EXPORT_LIMIT + 1).result();
+        if (page.totalCount() > EXPORT_LIMIT) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
+                    "customer_export_too_large",
+                    "검색 조건을 좁힌 뒤 다시 내려받아 주세요.");
+            return;
+        }
+
+        List<List<String>> rows = page.items().stream()
+                .map(customer -> List.of(
+                        csvValue(customer.getCustomerName()),
+                        csvValue(customer.getVerticaVersion()),
+                        csvValue(customer.getMode()),
+                        csvValue(customer.getOs()),
+                        csvValue(customer.getNodes()),
+                        csvValue(customer.getLicenseSize()),
+                        csvValue(customer.getSaid()),
+                        csvValue(customer.getManagerName())))
+                .toList();
+        CsvResponse.write(
+                response,
+                "customers.csv",
+                List.of(
+                        "고객사", "버전", "모드", "OS", "노드수",
+                        "라이선스", "SAID", "담당자"),
+                rows);
     }
 
     private void showList(HttpServletRequest request, HttpServletResponse response)
@@ -296,6 +356,10 @@ final class CustomerQueryController {
 
     private static String defaultValue(String value, String fallback) {
         return value == null || value.isEmpty() ? fallback : value;
+    }
+
+    private static String csvValue(Object value) {
+        return value == null ? "" : value.toString();
     }
 
     private static List<CustomerDTO> nullToEmpty(List<CustomerDTO> customers) {

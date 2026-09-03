@@ -14,6 +14,7 @@ import com.company.security.SessionPrincipal;
 import com.company.util.Pagination;
 import com.company.util.BusinessDate;
 import com.company.web.ApplicationError;
+import com.company.web.CsvResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +30,7 @@ import java.util.Objects;
 public final class CustomerHistoryServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int PAGE_SIZE = 20;
+    private static final int EXPORT_LIMIT = 10_000;
 
     private final CustomerHistoryRepository repository;
     private final CustomerDAO customerDAO;
@@ -69,6 +71,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
             String view = valueOrDefault(request.getParameter("view"), "list");
             switch (view) {
                 case "list" -> showList(request, response, user);
+                case "export" -> exportList(request, response);
                 case "add" -> showAdd(request, response);
                 case "edit" -> showEdit(request, response, user);
                 default -> response.sendRedirect(request.getContextPath() + "/customer-history");
@@ -78,6 +81,51 @@ public final class CustomerHistoryServlet extends HttpServlet {
         } catch (CustomerHistoryStorageException exception) {
             sendStorageError(request, response);
         }
+    }
+
+    private void exportList(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        String customerName = valueOrDefault(
+                request.getParameter("customerName"), "").strip();
+        String category = valueOrDefault(
+                request.getParameter("category"), "all").strip();
+        String query = valueOrDefault(request.getParameter("q"), "").strip();
+        PageResult<CustomerHistoryRecord> page = repository.findPage(
+                customerName,
+                category,
+                query,
+                1,
+                EXPORT_LIMIT + 1);
+        if (page.totalCount() > EXPORT_LIMIT) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
+                    "customer_history_export_too_large",
+                    "검색 조건을 좁힌 뒤 다시 내려받아 주세요.");
+            return;
+        }
+        List<List<String>> rows = page.items().stream()
+                .map(record -> List.of(
+                        csvValue(record.getWorkDate()),
+                        csvValue(record.getCustomerName()),
+                        record.getCategory() == null
+                                ? "" : csvValue(record.getCategory().getLabel()),
+                        csvValue(record.getTitle()),
+                        csvValue(record.getActionSummary()),
+                        record.getStatus() == null
+                                ? "" : csvValue(record.getStatus().getLabel())))
+                .toList();
+        CsvResponse.write(
+                response,
+                "customer-history.csv",
+                List.of("날짜", "고객사", "유형", "작업 내용", "조치사항", "상태"),
+                rows);
+    }
+
+    private static String csvValue(Object value) {
+        return value == null ? "" : value.toString();
     }
 
     @Override

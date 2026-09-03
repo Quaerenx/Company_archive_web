@@ -8,6 +8,14 @@
 <c:set var="pageCss" value="/resources/css/pages/customers.css" scope="request" />
 <c:set var="pageScript" value="/resources/js/pages/customers_list.js" scope="request" />
 
+<c:url var="customerExportUrl" value="/customers">
+    <c:param name="view" value="export" />
+    <c:param name="filter" value="${filter}" />
+    <c:param name="sortField" value="${sortField}" />
+    <c:param name="sortDirection" value="${sortDirection}" />
+    <c:param name="q" value="${q}" />
+</c:url>
+
 <%@ include file="/includes/header.jsp" %>
 
 <div class="customer-management content-management content-shell" data-customer-list data-context-path="<c:out value='${pageContext.request.contextPath}' />" data-filter="<c:out value='${filter}' />" data-sort-field="<c:out value='${sortField}' />" data-sort-direction="<c:out value='${sortDirection}' />" data-query="<c:out value='${q}' />" data-page-size="<c:out value='${pageSize}' />">
@@ -17,6 +25,13 @@
         </jsp:attribute>
         <jsp:attribute name="subtitle">
             고객사별 시스템 환경과 담당 정보를 확인하고 관리합니다.
+        </jsp:attribute>
+        <jsp:attribute name="actions">
+            <a href="<c:out value='${customerExportUrl}' />"
+               class="ui-button button--secondary button--sm">
+                <i class="fas fa-file-csv" aria-hidden="true"></i>
+                현재 목록 CSV
+            </a>
         </jsp:attribute>
     </t:pageHeader>
 
@@ -136,6 +151,7 @@
         <c:choose>
             <c:when test="${not empty customerList}">
         <div class="ui-table-wrap"
+             data-ui-return-list
              data-ui-scroll-region
              data-ui-scroll-label="고객사 정보 표">
             <table class="customer-table ui-table ui-data-table">
@@ -206,6 +222,8 @@
                             <c:param name="returnPageSize" value="${pageSize}" />
                         </c:url>
                         <tr class="customer-row ui-data-row"
+                            data-ui-return-row
+                            data-ui-return-key="<c:out value='${customer.customerName}' />"
                             data-detail-url="<c:out value="${customerDetailUrl}" />">
                             <td class="col--customer" title="<c:out value="${customer.customerName}" />" data-original="<c:out value="${customer.customerName}" />">
                                 <a class="customer-detail-link"

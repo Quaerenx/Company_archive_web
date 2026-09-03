@@ -262,6 +262,10 @@
            aria-live="polite"
            hidden></p>
         <div id="quickNavRecent" class="quick-nav-recent" hidden>
+            <section data-favorite-customers-section hidden>
+                <h3>즐겨찾는 고객사</h3>
+                <ul data-favorite-customers></ul>
+            </section>
             <section data-recent-customers-section hidden>
                 <h3>최근 방문 고객사</h3>
                 <ul data-recent-customers></ul>

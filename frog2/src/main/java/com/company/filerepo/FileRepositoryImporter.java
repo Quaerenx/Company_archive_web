@@ -18,8 +18,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,7 +39,7 @@ final class FileRepositoryImporter {
     private static final String DATA_SUFFIX = ".data";
     private static final String META_SUFFIX = ".meta";
     private static final String QUARANTINE_DIRECTORY = ".frog2-quarantine";
-    private static final int MAX_IMPORT_CANDIDATES = 10_000;
+    private static final int MAX_IMPORT_ENTRIES = 10_000;
     private static final int MAX_IMPORT_DIRECTORIES = 1_000;
     private static final Duration MINIMUM_STABLE_AGE =
             Duration.ofSeconds(30);
@@ -81,57 +83,112 @@ final class FileRepositoryImporter {
         this.publishObserver = publishObserver;
     }
 
-    Result importUnmanaged(String rawPath) throws FileRepositoryException {
+    Preview previewUnmanaged(String rawPath) throws FileRepositoryException {
         synchronized (IMPORT_LOCK) {
             ResolvedDirectory rootDirectory =
                     paths.resolveExistingDirectory(rawPath);
             ImportDiscovery discovery = discover(rootDirectory);
             Map<Path, Set<String>> managedNames =
                     loadManagedOriginalNames(discovery.directories());
-            int imported = 0;
-            int conflicts = 0;
-            int rejected = discovery.rejectedCount();
-            int deferred = 0;
-            int failed = 0;
+            List<Item> items = new ArrayList<>(discovery.rejectedItems());
+            for (ImportCandidate candidate : discovery.candidates()) {
+                items.add(inspectCandidate(
+                        candidate,
+                        managedNames.get(candidate.directory().path())));
+            }
+            items.sort(Item.BY_PATH);
+            return new Preview(
+                    rootDirectory.relativePath(), List.copyOf(items));
+        }
+    }
+
+    Result importUnmanaged(String rawPath) throws FileRepositoryException {
+        return importUnmanaged(rawPath, null);
+    }
+
+    Result importUnmanaged(String rawPath, List<String> selectedPaths)
+            throws FileRepositoryException {
+        synchronized (IMPORT_LOCK) {
+            ResolvedDirectory rootDirectory =
+                    paths.resolveExistingDirectory(rawPath);
+            ImportDiscovery discovery = discover(rootDirectory);
+            Map<Path, Set<String>> managedNames =
+                    loadManagedOriginalNames(discovery.directories());
+            Set<String> selection = normalizeSelection(
+                    selectedPaths, discovery.candidates());
+            boolean importAll = selectedPaths == null;
+            List<Item> items = new ArrayList<>();
+            if (importAll) {
+                items.addAll(discovery.rejectedItems());
+            }
 
             for (ImportCandidate candidate : discovery.candidates()) {
+                if (!importAll && !selection.contains(candidate.relativePath())) {
+                    continue;
+                }
+                Item inspected = inspectCandidate(
+                        candidate,
+                        managedNames.get(candidate.directory().path()));
+                if (inspected.disposition() != ImportDisposition.READY) {
+                    items.add(inspected);
+                    continue;
+                }
                 try {
                     ImportDisposition disposition = importCandidate(
                             candidate,
                             managedNames.get(candidate.directory().path()));
-                    switch (disposition) {
-                        case IMPORTED -> {
-                            imported++;
-                            managedNames.get(candidate.directory().path()).add(
-                                    candidate.source().getFileName().toString()
-                                            .toLowerCase(Locale.ROOT));
-                        }
-                        case CONFLICT -> conflicts++;
-                        case REJECTED -> rejected++;
-                        case DEFERRED -> deferred++;
+                    Item item = item(candidate, disposition);
+                    items.add(item);
+                    if (disposition == ImportDisposition.IMPORTED) {
+                        managedNames.get(candidate.directory().path()).add(
+                                candidate.source().getFileName().toString()
+                                        .toLowerCase(Locale.ROOT));
                     }
                 } catch (IOException exception) {
-                    failed++;
+                    items.add(item(candidate, ImportDisposition.FAILED));
                     logger.error(
                             "Unable to import a server-side repository file");
                 }
             }
 
+            items.sort(Item.BY_PATH);
+            Result result = new Result(
+                    rootDirectory.relativePath(), List.copyOf(items));
+
             logger.info(
                     "File repository import completed: imported={}, conflicts={}, rejected={}, deferred={}, failed={}",
-                    imported,
-                    conflicts,
-                    rejected,
-                    deferred,
-                    failed);
-            return new Result(
-                    rootDirectory.relativePath(),
-                    imported,
-                    conflicts,
-                    rejected,
-                    deferred,
-                    failed);
+                    result.importedCount(),
+                    result.conflictCount(),
+                    result.rejectedCount(),
+                    result.deferredCount(),
+                    result.failedCount());
+            return result;
         }
+    }
+
+    private static Set<String> normalizeSelection(
+            List<String> selectedPaths,
+            List<ImportCandidate> candidates)
+            throws FileRepositoryException {
+        if (selectedPaths == null) {
+            return Set.of();
+        }
+        Set<String> available = candidates.stream()
+                .map(ImportCandidate::relativePath)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        Set<String> selection = new LinkedHashSet<>();
+        for (String selectedPath : selectedPaths) {
+            String normalized = selectedPath == null
+                    ? "" : selectedPath.strip();
+            if (normalized.isEmpty() || !available.contains(normalized)) {
+                throw new FileRepositoryException(
+                        400,
+                        "invalid_import_selection",
+                        "Selected server-side file is unavailable");
+            }
+            selection.add(normalized);
+        }
+        return Set.copyOf(selection);
     }
 
     private ImportDiscovery discover(ResolvedDirectory rootDirectory)
@@ -139,7 +196,7 @@ final class FileRepositoryImporter {
         List<ResolvedDirectory> directories = new ArrayList<>();
         Set<Path> visited = new HashSet<>();
         List<ImportCandidate> candidates = new ArrayList<>();
-        int rejected = 0;
+        List<Item> rejectedItems = new ArrayList<>();
         directories.add(rootDirectory);
         visited.add(rootDirectory.path());
 
@@ -155,7 +212,12 @@ final class FileRepositoryImporter {
                         continue;
                     }
                     if (name.startsWith(".") || Files.isSymbolicLink(child)) {
-                        rejected++;
+                        rejectedItems.add(rejectedItem(
+                                directory,
+                                name,
+                                "숨김 파일 또는 심볼릭 링크는 반입할 수 없습니다."));
+                        ensureImportEntryLimit(
+                                candidates.size() + rejectedItems.size());
                         continue;
                     }
                     if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
@@ -180,22 +242,31 @@ final class FileRepositoryImporter {
                                     || exception.getHttpStatus() >= 500) {
                                 throw exception;
                             }
-                            rejected++;
+                            rejectedItems.add(rejectedItem(
+                                    directory,
+                                    name,
+                                    "안전한 자료실 경로로 확인되지 않아 제외했습니다."));
+                            ensureImportEntryLimit(
+                                    candidates.size() + rejectedItems.size());
                         }
                         continue;
                     }
                     if (!Files.isRegularFile(
                             child, LinkOption.NOFOLLOW_LINKS)) {
-                        rejected++;
+                        rejectedItems.add(rejectedItem(
+                                directory,
+                                name,
+                                "일반 파일이 아니어서 제외했습니다."));
+                        ensureImportEntryLimit(
+                                candidates.size() + rejectedItems.size());
                         continue;
                     }
-                    candidates.add(new ImportCandidate(directory, child));
-                    if (candidates.size() > MAX_IMPORT_CANDIDATES) {
-                        throw new FileRepositoryException(
-                                413,
-                                "too_many_import_files",
-                                "At most 10000 server-side files may be imported at once");
-                    }
+                    candidates.add(new ImportCandidate(
+                            directory,
+                            child,
+                            relativePath(directory, name)));
+                    ensureImportEntryLimit(
+                            candidates.size() + rejectedItems.size());
                 }
             } catch (DirectoryIteratorException exception) {
                 throw importFailure(
@@ -210,7 +281,121 @@ final class FileRepositoryImporter {
         return new ImportDiscovery(
                 List.copyOf(directories),
                 List.copyOf(candidates),
-                rejected);
+                List.copyOf(rejectedItems));
+    }
+
+    private static void ensureImportEntryLimit(int entryCount)
+            throws FileRepositoryException {
+        if (entryCount > MAX_IMPORT_ENTRIES) {
+            throw new FileRepositoryException(
+                    413,
+                    "too_many_import_files",
+                    "At most 10000 server-side entries may be inspected at once");
+        }
+    }
+
+    private Item inspectCandidate(
+            ImportCandidate candidate, Set<String> managedNames) {
+        Path source = candidate.source();
+        try {
+            BasicFileAttributes before = Files.readAttributes(
+                    source,
+                    BasicFileAttributes.class,
+                    LinkOption.NOFOLLOW_LINKS);
+            if (!before.isRegularFile() || Files.isSymbolicLink(source)) {
+                return item(candidate, ImportDisposition.REJECTED);
+            }
+            if (before.lastModifiedTime().toInstant().isAfter(
+                    Instant.now().minus(MINIMUM_STABLE_AGE))) {
+                return item(candidate, ImportDisposition.DEFERRED);
+            }
+
+            String fileName = source.getFileName().toString();
+            ValidatedFile validated;
+            try {
+                validated = files.validateImported(fileName, before.size());
+                if (!fileName.equals(validated.originalName())) {
+                    return item(candidate, ImportDisposition.REJECTED);
+                }
+                validateContent(source);
+            } catch (FileRepositoryException exception) {
+                return new Item(
+                        candidate.relativePath(),
+                        fileName,
+                        ImportDisposition.REJECTED,
+                        rejectionReason(exception),
+                        false);
+            }
+
+            BasicFileAttributes inspected = Files.readAttributes(
+                    source,
+                    BasicFileAttributes.class,
+                    LinkOption.NOFOLLOW_LINKS);
+            if (!sameFile(before, inspected) || Files.isSymbolicLink(source)) {
+                return new Item(
+                        candidate.relativePath(),
+                        fileName,
+                        ImportDisposition.DEFERRED,
+                        "파일이 검사 중 변경되어 다음 미리보기에서 다시 확인합니다.",
+                        false);
+            }
+            if (managedNames.contains(
+                    validated.originalName().toLowerCase(Locale.ROOT))) {
+                return item(candidate, ImportDisposition.CONFLICT);
+            }
+            return item(candidate, ImportDisposition.READY);
+        } catch (IOException exception) {
+            return item(candidate, ImportDisposition.FAILED);
+        }
+    }
+
+    private static Item rejectedItem(
+            ResolvedDirectory directory, String name, String reason) {
+        return new Item(
+                relativePath(directory, name),
+                name,
+                ImportDisposition.REJECTED,
+                reason,
+                false);
+    }
+
+    private static Item item(
+            ImportCandidate candidate, ImportDisposition disposition) {
+        return new Item(
+                candidate.relativePath(),
+                candidate.source().getFileName().toString(),
+                disposition,
+                dispositionReason(disposition),
+                disposition == ImportDisposition.READY);
+    }
+
+    private static String relativePath(
+            ResolvedDirectory directory, String name) {
+        return directory.relativePath().isEmpty()
+                ? name
+                : directory.relativePath() + "/" + name;
+    }
+
+    private static String rejectionReason(FileRepositoryException exception) {
+        return switch (exception.getCode()) {
+            case "empty_file" -> "빈 파일은 반입할 수 없습니다.";
+            case "unsupported_extension" -> "허용되지 않은 확장자입니다.";
+            case "invalid_filename" -> "파일명이 안전하지 않아 제외했습니다.";
+            case "active_content" -> "실행 가능한 콘텐츠가 감지되어 제외했습니다.";
+            default -> "자료실 파일 정책을 통과하지 못했습니다.";
+        };
+    }
+
+    private static String dispositionReason(
+            ImportDisposition disposition) {
+        return switch (disposition) {
+            case READY -> "반입할 수 있습니다.";
+            case IMPORTED -> "자료실에 등록했습니다.";
+            case CONFLICT -> "같은 이름의 관리 파일이 이미 있습니다.";
+            case REJECTED -> "파일 정책 또는 경로 정책에 따라 제외했습니다.";
+            case DEFERRED -> "복사가 끝난 지 30초가 지나지 않아 대기합니다.";
+            case FAILED -> "반입 중 오류가 발생했습니다. 다시 시도할 수 있습니다.";
+        };
     }
 
     private static boolean isExpectedManagedEntry(String name) {
@@ -464,29 +649,72 @@ final class FileRepositoryImporter {
         void afterDataMove(Path source, Path data) throws IOException;
     }
 
-    record Result(
+    record Preview(String relativePath, List<Item> items) {
+        int readyCount() {
+            return count(ImportDisposition.READY);
+        }
+
+        private int count(ImportDisposition disposition) {
+            return (int) items.stream()
+                    .filter(item -> item.disposition() == disposition)
+                    .count();
+        }
+    }
+
+    record Result(String relativePath, List<Item> items) {
+        int importedCount() {
+            return count(ImportDisposition.IMPORTED);
+        }
+
+        int conflictCount() {
+            return count(ImportDisposition.CONFLICT);
+        }
+
+        int rejectedCount() {
+            return count(ImportDisposition.REJECTED);
+        }
+
+        int deferredCount() {
+            return count(ImportDisposition.DEFERRED);
+        }
+
+        int failedCount() {
+            return count(ImportDisposition.FAILED);
+        }
+
+        private int count(ImportDisposition disposition) {
+            return (int) items.stream()
+                    .filter(item -> item.disposition() == disposition)
+                    .count();
+        }
+    }
+
+    record Item(
             String relativePath,
-            int importedCount,
-            int conflictCount,
-            int rejectedCount,
-            int deferredCount,
-            int failedCount) {
+            String name,
+            ImportDisposition disposition,
+            String reason,
+            boolean selectable) {
+        private static final Comparator<Item> BY_PATH = Comparator.comparing(
+                Item::relativePath, String.CASE_INSENSITIVE_ORDER);
     }
 
     private record ImportDiscovery(
             List<ResolvedDirectory> directories,
             List<ImportCandidate> candidates,
-            int rejectedCount) {
+            List<Item> rejectedItems) {
     }
 
     private record ImportCandidate(
-            ResolvedDirectory directory, Path source) {
+            ResolvedDirectory directory, Path source, String relativePath) {
     }
 
-    private enum ImportDisposition {
+    enum ImportDisposition {
+        READY,
         IMPORTED,
         CONFLICT,
         REJECTED,
-        DEFERRED
+        DEFERRED,
+        FAILED
     }
 }

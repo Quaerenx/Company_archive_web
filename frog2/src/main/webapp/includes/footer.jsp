@@ -24,6 +24,8 @@
 
 <script src="${pageContext.request.contextPath}/resources/js/ui-system.js?v=${frog2AssetVersion}"></script>
 <script src="${pageContext.request.contextPath}/resources/js/ui-table.js?v=${frog2AssetVersion}"></script>
+<script src="${pageContext.request.contextPath}/resources/js/ui-customer-combobox.js?v=${frog2AssetVersion}"></script>
+<script src="${pageContext.request.contextPath}/resources/js/list-return.js?v=${frog2AssetVersion}"></script>
 <script src="${pageContext.request.contextPath}/resources/js/form-drafts.js?v=${frog2AssetVersion}"></script>
 <script src="${pageContext.request.contextPath}/resources/js/session-expiry.js?v=${frog2AssetVersion}"
         data-context-path="<c:out value='${pageContext.request.contextPath}' />"></script>

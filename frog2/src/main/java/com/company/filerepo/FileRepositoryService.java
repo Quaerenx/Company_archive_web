@@ -485,21 +485,64 @@ public final class FileRepositoryService {
      * the same opaque data/metadata pair used by browser uploads. The selected
      * directory and its safe, visible descendants are processed recursively.
      */
+    public ImportPreview previewUnmanaged(String rawPath)
+            throws FileRepositoryException {
+        FileRepositoryImporter.Preview preview = importer()
+                .previewUnmanaged(rawPath);
+        return new ImportPreview(
+                preview.relativePath(),
+                preview.items().stream()
+                        .map(FileRepositoryService::importItem)
+                        .toList());
+    }
+
     public ImportResult importUnmanaged(String rawPath)
             throws FileRepositoryException {
-        FileRepositoryImporter.Result result = new FileRepositoryImporter(
+        return importResult(importer().importUnmanaged(rawPath));
+    }
+
+    public ImportResult importUnmanaged(
+            String rawPath, List<String> selectedPaths)
+            throws FileRepositoryException {
+        return importResult(importer().importUnmanaged(
+                rawPath, selectedPaths));
+    }
+
+    private FileRepositoryImporter importer() {
+        return new FileRepositoryImporter(
                 paths,
                 files,
                 this::readMetadata,
-                FileRepositoryService::invalidateSnapshot)
-                .importUnmanaged(rawPath);
+                FileRepositoryService::invalidateSnapshot);
+    }
+
+    private static ImportResult importResult(
+            FileRepositoryImporter.Result result) {
         return new ImportResult(
                 result.relativePath(),
-                result.importedCount(),
-                result.conflictCount(),
-                result.rejectedCount(),
-                result.deferredCount(),
-                result.failedCount());
+                result.items().stream()
+                        .map(FileRepositoryService::importItem)
+                        .toList());
+    }
+
+    private static ImportItem importItem(FileRepositoryImporter.Item item) {
+        String status = item.disposition().name()
+                .toLowerCase(Locale.ROOT);
+        String statusLabel = switch (item.disposition()) {
+            case READY -> "반입 가능";
+            case IMPORTED -> "등록 완료";
+            case CONFLICT -> "이름 충돌";
+            case REJECTED -> "반입 거부";
+            case DEFERRED -> "안정화 대기";
+            case FAILED -> "반입 실패";
+        };
+        return new ImportItem(
+                item.relativePath(),
+                item.name(),
+                status,
+                statusLabel,
+                item.reason(),
+                item.selectable());
     }
 
     public StoredFile store(String rawPath, ValidatedFile validated, long declaredSize, InputStream input)
@@ -943,12 +986,100 @@ public final class FileRepositoryService {
     public record DownloadFile(Path path, String originalName, String contentType, long size) {
     }
 
+    public record ImportItem(
+            String path,
+            String name,
+            String status,
+            String statusLabel,
+            String reason,
+            boolean selectable) {
+        public String getPath() {
+            return path;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public String getStatusLabel() {
+            return statusLabel;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public boolean isSelectable() {
+            return selectable;
+        }
+    }
+
+    public record ImportPreview(String relativePath, List<ImportItem> items) {
+        public String getRelativePath() {
+            return relativePath;
+        }
+
+        public List<ImportItem> getItems() {
+            return items;
+        }
+
+        public int getReadyCount() {
+            return count("ready");
+        }
+
+        public int getConflictCount() {
+            return count("conflict");
+        }
+
+        public int getRejectedCount() {
+            return count("rejected");
+        }
+
+        public int getDeferredCount() {
+            return count("deferred");
+        }
+
+        public int getFailedCount() {
+            return count("failed");
+        }
+
+        private int count(String status) {
+            return (int) items.stream()
+                    .filter(item -> status.equals(item.status()))
+                    .count();
+        }
+    }
+
     public record ImportResult(
-            String relativePath,
-            int importedCount,
-            int conflictCount,
-            int rejectedCount,
-            int deferredCount,
-            int failedCount) {
+            String relativePath, List<ImportItem> items) {
+        public int importedCount() {
+            return count("imported");
+        }
+
+        public int conflictCount() {
+            return count("conflict");
+        }
+
+        public int rejectedCount() {
+            return count("rejected");
+        }
+
+        public int deferredCount() {
+            return count("deferred");
+        }
+
+        public int failedCount() {
+            return count("failed");
+        }
+
+        private int count(String status) {
+            return (int) items.stream()
+                    .filter(item -> status.equals(item.status()))
+                    .count();
+        }
     }
 }

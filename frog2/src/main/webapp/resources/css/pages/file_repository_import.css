@@ -1,0 +1,155 @@
+.page-file-import .file-import-page {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.page-file-import .file-import-summary,
+.page-file-import .file-import-form {
+    padding: var(--space-20);
+}
+
+.page-file-import .file-import-summary__heading,
+.page-file-import .file-import-result__heading,
+.page-file-import .file-import-result__actions,
+.page-file-import .file-import-actions,
+.page-file-import .file-import-toolbar {
+    align-items: center;
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+}
+
+.page-file-import .file-import-summary h2,
+.page-file-import .file-import-result h2 {
+    font-size: var(--font-size-lg);
+    margin: 0;
+}
+
+.page-file-import .file-import-result__actions {
+    justify-content: flex-end;
+}
+
+.page-file-import .file-import-summary p,
+.page-file-import .file-import-result p {
+    margin: var(--space-4) 0 0;
+}
+
+.page-file-import .file-import-summary__notice {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    max-width: 360px;
+    text-align: right;
+}
+
+.page-file-import .file-import-counts {
+    display: grid;
+    gap: var(--space-8);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: var(--space-16) 0 0;
+}
+
+.page-file-import .file-import-counts div {
+    background: var(--color-surface-muted);
+    border-radius: var(--radius-md);
+    padding: var(--space-12);
+    text-align: center;
+}
+
+.page-file-import .file-import-counts dt {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.page-file-import .file-import-counts dd {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    margin: var(--space-4) 0 0;
+}
+
+.page-file-import .file-import-form {
+    display: grid;
+    gap: var(--space-16);
+}
+
+.page-file-import .file-import-select-all {
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 600;
+    gap: var(--space-8);
+    min-height: 44px;
+}
+
+.page-file-import .file-import-select-all input,
+.page-file-import .file-import-table input[type="checkbox"] {
+    accent-color: var(--color-primary);
+    block-size: 18px;
+    inline-size: 18px;
+}
+
+.page-file-import .file-import-table__select {
+    text-align: center;
+    width: 72px;
+}
+
+.page-file-import .file-import-table__status {
+    text-align: center;
+    width: 120px;
+}
+
+.page-file-import .file-import-table__name strong,
+.page-file-import .file-import-table__name span {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.page-file-import .file-import-table__name span {
+    font-size: var(--font-size-xs);
+    margin-top: var(--space-4);
+}
+
+.page-file-import .file-import-progress {
+    min-height: 24px;
+}
+
+.page-file-import .file-import-progress progress {
+    accent-color: var(--color-primary);
+    display: block;
+    inline-size: 100%;
+    margin-bottom: var(--space-8);
+}
+
+.page-file-import .file-import-result {
+    border-top: 1px solid var(--color-border);
+    display: grid;
+    gap: var(--space-12);
+    padding-top: var(--space-16);
+}
+
+.page-file-import .file-import-result[hidden] {
+    display: none;
+}
+
+.page-file-import .file-import-actions {
+    border-top: 1px solid var(--color-border);
+    justify-content: flex-end;
+    padding-top: var(--space-16);
+}
+
+@media (max-width: 768px) {
+    .page-file-import .file-import-summary__heading,
+    .page-file-import .file-import-result__heading,
+    .page-file-import .file-import-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-file-import .file-import-summary__notice {
+        max-width: none;
+        text-align: left;
+    }
+
+    .page-file-import .file-import-counts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

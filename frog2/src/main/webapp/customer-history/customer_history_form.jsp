@@ -60,7 +60,7 @@
             <div class="customer-history-form-grid">
                 <label class="form-group">
                     <span>고객사 <span aria-hidden="true">*</span></span>
-                    <select name="customerName" required>
+                    <select name="customerName" data-ui-customer-combobox required>
                         <option value="">고객사를 선택하세요</option>
                         <c:forEach var="customer" items="${customerList}">
                             <option value="<c:out value='${customer.customerName}' />"

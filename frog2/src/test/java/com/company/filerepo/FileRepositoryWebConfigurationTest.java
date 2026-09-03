@@ -30,6 +30,7 @@ class FileRepositoryWebConfigurationTest {
     void repositoryViewsArePrivateAndLegacyUploadJspsAreAbsent() {
         assertTrue(Files.isRegularFile(WEBAPP.resolve("WEB-INF/views/filerepo/list.jsp")));
         assertTrue(Files.isRegularFile(WEBAPP.resolve("WEB-INF/views/filerepo/upload.jsp")));
+        assertTrue(Files.isRegularFile(WEBAPP.resolve("WEB-INF/views/filerepo/import.jsp")));
         assertFalse(Files.exists(WEBAPP.resolve("filerepo/filerepo_upload.jsp")));
         assertFalse(Files.exists(WEBAPP.resolve("filerepo/filerepo_uploadProcess.jsp")));
         assertFalse(Files.exists(WEBAPP.resolve("filerepo/filerepo_download.jsp")));
@@ -96,17 +97,21 @@ class FileRepositoryWebConfigurationTest {
             throws Exception {
         String listing = Files.readString(
                 WEBAPP.resolve("WEB-INF/views/filerepo/list.jsp"));
+        String importView = Files.readString(
+                WEBAPP.resolve("WEB-INF/views/filerepo/import.jsp"));
         String servlet = Files.readString(Path.of(
                 "src/main/java/com/company/controller/FileRepositoryImportServlet.java"));
 
         assertTrue(listing.contains("${fileRepositoryAdmin}"));
         assertTrue(listing.contains("${listing.invalidEntryCount}"));
-        assertTrue(listing.contains("name=\"_csrf\""));
-        assertTrue(listing.contains("data-ui-submit-lock=\"auto\""));
-        assertTrue(listing.contains("data-busy-label=\"반입 중\""));
-        assertTrue(listing.contains("서버 복사가 끝난 뒤 30초"));
+        assertTrue(listing.contains("서버 파일 반입 준비"));
+        assertTrue(importView.contains("name=\"selectedPath\""));
+        assertTrue(importView.contains("csrf_input.jspf"));
+        assertTrue(importView.contains("실패 항목만 다시 시도"));
+        assertTrue(importView.contains("복사가 끝난 뒤 30초"));
         assertTrue(servlet.contains("AdminAccessPolicy.isAdmin"));
         assertTrue(servlet.contains("SessionPrincipal.from(request)"));
+        assertTrue(servlet.contains("service.previewUnmanaged"));
         assertTrue(servlet.contains("service.importUnmanaged"));
     }
 }

@@ -278,6 +278,33 @@
             });
         }
 
+        function focusRequestedField() {
+            var params = new URLSearchParams(window.location.search);
+            var fieldName = (params.get('focus') || '').trim();
+            if (!fieldName) return;
+            var activeEnvironment = environmentFromLocation();
+            var form = forms.find(function(candidate) {
+                return candidate.getAttribute('data-environment') === activeEnvironment;
+            });
+            if (!form) return;
+            var control = Array.prototype.find.call(
+                form.querySelectorAll('.customer-detail-edit-control'),
+                function(candidate) { return candidate.name === fieldName; });
+            if (!control) return;
+            var section = control.closest('details');
+            if (section) section.open = true;
+            runAfterLayout(function() {
+                control.scrollIntoView({block: 'center', inline: 'nearest'});
+                if (!control.disabled) control.focus();
+                var field = control.closest('[data-customer-detail-field]');
+                if (!field) return;
+                field.classList.add('customer-detail-field--targeted');
+                window.setTimeout(function() {
+                    field.classList.remove('customer-detail-field--targeted');
+                }, 1200);
+            });
+        }
+
         forms.forEach(function(form) {
             initializeConditionalFields(form);
             updateSectionCounts(form);
@@ -371,5 +398,6 @@
         if (tabs.length > 0 && panels.length > 0) {
             setActiveEnvironment(environmentFromLocation(), true);
         }
+        focusRequestedField();
     });
 })();

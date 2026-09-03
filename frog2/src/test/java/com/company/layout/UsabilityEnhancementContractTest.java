@@ -56,6 +56,65 @@ class UsabilityEnhancementContractTest {
         assertTrue(view.contains("param.returnEndDate"));
     }
 
+    @Test
+    void dailyWorkflowEnhancementsRemainConnectedEndToEnd() throws Exception {
+        String footer = read("includes/footer.jsp");
+        String customerDetail = read("customers/customers_detail.jsp");
+        String detailField = read("WEB-INF/tags/detailField.tag");
+        String importView = read("WEB-INF/views/filerepo/import.jsp");
+        String quickNav = read("WEB-INF/includes/header_nav.jspf");
+
+        assertTrue(footer.contains("/resources/js/ui-customer-combobox.js"));
+        assertTrue(footer.contains("/resources/js/list-return.js"));
+        for (String path : new String[] {
+                "WEB-INF/includes/maintenance_form_fields.jspf",
+                "customer-history/customer_history_form.jsp",
+                "customer-history/customer_history_list.jsp",
+                "WEB-INF/includes/_troubleshooting_form_fields.jspf"
+        }) {
+            assertTrue(read(path).contains("data-ui-customer-combobox"), path);
+        }
+        for (String path : new String[] {
+                "customers/customers_list.jsp",
+                "customer-history/customer_history_list.jsp",
+                "maintenance/maintenance_history.jsp",
+                "meeting/meeting_list.jsp",
+                "troubleshooting/troubleshooting_list.jsp"
+        }) {
+            assertTrue(read(path).contains("data-ui-return-row"), path);
+        }
+
+        assertTrue(customerDetail.contains("data-customer-edit-url"));
+        assertTrue(customerDetail.contains("data-customer-favorite"));
+        assertTrue(detailField.contains("data-detail-field-missing"));
+        assertTrue(read("resources/js/pages/customer_detail_edit.js")
+                .contains("params.get('focus')"));
+
+        assertTrue(importView.contains("반입 전 확인"));
+        assertTrue(importView.contains("name=\"selectedPath\""));
+        assertTrue(importView.contains("실패 항목만 다시 시도"));
+        assertTrue(read("resources/js/pages/file_repository_import.js")
+                .contains("file.retryable"));
+
+        assertTrue(read("customers/customers_list.jsp")
+                .contains("view\" value=\"export"));
+        assertTrue(read("customer-history/customer_history_list.jsp")
+                .contains("view\" value=\"export"));
+        assertTrue(read("maintenance/maintenance_history.jsp")
+                .contains("view\" value=\"export"));
+        assertTrue(read("maintenance/maintenance_history.jsp")
+                .contains("returnHistoryPage"));
+        assertTrue(read("maintenance/maintenance_history.jsp")
+                .contains("data-ui-return-source-key"));
+        assertTrue(read("maintenance/maintenance_edit.jsp")
+                .contains("name=\"returnHistoryPage\""));
+
+        assertTrue(quickNav.contains("data-favorite-customers"));
+        assertTrue(quickNav.contains("data-recent-customers"));
+        assertTrue(read("resources/js/header_nav.js")
+                .contains("recent.favorites"));
+    }
+
     private static String read(String path) throws Exception {
         return Files.readString(WEBAPP.resolve(path));
     }

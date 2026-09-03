@@ -25,6 +25,7 @@ import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
 import com.company.web.ApplicationError;
+import com.company.web.CsvResponse;
 import com.company.web.JsonResponse;
 
 import jakarta.servlet.ServletException;
@@ -37,6 +38,7 @@ import jakarta.servlet.http.HttpSession;
 public class MaintenanceServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final int HISTORY_PAGE_SIZE = 20;
+    private static final int EXPORT_LIMIT = 10_000;
     private static final String MAINTENANCE_CUSTOMER_TYPE =
             "정기점검 계약 고객사";
     private final MaintenanceRecordDAO maintenanceDAO;
@@ -102,6 +104,7 @@ public class MaintenanceServlet extends HttpServlet {
         switch (viewType) {
             case "cards" -> showCards(request, response, user);
             case "history" -> showHistory(request, response);
+            case "export" -> exportHistory(request, response);
             case "add" -> showAddForm(
                     request,
                     response,
@@ -113,6 +116,83 @@ public class MaintenanceServlet extends HttpServlet {
             case "edit" -> showEdit(request, response, user);
             default -> redirectToCards(response);
         }
+    }
+
+    private void exportHistory(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        String customerName = request.getParameter("customerName");
+        if (customerName == null || customerName.isBlank()) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "missing_customer_name",
+                    "고객사명이 필요합니다.");
+            return;
+        }
+        MaintenanceHistoryFilter filter;
+        try {
+            filter = MaintenanceHistoryFilter.parse(
+                    request.getParameter("historyYear"),
+                    request.getParameter("historyVersion"),
+                    request.getParameter("historyQuery"));
+        } catch (IllegalArgumentException exception) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_history_filter",
+                    "점검 이력 검색 조건이 올바르지 않습니다.");
+            return;
+        }
+        PageResult<MaintenanceRecordDTO> page =
+                maintenanceDAO.getMaintenanceRecordsByCustomer(
+                        customerName.strip(), 1, EXPORT_LIMIT + 1, filter);
+        if (page.totalCount() > EXPORT_LIMIT) {
+            ApplicationError.send(
+                    request,
+                    response,
+                    HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
+                    "maintenance_export_too_large",
+                    "검색 조건을 좁힌 뒤 다시 내려받아 주세요.");
+            return;
+        }
+
+        List<List<String>> rows = MaintenanceHistoryRowView
+                .fromRecords(page.items()).stream()
+                .map(row -> List.of(
+                        csvValue(row.getRecord().getInspectionDate()),
+                        csvValue(row.getRecord().getVerticaVersion()),
+                        usageSummary(row),
+                        csvValue(row.getUsagePercentage()),
+                        csvValue(row.getDeltaLabel()),
+                        csvValue(row.getRecord().getInspectorName()),
+                        csvValue(row.getRecord().getNote())))
+                .toList();
+        CsvResponse.write(
+                response,
+                "maintenance-history.csv",
+                List.of(
+                        "점검일", "버전", "라이선스 사용량", "사용률(%)",
+                        "이전 대비", "점검자", "점검 내용"),
+                rows);
+    }
+
+    private static String usageSummary(MaintenanceHistoryRowView row) {
+        String used = row.getUsedTerabytes();
+        String capacity = row.getCapacityTerabytes();
+        if (used != null && capacity != null) {
+            return used + " / " + capacity + " TB";
+        }
+        if (used != null) {
+            return used + " TB 사용";
+        }
+        return capacity == null ? "" : capacity + " TB 한도";
+    }
+
+    private static String csvValue(Object value) {
+        return value == null ? "" : value.toString();
     }
 
     private void showCards(
@@ -219,7 +299,7 @@ public class MaintenanceServlet extends HttpServlet {
         FlashMessage.redirect(
                 request,
                 response,
-                historyLocation(record.getCustomerName()),
+                historyReturnLocation(request, record.getCustomerName()),
                 "수정 권한이 없습니다.",
                 "error");
     }
@@ -319,7 +399,7 @@ public class MaintenanceServlet extends HttpServlet {
         FlashMessage.redirect(
                 request,
                 response,
-                historyLocation(record.getCustomerName()),
+                historyReturnLocation(request, record.getCustomerName()),
                 success
                         ? "정기점검 이력이 성공적으로 추가되었습니다."
                         : "정기점검 이력 추가 중 오류가 발생했습니다.",
@@ -380,7 +460,7 @@ public class MaintenanceServlet extends HttpServlet {
         FlashMessage.redirect(
                 request,
                 response,
-                historyLocation(record.getCustomerName()),
+                historyReturnLocation(request, record.getCustomerName()),
                 success
                         ? "정기점검 이력이 성공적으로 수정되었습니다."
                         : "정기점검 이력 수정 중 오류가 발생했습니다.",
@@ -412,7 +492,7 @@ public class MaintenanceServlet extends HttpServlet {
         }
 
         String location = customerName != null && !customerName.isEmpty()
-                ? historyLocation(customerName)
+                ? historyReturnLocation(request, customerName)
                 : "maintenance?view=cards";
         if (message == null) {
             response.sendRedirect(location);
@@ -425,6 +505,53 @@ public class MaintenanceServlet extends HttpServlet {
     private static String historyLocation(String customerName) {
         return "maintenance?view=history&customerName="
                 + URLEncoder.encode(customerName, StandardCharsets.UTF_8);
+    }
+
+    private static String historyReturnLocation(
+            HttpServletRequest request, String customerName) {
+        StringBuilder location = new StringBuilder(
+                historyLocation(customerName));
+        String rawPage = request.getParameter("returnHistoryPage");
+        if (rawPage != null && !rawPage.isBlank()) {
+            try {
+                appendHistoryParameter(
+                        location,
+                        "historyPage",
+                        Integer.toString(parseHistoryPage(rawPage)));
+            } catch (IllegalArgumentException ignored) {
+                // Ignore an invalid return hint and use the first history page.
+            }
+        }
+        try {
+            MaintenanceHistoryFilter filter = MaintenanceHistoryFilter.parse(
+                    request.getParameter("returnHistoryYear"),
+                    request.getParameter("returnHistoryVersion"),
+                    request.getParameter("returnHistoryQuery"));
+            if (filter.year() != null) {
+                appendHistoryParameter(
+                        location,
+                        "historyYear",
+                        filter.year().toString());
+            }
+            appendHistoryParameter(
+                    location, "historyVersion", filter.version());
+            appendHistoryParameter(
+                    location, "historyQuery", filter.query());
+        } catch (IllegalArgumentException ignored) {
+            // Ignore invalid return filters instead of reflecting raw values.
+        }
+        return location.toString();
+    }
+
+    private static void appendHistoryParameter(
+            StringBuilder location, String name, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        location.append('&')
+                .append(name)
+                .append('=')
+                .append(URLEncoder.encode(value, StandardCharsets.UTF_8));
     }
 
     private static void redirectToCards(HttpServletResponse response)

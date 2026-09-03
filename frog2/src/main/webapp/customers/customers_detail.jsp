@@ -39,6 +39,7 @@
 
 <div class="customer-detail customer-detail--view customer-management content-management content-shell"
      data-context-path="<c:out value='${pageContext.request.contextPath}' />"
+     data-customer-edit-url="<c:out value='${currentCustomerEditUrl}' />"
      data-quick-nav-recent-customer="<c:out value='${currentCustomerName}' />"
      data-quick-nav-recent-customer-url="<c:out value='${currentCustomerDetailUrl}' />">
     <t:pageHeader>
@@ -62,6 +63,16 @@
         </jsp:attribute>
 		<jsp:attribute name="actions">
 			<div class="header-actions">
+				<button type="button"
+                        class="ui-button button--secondary button--sm customer-favorite-button"
+                        data-customer-favorite
+                        data-customer-name="<c:out value='${currentCustomerName}' />"
+                        data-customer-url="<c:out value='${currentCustomerDetailUrl}' />"
+                        aria-label="<c:out value='${currentCustomerName}' /> 즐겨찾기"
+                        aria-pressed="false">
+                    <i class="far fa-star" aria-hidden="true"></i>
+                    <span>즐겨찾기</span>
+                </button>
 					<a href="<c:out value='${customerListReturnUrl}' />"
                    class="ui-button button--secondary button--sm">
 					<i class="fas fa-arrow-left"></i> 목록으로

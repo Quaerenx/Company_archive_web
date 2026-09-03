@@ -82,6 +82,7 @@
         <c:choose>
             <c:when test="${not empty meetingList}">
                 <div class="ui-table-wrap"
+                     data-ui-return-list
                      data-ui-scroll-region
                      data-ui-scroll-label="회의록 표">
                     <table class="meeting-list-table ui-table ui-data-table">
@@ -109,7 +110,10 @@
                                 <fmt:formatDate var="meetingDateIso" value="${meeting.meetingDatetime}" pattern="yyyy-MM-dd'T'HH:mm" />
                                 <fmt:formatDate var="meetingDateLabel" value="${meeting.meetingDatetime}" pattern="yyyy-MM-dd" />
                                 <fmt:formatDate var="meetingTimeLabel" value="${meeting.meetingDatetime}" pattern="HH:mm" />
-                                <tr class="ui-data-row" data-detail-url="<c:out value='${meetingViewUrl}' />">
+                                <tr class="ui-data-row"
+                                    data-ui-return-row
+                                    data-ui-return-key="<c:out value='${meeting.meetingId}' />"
+                                    data-detail-url="<c:out value='${meetingViewUrl}' />">
                                     <td class="meeting-datetime-cell col--date">
                                         <time datetime="<c:out value='${meetingDateIso}' />">
                                             <span class="meeting-date"><c:out value="${meetingDateLabel}" /></span>

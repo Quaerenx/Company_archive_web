@@ -12,6 +12,10 @@
 <c:url value="/maintenance" var="customerHistoryUrl">
     <c:param name="view" value="history"/>
     <c:param name="customerName" value="${record.customerName}"/>
+    <c:param name="historyPage" value="${param.returnHistoryPage}"/>
+    <c:param name="historyYear" value="${param.returnHistoryYear}"/>
+    <c:param name="historyVersion" value="${param.returnHistoryVersion}"/>
+    <c:param name="historyQuery" value="${param.returnHistoryQuery}"/>
 </c:url>
 
 <div class="container maintenance-edit-page maintenance-form-page content-shell"
@@ -30,6 +34,10 @@
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="maintenance_id" value="${record.maintenanceId}">
                 <input type="hidden" name="customer_name" value="<c:out value='${record.customerName}'/>">
+                <input type="hidden" name="returnHistoryPage" value="<c:out value='${param.returnHistoryPage}' />">
+                <input type="hidden" name="returnHistoryYear" value="<c:out value='${param.returnHistoryYear}' />">
+                <input type="hidden" name="returnHistoryVersion" value="<c:out value='${param.returnHistoryVersion}' />">
+                <input type="hidden" name="returnHistoryQuery" value="<c:out value='${param.returnHistoryQuery}' />">
                 <button type="submit"
                         class="ui-button button--danger button--sm"
                         data-busy-label="삭제 중"><i class="fas fa-trash"></i> 삭제</button>
@@ -37,6 +45,10 @@
             <c:url value="/maintenance" var="headerHistoryUrl">
                 <c:param name="view" value="history"/>
                 <c:param name="customerName" value="${record.customerName}"/>
+                <c:param name="historyPage" value="${param.returnHistoryPage}"/>
+                <c:param name="historyYear" value="${param.returnHistoryYear}"/>
+                <c:param name="historyVersion" value="${param.returnHistoryVersion}"/>
+                <c:param name="historyQuery" value="${param.returnHistoryQuery}"/>
             </c:url>
             <a href="${headerHistoryUrl}"
                class="ui-button button--secondary button--sm"><i class="fas fa-history"></i> 이력으로</a>
@@ -62,6 +74,10 @@
             <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="maintenance_id" value="${record.maintenanceId}">
+            <input type="hidden" name="returnHistoryPage" value="<c:out value='${param.returnHistoryPage}' />">
+            <input type="hidden" name="returnHistoryYear" value="<c:out value='${param.returnHistoryYear}' />">
+            <input type="hidden" name="returnHistoryVersion" value="<c:out value='${param.returnHistoryVersion}' />">
+            <input type="hidden" name="returnHistoryQuery" value="<c:out value='${param.returnHistoryQuery}' />">
             <input type="hidden" id="current_customer_value" value="<c:out value='${record.customerName}'/>">
             <input type="hidden" id="current_inspector_value" value="<c:out value='${record.inspectorName}'/>">
 
@@ -90,6 +106,10 @@
                 <c:url value="/maintenance" var="cancelUrl">
                     <c:param name="view" value="history"/>
                     <c:param name="customerName" value="${record.customerName}"/>
+                    <c:param name="historyPage" value="${param.returnHistoryPage}"/>
+                    <c:param name="historyYear" value="${param.returnHistoryYear}"/>
+                    <c:param name="historyVersion" value="${param.returnHistoryVersion}"/>
+                    <c:param name="historyQuery" value="${param.returnHistoryQuery}"/>
                 </c:url>
                 <a href="${cancelUrl}"
                    class="ui-button button--secondary button--md">취소</a>

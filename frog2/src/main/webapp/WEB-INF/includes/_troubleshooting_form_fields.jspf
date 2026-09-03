@@ -18,7 +18,7 @@
 <div class="form-row">
     <div class="form-group">
         <label for="customer_name">고객사 <span class="required">*</span></label>
-        <select id="customer_name" name="customer_name" required>
+        <select id="customer_name" name="customer_name" data-ui-customer-combobox required>
             <option value="">고객사를 선택하세요</option>
             <c:forEach var="customer" items="${customerList}">
                 <option value="<c:out value='${customer.customerName}' />"

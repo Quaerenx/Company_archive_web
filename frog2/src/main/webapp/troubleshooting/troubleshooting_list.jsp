@@ -57,6 +57,7 @@
         <c:choose>
             <c:when test="${not empty troubleshootingList}">
         <div class="ui-table-wrap"
+             data-ui-return-list
              data-ui-scroll-region
              data-ui-scroll-label="트러블슈팅 표">
         <table class="troubleshooting-table ui-table ui-data-table">
@@ -79,7 +80,10 @@
                         <c:param name="returnPage" value="${currentPage}" />
                         <c:param name="returnPageSize" value="${pageSize}" />
                     </c:url>
-                    <tr class="ui-data-row" data-detail-url="<c:out value='${troubleshootingViewUrl}' />">
+                    <tr class="ui-data-row"
+                        data-ui-return-row
+                        data-ui-return-key="<c:out value='${ts.id}' />"
+                        data-detail-url="<c:out value='${troubleshootingViewUrl}' />">
                         <td class="col--customer"><c:out value="${ts.customerName}" /></td>
                         <td class="col--title">
                             <a href="<c:out value='${troubleshootingViewUrl}' />"

@@ -11,6 +11,8 @@
 <%@ attribute name="suffix" required="false" type="java.lang.String" %>
 
 <div class="detail-item${fullWidth ? ' full-width' : ''}${columnStart ? ' detail-item--column-start' : ''}${hideWhenEmpty && empty value ? ' detail-item--empty' : ''}"
+     data-detail-field-label="<c:out value='${label}' />"
+     data-detail-field-missing="${empty value}"
      ${hideWhenEmpty && empty value ? 'hidden' : ''}>
     <span class="detail-label"><c:out value="${label}" /></span>
     <c:choose>

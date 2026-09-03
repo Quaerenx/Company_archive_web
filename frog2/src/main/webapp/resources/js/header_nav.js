@@ -57,6 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var quickNavEmpty = document.getElementById('quickNavEmpty');
     var quickNavStatus = document.getElementById('quickNavStatus');
     var quickNavRecent = document.getElementById('quickNavRecent');
+    var favoriteCustomersSection = quickNavRecent
+            ? quickNavRecent.querySelector('[data-favorite-customers-section]')
+            : null;
+    var favoriteCustomersList = quickNavRecent
+            ? quickNavRecent.querySelector('[data-favorite-customers]')
+            : null;
     var recentCustomersSection = quickNavRecent
             ? quickNavRecent.querySelector('[data-recent-customers-section]')
             : null;
@@ -256,10 +262,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                         && typeof customer.label === 'string'
                                         && typeof customer.url === 'string';
                             }).slice(0, 5)
+                            : [],
+                    favorites: Array.isArray(value.favorites)
+                            ? value.favorites.filter(function(customer) {
+                                return customer
+                                        && typeof customer.label === 'string'
+                                        && typeof customer.url === 'string';
+                            }).slice(0, 12)
                             : []
                 };
             } catch (error) {
-                return {queries: [], customers: []};
+                return {queries: [], customers: [], favorites: []};
             }
         }
 
@@ -307,20 +320,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function renderRecent() {
-            if (!quickNavRecent || !recentCustomersSection
+            if (!quickNavRecent || !favoriteCustomersSection
+                    || !favoriteCustomersList || !recentCustomersSection
                     || !recentCustomersList || !recentQueriesSection
                     || !recentQueriesList) {
                 return;
             }
             var show = quickNavInput.value.trim() === '';
             quickNavRecent.hidden = !show
-                    || (!recent.customers.length && !recent.queries.length);
+                    || (!recent.favorites.length
+                        && !recent.customers.length
+                        && !recent.queries.length);
+            favoriteCustomersSection.hidden = !show || !recent.favorites.length;
             recentCustomersSection.hidden = !show || !recent.customers.length;
             recentQueriesSection.hidden = !show || !recent.queries.length;
+            favoriteCustomersList.textContent = '';
             recentCustomersList.textContent = '';
             recentQueriesList.textContent = '';
 
             if (!show) return;
+            recent.favorites.forEach(function(customer) {
+                if (!customer || typeof customer.label !== 'string'
+                        || typeof customer.url !== 'string'
+                        || customer.url.indexOf('/') !== 0
+                        || customer.url.indexOf('//') === 0) {
+                    return;
+                }
+                var item = document.createElement('li');
+                var link = document.createElement('a');
+                link.href = customer.url;
+                link.textContent = customer.label;
+                item.appendChild(link);
+                favoriteCustomersList.appendChild(item);
+            });
             recent.customers.forEach(function(customer) {
                 if (!customer || typeof customer.label !== 'string'
                         || typeof customer.url !== 'string'
@@ -663,6 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
             quickNavOpenButton.setAttribute('aria-expanded', 'true');
             quickNavInput.value = '';
             quickNavInput.setAttribute('aria-expanded', 'true');
+            recent = readRecent();
             cancelPendingSearch();
             remoteEntries = [];
             setStatus('');

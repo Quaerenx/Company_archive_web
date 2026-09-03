@@ -11,7 +11,7 @@
         <div class="detail-section-title">
             <i class="fas fa-layer-group" aria-hidden="true"></i>
             핵심 정보
-            <span class="detail-section-count" data-detail-section-count></span>
+            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </div>
         <div class="detail-grid detail-grid--summary">
             <t:detailField label="DB명" value="${detail.dbName}" />
@@ -30,7 +30,7 @@
         <summary class="detail-section-title">
             <i class="fas fa-address-card" aria-hidden="true"></i>
             기본·담당자 정보
-            <span class="detail-section-count" data-detail-section-count></span>
+            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="고객사" value="${detail.customerName}" hideWhenEmpty="${true}" />
@@ -49,7 +49,7 @@
         <summary class="detail-section-title">
             <i class="fas fa-database" aria-hidden="true"></i>
             Vertica 운영 설정
-            <span class="detail-section-count" data-detail-section-count></span>
+            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="Vertica 관리자" value="${detail.verticaAdmin}" hideWhenEmpty="${true}" />
@@ -68,7 +68,7 @@
         <summary class="detail-section-title">
             <i class="fas fa-server" aria-hidden="true"></i>
             인프라·네트워크
-            <span class="detail-section-count" data-detail-section-count></span>
+            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="메모리" value="${detail.memoryInfo}" hideWhenEmpty="${true}" />
@@ -94,7 +94,7 @@
         <summary class="detail-section-title">
             <i class="fas fa-puzzle-piece" aria-hidden="true"></i>
             연계 솔루션
-            <span class="detail-section-count" data-detail-section-count></span>
+            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="ETL" value="${detail.etlTool}" hideWhenEmpty="${true}" />
@@ -108,7 +108,7 @@
         <summary class="detail-section-title">
             <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
             기타 정보
-            <span class="detail-section-count" data-detail-section-count></span>
+            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="EOS 일자" value="${detailEosDate}" hideWhenEmpty="${true}" />

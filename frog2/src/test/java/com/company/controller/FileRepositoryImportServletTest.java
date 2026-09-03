@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.filerepo.FileRepositoryService;
+import com.company.filerepo.FileRepositoryService.ImportPreview;
 import com.company.model.UserDTO;
 import com.company.security.AdminAccessPolicy;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -60,6 +62,33 @@ class FileRepositoryImportServletTest {
     }
 
     @Test
+    void administratorCanPreviewStableServerFileBeforeImport() throws Exception {
+        Path root = Files.createDirectory(
+                temporaryDirectory.resolve("repository-preview"));
+        Path copied = Files.writeString(root.resolve("manual.txt"), "manual");
+        Files.setLastModifiedTime(
+                copied,
+                FileTime.from(Instant.now().minus(Duration.ofMinutes(1))));
+        FileRepositoryImportServlet servlet =
+                new FileRepositoryImportServlet(new FileRepositoryService(root));
+        System.setProperty(
+                AdminAccessPolicy.ADMIN_USER_IDS_PROPERTY, "admin-user");
+        RequestFixture request = new RequestFixture(new SessionFixture(
+                new UserDTO("admin-user", "", "Admin", "QA")));
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(
+                "/WEB-INF/views/filerepo/import.jsp",
+                request.forwardedPath);
+        ImportPreview preview = (ImportPreview) request.attributes.get(
+                "importPreview");
+        assertNotNull(preview);
+        assertEquals(1, preview.getReadyCount());
+        assertEquals("manual.txt", preview.getItems().getFirst().getPath());
+    }
+
+    @Test
     void nonAdministratorCannotStartServerImport() throws Exception {
         Path root = Files.createDirectory(
                 temporaryDirectory.resolve("repository-forbidden"));
@@ -78,6 +107,8 @@ class FileRepositoryImportServletTest {
 
     private static final class RequestFixture {
         private final SessionFixture session;
+        private final Map<String, Object> attributes = new HashMap<>();
+        private String forwardedPath;
 
         private RequestFixture(SessionFixture session) {
             this.session = session;
@@ -89,10 +120,31 @@ class FileRepositoryImportServletTest {
                     new Class<?>[] {HttpServletRequest.class},
                     (ignored, method, args) -> switch (method.getName()) {
                         case "getParameter" -> "path".equals(args[0]) ? "" : null;
+                        case "getParameterValues" -> "selectedPath".equals(args[0])
+                                ? new String[] {"manual.txt"}
+                                : null;
                         case "getContextPath" -> "/frog2";
                         case "getSession" -> session.proxy();
-                        case "getAttribute" -> null;
+                        case "getAttribute" -> attributes.get(args[0]);
+                        case "setAttribute" -> {
+                            attributes.put((String) args[0], args[1]);
+                            yield null;
+                        }
+                        case "getRequestDispatcher" -> dispatcher(
+                                (String) args[0]);
                         default -> defaultValue(method.getReturnType());
+                    });
+        }
+
+        private RequestDispatcher dispatcher(String path) {
+            return (RequestDispatcher) Proxy.newProxyInstance(
+                    RequestDispatcher.class.getClassLoader(),
+                    new Class<?>[] {RequestDispatcher.class},
+                    (ignored, method, args) -> {
+                        if ("forward".equals(method.getName())) {
+                            forwardedPath = path;
+                        }
+                        return defaultValue(method.getReturnType());
                     });
         }
     }
