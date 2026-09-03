@@ -46,6 +46,7 @@ a new role model.
 | `/troubleshooting` `update`, `delete` | POST | Authenticated | Owner-scoped mutation | Yes | Object ID and stable creator `userId` are matched in the mutation |
 | `/mypage` view/edit/change-password/monthly-response | GET | Authenticated | Current-user data read | No | Session `userId` only |
 | `/mypage` profile/password/monthly-response mutations | POST | Authenticated | Current-user mutation | Yes | Request user ID is not trusted; session `userId` only |
+| `/work-inbox` | GET | Authenticated | Current-user assigned-customer risk and missing-data read | No | Session `userId` and stable customer assignments only; browser-local deferrals never mutate source data |
 | `/vm-hosts` | GET | Authenticated | Current-user VM host read | No | Session `userId` only |
 | `/vm-hosts` save/delete | POST | Authenticated | Current-user VM host mutation | Yes | IP and stable owner `userId` are matched |
 | `/file-repository` | GET | Authenticated | Shared repository listing | No | Shared repository policy |

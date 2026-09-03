@@ -98,6 +98,16 @@ public class TroubleshootingServlet extends HttpServlet {
             // 등록 폼
             List<CustomerDTO> customerList = customerDAO.getAllCustomers("", "ASC");
             request.setAttribute("customerList", customerList);
+            String requestedCustomer = request.getParameter("customerName");
+            if (requestedCustomer != null && !requestedCustomer.isBlank()) {
+                CustomerDTO customer = customerDAO.getCustomerByName(
+                        requestedCustomer.strip());
+                if (customer != null) {
+                    TroubleshootingDTO draft = new TroubleshootingDTO();
+                    draft.setCustomerName(customer.getCustomerName());
+                    request.setAttribute("troubleshooting", draft);
+                }
+            }
             request.setAttribute("viewType", "add");
             request.getRequestDispatcher("/troubleshooting/troubleshooting_add.jsp").forward(request, response);
 

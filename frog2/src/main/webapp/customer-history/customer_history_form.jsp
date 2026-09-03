@@ -42,6 +42,10 @@
         <form class="ui-form customer-history-form"
               method="post"
               action="${pageContext.request.contextPath}/customer-history"
+              data-ui-draft="auto"
+              data-ui-draft-id="customer-history:${isHistoryEdit ? formId : 'new'}"
+              data-ui-draft-success-views="list"
+              data-ui-dirty-guard="auto"
               data-ui-submit-lock="auto">
             <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
             <input type="hidden" name="action" value="${isHistoryEdit ? 'update' : 'add'}">

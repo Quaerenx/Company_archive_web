@@ -1,9 +1,11 @@
 package com.company.controller;
 
+import com.company.model.MeetingListFilter;
 import com.company.model.MeetingRecordDTO;
 import com.company.model.UserDTO;
-import com.company.util.StrictDateParser;
 import com.company.util.Pagination;
+import com.company.util.SearchQueryPolicy;
+import com.company.util.StrictDateParser;
 import jakarta.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.util.Set;
@@ -62,6 +64,37 @@ final class MeetingRequestMapper {
 
     int requestedPage(HttpServletRequest request) {
         return Pagination.requestedPage(request.getParameter("page"));
+    }
+
+    MeetingListFilter listFilter(HttpServletRequest request) {
+        String query = SearchQueryPolicy.normalize(request.getParameter("q"));
+        String author = SearchQueryPolicy.normalize(
+                request.getParameter("author"));
+        String meetingType = trimmed(request.getParameter("type"));
+        if (meetingType != null && !MEETING_TYPES.contains(meetingType)) {
+            throw invalid("회의 유형이 올바르지 않습니다.");
+        }
+        java.sql.Date startDate = optionalDate(request, "startDate");
+        java.sql.Date endDate = optionalDate(request, "endDate");
+        if (startDate != null && endDate != null
+                && startDate.after(endDate)) {
+            throw invalid("시작일은 종료일보다 늦을 수 없습니다.");
+        }
+        return new MeetingListFilter(
+                query, meetingType, author, startDate, endDate);
+    }
+
+    private static java.sql.Date optionalDate(
+            HttpServletRequest request, String parameterName) {
+        String value = trimmed(request.getParameter(parameterName));
+        if (value == null) {
+            return null;
+        }
+        java.sql.Date date = StrictDateParser.parseSqlDateOrNull(value);
+        if (date == null) {
+            throw invalid("검색 날짜가 올바르지 않습니다.");
+        }
+        return date;
     }
 
     private MeetingRecordDTO mapForm(HttpServletRequest request) {

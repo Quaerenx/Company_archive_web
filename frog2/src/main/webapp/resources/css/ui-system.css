@@ -1242,3 +1242,23 @@ body.ui-dialog-open {
         padding-block: var(--space-20);
     }
 }
+.ui-draft-banner {
+    align-items: center;
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+    margin: var(--space-16);
+}
+
+.ui-draft-banner__actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--space-8);
+}
+
+@media (max-width: 768px) {
+    .ui-draft-banner {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

@@ -78,7 +78,8 @@ class CustomerHistoryViewContractTest {
         assertTrue(webXml.contains("<url-pattern>/customer-history</url-pattern>"));
         assertTrue(navigation.contains("navCustomerHistoryCurrent"));
         assertTrue(navigation.contains("고객사 히스토리"));
-        assertFalse(detail.contains("customerHistoryUrl"));
+        assertTrue(detail.contains("customerHistoryUrl"));
+        assertTrue(detail.contains("customerHistoryAddUrl"));
     }
 
     @Test

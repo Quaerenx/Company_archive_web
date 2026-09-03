@@ -250,6 +250,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>WorkInboxServlet</servlet-name>
+        <servlet-class>com.company.controller.WorkInboxServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WorkInboxServlet</servlet-name>
+        <url-pattern>/work-inbox</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>UserVmHostServlet</servlet-name>
         <servlet-class>com.company.controller.UserVmHostServlet</servlet-class>
     </servlet>

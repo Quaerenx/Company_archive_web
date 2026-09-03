@@ -8,13 +8,22 @@
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>
 
+<c:url var="meetingListReturnUrl" value="/meeting">
+    <c:param name="view" value="list" />
+    <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="q" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnType}"><c:param name="type" value="${param.returnType}" /></c:if>
+    <c:if test="${not empty param.returnAuthor}"><c:param name="author" value="${param.returnAuthor}" /></c:if>
+    <c:if test="${not empty param.returnStartDate}"><c:param name="startDate" value="${param.returnStartDate}" /></c:if>
+    <c:if test="${not empty param.returnEndDate}"><c:param name="endDate" value="${param.returnEndDate}" /></c:if>
+</c:url>
 
 <div class="meeting-page-container content-management content-shell" data-meeting-mode="write">
     <t:pageHeader>
         <jsp:attribute name="title"><i class="fas fa-pen"></i> 새 회의록 작성</jsp:attribute>
         <jsp:attribute name="subtitle">회의 내용을 정리하여 등록해주세요.</jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/meeting?view=list"
+            <a href="<c:out value='${meetingListReturnUrl}' />"
                class="ui-button button--secondary button--md"><i class="fas fa-list"></i> 목록으로</a>
         </jsp:attribute>
     </t:pageHeader>
@@ -34,16 +43,25 @@
               action="${pageContext.request.contextPath}/meeting"
               id="meetingForm"
               class="ui-form ui-form-layout"
+              data-ui-draft="auto"
+              data-ui-draft-id="meeting:new"
+              data-ui-draft-success-views="list,view"
               data-ui-submit-lock="auto">
             <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
             <input type="hidden" name="action" value="write">
+            <c:if test="${not empty param.returnPage}"><input type="hidden" name="returnPage" value="<c:out value='${param.returnPage}' />" /></c:if>
+            <c:if test="${not empty param.returnQ}"><input type="hidden" name="returnQ" value="<c:out value='${param.returnQ}' />" /></c:if>
+            <c:if test="${not empty param.returnType}"><input type="hidden" name="returnType" value="<c:out value='${param.returnType}' />" /></c:if>
+            <c:if test="${not empty param.returnAuthor}"><input type="hidden" name="returnAuthor" value="<c:out value='${param.returnAuthor}' />" /></c:if>
+            <c:if test="${not empty param.returnStartDate}"><input type="hidden" name="returnStartDate" value="<c:out value='${param.returnStartDate}' />" /></c:if>
+            <c:if test="${not empty param.returnEndDate}"><input type="hidden" name="returnEndDate" value="<c:out value='${param.returnEndDate}' />" /></c:if>
 
             <c:set var="meetingFormMode" value="write" />
             <%@ include file="/WEB-INF/includes/_meeting_form_fields.jspf" %>
 
             <!-- 버튼 -->
             <div class="button-group ui-form-actions">
-                <a href="${pageContext.request.contextPath}/meeting?view=list"
+                <a href="<c:out value='${meetingListReturnUrl}' />"
                    class="ui-button button--secondary button--md">취소</a>
                 <button type="button"
                         class="ui-button button--secondary button--md"

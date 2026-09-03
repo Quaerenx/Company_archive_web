@@ -8,6 +8,7 @@ import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.MaintenanceSchedule;
 import com.company.mypage.WorkInboxItem.Severity;
+import com.company.mypage.WorkInboxItem.Type;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -86,6 +87,16 @@ class WorkInboxServiceTest {
                 inbox.getItems().get(1).getTitle());
         assertTrue(inbox.getItems().getFirst().getPath().contains(
                 "customerName=Alpha"));
+        assertEquals(Type.LICENSE_RISK,
+                inbox.getItems().getFirst().getType());
+        WorkInboxItem missingMaintenance = inbox.getItems().stream()
+                .filter(item -> item.getType() == Type.MAINTENANCE_MISSING)
+                .findFirst()
+                .orElseThrow();
+        assertEquals(LocalDate.of(2026, 8, 31),
+                missingMaintenance.getDueDate());
+        assertEquals("D-1", missingMaintenance.getTimelineLabel());
+        assertEquals("점검 등록", missingMaintenance.getActionLabel());
     }
 
     private static CustomerDTO customer(

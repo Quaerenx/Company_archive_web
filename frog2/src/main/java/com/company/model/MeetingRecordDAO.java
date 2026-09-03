@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,11 +40,18 @@ public class MeetingRecordDAO {
     }
 
     public PageResult<MeetingRecordDTO> getMeetingPage(int requestedPage) {
+        return getMeetingPage(MeetingListFilter.empty(), requestedPage);
+    }
+
+    public PageResult<MeetingRecordDTO> getMeetingPage(
+            MeetingListFilter filter, int requestedPage) {
+        Objects.requireNonNull(filter, "filter");
         int page = Math.max(1, requestedPage);
         try (Connection connection = connectionProvider.getConnection()) {
+            FilterSql filterSql = buildFilterSql(filter);
             MeetingRows rows;
             try {
-                rows = loadMeetingRows(connection, page);
+                rows = loadMeetingRows(connection, filterSql, page);
             } catch (ArithmeticException exception) {
                 rows = new MeetingRows(List.of(), 0);
             }
@@ -53,23 +61,25 @@ public class MeetingRecordDAO {
                         rows.items(), rows.totalCount(), page, PAGE_SIZE);
             }
 
-            int totalCount = countMeetingRecords(connection);
+            int totalCount = countMeetingRecords(connection, filterSql);
             int correctedPage = Pagination.clampPage(
                     page, Pagination.totalPages(totalCount, PAGE_SIZE));
             if (totalCount == 0) {
                 return new PageResult<>(List.of(), 0, correctedPage, PAGE_SIZE);
             }
             MeetingRows correctedRows = loadMeetingRows(
-                    connection, correctedPage);
+                    connection, filterSql, correctedPage);
             if (correctedRows.items().isEmpty()) {
-                int refreshedCount = countMeetingRecords(connection);
+                int refreshedCount = countMeetingRecords(
+                        connection, filterSql);
                 if (refreshedCount == 0) {
                     return new PageResult<>(List.of(), 0, 1, PAGE_SIZE);
                 }
                 int refreshedPage = Pagination.clampPage(
                         correctedPage,
                         Pagination.totalPages(refreshedCount, PAGE_SIZE));
-                correctedRows = loadMeetingRows(connection, refreshedPage);
+                correctedRows = loadMeetingRows(
+                        connection, filterSql, refreshedPage);
                 if (correctedRows.items().isEmpty()) {
                     return new PageResult<>(List.of(), 0, 1, PAGE_SIZE);
                 }
@@ -236,12 +246,26 @@ public class MeetingRecordDAO {
 
     private static MeetingRows loadMeetingRows(
             Connection connection, int page) throws SQLException {
+        return loadMeetingRows(
+                connection, buildFilterSql(MeetingListFilter.empty()), page);
+    }
+
+    private static MeetingRows loadMeetingRows(
+            Connection connection,
+            FilterSql filter,
+            int page) throws SQLException {
         List<MeetingRecordDTO> records = new ArrayList<>();
         int totalCount = 0;
+        String sql = "SELECT meeting_id, title, meeting_type, author_name, "
+                + "meeting_datetime, COUNT(*) OVER () AS total_count "
+                + "FROM meeting_records"
+                + filter.whereClause()
+                + " ORDER BY meeting_datetime DESC, meeting_id DESC LIMIT ? OFFSET ?";
         try (PreparedStatement statement =
-                connection.prepareStatement(LIST_SQL)) {
-            statement.setInt(1, PAGE_SIZE);
-            statement.setInt(2, offsetForPage(page));
+                connection.prepareStatement(sql)) {
+            int parameter = filter.bind(statement, 1);
+            statement.setInt(parameter++, PAGE_SIZE);
+            statement.setInt(parameter, offsetForPage(page));
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     if (records.isEmpty()) {
@@ -256,10 +280,92 @@ public class MeetingRecordDAO {
 
     private static int countMeetingRecords(Connection connection)
             throws SQLException {
-        String sql = "SELECT COUNT(*) FROM meeting_records";
-        try (PreparedStatement statement = connection.prepareStatement(sql);
-                ResultSet resultSet = statement.executeQuery()) {
-            return resultSet.next() ? resultSet.getInt(1) : 0;
+        return countMeetingRecords(
+                connection, buildFilterSql(MeetingListFilter.empty()));
+    }
+
+    private static int countMeetingRecords(
+            Connection connection,
+            FilterSql filter) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM meeting_records"
+                + filter.whereClause();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            filter.bind(statement, 1);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getInt(1) : 0;
+            }
+        }
+    }
+
+    private static FilterSql buildFilterSql(MeetingListFilter filter) {
+        List<String> predicates = new ArrayList<>();
+        List<ParameterBinder> binders = new ArrayList<>();
+        if (filter.query() != null) {
+            predicates.add("(title ILIKE ? ESCAPE '!' OR REGEXP_ILIKE(content, ?))");
+            String like = SearchQueryPolicy.literalContainsLikePattern(
+                    filter.query());
+            String regex = SearchQueryPolicy.literalContainsRegex(
+                    filter.query());
+            binders.add((statement, index) -> {
+                statement.setString(index++, like);
+                statement.setString(index++, regex);
+                return index;
+            });
+        }
+        if (filter.meetingType() != null) {
+            predicates.add("meeting_type = ?");
+            binders.add((statement, index) -> {
+                statement.setString(index++, filter.meetingType());
+                return index;
+            });
+        }
+        if (filter.author() != null) {
+            predicates.add("author_name ILIKE ? ESCAPE '!'");
+            String like = SearchQueryPolicy.literalContainsLikePattern(
+                    filter.author());
+            binders.add((statement, index) -> {
+                statement.setString(index++, like);
+                return index;
+            });
+        }
+        if (filter.startDate() != null) {
+            predicates.add("meeting_datetime >= ?");
+            Timestamp start = Timestamp.valueOf(
+                    filter.startDate().toLocalDate().atStartOfDay());
+            binders.add((statement, index) -> {
+                statement.setTimestamp(index++, start);
+                return index;
+            });
+        }
+        if (filter.endDate() != null) {
+            predicates.add("meeting_datetime < ?");
+            Timestamp endExclusive = Timestamp.valueOf(
+                    filter.endDate().toLocalDate().plusDays(1).atStartOfDay());
+            binders.add((statement, index) -> {
+                statement.setTimestamp(index++, endExclusive);
+                return index;
+            });
+        }
+        String where = predicates.isEmpty()
+                ? ""
+                : " WHERE " + String.join(" AND ", predicates);
+        return new FilterSql(where, List.copyOf(binders));
+    }
+
+    @FunctionalInterface
+    private interface ParameterBinder {
+        int bind(PreparedStatement statement, int index) throws SQLException;
+    }
+
+    private record FilterSql(
+            String whereClause,
+            List<ParameterBinder> binders) {
+        int bind(PreparedStatement statement, int index) throws SQLException {
+            int next = index;
+            for (ParameterBinder binder : binders) {
+                next = binder.bind(statement, next);
+            }
+            return next;
         }
     }
 

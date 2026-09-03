@@ -83,6 +83,14 @@
     font-weight: 600;
 }
 
+.page-mypage .work-inbox__header-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    justify-content: flex-end;
+}
+
 .page-mypage .work-inbox__counts {
     align-items: center;
     display: flex;
@@ -319,6 +327,10 @@
     .page-mypage .work-inbox__header {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .page-mypage .work-inbox__header-actions {
+        justify-content: flex-start;
     }
 
     .page-mypage .recent-activity-grid {

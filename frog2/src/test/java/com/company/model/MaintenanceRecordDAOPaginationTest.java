@@ -11,6 +11,37 @@ import org.junit.jupiter.api.Test;
 
 class MaintenanceRecordDAOPaginationTest {
     @Test
+    void globalSearchUsesLiteralPatternsAndAStableNewestFirstLimit() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 44L,
+                "customer_name", "Alpha",
+                "inspector_name", "Tester",
+                "inspection_date", Date.valueOf("2026-08-20"),
+                "vertica_version", "23.4",
+                "note", "Alpha%_ checked",
+                "created_at", null,
+                "updated_at", null));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        List<MaintenanceRecordDTO> records =
+                dao.searchMaintenanceRecords(" Alpha%_ ", 5);
+
+        PaginationJdbcFixture.StatementRecord statement =
+                jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains(
+                "SUBSTR(note,1,65000) ILIKE ? ESCAPE '!'"));
+        assertTrue(statement.sql.contains(
+                "inspection_date DESC, maintenance_id DESC LIMIT ?"));
+        for (int parameter = 1; parameter <= 4; parameter++) {
+            assertEquals("%Alpha!%!_%", statement.parameters.get(parameter));
+        }
+        assertEquals(5, statement.parameters.get(5));
+        assertEquals(44L, records.getFirst().getMaintenanceId());
+    }
+
+    @Test
     void latestCustomerRecordsUseOneWindowedBatchQuery() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(PaginationJdbcFixture.row(

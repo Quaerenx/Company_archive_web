@@ -1,12 +1,24 @@
 package com.company.search;
 
+import java.util.List;
 import java.util.Objects;
 
 public record GlobalSearchResult(
         String category,
         String label,
         String description,
-        String path) {
+        String path,
+        String groupCode,
+        String morePath,
+        List<GlobalSearchAction> actions) {
+    public GlobalSearchResult(
+            String category,
+            String label,
+            String description,
+            String path) {
+        this(category, label, description, path, category, null, List.of());
+    }
+
     public GlobalSearchResult {
         category = requireText(category, "category");
         label = requireText(label, "label");
@@ -16,6 +28,17 @@ public record GlobalSearchResult(
             throw new IllegalArgumentException(
                     "Search result path must be context-relative");
         }
+        groupCode = requireText(groupCode, "groupCode");
+        if (morePath != null) {
+            morePath = morePath.strip();
+            if (morePath.isEmpty()
+                    || !morePath.startsWith("/")
+                    || morePath.startsWith("//")) {
+                throw new IllegalArgumentException(
+                        "Search result morePath must be context-relative");
+            }
+        }
+        actions = List.copyOf(Objects.requireNonNull(actions, "actions"));
     }
 
     private static String requireText(String value, String field) {

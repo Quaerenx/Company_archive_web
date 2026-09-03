@@ -220,6 +220,7 @@
 <div id="quickNavBackdrop"
      class="quick-nav-backdrop"
      data-search-url="${pageContext.request.contextPath}/search"
+     data-user-id="<c:out value='${sessionScope.user.userId}' />"
      aria-hidden="true"
      hidden>
     <section id="quickNavDialog"
@@ -260,6 +261,16 @@
            role="status"
            aria-live="polite"
            hidden></p>
+        <div id="quickNavRecent" class="quick-nav-recent" hidden>
+            <section data-recent-customers-section hidden>
+                <h3>최근 방문 고객사</h3>
+                <ul data-recent-customers></ul>
+            </section>
+            <section data-recent-queries-section hidden>
+                <h3>최근 검색어</h3>
+                <ul data-recent-queries></ul>
+            </section>
+        </div>
         <ul id="quickNavResults"
             class="quick-nav-results"
             role="listbox"

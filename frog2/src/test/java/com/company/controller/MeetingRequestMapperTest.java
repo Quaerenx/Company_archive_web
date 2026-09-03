@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.company.model.MeetingRecordDTO;
+import com.company.model.MeetingListFilter;
 import com.company.model.UserDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import java.lang.reflect.Proxy;
@@ -76,6 +77,29 @@ class MeetingRequestMapperTest {
                 () -> mapper.optionalPositiveLong(
                         request(Map.of("commentBefore", "invalid")),
                         "commentBefore"));
+    }
+
+    @Test
+    void parsesListFiltersAndRejectsInvalidRanges() {
+        MeetingListFilter filter = mapper.listFilter(request(Map.of(
+                "q", "  결정 사항  ",
+                "type", "project",
+                "author", "  김담당  ",
+                "startDate", "2026-08-01",
+                "endDate", "2026-08-31")));
+
+        assertEquals("결정 사항", filter.query());
+        assertEquals("project", filter.meetingType());
+        assertEquals("김담당", filter.author());
+        assertEquals(java.sql.Date.valueOf("2026-08-01"), filter.startDate());
+        assertEquals(java.sql.Date.valueOf("2026-08-31"), filter.endDate());
+        assertThrows(IllegalArgumentException.class,
+                () -> mapper.listFilter(request(Map.of(
+                        "startDate", "2026-09-01",
+                        "endDate", "2026-08-31"))));
+        assertThrows(IllegalArgumentException.class,
+                () -> mapper.listFilter(request(Map.of(
+                        "type", "arbitrary"))));
     }
 
     private static Map<String, String> validParameters() {

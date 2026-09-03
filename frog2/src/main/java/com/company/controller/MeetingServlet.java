@@ -1,12 +1,15 @@
 package com.company.controller;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
 import com.company.model.MeetingCommentDAO;
 import com.company.model.MeetingCommentDTO;
 import com.company.model.MeetingCommentPage;
+import com.company.model.MeetingListFilter;
 import com.company.model.MeetingRecordDAO;
 import com.company.model.MeetingRecordDTO;
 import com.company.model.PageResult;
@@ -60,13 +63,28 @@ public class MeetingServlet extends HttpServlet {
         if ("list".equals(viewType)) {
             // 회의록 목록 (페이징 처리)
             int requestedPage = requestMapper.requestedPage(request);
+            MeetingListFilter filter;
+            try {
+                filter = requestMapper.listFilter(request);
+            } catch (IllegalArgumentException exception) {
+                sendBadRequest(request, response, exception);
+                return;
+            }
             PageResult<MeetingRecordDTO> meetingPage =
-                    meetingDAO.getMeetingPage(requestedPage);
+                    filter.isActive()
+                            ? meetingDAO.getMeetingPage(filter, requestedPage)
+                            : meetingDAO.getMeetingPage(requestedPage);
 
             request.setAttribute("meetingList", meetingPage.items());
             request.setAttribute("currentPage", meetingPage.page());
             request.setAttribute("totalPages", meetingPage.totalPages());
             request.setAttribute("totalCount", meetingPage.totalCount());
+            request.setAttribute("q", filter.query());
+            request.setAttribute("meetingType", filter.meetingType());
+            request.setAttribute("author", filter.author());
+            request.setAttribute("startDate", filter.startDate());
+            request.setAttribute("endDate", filter.endDate());
+            request.setAttribute("meetingFilterActive", filter.isActive());
             request.setAttribute("viewType", "list");
             request.getRequestDispatcher("/meeting/meeting_list.jsp").forward(request, response);
 
@@ -105,7 +123,7 @@ public class MeetingServlet extends HttpServlet {
                 FlashMessage.redirect(
                         request,
                         response,
-                        "meeting?view=list",
+                        listReturnPath(request),
                         "존재하지 않는 회의록입니다.",
                         "error");
             }
@@ -136,7 +154,8 @@ public class MeetingServlet extends HttpServlet {
                     FlashMessage.redirect(
                             request,
                             response,
-                            "meeting?view=view&id=" + meetingId,
+                            "meeting?view=view&id=" + meetingId
+                                    + detailReturnSuffix(request),
                             "수정 권한이 없습니다.",
                             "error");
                 }
@@ -144,7 +163,7 @@ public class MeetingServlet extends HttpServlet {
                 FlashMessage.redirect(
                         request,
                         response,
-                        "meeting?view=list",
+                        listReturnPath(request),
                         "존재하지 않는 회의록입니다.",
                         "error");
             }
@@ -178,7 +197,7 @@ public class MeetingServlet extends HttpServlet {
             FlashMessage.redirect(
                     request,
                     response,
-                    "meeting?view=list",
+                    listReturnPath(request),
                     success
                             ? "회의록이 성공적으로 등록되었습니다."
                             : "회의록 등록 중 오류가 발생했습니다.",
@@ -200,14 +219,15 @@ public class MeetingServlet extends HttpServlet {
                 FlashMessage.redirect(
                         request,
                         response,
-                        "meeting?view=view&id=" + meetingId,
+                        "meeting?view=view&id=" + meetingId
+                                + detailReturnSuffix(request),
                         "회의록이 성공적으로 수정되었습니다.",
                         "success");
             } else {
                 FlashMessage.redirect(
                         request,
                         response,
-                        "meeting?view=list",
+                        listReturnPath(request),
                         "수정 권한이 없거나 회의록이 존재하지 않습니다.",
                         "error");
             }
@@ -226,7 +246,7 @@ public class MeetingServlet extends HttpServlet {
             FlashMessage.redirect(
                     request,
                     response,
-                    "meeting?view=list",
+                    listReturnPath(request),
                     success
                             ? "회의록이 성공적으로 삭제되었습니다."
                             : "삭제 권한이 없거나 회의록이 존재하지 않습니다.",
@@ -247,5 +267,38 @@ public class MeetingServlet extends HttpServlet {
                 HttpServletResponse.SC_BAD_REQUEST,
                 "invalid_meeting_request",
                 exception.getMessage());
+    }
+
+    private static String detailReturnSuffix(HttpServletRequest request) {
+        StringBuilder suffix = new StringBuilder();
+        appendParameter(suffix, "returnPage", request.getParameter("returnPage"));
+        appendParameter(suffix, "returnQ", request.getParameter("returnQ"));
+        appendParameter(suffix, "returnType", request.getParameter("returnType"));
+        appendParameter(suffix, "returnAuthor", request.getParameter("returnAuthor"));
+        appendParameter(suffix, "returnStartDate", request.getParameter("returnStartDate"));
+        appendParameter(suffix, "returnEndDate", request.getParameter("returnEndDate"));
+        return suffix.toString();
+    }
+
+    private static String listReturnPath(HttpServletRequest request) {
+        StringBuilder path = new StringBuilder("meeting?view=list");
+        appendParameter(path, "page", request.getParameter("returnPage"));
+        appendParameter(path, "q", request.getParameter("returnQ"));
+        appendParameter(path, "type", request.getParameter("returnType"));
+        appendParameter(path, "author", request.getParameter("returnAuthor"));
+        appendParameter(path, "startDate", request.getParameter("returnStartDate"));
+        appendParameter(path, "endDate", request.getParameter("returnEndDate"));
+        return path.toString();
+    }
+
+    private static void appendParameter(
+            StringBuilder target, String name, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        target.append('&')
+                .append(name)
+                .append('=')
+                .append(URLEncoder.encode(value.strip(), StandardCharsets.UTF_8));
     }
 }

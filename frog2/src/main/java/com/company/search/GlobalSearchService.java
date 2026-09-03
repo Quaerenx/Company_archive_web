@@ -10,6 +10,8 @@ import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.MeetingRecordDAO;
 import com.company.model.MeetingRecordDTO;
+import com.company.model.MaintenanceRecordDAO;
+import com.company.model.MaintenanceRecordDTO;
 import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
 import com.company.util.SearchQueryPolicy;
@@ -37,6 +39,7 @@ public final class GlobalSearchService {
     private final CustomerHistoryRepository historyRepository;
     private final TroubleshootingDAO troubleshootingDAO;
     private final MeetingRecordDAO meetingDAO;
+    private final MaintenanceRecordDAO maintenanceDAO;
     private final FileRepositoryService fileRepositoryService;
 
     public GlobalSearchService() throws IOException {
@@ -45,6 +48,7 @@ public final class GlobalSearchService {
                 new CustomerHistoryRepository(),
                 new TroubleshootingDAO(),
                 new MeetingRecordDAO(),
+                new MaintenanceRecordDAO(),
                 new FileRepositoryService(FileRepositoryConfig.repositoryRoot()));
     }
 
@@ -53,6 +57,7 @@ public final class GlobalSearchService {
             CustomerHistoryRepository historyRepository,
             TroubleshootingDAO troubleshootingDAO,
             MeetingRecordDAO meetingDAO,
+            MaintenanceRecordDAO maintenanceDAO,
             FileRepositoryService fileRepositoryService) {
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
         this.historyRepository = Objects.requireNonNull(
@@ -60,6 +65,8 @@ public final class GlobalSearchService {
         this.troubleshootingDAO = Objects.requireNonNull(
                 troubleshootingDAO, "troubleshootingDAO");
         this.meetingDAO = Objects.requireNonNull(meetingDAO, "meetingDAO");
+        this.maintenanceDAO = Objects.requireNonNull(
+                maintenanceDAO, "maintenanceDAO");
         this.fileRepositoryService = Objects.requireNonNull(
                 fileRepositoryService, "fileRepositoryService");
     }
@@ -71,13 +78,13 @@ public final class GlobalSearchService {
         }
 
         List<GlobalSearchResult> results = new ArrayList<>(
-                RESULTS_PER_CATEGORY * 5);
+                RESULTS_PER_CATEGORY * 6);
         List<String> unavailableCategories = new ArrayList<>();
         appendSource(
                 "고객사",
                 () -> customerDAO.searchCustomers(
                                 query, RESULTS_PER_CATEGORY).stream()
-                        .map(this::customerResult)
+                        .map(customer -> customerResult(customer, query))
                         .toList(),
                 results,
                 unavailableCategories);
@@ -91,11 +98,19 @@ public final class GlobalSearchService {
                 results,
                 unavailableCategories);
         appendSource(
+                "정기점검 이력",
+                () -> maintenanceDAO.searchMaintenanceRecords(
+                                query, RESULTS_PER_CATEGORY).stream()
+                        .map(this::maintenanceResult)
+                        .toList(),
+                results,
+                unavailableCategories);
+        appendSource(
                 "트러블슈팅",
                 () -> troubleshootingDAO.getTroubleshootingPage(
                                 query, true, 1, RESULTS_PER_CATEGORY)
                         .items().stream()
-                        .map(this::troubleshootingResult)
+                        .map(record -> troubleshootingResult(record, query))
                         .toList(),
                 results,
                 unavailableCategories);
@@ -103,7 +118,7 @@ public final class GlobalSearchService {
                 "회의록",
                 () -> meetingDAO.searchMeetingRecords(
                                 query, RESULTS_PER_CATEGORY).stream()
-                        .map(this::meetingResult)
+                        .map(record -> meetingResult(record, query))
                         .toList(),
                 results,
                 unavailableCategories);
@@ -137,7 +152,8 @@ public final class GlobalSearchService {
         }
     }
 
-    private GlobalSearchResult customerResult(CustomerDTO customer) {
+    private GlobalSearchResult customerResult(
+            CustomerDTO customer, String query) {
         String description = joinDetails(
                 prefixed("Vertica", customer.getVerticaVersion()),
                 prefixed("DB", customer.getDbName()),
@@ -147,7 +163,18 @@ public final class GlobalSearchService {
                 customer.getCustomerName(),
                 description,
                 "/customers?view=detail&customerName="
-                        + encode(customer.getCustomerName()));
+                        + encode(customer.getCustomerName()),
+                "customers",
+                "/customers?view=list&q=" + encode(query),
+                List.of(
+                        new GlobalSearchAction(
+                                "정기점검",
+                                "/maintenance?view=history&customerName="
+                                        + encode(customer.getCustomerName())),
+                        new GlobalSearchAction(
+                                "히스토리",
+                                "/customer-history?customerName="
+                                        + encode(customer.getCustomerName()))));
     }
 
     private GlobalSearchResult historyResult(
@@ -163,21 +190,43 @@ public final class GlobalSearchService {
                 description,
                 "/customer-history?customerName="
                         + encode(record.getCustomerName())
-                        + "&q=" + encode(query));
+                        + "&q=" + encode(query),
+                "history",
+                "/customer-history?q=" + encode(query),
+                List.of());
+    }
+
+    private GlobalSearchResult maintenanceResult(MaintenanceRecordDTO record) {
+        return new GlobalSearchResult(
+                "정기점검 이력",
+                record.getCustomerName(),
+                joinDetails(
+                        businessDate(record.getInspectionDate()),
+                        record.getVerticaVersion(),
+                        summarize(record.getNote())),
+                "/maintenance?view=history&customerName="
+                        + encode(record.getCustomerName()),
+                "maintenance",
+                "/maintenance",
+                List.of());
     }
 
     private GlobalSearchResult troubleshootingResult(
-            TroubleshootingDTO troubleshooting) {
+            TroubleshootingDTO troubleshooting, String query) {
         return new GlobalSearchResult(
                 "트러블슈팅",
                 troubleshooting.getTitle(),
                 joinDetails(
                         troubleshooting.getCustomerName(),
                         businessDate(troubleshooting.getOccurrenceDate())),
-                "/troubleshooting?view=view&id=" + troubleshooting.getId());
+                "/troubleshooting?view=view&id=" + troubleshooting.getId(),
+                "troubleshooting",
+                "/troubleshooting?view=list&scope=content&q=" + encode(query),
+                List.of());
     }
 
-    private GlobalSearchResult meetingResult(MeetingRecordDTO meeting) {
+    private GlobalSearchResult meetingResult(
+            MeetingRecordDTO meeting, String query) {
         LocalDate meetingDate = meeting.getMeetingDatetime() == null
                 ? null
                 : meeting.getMeetingDatetime().toLocalDateTime().toLocalDate();
@@ -187,7 +236,11 @@ public final class GlobalSearchService {
                 joinDetails(
                         meetingDate == null ? null : meetingDate.toString(),
                         meeting.getMeetingTypeLabel()),
-                "/meeting?view=view&id=" + meeting.getMeetingId());
+                "/meeting?view=view&id=" + meeting.getMeetingId()
+                        + "&returnQ=" + encode(query),
+                "meetings",
+                "/meeting?view=list&q=" + encode(query),
+                List.of());
     }
 
     private GlobalSearchResult fileResult(FileRepositoryEntry entry) {
@@ -206,7 +259,10 @@ public final class GlobalSearchService {
                         location,
                         entry.getDescription(),
                         entry.isDirectory() ? null : entry.getSizeText()),
-                path);
+                path,
+                "files",
+                "/file-repository",
+                List.of());
     }
 
     private static String businessDate(Date value) {

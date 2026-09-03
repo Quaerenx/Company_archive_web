@@ -12,11 +12,21 @@
 <c:url var="meetingListReturnUrl" value="/meeting">
     <c:param name="view" value="list" />
     <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="q" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnType}"><c:param name="type" value="${param.returnType}" /></c:if>
+    <c:if test="${not empty param.returnAuthor}"><c:param name="author" value="${param.returnAuthor}" /></c:if>
+    <c:if test="${not empty param.returnStartDate}"><c:param name="startDate" value="${param.returnStartDate}" /></c:if>
+    <c:if test="${not empty param.returnEndDate}"><c:param name="endDate" value="${param.returnEndDate}" /></c:if>
 </c:url>
 <c:url var="meetingEditUrl" value="/meeting">
     <c:param name="view" value="edit" />
     <c:param name="id" value="${meeting.meetingId}" />
     <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnType}"><c:param name="returnType" value="${param.returnType}" /></c:if>
+    <c:if test="${not empty param.returnAuthor}"><c:param name="returnAuthor" value="${param.returnAuthor}" /></c:if>
+    <c:if test="${not empty param.returnStartDate}"><c:param name="returnStartDate" value="${param.returnStartDate}" /></c:if>
+    <c:if test="${not empty param.returnEndDate}"><c:param name="returnEndDate" value="${param.returnEndDate}" /></c:if>
 </c:url>
 
 <div class="meeting-view content-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />" data-meeting-id="<c:out value='${meeting.meetingId}' />">
@@ -162,6 +172,11 @@
                         <c:param name="view" value="view" />
                         <c:param name="id" value="${meeting.meetingId}" />
                         <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+                        <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+                        <c:if test="${not empty param.returnType}"><c:param name="returnType" value="${param.returnType}" /></c:if>
+                        <c:if test="${not empty param.returnAuthor}"><c:param name="returnAuthor" value="${param.returnAuthor}" /></c:if>
+                        <c:if test="${not empty param.returnStartDate}"><c:param name="returnStartDate" value="${param.returnStartDate}" /></c:if>
+                        <c:if test="${not empty param.returnEndDate}"><c:param name="returnEndDate" value="${param.returnEndDate}" /></c:if>
                     </c:url>
                     <a class="ui-button button--secondary button--sm"
                        href="<c:out value='${latestCommentsUrl}' />#comments">최신 댓글</a>
@@ -172,6 +187,11 @@
                         <c:param name="id" value="${meeting.meetingId}" />
                         <c:param name="commentBefore" value="${commentPage.nextBeforeCommentId}" />
                         <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+                        <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+                        <c:if test="${not empty param.returnType}"><c:param name="returnType" value="${param.returnType}" /></c:if>
+                        <c:if test="${not empty param.returnAuthor}"><c:param name="returnAuthor" value="${param.returnAuthor}" /></c:if>
+                        <c:if test="${not empty param.returnStartDate}"><c:param name="returnStartDate" value="${param.returnStartDate}" /></c:if>
+                        <c:if test="${not empty param.returnEndDate}"><c:param name="returnEndDate" value="${param.returnEndDate}" /></c:if>
                     </c:url>
                     <a class="ui-button button--secondary button--sm"
                        href="<c:out value='${olderCommentsUrl}' />#comments">이전 댓글 <c:out value="${commentPage.pageSize}" />개</a>

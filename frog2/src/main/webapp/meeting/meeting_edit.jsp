@@ -13,6 +13,11 @@
     <c:param name="view" value="view" />
     <c:param name="id" value="${meeting.meetingId}" />
     <c:if test="${not empty param.returnPage}"><c:param name="returnPage" value="${param.returnPage}" /></c:if>
+    <c:if test="${not empty param.returnQ}"><c:param name="returnQ" value="${param.returnQ}" /></c:if>
+    <c:if test="${not empty param.returnType}"><c:param name="returnType" value="${param.returnType}" /></c:if>
+    <c:if test="${not empty param.returnAuthor}"><c:param name="returnAuthor" value="${param.returnAuthor}" /></c:if>
+    <c:if test="${not empty param.returnStartDate}"><c:param name="returnStartDate" value="${param.returnStartDate}" /></c:if>
+    <c:if test="${not empty param.returnEndDate}"><c:param name="returnEndDate" value="${param.returnEndDate}" /></c:if>
 </c:url>
 
 <div class="meeting-page-container content-management content-shell" data-meeting-mode="edit">
@@ -40,10 +45,19 @@
               action="${pageContext.request.contextPath}/meeting"
               id="meetingForm"
               class="ui-form ui-form-layout"
+              data-ui-draft="auto"
+              data-ui-draft-id="meeting:<c:out value='${meeting.meetingId}' />"
+              data-ui-draft-success-views="list,view"
               data-ui-submit-lock="auto">
             <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="meeting_id" value="${meeting.meetingId}">
+            <c:if test="${not empty param.returnPage}"><input type="hidden" name="returnPage" value="<c:out value='${param.returnPage}' />" /></c:if>
+            <c:if test="${not empty param.returnQ}"><input type="hidden" name="returnQ" value="<c:out value='${param.returnQ}' />" /></c:if>
+            <c:if test="${not empty param.returnType}"><input type="hidden" name="returnType" value="<c:out value='${param.returnType}' />" /></c:if>
+            <c:if test="${not empty param.returnAuthor}"><input type="hidden" name="returnAuthor" value="<c:out value='${param.returnAuthor}' />" /></c:if>
+            <c:if test="${not empty param.returnStartDate}"><input type="hidden" name="returnStartDate" value="<c:out value='${param.returnStartDate}' />" /></c:if>
+            <c:if test="${not empty param.returnEndDate}"><input type="hidden" name="returnEndDate" value="<c:out value='${param.returnEndDate}' />" /></c:if>
 
             <c:set var="meetingFormMode" value="edit" />
             <%@ include file="/WEB-INF/includes/_meeting_form_fields.jspf" %>
@@ -95,6 +109,12 @@
             <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="meeting_id" value="${meeting.meetingId}">
+            <c:if test="${not empty param.returnPage}"><input type="hidden" name="returnPage" value="<c:out value='${param.returnPage}' />" /></c:if>
+            <c:if test="${not empty param.returnQ}"><input type="hidden" name="returnQ" value="<c:out value='${param.returnQ}' />" /></c:if>
+            <c:if test="${not empty param.returnType}"><input type="hidden" name="returnType" value="<c:out value='${param.returnType}' />" /></c:if>
+            <c:if test="${not empty param.returnAuthor}"><input type="hidden" name="returnAuthor" value="<c:out value='${param.returnAuthor}' />" /></c:if>
+            <c:if test="${not empty param.returnStartDate}"><input type="hidden" name="returnStartDate" value="<c:out value='${param.returnStartDate}' />" /></c:if>
+            <c:if test="${not empty param.returnEndDate}"><input type="hidden" name="returnEndDate" value="<c:out value='${param.returnEndDate}' />" /></c:if>
         </form>
     </div>
 </div>

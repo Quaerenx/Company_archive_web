@@ -76,7 +76,8 @@ final class MyPageQueryService {
                         userId, 1, recentActivityLimit);
         int hostLimit = userVmHostDAO.getMaxHostsPerUser();
         int hostCount = userVmHostDAO.getActiveHostCountByOwner(userId);
-        WorkInbox workInbox = loadWorkInbox(user);
+        WorkInbox workInbox = loadWorkInbox(
+                user, WORK_INBOX_DISPLAY_LIMIT);
         return new ViewData(
                 user,
                 maintenance.items(),
@@ -106,7 +107,7 @@ final class MyPageQueryService {
                 hosts.size());
     }
 
-    private WorkInbox loadWorkInbox(UserDTO user) {
+    WorkInbox loadWorkInbox(UserDTO user, int displayLimit) {
         if (user == null || user.getUserName() == null) {
             return WorkInbox.empty();
         }
@@ -141,7 +142,7 @@ final class MyPageQueryService {
                 currentMonthRecords,
                 latestRecords,
                 today,
-                WORK_INBOX_DISPLAY_LIMIT);
+                displayLimit);
     }
 
     record ViewData(

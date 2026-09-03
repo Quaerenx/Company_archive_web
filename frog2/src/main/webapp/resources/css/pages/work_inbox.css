@@ -1,0 +1,161 @@
+.work-inbox-page__surface {
+    overflow: visible;
+}
+
+.work-inbox-filter {
+    align-items: end;
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: 150px 180px 150px minmax(220px, 1fr) auto;
+    padding: var(--space-16) var(--space-20);
+}
+
+.work-inbox-filter .ui-form-field {
+    margin: 0;
+}
+
+.work-inbox-filter label {
+    display: block;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    margin-bottom: var(--space-8);
+}
+
+.work-inbox-filter input,
+.work-inbox-filter select {
+    inline-size: 100%;
+}
+
+.work-inbox-page__summary {
+    border-block: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    padding: var(--space-8) var(--space-20);
+}
+
+.work-inbox-page__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.work-inbox-card {
+    align-items: center;
+    display: flex;
+    gap: var(--space-20);
+    justify-content: space-between;
+    padding: var(--space-16) var(--space-20);
+}
+
+.work-inbox-card + .work-inbox-card {
+    border-top: 1px solid var(--color-border);
+}
+
+.work-inbox-card[hidden] {
+    display: none;
+}
+
+.work-inbox-card__main {
+    align-items: flex-start;
+    display: flex;
+    gap: var(--space-12);
+    min-inline-size: 0;
+}
+
+.work-inbox-card__content {
+    min-inline-size: 0;
+}
+
+.work-inbox-card__meta,
+.work-inbox-card__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.work-inbox-card__meta {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.work-inbox-card h2 {
+    color: var(--color-text-strong);
+    font-size: var(--font-size-md);
+    margin: var(--space-4) 0;
+}
+
+.work-inbox-card p {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin: 0;
+}
+
+.work-inbox-card .work-inbox-card__dates,
+.work-inbox-card .work-inbox-card__deferred {
+    font-size: var(--font-size-xs);
+    margin-top: var(--space-8);
+}
+
+.work-inbox-card .work-inbox-card__deferred {
+    color: var(--color-warning-text);
+}
+
+.work-inbox-card__defer {
+    position: relative;
+}
+
+.work-inbox-card__defer summary {
+    list-style: none;
+}
+
+.work-inbox-card__defer summary::-webkit-details-marker {
+    display: none;
+}
+
+.work-inbox-card__defer form {
+    background: var(--color-surface);
+    border: 1px solid var(--color-surface-edge);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    display: grid;
+    gap: var(--space-8);
+    inline-size: 260px;
+    padding: var(--space-12);
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--space-8));
+    z-index: var(--z-dropdown);
+}
+
+.work-inbox-card__defer label {
+    color: var(--color-text-muted);
+    display: grid;
+    font-size: var(--font-size-xs);
+    gap: var(--space-4);
+}
+
+.work-inbox-page__empty {
+    border: 0;
+    border-radius: 0;
+}
+
+@media (max-width: 768px) {
+    .work-inbox-filter {
+        grid-template-columns: 1fr;
+    }
+
+    .work-inbox-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .work-inbox-card__actions {
+        justify-content: flex-start;
+    }
+
+    .work-inbox-card__defer form {
+        left: 0;
+        right: auto;
+    }
+}

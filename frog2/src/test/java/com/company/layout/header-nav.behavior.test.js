@@ -366,8 +366,10 @@ test('integrated search fetches and renders safe domain results', async () => {
     assert.equal(harness.fetchCalls[0].url,
         '/frog2/search?q=%EC%A1%B0%ED%8F%90');
     assert.equal(harness.fetchCalls[0].options.credentials, 'same-origin');
-    assert.equal(harness.quickNavResults.children.length, 1);
-    const option = harness.quickNavResults.children[0];
+    assert.equal(harness.quickNavResults.children.length, 2);
+    assert.equal(harness.quickNavResults.children[0].children[0].textContent,
+        '고객사');
+    const option = harness.quickNavResults.children[1];
     const link = option.children[0];
     assert.equal(link.children[0].textContent, '고객사');
     assert.equal(link.children[1].children[0].textContent, '조폐공사');

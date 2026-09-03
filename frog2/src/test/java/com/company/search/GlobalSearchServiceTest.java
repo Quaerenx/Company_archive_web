@@ -12,6 +12,8 @@ import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.MeetingRecordDAO;
 import com.company.model.MeetingRecordDTO;
+import com.company.model.MaintenanceRecordDAO;
+import com.company.model.MaintenanceRecordDTO;
 import com.company.model.PageResult;
 import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
@@ -31,7 +33,7 @@ class GlobalSearchServiceTest {
     Path temporaryDirectory;
 
     @Test
-    void combinesFiveDomainsInStableCategoryOrder() throws Exception {
+    void combinesSixDomainsInStableCategoryOrder() throws Exception {
         CustomerDTO customer = new CustomerDTO();
         customer.setCustomerName("조폐공사");
         customer.setVerticaVersion("12.0.2-1");
@@ -50,6 +52,11 @@ class GlobalSearchServiceTest {
         meeting.setMeetingType("project");
         meeting.setMeetingDatetime(Timestamp.valueOf(
                 "2026-07-23 14:00:00"));
+
+        MaintenanceRecordDTO maintenance = new MaintenanceRecordDTO();
+        maintenance.setCustomerName("조폐공사");
+        maintenance.setInspectionDate(java.sql.Date.valueOf("2026-07-22"));
+        maintenance.setVerticaVersion("12.0.2-1");
 
         CustomerHistoryRepository history = new CustomerHistoryRepository(
                 temporaryDirectory.resolve("history"));
@@ -81,6 +88,7 @@ class GlobalSearchServiceTest {
                 history,
                 new StubTroubleshootingDAO(troubleshooting),
                 new StubMeetingDAO(meeting),
+                new StubMaintenanceDAO(maintenance),
                 files);
 
         GlobalSearchOutcome outcome = service.search("조폐공사");
@@ -91,6 +99,7 @@ class GlobalSearchServiceTest {
                 List.of(
                         "고객사",
                         "고객사 히스토리",
+                        "정기점검 이력",
                         "트러블슈팅",
                         "회의록",
                         "자료실 파일"),
@@ -99,7 +108,7 @@ class GlobalSearchServiceTest {
                 "customerName=%EC%A1%B0%ED%8F%90%EA%B3%B5%EC%82%AC"));
         assertEquals(
                 "/troubleshooting?view=view&id=7",
-                results.get(2).path());
+                results.get(3).path());
         assertTrue(results.getLast().path().startsWith(
                 "/file-repository/download?"));
     }
@@ -118,6 +127,7 @@ class GlobalSearchServiceTest {
                         temporaryDirectory.resolve("partial-history")),
                 new StubTroubleshootingDAO(troubleshooting),
                 new EmptyMeetingDAO(),
+                new EmptyMaintenanceDAO(),
                 new FileRepositoryService(fileRoot));
 
         GlobalSearchOutcome outcome = service.search("TLS");
@@ -182,9 +192,33 @@ class GlobalSearchServiceTest {
         }
     }
 
+    private static final class StubMaintenanceDAO
+            extends MaintenanceRecordDAO {
+        private final MaintenanceRecordDTO record;
+
+        private StubMaintenanceDAO(MaintenanceRecordDTO record) {
+            this.record = record;
+        }
+
+        @Override
+        public List<MaintenanceRecordDTO> searchMaintenanceRecords(
+                String query, int limit) {
+            return List.of(record);
+        }
+    }
+
     private static final class EmptyMeetingDAO extends MeetingRecordDAO {
         @Override
         public List<MeetingRecordDTO> searchMeetingRecords(
+                String query, int limit) {
+            return List.of();
+        }
+    }
+
+    private static final class EmptyMaintenanceDAO
+            extends MaintenanceRecordDAO {
+        @Override
+        public List<MaintenanceRecordDTO> searchMaintenanceRecords(
                 String query, int limit) {
             return List.of();
         }

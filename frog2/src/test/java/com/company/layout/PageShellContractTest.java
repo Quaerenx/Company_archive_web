@@ -40,6 +40,7 @@ class PageShellContractTest {
             "mypage/edit_profile.jsp",
             "mypage/monthly_customer_response.jsp",
             "mypage/mypage.jsp",
+            "mypage/work_inbox_list.jsp",
             "troubleshooting/troubleshooting_add.jsp",
             "troubleshooting/troubleshooting_edit.jsp",
             "troubleshooting/troubleshooting_list.jsp",

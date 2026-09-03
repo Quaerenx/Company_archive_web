@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.company.util.DBConnection;
+import com.company.util.SearchQueryPolicy;
 
 public class MaintenanceRecordDAO {
     private static final String TABLE_NAME = "maintenance_records";
@@ -203,6 +204,47 @@ public class MaintenanceRecordDAO {
                 requestedPage,
                 pageSize,
                 MaintenanceHistoryFilter.empty());
+    }
+
+    public List<MaintenanceRecordDTO> searchMaintenanceRecords(
+            String query, int limit) {
+        if (limit <= 0 || limit > 20) {
+            throw new IllegalArgumentException(
+                    "Search limit must be between 1 and 20");
+        }
+        String normalizedQuery = SearchQueryPolicy.normalize(query);
+        if (normalizedQuery == null) {
+            return List.of();
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            MaintenanceSchemaProfile schema = loadSchemaProfile(connection);
+            String sql = "SELECT " + selectColumns(schema)
+                    + " FROM maintenance_records WHERE "
+                    + "customer_name ILIKE ? ESCAPE '!' OR "
+                    + "inspector_name ILIKE ? ESCAPE '!' OR "
+                    + "vertica_version ILIKE ? ESCAPE '!' OR "
+                    + "SUBSTR(note,1,65000) ILIKE ? ESCAPE '!' "
+                    + "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
+                    + "inspection_date DESC, maintenance_id DESC LIMIT ?";
+            String pattern = SearchQueryPolicy.literalContainsLikePattern(
+                    normalizedQuery);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (int parameter = 1; parameter <= 4; parameter++) {
+                    statement.setString(parameter, pattern);
+                }
+                statement.setInt(5, limit);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<MaintenanceRecordDTO> records = new ArrayList<>();
+                    while (resultSet.next()) {
+                        records.add(mapRowToDto(resultSet, schema));
+                    }
+                    return List.copyOf(records);
+                }
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "search maintenance records", exception);
+        }
     }
 
     public MaintenanceFormHistoryContext getMaintenanceFormHistoryContext(

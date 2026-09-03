@@ -406,6 +406,8 @@
 }
 
 .quick-nav-results {
+    --quick-nav-type-width: 104px;
+
     list-style: none;
     margin: 0;
     overflow-y: auto;
@@ -425,9 +427,90 @@
     display: none;
 }
 
+.quick-nav-recent {
+    border-block-end: 1px solid var(--color-border);
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--space-12) var(--space-20);
+}
+
+.quick-nav-recent[hidden],
+.quick-nav-recent section[hidden] {
+    display: none;
+}
+
+.quick-nav-recent h3 {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    margin: 0 0 var(--space-8);
+}
+
+.quick-nav-recent ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.quick-nav-recent li {
+    align-items: center;
+    background: var(--color-surface-muted);
+    border-radius: var(--radius-pill);
+    display: inline-flex;
+    min-inline-size: 0;
+}
+
+.quick-nav-recent a,
+.quick-nav-recent-query,
+.quick-nav-recent-remove {
+    background: transparent;
+    border: 0;
+    color: var(--color-text);
+    cursor: pointer;
+    font-size: var(--font-size-xs);
+    padding: var(--space-8) var(--space-12);
+    text-decoration: none;
+}
+
+.quick-nav-recent-remove {
+    color: var(--color-text-muted);
+    padding-inline-start: 0;
+}
+
+.quick-nav-result-group {
+    align-items: center;
+    color: var(--color-text-muted);
+    display: flex;
+    font-size: var(--font-size-xs);
+    justify-content: space-between;
+    padding: var(--space-8) var(--space-12) var(--space-4);
+}
+
+.quick-nav-result-group a,
+.quick-nav-result-actions a {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
 .quick-nav-result {
     border-radius: var(--radius-md);
     margin: 0;
+}
+
+.quick-nav-result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    padding: 0 var(--space-12) var(--space-8)
+        calc(var(--quick-nav-type-width) + var(--space-24));
+}
+
+.quick-nav-result-actions a {
+    font-size: var(--font-size-xs);
 }
 
 .quick-nav-result-link {
@@ -444,7 +527,7 @@
 
 .quick-nav-result-type {
     color: var(--color-primary);
-    flex: 0 0 104px;
+    flex: 0 0 var(--quick-nav-type-width);
     font-size: var(--font-size-xs);
     font-weight: 700;
 }
@@ -679,8 +762,8 @@
         padding-inline: var(--space-16);
     }
 
-    .quick-nav-result-type {
-        flex-basis: 88px;
+    .quick-nav-results {
+        --quick-nav-type-width: 88px;
     }
 }
 

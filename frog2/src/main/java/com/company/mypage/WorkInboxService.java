@@ -5,6 +5,7 @@ import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.MaintenanceSchedule;
 import com.company.mypage.WorkInboxItem.Severity;
+import com.company.mypage.WorkInboxItem.Type;
 import com.company.util.LicenseRiskPolicy;
 import com.company.util.LicenseSummaryFormatter;
 import java.net.URLEncoder;
@@ -103,16 +104,21 @@ public final class WorkInboxService {
                     && !completedCustomers.contains(customerName)) {
                 items.add(new WorkInboxItem(
                         Severity.WARNING,
+                        Type.MAINTENANCE_MISSING,
                         customerName,
                         "이번 달 정기점검 미진행",
                         currentMonth.getYear() + "년 "
                                 + currentMonth.getMonthValue()
                                 + "월 점검 이력이 없습니다.",
-                        maintenancePath(customerName)));
+                        maintenanceAddPath(customerName),
+                        "점검 등록",
+                        currentMonth.atDay(1),
+                        currentMonth.atEndOfMonth(),
+                        today));
             }
 
             MaintenanceRecordDTO latest = latestByCustomer.get(customerName);
-            addLicenseAlert(items, customerName, latest);
+            addLicenseAlert(items, customerName, latest, today);
 
             List<String> missingFields = CRITICAL_FIELDS.stream()
                     .filter(field -> isMissing(field.value().get(customer)))
@@ -121,10 +127,15 @@ public final class WorkInboxService {
             if (!missingFields.isEmpty()) {
                 items.add(new WorkInboxItem(
                         Severity.INFO,
+                        Type.MISSING_INFORMATION,
                         customerName,
                         "고객사 핵심 정보 누락",
                         String.join(" · ", missingFields) + " 미기재",
-                        customerPath(customerName)));
+                        customerEditPath(customerName),
+                        "정보 수정",
+                        null,
+                        null,
+                        today));
             }
         }
 
@@ -139,7 +150,8 @@ public final class WorkInboxService {
     private static void addLicenseAlert(
             List<WorkInboxItem> items,
             String customerName,
-            MaintenanceRecordDTO latest) {
+            MaintenanceRecordDTO latest,
+            LocalDate today) {
         LicenseRiskPolicy.Level risk =
                 LicenseSummaryFormatter.resolveUsageRiskLevel(latest);
         if (risk != LicenseRiskPolicy.Level.WARNING
@@ -161,10 +173,17 @@ public final class WorkInboxService {
                         : "");
         items.add(new WorkInboxItem(
                 severity,
+                Type.LICENSE_RISK,
                 customerName,
                 title,
                 detail,
-                maintenancePath(customerName)));
+                maintenancePath(customerName),
+                "점검 이력 보기",
+                latest == null || latest.getInspectionDate() == null
+                        ? null
+                        : latest.getInspectionDate().toLocalDate(),
+                null,
+                today));
     }
 
     private static MaintenanceRecordDTO newerRecord(
@@ -213,8 +232,13 @@ public final class WorkInboxService {
                 + encode(customerName);
     }
 
-    private static String customerPath(String customerName) {
-        return "/customers?view=detail&customerName="
+    private static String maintenanceAddPath(String customerName) {
+        return "/maintenance?view=add&customerName="
+                + encode(customerName);
+    }
+
+    private static String customerEditPath(String customerName) {
+        return "/customers?view=editDetail&customerName="
                 + encode(customerName);
     }
 

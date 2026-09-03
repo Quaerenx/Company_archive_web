@@ -31,9 +31,16 @@
     <c:if test="${not empty param.returnPage}"><c:param name="page" value="${param.returnPage}" /></c:if>
     <c:if test="${not empty param.returnPageSize}"><c:param name="pageSize" value="${param.returnPageSize}" /></c:if>
 </c:url>
+<c:url var="currentCustomerDetailUrl" value="/customers">
+    <c:param name="view" value="detail" />
+    <c:param name="customerName" value="${currentCustomerName}" />
+</c:url>
 
 
-<div class="customer-detail customer-detail--view customer-management content-management content-shell" data-context-path="<c:out value='${pageContext.request.contextPath}' />">
+<div class="customer-detail customer-detail--view customer-management content-management content-shell"
+     data-context-path="<c:out value='${pageContext.request.contextPath}' />"
+     data-quick-nav-recent-customer="<c:out value='${currentCustomerName}' />"
+     data-quick-nav-recent-customer-url="<c:out value='${currentCustomerDetailUrl}' />">
     <t:pageHeader>
         <jsp:attribute name="title">
             <i class="fas fa-building"></i>
@@ -173,6 +180,125 @@
                 </a>
             </div>
         </div>
+    </c:if>
+
+    <c:if test="${not empty customer}">
+        <c:url var="maintenanceHistoryUrl" value="/maintenance">
+            <c:param name="view" value="history" />
+            <c:param name="customerName" value="${currentCustomerName}" />
+        </c:url>
+        <c:url var="maintenanceAddUrl" value="/maintenance">
+            <c:param name="view" value="add" />
+            <c:param name="customerName" value="${currentCustomerName}" />
+        </c:url>
+        <c:url var="customerHistoryUrl" value="/customer-history">
+            <c:param name="customerName" value="${currentCustomerName}" />
+        </c:url>
+        <c:url var="customerHistoryAddUrl" value="/customer-history">
+            <c:param name="view" value="add" />
+            <c:param name="customerName" value="${currentCustomerName}" />
+        </c:url>
+        <c:url var="troubleshootingUrl" value="/troubleshooting">
+            <c:param name="view" value="list" />
+            <c:param name="q" value="${currentCustomerName}" />
+        </c:url>
+        <c:url var="troubleshootingAddUrl" value="/troubleshooting">
+            <c:param name="view" value="add" />
+            <c:param name="customerName" value="${currentCustomerName}" />
+        </c:url>
+
+        <section class="customer-activity ui-work-surface"
+                 aria-labelledby="customerActivityTitle">
+            <div class="customer-activity__header">
+                <div>
+                    <h2 id="customerActivityTitle">최근 업무</h2>
+                    <p>점검, 작업 이력, 트러블슈팅을 고객사 기준으로 모아봅니다.</p>
+                </div>
+                <div class="customer-activity__actions" aria-label="업무 등록">
+                    <a class="ui-button button--secondary button--sm"
+                       href="<c:out value='${maintenanceAddUrl}' />">점검 등록</a>
+                    <a class="ui-button button--secondary button--sm"
+                       href="<c:out value='${customerHistoryAddUrl}' />">히스토리 등록</a>
+                    <a class="ui-button button--secondary button--sm"
+                       href="<c:out value='${troubleshootingAddUrl}' />">트러블슈팅 작성</a>
+                </div>
+            </div>
+            <div class="customer-activity__grid">
+                <section class="customer-activity__group">
+                    <div class="customer-activity__group-header">
+                        <h3>정기점검</h3>
+                        <a href="<c:out value='${maintenanceHistoryUrl}' />">전체 보기</a>
+                    </div>
+                    <c:choose>
+                        <c:when test="${not empty customerActivity.maintenanceRecords}">
+                            <ul class="customer-activity__list">
+                                <c:forEach var="record" items="${customerActivity.maintenanceRecords}">
+                                    <li>
+                                        <a href="<c:out value='${maintenanceHistoryUrl}' />">
+                                            <strong><fmt:formatDate value="${record.inspectionDate}" pattern="yyyy-MM-dd" /></strong>
+                                            <span><c:out value="${not empty record.verticaVersion ? record.verticaVersion : '버전 미등록'}" /></span>
+                                        </a>
+                                    </li>
+                                </c:forEach>
+                            </ul>
+                        </c:when>
+                        <c:otherwise><p class="customer-activity__empty">최근 점검이 없습니다.</p></c:otherwise>
+                    </c:choose>
+                </section>
+
+                <section class="customer-activity__group">
+                    <div class="customer-activity__group-header">
+                        <h3>고객사 히스토리</h3>
+                        <a href="<c:out value='${customerHistoryUrl}' />">전체 보기</a>
+                    </div>
+                    <c:choose>
+                        <c:when test="${not empty customerActivity.historyRecords}">
+                            <ul class="customer-activity__list">
+                                <c:forEach var="record" items="${customerActivity.historyRecords}">
+                                    <c:url var="historyDetailUrl" value="/customer-history">
+                                        <c:param name="view" value="detail" />
+                                        <c:param name="id" value="${record.id}" />
+                                    </c:url>
+                                    <li>
+                                        <a href="<c:out value='${historyDetailUrl}' />">
+                                            <strong><c:out value="${record.workDate}" /></strong>
+                                            <span><c:out value="${record.title}" /></span>
+                                        </a>
+                                    </li>
+                                </c:forEach>
+                            </ul>
+                        </c:when>
+                        <c:otherwise><p class="customer-activity__empty">최근 히스토리가 없습니다.</p></c:otherwise>
+                    </c:choose>
+                </section>
+
+                <section class="customer-activity__group">
+                    <div class="customer-activity__group-header">
+                        <h3>트러블슈팅</h3>
+                        <a href="<c:out value='${troubleshootingUrl}' />">전체 보기</a>
+                    </div>
+                    <c:choose>
+                        <c:when test="${not empty customerActivity.troubleshootingRecords}">
+                            <ul class="customer-activity__list">
+                                <c:forEach var="record" items="${customerActivity.troubleshootingRecords}">
+                                    <c:url var="troubleDetailUrl" value="/troubleshooting">
+                                        <c:param name="view" value="view" />
+                                        <c:param name="id" value="${record.id}" />
+                                    </c:url>
+                                    <li>
+                                        <a href="<c:out value='${troubleDetailUrl}' />">
+                                            <strong><fmt:formatDate value="${record.occurrenceDate}" pattern="yyyy-MM-dd" /></strong>
+                                            <span><c:out value="${record.title}" /></span>
+                                        </a>
+                                    </li>
+                                </c:forEach>
+                            </ul>
+                        </c:when>
+                        <c:otherwise><p class="customer-activity__empty">최근 트러블슈팅이 없습니다.</p></c:otherwise>
+                    </c:choose>
+                </section>
+            </div>
+        </section>
     </c:if>
 
     <c:if test="${not empty customer}">

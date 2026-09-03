@@ -104,6 +104,9 @@
                       data-customer-detail-form
                       data-environment="<c:out value='${environment.value}' />"
                       data-environment-label="<c:out value='${environment.label}' />"
+                      data-ui-draft="auto"
+                      data-ui-draft-id="customer:<c:out value='${currentCustomerName}' />:<c:out value='${environment.value}' />"
+                      data-ui-draft-success-views="detail"
                       data-ui-submit-lock="auto">
                     <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
                     <input type="hidden" name="action" value="saveDetail">

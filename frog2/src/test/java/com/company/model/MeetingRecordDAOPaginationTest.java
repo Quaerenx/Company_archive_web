@@ -54,6 +54,36 @@ class MeetingRecordDAOPaginationTest {
     }
 
     @Test
+    void filteredPageBindsLiteralTextTypeAuthorAndInclusiveDateRange() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(meetingRow(31L, 1));
+        MeetingRecordDAO dao = new MeetingRecordDAO(jdbc::open);
+
+        MeetingListFilter filter = new MeetingListFilter(
+                "need [me]",
+                "project",
+                "김%담당",
+                java.sql.Date.valueOf("2026-08-01"),
+                java.sql.Date.valueOf("2026-08-31"));
+        PageResult<MeetingRecordDTO> page = dao.getMeetingPage(filter, 1);
+
+        var statement = jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains("REGEXP_ILIKE(content, ?)"));
+        assertTrue(statement.sql.contains("meeting_type = ?"));
+        assertTrue(statement.sql.contains("author_name ILIKE ? ESCAPE '!'"));
+        assertTrue(statement.sql.contains("meeting_datetime >= ?"));
+        assertTrue(statement.sql.contains("meeting_datetime < ?"));
+        assertEquals("%need [me]%", statement.parameters.get(1));
+        assertEquals("project", statement.parameters.get(3));
+        assertEquals("%김!%담당%", statement.parameters.get(4));
+        assertEquals(Timestamp.valueOf("2026-08-01 00:00:00"),
+                statement.parameters.get(5));
+        assertEquals(Timestamp.valueOf("2026-09-01 00:00:00"),
+                statement.parameters.get(6));
+        assertEquals(1, page.totalCount());
+    }
+
+    @Test
     void anOutOfRangePageFallsBackToTheLastAvailablePage() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue();

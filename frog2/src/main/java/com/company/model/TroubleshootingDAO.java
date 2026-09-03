@@ -129,6 +129,31 @@ public class TroubleshootingDAO {
         }
     }
 
+    public PageResult<TroubleshootingDTO> getTroubleshootingPageByCustomer(
+            String customerName,
+            int requestedPage,
+            int pageSize) {
+        if (isBlank(customerName)) {
+            return new PageResult<>(List.of(), 0, 1, pageSize);
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            StatementBinder binder = (statement, startIndex) -> {
+                statement.setString(startIndex, customerName.strip());
+                return startIndex + 1;
+            };
+            return loadSummaryPage(
+                    connection,
+                    " WHERE customer_name = ?",
+                    binder,
+                    false,
+                    requestedPage,
+                    pageSize);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load troubleshooting page by customer", exception);
+        }
+    }
+
     public TroubleshootingDTO getTroubleshootingById(int id) {
         try (Connection conn = connectionProvider.getConnection()) {
             boolean hasCreatorUserId = hasCreatorUserId(conn);

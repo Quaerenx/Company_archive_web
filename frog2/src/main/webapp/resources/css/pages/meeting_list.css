@@ -1,3 +1,32 @@
+.meeting-management .meeting-filter {
+    align-items: end;
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: minmax(180px, 1fr) 150px 140px 150px 150px auto;
+    padding: var(--space-16) var(--space-20);
+}
+
+.meeting-management .meeting-filter .ui-form-field {
+    margin: 0;
+}
+
+.meeting-management .meeting-filter label {
+    display: block;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    margin-bottom: var(--space-8);
+}
+
+.meeting-management .meeting-filter input,
+.meeting-management .meeting-filter select {
+    inline-size: 100%;
+}
+
+.meeting-management .meeting-filter__actions {
+    display: flex;
+    gap: var(--space-8);
+}
+
 .meeting-management .title-link {
     color: var(--color-text);
     display: block;
@@ -48,6 +77,10 @@
 }
 
 @media (max-width: 768px) {
+    .meeting-management .meeting-filter {
+        grid-template-columns: 1fr;
+    }
+
     .meeting-management .meeting-list-table thead {
         position: absolute;
         width: 1px;

@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import com.company.customerhistory.CustomerHistoryRepository;
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerCounts;
 import com.company.model.CustomerDTO;
@@ -7,7 +8,9 @@ import com.company.model.CustomerDetailDAO;
 import com.company.model.CustomerDetailDTO;
 import com.company.model.CustomerDetailSet;
 import com.company.model.CustomerPage;
+import com.company.model.MaintenanceRecordDAO;
 import com.company.model.PageResult;
+import com.company.model.TroubleshootingDAO;
 import com.company.model.VerticaEosDAO;
 import com.company.performance.RequestPerformanceContext;
 import com.company.performance.RequestPerformanceContext.Operation;
@@ -29,10 +32,17 @@ final class CustomerQueryController {
     private final CustomerDetailQueryService detailQueryService;
     private final CustomerRequestMapper mapper;
     private final Clock clock;
+    private final CustomerActivityLoader activityLoader;
 
     CustomerQueryController() {
-        this(new CustomerDAO(), new CustomerDetailDAO(), new VerticaEosDAO(),
-                new CustomerRequestMapper(), BusinessDate.systemClock());
+        this(
+                new CustomerDAO(),
+                new CustomerDetailDAO(),
+                new VerticaEosDAO(),
+                new CustomerRequestMapper(),
+                BusinessDate.systemClock(),
+                customerName -> DefaultActivityLoaderHolder.INSTANCE
+                        .load(customerName));
     }
 
     CustomerQueryController(
@@ -40,7 +50,13 @@ final class CustomerQueryController {
             CustomerDetailDAO detailDAO,
             VerticaEosDAO eosDAO,
             CustomerRequestMapper mapper) {
-        this(customerDAO, detailDAO, eosDAO, mapper, BusinessDate.systemClock());
+        this(
+                customerDAO,
+                detailDAO,
+                eosDAO,
+                mapper,
+                BusinessDate.systemClock(),
+                CustomerActivityLoader.empty());
     }
 
     CustomerQueryController(
@@ -49,12 +65,30 @@ final class CustomerQueryController {
             VerticaEosDAO eosDAO,
             CustomerRequestMapper mapper,
             Clock clock) {
+        this(
+                customerDAO,
+                detailDAO,
+                eosDAO,
+                mapper,
+                clock,
+                CustomerActivityLoader.empty());
+    }
+
+    CustomerQueryController(
+            CustomerDAO customerDAO,
+            CustomerDetailDAO detailDAO,
+            VerticaEosDAO eosDAO,
+            CustomerRequestMapper mapper,
+            Clock clock,
+            CustomerActivityLoader activityLoader) {
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
         this.detailDAO = Objects.requireNonNull(detailDAO, "detailDAO");
         this.detailQueryService = new CustomerDetailQueryService(
                 detailDAO, Objects.requireNonNull(eosDAO, "eosDAO"));
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.activityLoader = Objects.requireNonNull(
+                activityLoader, "activityLoader");
     }
 
     void handle(HttpServletRequest request, HttpServletResponse response)
@@ -156,6 +190,11 @@ final class CustomerQueryController {
         request.setAttribute("customerDetail", viewData.production());
         request.setAttribute("customerDetailStg", viewData.staging());
         request.setAttribute("customerDetailDev", viewData.development());
+        if (viewData.customer() != null) {
+            request.setAttribute(
+                    "customerActivity",
+                    activityLoader.load(customerName));
+        }
         forward(request, response, "/customers/customers_detail.jsp", "detail");
     }
 
@@ -261,5 +300,13 @@ final class CustomerQueryController {
 
     private static List<CustomerDTO> nullToEmpty(List<CustomerDTO> customers) {
         return customers == null ? new ArrayList<>() : customers;
+    }
+
+    private static final class DefaultActivityLoaderHolder {
+        private static final CustomerActivityLoader INSTANCE =
+                new CustomerActivityQueryService(
+                        new MaintenanceRecordDAO(),
+                        new CustomerHistoryRepository(),
+                        new TroubleshootingDAO());
     }
 }

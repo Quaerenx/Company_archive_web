@@ -56,6 +56,19 @@ document.addEventListener('DOMContentLoaded', function() {
     var quickNavResults = document.getElementById('quickNavResults');
     var quickNavEmpty = document.getElementById('quickNavEmpty');
     var quickNavStatus = document.getElementById('quickNavStatus');
+    var quickNavRecent = document.getElementById('quickNavRecent');
+    var recentCustomersSection = quickNavRecent
+            ? quickNavRecent.querySelector('[data-recent-customers-section]')
+            : null;
+    var recentCustomersList = quickNavRecent
+            ? quickNavRecent.querySelector('[data-recent-customers]')
+            : null;
+    var recentQueriesSection = quickNavRecent
+            ? quickNavRecent.querySelector('[data-recent-queries-section]')
+            : null;
+    var recentQueriesList = quickNavRecent
+            ? quickNavRecent.querySelector('[data-recent-queries]')
+            : null;
 
     if (!mobileToggle || !primaryNavigation) {
         return;
@@ -211,6 +224,147 @@ document.addEventListener('DOMContentLoaded', function() {
         var requestVersion = 0;
         var searchTimer = null;
         var searchEndpoint = quickNavBackdrop.getAttribute('data-search-url');
+        var storageNamespace = quickNavBackdrop.getAttribute('data-user-id')
+                || 'anonymous';
+        var recentStorageKey = 'frog2.quickNav.recent.v1:' + storageNamespace;
+        var recent = readRecent();
+        var groupLabels = {
+            customers: '고객사',
+            history: '고객사 히스토리',
+            maintenance: '정기점검 이력',
+            troubleshooting: '트러블슈팅',
+            meetings: '회의록',
+            files: '자료실'
+        };
+
+        function readRecent() {
+            try {
+                var value = JSON.parse(
+                        window.localStorage.getItem(recentStorageKey) || '{}');
+                return {
+                    queries: Array.isArray(value.queries)
+                            ? value.queries.filter(function(query) {
+                                return typeof query === 'string'
+                                        && query.trim();
+                            }).map(function(query) {
+                                return query.trim();
+                            }).slice(0, 5)
+                            : [],
+                    customers: Array.isArray(value.customers)
+                            ? value.customers.filter(function(customer) {
+                                return customer
+                                        && typeof customer.label === 'string'
+                                        && typeof customer.url === 'string';
+                            }).slice(0, 5)
+                            : []
+                };
+            } catch (error) {
+                return {queries: [], customers: []};
+            }
+        }
+
+        function saveRecent() {
+            try {
+                window.localStorage.setItem(
+                        recentStorageKey, JSON.stringify(recent));
+            } catch (error) {
+                // Search remains available when local storage is blocked.
+            }
+        }
+
+        function rememberQuery(query) {
+            var normalized = String(query || '').trim();
+            if (queryLength(normalized) < 2) return;
+            recent.queries = [normalized].concat(recent.queries.filter(
+                    function(value) { return value !== normalized; }))
+                    .slice(0, 5);
+            saveRecent();
+        }
+
+        function rememberCustomer(entry) {
+            if (!entry || entry.group !== 'customers') return;
+            recent.customers = [{label: entry.label, url: entry.url}]
+                    .concat(recent.customers.filter(function(value) {
+                        return value && value.url !== entry.url;
+                    }))
+                    .slice(0, 5);
+            saveRecent();
+        }
+
+        function rememberCurrentCustomer() {
+            var marker = document.querySelector(
+                    '[data-quick-nav-recent-customer]');
+            if (!marker) return;
+            var label = marker.getAttribute(
+                    'data-quick-nav-recent-customer');
+            var url = marker.getAttribute(
+                    'data-quick-nav-recent-customer-url');
+            if (!label || !url || url.indexOf('/') !== 0
+                    || url.indexOf('//') === 0) {
+                return;
+            }
+            rememberCustomer({group: 'customers', label: label, url: url});
+        }
+
+        function renderRecent() {
+            if (!quickNavRecent || !recentCustomersSection
+                    || !recentCustomersList || !recentQueriesSection
+                    || !recentQueriesList) {
+                return;
+            }
+            var show = quickNavInput.value.trim() === '';
+            quickNavRecent.hidden = !show
+                    || (!recent.customers.length && !recent.queries.length);
+            recentCustomersSection.hidden = !show || !recent.customers.length;
+            recentQueriesSection.hidden = !show || !recent.queries.length;
+            recentCustomersList.textContent = '';
+            recentQueriesList.textContent = '';
+
+            if (!show) return;
+            recent.customers.forEach(function(customer) {
+                if (!customer || typeof customer.label !== 'string'
+                        || typeof customer.url !== 'string'
+                        || customer.url.indexOf('/') !== 0
+                        || customer.url.indexOf('//') === 0) {
+                    return;
+                }
+                var item = document.createElement('li');
+                var link = document.createElement('a');
+                link.href = customer.url;
+                link.textContent = customer.label;
+                item.appendChild(link);
+                recentCustomersList.appendChild(item);
+            });
+            recent.queries.forEach(function(query) {
+                var item = document.createElement('li');
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'quick-nav-recent-query';
+                button.textContent = query;
+                button.addEventListener('click', function() {
+                    quickNavInput.value = query;
+                    searchInputChanged();
+                    quickNavInput.focus();
+                });
+                var remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'quick-nav-recent-remove';
+                remove.setAttribute('aria-label', query + ' 검색어 삭제');
+                remove.textContent = '×';
+                remove.addEventListener('click', function() {
+                    recent.queries = recent.queries.filter(function(value) {
+                        return value !== query;
+                    });
+                    saveRecent();
+                    renderRecent();
+                });
+                item.appendChild(button);
+                item.appendChild(remove);
+                recentQueriesList.appendChild(item);
+            });
+        }
+
+        rememberCurrentCustomer();
 
         primaryNavigation.querySelectorAll('a[href]:not(#logoutLink)').forEach(function(link) {
             var label = link.textContent.replace(/\s+/g, ' ').trim();
@@ -271,8 +425,27 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             visibleEntries = matchingMenus.concat(remoteEntries);
             quickNavResults.textContent = '';
+            var previousGroup = null;
 
             visibleEntries.forEach(function(entry, index) {
+                var group = entry.group || entry.category;
+                if (group !== previousGroup) {
+                    var groupItem = document.createElement('li');
+                    groupItem.className = 'quick-nav-result-group';
+                    groupItem.setAttribute('role', 'presentation');
+                    var groupLabel = document.createElement('strong');
+                    groupLabel.textContent = groupLabels[group]
+                            || entry.category;
+                    groupItem.appendChild(groupLabel);
+                    if (entry.moreUrl) {
+                        var moreLink = document.createElement('a');
+                        moreLink.href = entry.moreUrl;
+                        moreLink.textContent = '전체 보기';
+                        groupItem.appendChild(moreLink);
+                    }
+                    quickNavResults.appendChild(groupItem);
+                    previousGroup = group;
+                }
                 var option = document.createElement('li');
                 option.id = 'quick-nav-option-' + index;
                 option.className = 'quick-nav-result';
@@ -308,7 +481,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 link.addEventListener('focus', function() {
                     setActive(index);
                 });
+                link.addEventListener('click', function() {
+                    rememberQuery(quickNavInput.value);
+                    rememberCustomer(entry);
+                });
                 option.appendChild(link);
+                if (entry.actions && entry.actions.length) {
+                    var actions = document.createElement('span');
+                    actions.className = 'quick-nav-result-actions';
+                    entry.actions.forEach(function(action) {
+                        var actionLink = document.createElement('a');
+                        actionLink.href = action.url;
+                        actionLink.textContent = action.label;
+                        actionLink.addEventListener('click', function() {
+                            rememberQuery(quickNavInput.value);
+                            rememberCustomer(entry);
+                        });
+                        actions.appendChild(actionLink);
+                    });
+                    option.appendChild(actions);
+                }
                 quickNavResults.appendChild(option);
             });
 
@@ -318,6 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         ? '2자 이상 입력하면 업무 데이터까지 검색합니다.'
                         : '일치하는 결과가 없습니다.';
             }
+            renderRecent();
             setActive(visibleEntries.length ? 0 : -1);
         }
 
@@ -333,13 +526,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         && entry.url.indexOf('/') === 0
                         && entry.url.indexOf('//') !== 0;
             }).map(function(entry) {
+                var actions = Array.isArray(entry.actions)
+                        ? entry.actions.filter(function(action) {
+                            return action
+                                    && typeof action.label === 'string'
+                                    && typeof action.url === 'string'
+                                    && action.url.indexOf('/') === 0
+                                    && action.url.indexOf('//') !== 0;
+                        })
+                        : [];
                 return {
                     category: entry.category,
+                    group: typeof entry.group === 'string'
+                            ? entry.group
+                            : entry.category,
                     label: entry.label,
                     description: typeof entry.description === 'string'
                             ? entry.description
                             : '',
-                    url: entry.url
+                    url: entry.url,
+                    moreUrl: typeof entry.moreUrl === 'string'
+                            && entry.moreUrl.indexOf('/') === 0
+                            && entry.moreUrl.indexOf('//') !== 0
+                            ? entry.moreUrl
+                            : '',
+                    actions: actions
                 };
             });
         }
@@ -376,6 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 || quickNavInput.value.trim() !== query) {
                             return;
                         }
+                        rememberQuery(query);
                         remoteEntries = normalizeRemoteEntries(payload);
                         var unavailableCategories =
                                 normalizeUnavailableCategories(payload);
@@ -505,6 +717,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 setActive(visibleEntries.length - 1);
             } else if (event.key === 'Enter' && activeIndex >= 0) {
                 event.preventDefault();
+                rememberQuery(quickNavInput.value);
+                rememberCustomer(visibleEntries[activeIndex]);
                 window.location.assign(visibleEntries[activeIndex].url);
             }
         });

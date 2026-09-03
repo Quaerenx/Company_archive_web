@@ -31,6 +31,9 @@
                   class="ui-form ui-form-layout"
                   method="post"
                   action="${pageContext.request.contextPath}/troubleshooting"
+                  data-ui-draft="auto"
+                  data-ui-draft-id="troubleshooting:new"
+                  data-ui-draft-success-views="list,view"
                   data-ui-dirty-guard="auto"
                   data-ui-submit-lock="auto">
                 <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>

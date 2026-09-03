@@ -7,7 +7,7 @@ import java.util.Objects;
 public record GlobalSearchOutcome(
         List<GlobalSearchResult> results,
         List<String> unavailableCategories) {
-    private static final int SOURCE_COUNT = 5;
+    private static final int SOURCE_COUNT = 6;
 
     public GlobalSearchOutcome {
         results = List.copyOf(Objects.requireNonNull(results, "results"));
