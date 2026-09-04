@@ -7,16 +7,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class JspcJava22BuildContractTest {
+class JspcJava25BuildContractTest {
     private static final Path BUILD_FILE = Path.of("build.gradle");
-    private static final Path JSPC_BUILD_FILE = Path.of("gradle/jspc-java22.gradle");
+    private static final Path JSPC_BUILD_FILE = Path.of("gradle/jspc-java25.gradle");
 
     @Test
-    void checkCompilesGeneratedJspSourcesWithTheJava22Toolchain() throws Exception {
+    void checkCompilesGeneratedJspSourcesWithTheJava25Toolchain() throws Exception {
         String build = Files.readString(BUILD_FILE);
         assertTrue(
-                build.contains("apply from: 'gradle/jspc-java22.gradle'"),
-                "The Java 22 JspC verification must be part of the Gradle build");
+                build.contains("apply from: 'gradle/jspc-java25.gradle'"),
+                "The Java 25 JspC verification must be part of the Gradle build");
 
         assertTrue(Files.isRegularFile(JSPC_BUILD_FILE),
                 "Missing build-scoped JspC verification script");
@@ -38,7 +38,7 @@ class JspcJava22BuildContractTest {
         assertTrue(jspcBuild.contains(
                 "JspC validation requires frog2JspcCatalinaHome or"));
         assertTrue(jspcBuild.contains("implementationVersion != expectedJasperVersion.get()"));
-        assertTrue(jspcBuild.contains("tasks.register('compileJspJava22', JavaCompile)"));
+        assertTrue(jspcBuild.contains("tasks.register('compileJspJava25', JavaCompile)"));
         assertTrue(jspcBuild.contains("reproducibleSourceTimestamp = 315532800000L"));
         assertTrue(jspcBuild.contains("setLastModified(reproducibleSourceTimestamp)"));
         assertTrue(jspcBuild.contains("include '**/*.jsp'"));
@@ -46,7 +46,7 @@ class JspcJava22BuildContractTest {
         assertTrue(jspcBuild.contains("javaToolchains.compilerFor"));
         assertTrue(jspcBuild.contains("options.release = 22"));
         assertTrue(jspcBuild.contains("tasks.named('check')"));
-        assertTrue(jspcBuild.contains("dependsOn tasks.named('jspcJava22')"));
+        assertTrue(jspcBuild.contains("dependsOn tasks.named('jspcJava25')"));
         assertTrue(jspcBuild.contains("tasks.register('normalizeJspSources')"));
         assertTrue(jspcBuild.contains("dependsOn normalizeJspSources"));
         assertTrue(jspcBuild.contains("Cannot normalize TLD dependency"));

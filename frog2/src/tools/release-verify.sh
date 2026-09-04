@@ -22,6 +22,17 @@ done
 
 cd "$PROJECT_ROOT"
 
+JAVA_SPEC_VERSION="$(java -XshowSettings:properties -version 2>&1 \
+    | sed -n 's/^[[:space:]]*java.specification.version = //p' \
+    | head -n 1)"
+if [ "$JAVA_SPEC_VERSION" != 25 ]; then
+    printf 'Release verification requires Java 25; found %s.\n' \
+        "${JAVA_SPEC_VERSION:-unknown}" >&2
+    exit 2
+fi
+GRADLE_OPTS="${GRADLE_OPTS:+$GRADLE_OPTS }--enable-native-access=ALL-UNNAMED"
+export GRADLE_OPTS
+
 for command_name in git sha256sum mktemp; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
         printf 'Required command is unavailable: %s\n' "$command_name" >&2
@@ -42,6 +53,13 @@ SCHEMA_CONFIG="${FROG2_SCHEMA_AUDIT_DB_CONFIG:-}"
 if [ -z "$SCHEMA_CONFIG" ] || [ ! -f "$SCHEMA_CONFIG" ]; then
     printf '%s\n' "FROG2_SCHEMA_AUDIT_DB_CONFIG must identify the reviewed read-only audit configuration." >&2
     exit 2
+fi
+
+LEDGER_STATUS=not-required
+if [ "${FROG2_MIGRATION_LEDGER_REQUIRED:-}" = yes ]; then
+    FROG2_MIGRATION_DB_CONFIG="$SCHEMA_CONFIG" \
+        ./gradlew --offline --no-daemon migrationLedgerStatus
+    LEDGER_STATUS=passed
 fi
 
 if [ -z "${FROG2_JSPC_CATALINA_HOME:-}" ] \
@@ -87,6 +105,7 @@ MANIFEST="build/release/frog2-release-manifest.txt"
     printf 'war_size=%s\n' "$(stat -c '%s' build/libs/frog2.war)"
     printf 'verified_at_utc=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     printf 'schema_audit=passed\n'
+    printf 'migration_ledger=%s\n' "$LEDGER_STATUS"
     printf 'clean_check_runs=2\n'
 } > "$MANIFEST"
 chmod 0600 "$MANIFEST"

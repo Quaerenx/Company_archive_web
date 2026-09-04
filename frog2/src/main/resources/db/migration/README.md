@@ -1,6 +1,6 @@
 # Frog2 database migrations
 
-These SQL files are version-controlled migration artifacts only. The application does not discover or execute them at startup or during HTTP requests.
+These SQL files are version-controlled migration artifacts only. The application does not discover or execute them at startup or during HTTP requests. The explicit migration-ledger CLI verifies and records evidence but never executes migration SQL.
 
 Approved SQL content is pinned by `manifest.sha256`. The unit-test inventory
 must pass before a migration review. Application source excludes `db/**` from
@@ -35,6 +35,12 @@ Active schema contracts:
 - `V20260903_11__add_customer_assignee_user_ids.sql`: nullable stable user IDs
   for primary and secondary customer assignees. Unique legacy display names
   are backfilled; ambiguous or unmatched names remain NULL for review.
+- `V20260904_12__create_schema_migration_ledger.sql`: durable database ledger
+  for version, filename and manifest checksum evidence. It is written only by
+  the separately invoked approval-gated ledger command.
+- `V20260904_13__create_customer_identity.sql`: additive immutable UUID mapping
+  for customer names across production, staging and development. Existing
+  business tables and URLs remain compatible during this first phase.
 
 At startup the application performs a read-only metadata readiness check for
 the active schema contracts. It never executes migration SQL. Required

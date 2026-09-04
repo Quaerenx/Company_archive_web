@@ -37,7 +37,7 @@ def jspcGradleAntLibraries = files(providers.provider {
 
 def verifyJspcEnvironment = tasks.register('verifyJspcEnvironment') {
     group = 'verification'
-    description = 'Verifies the read-only Tomcat and Java 22 JspC toolchain inputs.'
+    description = 'Verifies the read-only Tomcat and Java 25 JspC toolchain inputs.'
     inputs.property('catalinaHome', jspcCatalinaHome)
     inputs.property('expectedJasperVersion', expectedJasperVersion)
     doLast {
@@ -115,7 +115,7 @@ def generateJspSources = tasks.register('generateJspSources', JavaExec) {
     description = 'Generates servlet Java sources from every JSP without ECJ compilation.'
     dependsOn prepareJspcWebapp, verifyJspcEnvironment
     javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(25)
     }
     classpath = jspcTomcatLibraries + jspcGradleAntLibraries
     mainClass = 'org.apache.jasper.JspC'
@@ -189,15 +189,15 @@ def normalizeJspSources = tasks.register('normalizeJspSources') {
     }
 }
 
-def compileJspJava22 = tasks.register('compileJspJava22', JavaCompile) {
+def compileJspJava25 = tasks.register('compileJspJava25', JavaCompile) {
     group = 'verification'
-    description = 'Compiles generated JSP servlet sources with javac --release 22.'
+    description = 'Compiles generated JSP servlet sources on Java 25 with Java 22-compatible bytecode.'
     dependsOn normalizeJspSources
     source jspcGeneratedSources
     destinationDirectory = jspcCompiledClasses
     classpath = jspcTomcatLibraries + sourceSets.main.runtimeClasspath
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(25)
     }
     options.encoding = 'UTF-8'
     options.release = 22
@@ -232,7 +232,7 @@ def mergeJspWebXml = tasks.register('mergeJspWebXml') {
 }
 
 tasks.named('war') {
-    dependsOn compileJspJava22, mergeJspWebXml
+    dependsOn compileJspJava25, mergeJspWebXml
     webXml = jspcMergedWebXml.get().asFile
     File sourceDeploymentDescriptor = layout.projectDirectory
             .file('src/main/webapp/WEB-INF/web.xml').asFile
@@ -247,10 +247,10 @@ tasks.named('war') {
     }
 }
 
-tasks.register('jspcJava22') {
+tasks.register('jspcJava25') {
     group = 'verification'
-    description = 'Generates all JSP servlet sources and compiles them with Java 22.'
-    dependsOn compileJspJava22
+    description = 'Generates all JSP servlet sources and compiles them with Java 25.'
+    dependsOn compileJspJava25
     doLast {
         int sourceCount = fileTree(jspcGeneratedSources) {
             include '**/*.java'
@@ -260,15 +260,15 @@ tasks.register('jspcJava22') {
         }.files.size()
         if (sourceCount == 0 || classCount == 0) {
             throw new GradleException(
-                    "JspC Java 22 produced no output: sources=${sourceCount}, classes=${classCount}")
+                    "JspC Java 25 produced no output: sources=${sourceCount}, classes=${classCount}")
         }
         logger.lifecycle(
-                'JspC Java 22 verification completed: {} sources, {} classes',
+                'JspC Java 25 verification completed: {} sources, {} classes',
                 sourceCount,
                 classCount)
     }
 }
 
 tasks.named('check') {
-    dependsOn tasks.named('jspcJava22')
+    dependsOn tasks.named('jspcJava25')
 }

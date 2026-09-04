@@ -1,0 +1,40 @@
+name: Frog2 isolated write E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frog2-isolated-write-e2e
+  cancel-in-progress: false
+
+jobs:
+  isolated-write-e2e:
+    name: Isolated authenticated write E2E
+    if: github.ref == 'refs/heads/develop'
+    runs-on: [self-hosted, linux, x64, frog2-isolated-e2e]
+    environment: frog2-isolated-e2e
+    timeout-minutes: 30
+    env:
+      GRADLE_OPTS: --enable-native-access=ALL-UNNAMED
+      FROG2_E2E_WRITE_ENABLED: "true"
+      FROG2_E2E_BASE_URL: http://127.0.0.1:19081/frog2/
+      FROG2_E2E_DB_CONFIG: /opt/frog2-dev/e2e/config/db.properties
+      FROG2_E2E_SHARED_DB_CONFIG: /opt/frog2-dev/config/db.properties
+      FROG2_E2E_CATALINA_HOME: /opt/frog2-dev/e2e/toolchains/apache-tomcat-10.1.59
+      FROG2_JSPC_CATALINA_HOME: /opt/frog2-dev/e2e/toolchains/apache-tomcat-10.1.59
+      FROG2_JSPC_JASPER_VERSION: "10.1.59"
+    steps:
+      - name: Check out reviewed develop source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Run isolated write gate
+        run: ./src/tools/isolated-write-e2e.sh

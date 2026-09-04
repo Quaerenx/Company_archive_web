@@ -132,6 +132,14 @@ public final class DatabaseSchemaReadiness {
                     "vertica_customer_detail",
                     "sub_manager_user_id"),
             optional(
+                    "V20260904_13",
+                    "customer_identity",
+                    "customer_id"),
+            optional(
+                    "V20260904_13",
+                    "customer_identity",
+                    "customer_name"),
+            optional(
                     "LEGACY_ADD_DEPARTMENT_COLUMN",
                     "company_users",
                     "department"));
@@ -178,6 +186,9 @@ public final class DatabaseSchemaReadiness {
                     customerAssignmentCapability =
                             CustomerAssignmentSupport.capability(
                                     connection, capabilities);
+            CustomerIdentitySupport.Capability customerIdentityCapability =
+                    CustomerIdentitySupport.capability(
+                            connection, capabilities);
             List<Requirement> missing = REQUIREMENTS.stream()
                     .filter(requirement -> !capabilities.columnExists(
                             connection,
@@ -190,12 +201,18 @@ public final class DatabaseSchemaReadiness {
                                     requirement, customerAuditCapability)
                             || isIncompleteCustomerAssignmentRequirement(
                                     requirement,
-                                    customerAssignmentCapability))
+                                    customerAssignmentCapability)
+                            || isIncompleteCustomerIdentityRequirement(
+                                    requirement,
+                                    customerIdentityCapability))
                     .map(requirement -> isIncompleteCustomerAuditRequirement(
                                     requirement, customerAuditCapability)
                             || isIncompleteCustomerAssignmentRequirement(
                                     requirement,
                                     customerAssignmentCapability)
+                            || isIncompleteCustomerIdentityRequirement(
+                                    requirement,
+                                    customerIdentityCapability)
                             ? new Requirement(
                                     requirement.migrationVersion(),
                                     requirement.tableName(),
@@ -209,7 +226,10 @@ public final class DatabaseSchemaReadiness {
                                     requirement, customerAuditCapability)
                             && !isIncompleteCustomerAssignmentRequirement(
                                     requirement,
-                                    customerAssignmentCapability))
+                                    customerAssignmentCapability)
+                            && !isIncompleteCustomerIdentityRequirement(
+                                    requirement,
+                                    customerIdentityCapability))
                     .toList();
             return new Report(missingRequired, missingOptional);
         } catch (SQLException exception) {
@@ -230,6 +250,13 @@ public final class DatabaseSchemaReadiness {
             CustomerAssignmentSupport.Capability capability) {
         return capability == CustomerAssignmentSupport.Capability.PARTIAL
                 && "V20260903_11".equals(requirement.migrationVersion());
+    }
+
+    private static boolean isIncompleteCustomerIdentityRequirement(
+            Requirement requirement,
+            CustomerIdentitySupport.Capability capability) {
+        return capability == CustomerIdentitySupport.Capability.PARTIAL
+                && "V20260904_13".equals(requirement.migrationVersion());
     }
 
     private static Requirement required(

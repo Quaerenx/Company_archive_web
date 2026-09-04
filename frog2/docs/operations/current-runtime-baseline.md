@@ -12,6 +12,11 @@ contains no credentials and does not authorize a production change.
 | WAR | `/opt/tomcat-dev/webapps/frog2.war` | `/opt/tomcat-prod-base/webapps/frog2.war` |
 | Deployment backup root | `/opt/tomcat-dev/backups` | `/opt/tomcat-prod-base/backups` |
 
+Build and CI verification now run on Java 25 with Gradle 9.1.0 while emitting
+Java 22-compatible bytecode. The currently running Tomcat JVM is not changed by
+that build transition. Follow `java25-transition.md` for the separately approved
+development-then-production runtime rollout.
+
 Runtime database credentials remain outside the WAR and are selected through
 `-Dfrog2.config`. File-repository and customer-history data also remain in
 external, environment-specific storage. A WAR replacement must never overwrite

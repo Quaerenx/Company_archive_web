@@ -25,7 +25,7 @@ def sha256 = { File input ->
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -62,6 +62,7 @@ dependencyLocking {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    // Build and test on JDK 25 while preserving a Java 22 runtime rollback path.
     options.release = 22
 }
 
@@ -179,11 +180,29 @@ tasks.register('customerSwapMemoryMigration', Test) {
     }
 }
 
+tasks.register('migrationLedgerStatus', JavaExec) {
+    description = 'Verifies active migration checksums against the database ledger.'
+    group = 'verification'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.company.migration.MigrationLedgerCli'
+    args 'status'
+}
+
+tasks.register('migrationLedgerRecord', JavaExec) {
+    description = 'Records one separately applied migration in the database ledger.'
+    group = 'verification'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.company.migration.MigrationLedgerCli'
+    args 'record'
+}
+
 tasks.named('processResources') {
     exclude 'db/**'
 }
 
-apply from: 'gradle/jspc-java22.gradle'
+apply from: 'gradle/jspc-java25.gradle'
 
 def verticaDriver = layout.projectDirectory.file('libs/vertica-jdbc-23.3.0-0.jar')
 def verticaDriverSha256 = 'f3fdb4eae26cebe05fba4c2427ea7b3846dfa73177f5b3ad2bb020ea28721d43'

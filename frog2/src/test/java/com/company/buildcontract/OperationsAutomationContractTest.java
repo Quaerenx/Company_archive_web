@@ -25,6 +25,17 @@ class OperationsAutomationContractTest {
     }
 
     @Test
+    void releaseVerificationRequiresJava25AndCanEnforceTheLedger()
+            throws Exception {
+        String script = Files.readString(Path.of(
+                "src/tools/release-verify.sh"));
+
+        assertTrue(script.contains("Release verification requires Java 25"));
+        assertTrue(script.contains("FROG2_MIGRATION_LEDGER_REQUIRED"));
+        assertTrue(script.contains("migrationLedgerStatus"));
+    }
+
+    @Test
     void backupPruningIsDryRunAndApprovalGatedByDefault()
             throws Exception {
         String script = Files.readString(Path.of(
@@ -56,6 +67,18 @@ class OperationsAutomationContractTest {
         assertTrue(build.contains("currentHash != deployedHash"));
         assertTrue(build.contains(
                 "tasks.named('e2eWrite') {\n    dependsOn verifyIsolatedE2eDeployment"));
+    }
+
+    @Test
+    void isolatedWriteRunnerUsesAnEphemeralLoopbackTomcat() throws Exception {
+        String script = Files.readString(Path.of(
+                "src/tools/isolated-write-e2e.sh"));
+
+        assertTrue(script.contains("http://127.0.0.1:19081/frog2/"));
+        assertTrue(script.contains("mktemp -d \"$RUNS_ROOT/frog2-ci.XXXXXX\""));
+        assertTrue(script.contains("-Dfrog2.env=staging"));
+        assertTrue(script.contains("-Dfrog2.readOnly=false"));
+        assertTrue(script.contains("./gradlew --no-daemon e2eWrite"));
     }
 
     @Test

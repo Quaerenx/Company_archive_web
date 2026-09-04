@@ -17,6 +17,8 @@ class DatabaseSchemaReadinessTest {
             "vertica_customer_detail.deleted_by",
             "vertica_customer_detail.main_manager_user_id",
             "vertica_customer_detail.sub_manager_user_id",
+            "customer_identity.customer_id",
+            "customer_identity.customer_name",
             "company_users.department");
     private static final Set<String> BASE_REQUIRED_COLUMNS = Set.of(
             "user_vm_hosts.ip",
@@ -196,6 +198,30 @@ class DatabaseSchemaReadinessTest {
                         .toList());
         assertTrue(report.missingOptionalRequirements().stream()
                 .noneMatch(requirement -> "V20260903_11".equals(
+                        requirement.migrationVersion())));
+        assertTrue(jdbc.statements.isEmpty());
+    }
+
+    @Test
+    void partiallyAppliedCustomerIdentityMigrationBlocksReadiness() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        java.util.Set<String> available = new java.util.HashSet<>(
+                ALL_REQUIRED_COLUMNS);
+        available.add("customer_identity.customer_id");
+        jdbc.availableColumns = Set.copyOf(available);
+
+        DatabaseSchemaReadiness.Report report =
+                DatabaseSchemaReadiness.inspect(jdbc::open);
+
+        assertFalse(report.ready());
+        assertEquals(List.of("customer_name"),
+                report.missingRequirements().stream()
+                        .filter(requirement -> "V20260904_13".equals(
+                                requirement.migrationVersion()))
+                        .map(DatabaseSchemaReadiness.Requirement::columnName)
+                        .toList());
+        assertTrue(report.missingOptionalRequirements().stream()
+                .noneMatch(requirement -> "V20260904_13".equals(
                         requirement.migrationVersion())));
         assertTrue(jdbc.statements.isEmpty());
     }

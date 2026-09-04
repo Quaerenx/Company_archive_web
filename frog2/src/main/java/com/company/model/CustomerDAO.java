@@ -281,20 +281,61 @@ public class CustomerDAO {
     // 고객사 상세 정보 조회 (상세 테이블 기준)
     public CustomerDTO getCustomerByName(String customerName) {
         try (Connection connection = connectionProvider.getConnection()) {
+            CustomerIdentitySupport.Capability identityCapability =
+                    customerIdentityCapability(connection);
             String sql = "SELECT " + CUSTOMER_COLUMNS
                     + " FROM vertica_customer_detail d "
                     + "WHERE d.customer_name = ? AND d.is_deleted = "
                     + ACTIVE_FLAG;
+            CustomerDTO customer;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, customerName);
                 try (ResultSet resultSet = statement.executeQuery()) {
-                    return resultSet.next()
-                            ? CustomerFieldContract.read(resultSet)
-                            : null;
+                    if (!resultSet.next()) {
+                        return null;
+                    }
+                    customer = CustomerFieldContract.read(resultSet);
                 }
             }
+            if (identityCapability
+                    == CustomerIdentitySupport.Capability.COMPLETE) {
+                customer.setCustomerId(CustomerIdentitySupport.findId(
+                        connection, customer.getCustomerName()));
+            }
+            return customer;
         } catch (SQLException  e) {
             throw DataAccessException.from(e);
+        }
+    }
+
+    public CustomerDTO getCustomerById(String customerId) {
+        String normalizedId = normalizeCustomerId(customerId);
+        try (Connection connection = connectionProvider.getConnection()) {
+            CustomerIdentitySupport.Capability capability =
+                    customerIdentityCapability(connection);
+            if (capability == CustomerIdentitySupport.Capability.NONE) {
+                return null;
+            }
+            String sql = "SELECT " + CUSTOMER_COLUMNS
+                    + " FROM vertica_customer_detail d "
+                    + "JOIN customer_identity identity "
+                    + "ON identity.customer_name = d.customer_name "
+                    + "WHERE CAST(identity.customer_id AS VARCHAR(36)) = ? "
+                    + "AND d.is_deleted = " + ACTIVE_FLAG;
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, normalizedId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        return null;
+                    }
+                    CustomerDTO customer = CustomerFieldContract.read(resultSet);
+                    customer.setCustomerId(normalizedId);
+                    return customer;
+                }
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load customer by immutable ID", exception);
         }
     }
 
@@ -353,46 +394,99 @@ public class CustomerDAO {
 
     public boolean addCustomer(CustomerDTO customer, String actorUserId) {
         try (Connection connection = connectionProvider.getConnection()) {
-            boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
-                    connection, schemaCapabilities, actorUserId);
-            CustomerAssignmentSupport.Capability assignmentCapability =
-                    customerAssignmentCapability(connection);
-            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
-                    assignmentCapability
-                            == CustomerAssignmentSupport.Capability.COMPLETE
-                    ? CustomerAssignmentSupport.resolveUserIds(
-                            connection,
-                            customer.getManagerName(),
-                            customer.getSubManagerName())
-                    : null;
-            String columns = CustomerFieldContract.insertColumns()
-                    + ", is_deleted";
-            String values = CustomerFieldContract.insertPlaceholders() + ", "
-                    + ACTIVE_FLAG;
-            if (assignmentUserIds != null) {
-                columns += ", main_manager_user_id, sub_manager_user_id";
-                values += ", ?, ?";
+            CustomerIdentitySupport.Capability identityCapability =
+                    customerIdentityCapability(connection);
+            if (identityCapability == CustomerIdentitySupport.Capability.NONE) {
+                return insertCustomer(connection, customer, actorUserId);
             }
-            if (auditAvailable) {
-                columns += ", updated_at, updated_by";
-                values += ", CURRENT_TIMESTAMP, ?";
-            }
-            String sql = "INSERT INTO vertica_customer_detail (" + columns
-                    + ") VALUES (" + values + ")";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                int nextParameter = CustomerFieldContract.bindInsertFields(
-                        statement, 1, customer);
-                if (assignmentUserIds != null) {
-                    nextParameter = CustomerAssignmentSupport.bindUserIds(
-                            statement, nextParameter, assignmentUserIds);
+
+            boolean originalAutoCommit = connection.getAutoCommit();
+            try {
+                if (originalAutoCommit) {
+                    connection.setAutoCommit(false);
                 }
-                if (auditAvailable) {
-                    statement.setString(nextParameter, actorUserId.trim());
+                customer.setCustomerId(CustomerIdentitySupport.ensureId(
+                        connection, customer.getCustomerName()));
+                boolean inserted = insertCustomer(
+                        connection, customer, actorUserId);
+                if (!inserted) {
+                    connection.rollback();
+                    return false;
                 }
-                return statement.executeUpdate() > 0;
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                if (originalAutoCommit) {
+                    connection.setAutoCommit(true);
+                }
             }
         } catch (SQLException  e) {
             throw DataAccessException.from(e);
+        }
+    }
+
+    private boolean insertCustomer(
+            Connection connection,
+            CustomerDTO customer,
+            String actorUserId) throws SQLException {
+        boolean auditAvailable = CustomerAuditSupport.shouldAuditWrite(
+                connection, schemaCapabilities, actorUserId);
+        CustomerAssignmentSupport.Capability assignmentCapability =
+                customerAssignmentCapability(connection);
+        CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
+                assignmentCapability == CustomerAssignmentSupport.Capability.COMPLETE
+                ? CustomerAssignmentSupport.resolveUserIds(
+                        connection,
+                        customer.getManagerName(),
+                        customer.getSubManagerName())
+                : null;
+        String columns = CustomerFieldContract.insertColumns() + ", is_deleted";
+        String values = CustomerFieldContract.insertPlaceholders()
+                + ", " + ACTIVE_FLAG;
+        if (assignmentUserIds != null) {
+            columns += ", main_manager_user_id, sub_manager_user_id";
+            values += ", ?, ?";
+        }
+        if (auditAvailable) {
+            columns += ", updated_at, updated_by";
+            values += ", CURRENT_TIMESTAMP, ?";
+        }
+        String sql = "INSERT INTO vertica_customer_detail (" + columns
+                + ") VALUES (" + values + ")";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int nextParameter = CustomerFieldContract.bindInsertFields(
+                    statement, 1, customer);
+            if (assignmentUserIds != null) {
+                nextParameter = CustomerAssignmentSupport.bindUserIds(
+                        statement, nextParameter, assignmentUserIds);
+            }
+            if (auditAvailable) {
+                statement.setString(nextParameter, actorUserId.trim());
+            }
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    private CustomerIdentitySupport.Capability customerIdentityCapability(
+            Connection connection) throws SQLException {
+        CustomerIdentitySupport.Capability capability =
+                CustomerIdentitySupport.capability(
+                        connection, schemaCapabilities);
+        CustomerIdentitySupport.requireCompatible(capability);
+        return capability;
+    }
+
+    private static String normalizeCustomerId(String customerId) {
+        if (customerId == null || customerId.isBlank()) {
+            throw new IllegalArgumentException("Customer ID is required");
+        }
+        try {
+            return java.util.UUID.fromString(customerId.strip()).toString();
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Customer ID must be a UUID", exception);
         }
     }
 

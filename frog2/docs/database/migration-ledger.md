@@ -1,7 +1,7 @@
 # Archive migration manifest and deployment ledger
 
-Last updated: 2026-09-01
-Status: repository procedure only; execution records remain external and no ledger table exists
+Last updated: 2026-09-04
+Status: checksum reconciliation and database ledger tooling implemented; database installation remains separately approved
 
 ## Immutable migration rule
 
@@ -14,9 +14,36 @@ Approved SQL files are immutable. Their SHA-256 values live beside them in:
 
 The `legacy` directory is historical only. Neither application startup nor an external migration runner may include it as an active location.
 
-## External deployment ledger template
+## Durable database ledger
 
-Keep the actual ledger in the approved deployment record system, not in application source and not in the shared database unless a DBA separately approves a ledger table.
+`V20260904_12` creates `frog2_schema_migrations`. The application never creates
+or updates this table during startup or HTTP requests. Operators use the
+explicit Gradle commands below only after the corresponding DDL has been
+separately approved and applied.
+
+```sh
+FROG2_MIGRATION_DB_CONFIG=/absolute/path/db.properties \
+    ./gradlew --no-daemon migrationLedgerStatus
+
+FROG2_MIGRATION_DB_CONFIG=/absolute/path/db.properties \
+FROG2_MIGRATION_LEDGER_RECORD_APPROVED=yes \
+FROG2_MIGRATION_VERSION=V20260904_12 \
+FROG2_MIGRATION_DECISION=applied \
+FROG2_MIGRATION_APPROVED_BY='change approver' \
+FROG2_MIGRATION_EXECUTED_BY='database operator' \
+FROG2_MIGRATION_CHANGE_REFERENCE='change-ticket' \
+FROG2_MIGRATION_BACKUP_REFERENCE='snapshot-reference' \
+    ./gradlew --no-daemon migrationLedgerRecord
+```
+
+Neither command executes a migration SQL file. `status` is read-only and fails
+for a missing/partial ledger, unknown versions, changed checksums, invalid
+decisions, or pending active migrations. `record` inserts exactly one pinned
+version and requires explicit evidence fields.
+
+Keep the complete approval and rollback narrative in the approved external
+deployment record. After a DBA separately approves and installs the ledger
+table, the database stores this machine-verifiable subset:
 
 | Field | Required value |
 | --- | --- |
@@ -24,15 +51,12 @@ Keep the actual ledger in the approved deployment record system, not in applicat
 | migration version | for example `V20260731_06` |
 | filename | exact versioned SQL filename |
 | SHA-256 | value from the active manifest |
-| decision | applied, baselined, skipped, failed, rolled-forward |
+| decision | `applied` or `baselined` |
 | approved by | named change approver |
 | executed by | named DBA/operator |
 | applied at | timestamp with timezone |
 | ticket/change record | durable external reference |
-| preflight result | aggregate-only result; no customer data |
 | backup/snapshot | recovery reference and owner |
-| post-check result | readiness, reconciliation and smoke outcome |
-| rollback/forward repair | chosen recovery action |
 
 ## Required gates
 

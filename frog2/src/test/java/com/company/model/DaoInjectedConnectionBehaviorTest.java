@@ -71,6 +71,26 @@ class DaoInjectedConnectionBehaviorTest {
     }
 
     @Test
+    void customerCanBeLoadedByImmutableIdAfterIdentityMigration() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of(
+                "customer_identity.customer_id",
+                "customer_identity.customer_name");
+        jdbc.enqueue(customerRow("Acme"));
+        CustomerDAO dao = new CustomerDAO(jdbc::open);
+        String customerId = "2d90df87-baca-4ae5-a0c0-d2d135696eb2";
+
+        CustomerDTO customer = dao.getCustomerById(customerId);
+
+        assertEquals(customerId, customer.getCustomerId());
+        assertEquals("Acme", customer.getCustomerName());
+        assertTrue(jdbc.statements.getFirst().sql.contains(
+                "JOIN customer_identity identity"));
+        assertEquals(customerId,
+                jdbc.statements.getFirst().parameters.get(1));
+    }
+
+    @Test
     void assignedMaintenanceCustomersAreFilteredInTheDatabase() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(customerRow("Acme"));

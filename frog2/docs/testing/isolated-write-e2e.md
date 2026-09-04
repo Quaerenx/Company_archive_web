@@ -1,8 +1,9 @@
 # Archive isolated write E2E gate
 
 Date: 2026-09-03
-Status: normal CI is automated; isolated write preflight and maintenance
-scenario are prepared but require a dedicated isolated database and runner
+Status: normal CI is automated; the isolated write scenario is connected to a
+manual, approval-gated workflow and requires a dedicated isolated database and
+runner
 
 ## Mandatory isolation inputs
 
@@ -57,8 +58,11 @@ No real write E2E ran during this work because no approved isolated database/sna
 runner for pull requests and pushes to `develop`. It downloads the reviewed
 Tomcat/Jasper 10.1.59 toolchain and verifies the published SHA-512 before JspC.
 
-The workflow deliberately does not send pull-request code to an internal
-self-hosted runner or expose a writable staging database. Enable automated
-`e2eWrite` only after a disposable isolated Vertica database and a dedicated
-runner identity have been provisioned. Reusing the development or production
-database is not an acceptable substitute.
+The normal workflow deliberately does not send pull-request code to an internal
+self-hosted runner or expose a writable staging database. The separate
+`isolated-write-e2e.yml` workflow runs only by manual dispatch from `develop`,
+behind the `frog2-isolated-e2e` GitHub environment and runner label. Its runner
+creates an ephemeral Tomcat on loopback port 19081 and removes that runtime at
+the end of the job. The isolated Vertica database and its config remain
+pre-provisioned infrastructure. Reusing the development or production database
+is not an acceptable substitute.

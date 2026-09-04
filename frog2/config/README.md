@@ -39,12 +39,14 @@ or detailed diagnostics.
 
 ## Reproducible verification
 
-The Java 22 JSP compiler uses an explicit, read-only Tomcat toolchain. Point
+The Java 25 JSP compiler uses an explicit, read-only Tomcat toolchain and emits
+Java 22-compatible bytecode during the runtime transition. Point
 the build at an extracted Apache Tomcat 10.1.59 directory; do not reuse
 `CATALINA_HOME`, which may identify a running production instance.
 
 ```sh
 export FROG2_JSPC_CATALINA_HOME=/absolute/path/to/apache-tomcat-10.1.59
 export FROG2_JSPC_JASPER_VERSION=10.1.59
+export GRADLE_OPTS=--enable-native-access=ALL-UNNAMED
 ./gradlew --no-daemon clean check
 ```

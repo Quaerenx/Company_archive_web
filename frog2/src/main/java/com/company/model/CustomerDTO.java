@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 public class CustomerDTO {
     private static final Pattern LICENSE_PATTERN = Pattern.compile(
             "^\\s*([0-9]+(?:\\.[0-9]+)?)\\s*([\\p{L}]+)?\\s*$");
+    private String customerId;
     private String customerName;
     private String firstIntroductionYear;
     private String dbName;
@@ -31,6 +32,14 @@ public class CustomerDTO {
     public CustomerDTO() {}
 
     // 게터와 세터 메소드
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+
     public String getCustomerName() {
         return customerName;
     }

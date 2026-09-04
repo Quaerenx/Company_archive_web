@@ -13,12 +13,19 @@ runs two offline `clean check` passes and rejects non-reproducible WAR output.
 export FROG2_JSPC_CATALINA_HOME=/opt/tomcat-dev-home/current
 export FROG2_JSPC_JASPER_VERSION=10.1.59
 export FROG2_SCHEMA_AUDIT_DB_CONFIG=/opt/frog2-dev/config/db.properties
+export JAVA_HOME=/opt/jdk-25
+export PATH="$JAVA_HOME/bin:$PATH"
 src/tools/release-verify.sh
 ```
 
 `--allow-dirty` is available only for an explicitly reviewed development
 deployment. The generated manifest records that state, and production deployment
 always rejects it.
+
+After `V20260904_12` is installed and all active migrations are baselined or
+recorded, set `FROG2_MIGRATION_LEDGER_REQUIRED=yes`. Release verification then
+fails if the database ledger is missing, pending, or differs from the pinned
+checksums.
 
 ## 2. Deploy to development
 
