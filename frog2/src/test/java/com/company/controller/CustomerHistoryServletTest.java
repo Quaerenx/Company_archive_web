@@ -14,6 +14,8 @@ import com.company.customerhistory.CustomerHistoryStatus;
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.UserDTO;
+import com.company.testsupport.StubCustomerAssignmentDAO;
+import com.company.util.BusinessDate;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -66,8 +68,7 @@ class CustomerHistoryServletTest {
                 draft("다른 고객사", "노드 증설"),
                 "owner-2",
                 "다른 담당자");
-        CustomerHistoryServlet servlet = new CustomerHistoryServlet(
-                repository, new StubCustomerDAO());
+        CustomerHistoryServlet servlet = servlet(repository);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("customerName", " 테크핀 레이팅스 ");
         request.parameters.put("category", "incident");
@@ -103,7 +104,10 @@ class CustomerHistoryServletTest {
                 "owner-1",
                 "같은 이름");
         CustomerHistoryServlet servlet = new CustomerHistoryServlet(
-                repository, new StubCustomerDAO());
+                repository,
+                new StubCustomerDAO(),
+                StubCustomerAssignmentDAO.assignedTo(),
+                BusinessDate.systemClock());
         RequestFixture request = new RequestFixture(
                 new UserDTO("attacker-1", "", "같은 이름", "QA"));
         request.parameters.put("view", "edit");
@@ -126,8 +130,7 @@ class CustomerHistoryServletTest {
                 draft("테크핀 레이팅스", "개발 서버 복구"),
                 "owner-1",
                 "담당자");
-        CustomerHistoryServlet servlet = new CustomerHistoryServlet(
-                repository, new StubCustomerDAO());
+        CustomerHistoryServlet servlet = servlet(repository);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "edit");
         request.parameters.put("id", record.getId());
@@ -186,9 +189,8 @@ class CustomerHistoryServletTest {
                 draft("테크핀 레이팅스", "개발 서버 복구"),
                 "owner-1",
                 "담당자");
-        CustomerHistoryServlet servlet = new CustomerHistoryServlet(
-                repository, new StubCustomerDAO());
-        RequestFixture request = new RequestFixture(user("owner-1"));
+        CustomerHistoryServlet servlet = servlet(repository);
+        RequestFixture request = new RequestFixture(user("assignee-2"));
         request.parameters.put("action", "update");
         request.parameters.put("id", record.getId());
         putDraft(request, "개발 서버 복구 완료");
@@ -230,6 +232,7 @@ class CustomerHistoryServletTest {
                 new CustomerHistoryRepository(
                         temporaryDirectory.resolve("history")),
                 new StubCustomerDAO(),
+                StubCustomerAssignmentDAO.assignedTo("테크핀 레이팅스"),
                 utcClockAtSeoulMidnight);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "add");
@@ -241,9 +244,16 @@ class CustomerHistoryServletTest {
     }
 
     private CustomerHistoryServlet servlet(Path repositoryRoot) {
+        return servlet(new CustomerHistoryRepository(repositoryRoot));
+    }
+
+    private CustomerHistoryServlet servlet(
+            CustomerHistoryRepository repository) {
         return new CustomerHistoryServlet(
-                new CustomerHistoryRepository(repositoryRoot),
-                new StubCustomerDAO());
+                repository,
+                new StubCustomerDAO(),
+                StubCustomerAssignmentDAO.assignedTo("테크핀 레이팅스"),
+                BusinessDate.systemClock());
     }
 
     private static CustomerHistoryDraft draft(

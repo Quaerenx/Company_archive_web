@@ -3,8 +3,10 @@ package com.company.controller;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.PageResult;
 import com.company.model.TroubleshootingDAO;
@@ -27,22 +29,34 @@ public class TroubleshootingServlet extends HttpServlet {
             new TroubleshootingRequestMapper();
     private final TroubleshootingDAO troubleshootingDAO;
     private final CustomerDAO customerDAO;
+    private final CustomerAssignmentDAO customerAssignmentDAO;
 
     public TroubleshootingServlet() {
-        this(new TroubleshootingDAO(), new CustomerDAO());
+        this(new TroubleshootingDAO(), new CustomerDAO(),
+                new CustomerAssignmentDAO());
     }
 
     TroubleshootingServlet(TroubleshootingDAO troubleshootingDAO) {
-        this(troubleshootingDAO, new CustomerDAO());
+        this(troubleshootingDAO, new CustomerDAO(),
+                new CustomerAssignmentDAO());
     }
 
     TroubleshootingServlet(
             TroubleshootingDAO troubleshootingDAO,
             CustomerDAO customerDAO) {
+        this(troubleshootingDAO, customerDAO, new CustomerAssignmentDAO());
+    }
+
+    TroubleshootingServlet(
+            TroubleshootingDAO troubleshootingDAO,
+            CustomerDAO customerDAO,
+            CustomerAssignmentDAO customerAssignmentDAO) {
         this.troubleshootingDAO = Objects.requireNonNull(
                 troubleshootingDAO, "troubleshootingDAO");
         this.customerDAO = Objects.requireNonNull(
                 customerDAO, "customerDAO");
+        this.customerAssignmentDAO = Objects.requireNonNull(
+                customerAssignmentDAO, "customerAssignmentDAO");
     }
 
     @Override
@@ -87,6 +101,9 @@ public class TroubleshootingServlet extends HttpServlet {
                     includeContent ? "content" : "summary");
 
             request.setAttribute("troubleshootingList", page.items());
+            request.setAttribute(
+                    "canCreateTroubleshooting",
+                    !assignedCustomerNames(user).isEmpty());
             request.setAttribute("currentPage", page.page());
             request.setAttribute("pageSize", page.pageSize());
             request.setAttribute("totalPages", page.totalPages());
@@ -96,7 +113,7 @@ public class TroubleshootingServlet extends HttpServlet {
 
         } else if ("add".equals(viewType)) {
             // 등록 폼
-            List<CustomerDTO> customerList = customerDAO.getAllCustomers("", "ASC");
+            List<CustomerDTO> customerList = assignedCustomers(user);
             request.setAttribute("customerList", customerList);
             String requestedCustomer = request.getParameter("customerName");
             if (requestedCustomer != null && !requestedCustomer.isBlank()) {
@@ -127,7 +144,7 @@ public class TroubleshootingServlet extends HttpServlet {
                 request.setAttribute("troubleshooting", troubleshooting);
                 request.setAttribute(
                         "canManageTroubleshooting",
-                        isOwner(troubleshooting, user));
+                        canManageCustomer(user, troubleshooting.getCustomerName()));
                 request.setAttribute("viewType", "view");
                 request.getRequestDispatcher(
                         "/troubleshooting/troubleshooting_view.jsp").forward(request, response);
@@ -153,9 +170,8 @@ public class TroubleshootingServlet extends HttpServlet {
             TroubleshootingDTO troubleshooting =
                     troubleshootingDAO.getTroubleshootingById(id);
             if (troubleshooting != null) {
-                if (isOwner(troubleshooting, user)) {
-                    List<CustomerDTO> customerList =
-                            customerDAO.getAllCustomers("", "ASC");
+                if (canManageCustomer(user, troubleshooting.getCustomerName())) {
+                    List<CustomerDTO> customerList = assignedCustomers(user);
 
                     request.setAttribute("troubleshooting", troubleshooting);
                     request.setAttribute("customerList", customerList);
@@ -204,6 +220,11 @@ public class TroubleshootingServlet extends HttpServlet {
                 return;
             }
 
+            if (!canManageCustomer(user, troubleshooting.getCustomerName())) {
+                redirectForbidden(request, response, "등록");
+                return;
+            }
+
             boolean success =
                     troubleshootingDAO.addTroubleshooting(troubleshooting);
             FlashMessage.redirect(
@@ -226,9 +247,19 @@ public class TroubleshootingServlet extends HttpServlet {
             }
 
             int id = troubleshooting.getId();
+            TroubleshootingDTO existing =
+                    troubleshootingDAO.getTroubleshootingById(id);
+            if (existing == null
+                    || !canManageCustomer(
+                            user, existing.getCustomerName())
+                    || !canManageCustomer(
+                            user, troubleshooting.getCustomerName())) {
+                redirectForbidden(request, response, "수정");
+                return;
+            }
             boolean success =
-                    troubleshootingDAO.updateTroubleshootingForOwner(
-                            troubleshooting, user.getUserId());
+                    troubleshootingDAO.updateTroubleshootingForCustomer(
+                            troubleshooting, existing.getCustomerName());
             if (success) {
                 FlashMessage.redirect(
                         request,
@@ -255,9 +286,17 @@ public class TroubleshootingServlet extends HttpServlet {
                 return;
             }
 
+            TroubleshootingDTO existing =
+                    troubleshootingDAO.getTroubleshootingById(id);
+            if (existing == null
+                    || !canManageCustomer(
+                            user, existing.getCustomerName())) {
+                redirectForbidden(request, response, "삭제");
+                return;
+            }
             boolean success =
-                    troubleshootingDAO.deleteTroubleshootingForOwner(
-                            id, user.getUserId());
+                    troubleshootingDAO.deleteTroubleshootingForCustomer(
+                            id, existing.getCustomerName());
             FlashMessage.redirect(
                     request,
                     response,
@@ -272,13 +311,34 @@ public class TroubleshootingServlet extends HttpServlet {
         }
     }
 
-    private static boolean isOwner(
-            TroubleshootingDTO troubleshooting, UserDTO user) {
-        return troubleshooting != null
-                && user != null
-                && Objects.equals(
-                        troubleshooting.getCreatorUserId(),
-                        user.getUserId());
+    private List<CustomerDTO> assignedCustomers(UserDTO user) {
+        Set<String> customerNames = assignedCustomerNames(user);
+        return customerDAO.getAllCustomers("", "ASC").stream()
+                .filter(customer -> customerNames.contains(
+                        customer.getCustomerName()))
+                .toList();
+    }
+
+    private Set<String> assignedCustomerNames(UserDTO user) {
+        return customerAssignmentDAO.getCustomerNamesByAssignee(
+                user.getUserId(), user.getUserName());
+    }
+
+    private boolean canManageCustomer(UserDTO user, String customerName) {
+        return customerName != null
+                && assignedCustomerNames(user).contains(customerName);
+    }
+
+    private static void redirectForbidden(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String action) throws IOException {
+        FlashMessage.redirect(
+                request,
+                response,
+                "troubleshooting?view=list",
+                "담당 고객사의 트러블 슈팅만 " + action + "할 수 있습니다.",
+                "error");
     }
 
     private static void sendBadRequest(

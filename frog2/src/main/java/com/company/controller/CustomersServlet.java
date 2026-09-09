@@ -36,7 +36,7 @@ public class CustomersServlet extends HttpServlet {
             return;
         }
         FlashMessage.expose(request);
-        queryController.handle(request, response);
+        queryController.handle(request, response, user);
     }
 
     @Override

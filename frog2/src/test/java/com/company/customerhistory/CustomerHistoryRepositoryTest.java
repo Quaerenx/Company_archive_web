@@ -91,6 +91,37 @@ class CustomerHistoryRepositoryTest {
     }
 
     @Test
+    void assignedCustomerScopeCanUpdateAndDeleteRegardlessOfCreator() {
+        Path root = temporaryDirectory.resolve("history");
+        CustomerHistoryRepository repository =
+                new CustomerHistoryRepository(root, CLOCK);
+        CustomerHistoryRecord record = repository.create(
+                draft("고객사", "DB 증설", "노드 두 대 추가"),
+                "owner-id",
+                "작성자");
+
+        assertEquals(
+                CustomerHistoryRepository.MutationResult.FORBIDDEN,
+                repository.updateForCustomer(
+                        record.getId(),
+                        draft("고객사", "변조", "변조"),
+                        "다른 고객사"));
+        assertEquals(
+                CustomerHistoryRepository.MutationResult.UPDATED,
+                repository.updateForCustomer(
+                        record.getId(),
+                        draft("고객사", "점검 완료", "이상 없음"),
+                        "고객사"));
+        assertEquals(
+                CustomerHistoryRepository.MutationResult.FORBIDDEN,
+                repository.deleteForCustomer(
+                        record.getId(), "다른 고객사"));
+        assertEquals(
+                CustomerHistoryRepository.MutationResult.DELETED,
+                repository.deleteForCustomer(record.getId(), "고객사"));
+    }
+
+    @Test
     void invalidIdentifierCannotEscapeRepository() {
         CustomerHistoryRepository repository = new CustomerHistoryRepository(
                 temporaryDirectory.resolve("history"), CLOCK);

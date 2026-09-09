@@ -11,7 +11,7 @@ class TroubleshootingOwnershipContractTest {
     private static final Path PROJECT = Path.of(".");
 
     @Test
-    void mutationsAndMigrationUseStableCreatorUserIdOwnership() throws Exception {
+    void mutationsSupportStableOwnerAndAssignedCustomerScopes() throws Exception {
         String dao = Files.readString(PROJECT.resolve(
                 "src/main/java/com/company/model/TroubleshootingDAO.java"));
         String servlet = Files.readString(PROJECT.resolve(
@@ -24,7 +24,11 @@ class TroubleshootingOwnershipContractTest {
 
         assertTrue(dto.contains("creatorUserId"));
         assertTrue(dao.contains("creator_user_id"));
-        assertTrue(dao.contains("WHERE id = ? AND creator_user_id = ?"));
+        assertTrue(dao.contains("updateTroubleshootingForOwner"));
+        assertTrue(dao.contains("updateTroubleshootingForCustomer"));
+        assertTrue(dao.contains("deleteTroubleshootingForCustomer"));
+        assertTrue(dao.contains(
+                "WHERE id = ? AND \" + predicateColumn + \" = ?"));
         assertFalse(dao.contains(
                 "\"DELETE FROM troubleshooting WHERE id = ?\""));
         assertTrue(servlet.contains("user.getUserId()"));

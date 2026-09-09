@@ -7,6 +7,7 @@ import com.company.customerhistory.CustomerHistoryRepository;
 import com.company.customerhistory.CustomerHistoryStatus;
 import com.company.customerhistory.CustomerHistoryStorageException;
 import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.PageResult;
 import com.company.model.UserDTO;
@@ -24,8 +25,11 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class CustomerHistoryServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -34,25 +38,37 @@ public final class CustomerHistoryServlet extends HttpServlet {
 
     private final CustomerHistoryRepository repository;
     private final CustomerDAO customerDAO;
+    private final CustomerAssignmentDAO customerAssignmentDAO;
     private final Clock clock;
 
     public CustomerHistoryServlet() {
         this(new CustomerHistoryRepository(), new CustomerDAO(),
-                BusinessDate.systemClock());
+                new CustomerAssignmentDAO(), BusinessDate.systemClock());
     }
 
     CustomerHistoryServlet(
             CustomerHistoryRepository repository,
             CustomerDAO customerDAO) {
-        this(repository, customerDAO, BusinessDate.systemClock());
+        this(repository, customerDAO, new CustomerAssignmentDAO(),
+                BusinessDate.systemClock());
     }
 
     CustomerHistoryServlet(
             CustomerHistoryRepository repository,
             CustomerDAO customerDAO,
             Clock clock) {
+        this(repository, customerDAO, new CustomerAssignmentDAO(), clock);
+    }
+
+    CustomerHistoryServlet(
+            CustomerHistoryRepository repository,
+            CustomerDAO customerDAO,
+            CustomerAssignmentDAO customerAssignmentDAO,
+            Clock clock) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
+        this.customerAssignmentDAO = Objects.requireNonNull(
+                customerAssignmentDAO, "customerAssignmentDAO");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
@@ -72,7 +88,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
             switch (view) {
                 case "list" -> showList(request, response, user);
                 case "export" -> exportList(request, response);
-                case "add" -> showAdd(request, response);
+                case "add" -> showAdd(request, response, user);
                 case "edit" -> showEdit(request, response, user);
                 default -> response.sendRedirect(request.getContextPath() + "/customer-history");
             }
@@ -150,7 +166,8 @@ public final class CustomerHistoryServlet extends HttpServlet {
             }
         } catch (IllegalArgumentException exception) {
             if ("add".equals(action) || "update".equals(action)) {
-                showInvalidForm(request, response, action, exception.getMessage());
+                showInvalidForm(
+                        request, response, action, exception.getMessage(), user);
             } else {
                 sendBadRequest(request, response, exception.getMessage());
             }
@@ -188,7 +205,17 @@ public final class CustomerHistoryServlet extends HttpServlet {
                         || (!category.isEmpty() && !"all".equalsIgnoreCase(category))
                         || !query.isEmpty());
         request.setAttribute("currentUserId", user.getUserId());
-        setReferenceData(request);
+        Set<String> assignedCustomerNames = assignedCustomerNames(user);
+        Map<String, Boolean> customerManagePermissions =
+                new LinkedHashMap<>();
+        for (String assignedCustomerName : assignedCustomerNames) {
+            customerManagePermissions.put(assignedCustomerName, Boolean.TRUE);
+        }
+        request.setAttribute(
+                "customerManagePermissions", customerManagePermissions);
+        request.setAttribute(
+                "canCreateHistory", !assignedCustomerNames.isEmpty());
+        setSharedReferenceData(request);
         request.getRequestDispatcher(
                 "/customer-history/customer_history_list.jsp")
                 .forward(request, response);
@@ -196,7 +223,8 @@ public final class CustomerHistoryServlet extends HttpServlet {
 
     private void showAdd(
             HttpServletRequest request,
-            HttpServletResponse response) throws ServletException, IOException {
+            HttpServletResponse response,
+            UserDTO user) throws ServletException, IOException {
         request.setAttribute("formMode", "add");
         request.setAttribute(
                 "formWorkDate", BusinessDate.today(clock).toString());
@@ -204,7 +232,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
         request.setAttribute("formCustomerName", valueOrDefault(
                 request.getParameter("customerName"), "").strip());
         exposeListReturnState(request);
-        setReferenceData(request);
+        setReferenceData(request, user);
         forwardForm(request, response);
     }
 
@@ -224,7 +252,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
                     "고객사 히스토리를 찾을 수 없습니다.");
             return;
         }
-        if (!record.isOwnedBy(user.getUserId())) {
+        if (!canManageCustomer(user, record.getCustomerName())) {
             ApplicationError.send(
                     request,
                     response,
@@ -242,7 +270,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
         request.setAttribute("formActionSummary", record.getActionSummary());
         request.setAttribute("formStatus", record.getStatus().getCode());
         exposeListReturnState(request);
-        setReferenceData(request);
+        setReferenceData(request, user);
         forwardForm(request, response);
     }
 
@@ -252,6 +280,10 @@ public final class CustomerHistoryServlet extends HttpServlet {
             UserDTO user) throws IOException {
         CustomerHistoryDraft draft = mapDraft(request);
         requireMaintenanceCustomer(draft.customerName());
+        if (!canManageCustomer(user, draft.customerName())) {
+            sendForbidden(request, response, "등록");
+            return;
+        }
         repository.create(
                 draft,
                 user.getUserId(),
@@ -265,8 +297,22 @@ public final class CustomerHistoryServlet extends HttpServlet {
             UserDTO user) throws IOException {
         CustomerHistoryDraft draft = mapDraft(request);
         requireMaintenanceCustomer(draft.customerName());
-        CustomerHistoryRepository.MutationResult result = repository.updateOwned(
-                request.getParameter("id"), draft, user.getUserId());
+        CustomerHistoryRecord existing = repository
+                .findById(request.getParameter("id"))
+                .orElse(null);
+        if (existing == null) {
+            sendNotFound(request, response);
+            return;
+        }
+        if (!canManageCustomer(user, existing.getCustomerName())
+                || !canManageCustomer(user, draft.customerName())) {
+            sendForbidden(request, response, "수정");
+            return;
+        }
+        CustomerHistoryRepository.MutationResult result = repository.updateForCustomer(
+                request.getParameter("id"),
+                draft,
+                existing.getCustomerName());
         if (result == CustomerHistoryRepository.MutationResult.FORBIDDEN) {
             ApplicationError.send(
                     request,
@@ -292,8 +338,21 @@ public final class CustomerHistoryServlet extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response,
             UserDTO user) throws IOException {
-        CustomerHistoryRepository.MutationResult result = repository.deleteOwned(
-                request.getParameter("id"), user.getUserId());
+        CustomerHistoryRecord existing = repository
+                .findById(request.getParameter("id"))
+                .orElse(null);
+        if (existing == null) {
+            sendNotFound(request, response);
+            return;
+        }
+        if (!canManageCustomer(user, existing.getCustomerName())) {
+            sendForbidden(request, response, "삭제");
+            return;
+        }
+        CustomerHistoryRepository.MutationResult result =
+                repository.deleteForCustomer(
+                        request.getParameter("id"),
+                        existing.getCustomerName());
         if (result == CustomerHistoryRepository.MutationResult.FORBIDDEN) {
             ApplicationError.send(
                     request,
@@ -319,7 +378,8 @@ public final class CustomerHistoryServlet extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response,
             String action,
-            String message) throws ServletException, IOException {
+            String message,
+            UserDTO user) throws ServletException, IOException {
         request.setAttribute("formMode", "update".equals(action) ? "edit" : "add");
         request.setAttribute("formId", request.getParameter("id"));
         request.setAttribute("formCustomerName", request.getParameter("customerName"));
@@ -330,7 +390,7 @@ public final class CustomerHistoryServlet extends HttpServlet {
         request.setAttribute("formStatus", request.getParameter("status"));
         request.setAttribute("formError", message);
         exposeListReturnState(request);
-        setReferenceData(request);
+        setReferenceData(request, user);
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         forwardForm(request, response);
     }
@@ -351,12 +411,62 @@ public final class CustomerHistoryServlet extends HttpServlet {
         }
     }
 
-    private void setReferenceData(HttpServletRequest request) {
-        List<CustomerDTO> customers = customerDAO.getMaintenanceCustomers(
-                "customer_name", "ASC");
+    private void setSharedReferenceData(HttpServletRequest request) {
+        request.setAttribute(
+                "customerList",
+                customerDAO.getMaintenanceCustomers(
+                        "customer_name", "ASC"));
+        setHistoryEnums(request);
+    }
+
+    private void setReferenceData(
+            HttpServletRequest request,
+            UserDTO user) {
+        List<CustomerDTO> customers =
+                customerAssignmentDAO.getMaintenanceCustomersByAssignee(
+                        user.getUserId(), user.getUserName());
         request.setAttribute("customerList", customers);
-        request.setAttribute("historyCategories", CustomerHistoryCategory.values());
-        request.setAttribute("historyStatuses", CustomerHistoryStatus.values());
+        setHistoryEnums(request);
+    }
+
+    private static void setHistoryEnums(HttpServletRequest request) {
+        request.setAttribute(
+                "historyCategories", CustomerHistoryCategory.values());
+        request.setAttribute(
+                "historyStatuses", CustomerHistoryStatus.values());
+    }
+
+    private Set<String> assignedCustomerNames(UserDTO user) {
+        return customerAssignmentDAO.getCustomerNamesByAssignee(
+                user.getUserId(), user.getUserName());
+    }
+
+    private boolean canManageCustomer(UserDTO user, String customerName) {
+        return customerName != null
+                && assignedCustomerNames(user).contains(customerName);
+    }
+
+    private static void sendForbidden(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String action) throws IOException {
+        ApplicationError.send(
+                request,
+                response,
+                HttpServletResponse.SC_FORBIDDEN,
+                "customer_history_forbidden",
+                "담당 고객사의 히스토리만 " + action + "할 수 있습니다.");
+    }
+
+    private static void sendNotFound(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        ApplicationError.send(
+                request,
+                response,
+                HttpServletResponse.SC_NOT_FOUND,
+                "customer_history_not_found",
+                "고객사 히스토리를 찾을 수 없습니다.");
     }
 
     private static void forwardForm(

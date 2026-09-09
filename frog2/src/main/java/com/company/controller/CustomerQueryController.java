@@ -2,6 +2,7 @@ package com.company.controller;
 
 import com.company.customerhistory.CustomerHistoryRepository;
 import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerCounts;
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDAO;
@@ -12,6 +13,7 @@ import com.company.model.MaintenanceRecordDAO;
 import com.company.model.PageResult;
 import com.company.model.TroubleshootingDAO;
 import com.company.model.VerticaEosDAO;
+import com.company.model.UserDTO;
 import com.company.performance.RequestPerformanceContext;
 import com.company.performance.RequestPerformanceContext.Operation;
 import com.company.web.ApplicationError;
@@ -35,6 +37,7 @@ final class CustomerQueryController {
     private final CustomerRequestMapper mapper;
     private final Clock clock;
     private final CustomerActivityLoader activityLoader;
+    private final CustomerAssignmentDAO customerAssignmentDAO;
 
     CustomerQueryController() {
         this(
@@ -44,7 +47,8 @@ final class CustomerQueryController {
                 new CustomerRequestMapper(),
                 BusinessDate.systemClock(),
                 customerName -> DefaultActivityLoaderHolder.INSTANCE
-                        .load(customerName));
+                        .load(customerName),
+                new CustomerAssignmentDAO());
     }
 
     CustomerQueryController(
@@ -58,7 +62,8 @@ final class CustomerQueryController {
                 eosDAO,
                 mapper,
                 BusinessDate.systemClock(),
-                CustomerActivityLoader.empty());
+                CustomerActivityLoader.empty(),
+                new CustomerAssignmentDAO());
     }
 
     CustomerQueryController(
@@ -73,7 +78,8 @@ final class CustomerQueryController {
                 eosDAO,
                 mapper,
                 clock,
-                CustomerActivityLoader.empty());
+                CustomerActivityLoader.empty(),
+                new CustomerAssignmentDAO());
     }
 
     CustomerQueryController(
@@ -83,6 +89,19 @@ final class CustomerQueryController {
             CustomerRequestMapper mapper,
             Clock clock,
             CustomerActivityLoader activityLoader) {
+        this(
+                customerDAO, detailDAO, eosDAO, mapper, clock,
+                activityLoader, new CustomerAssignmentDAO());
+    }
+
+    CustomerQueryController(
+            CustomerDAO customerDAO,
+            CustomerDetailDAO detailDAO,
+            VerticaEosDAO eosDAO,
+            CustomerRequestMapper mapper,
+            Clock clock,
+            CustomerActivityLoader activityLoader,
+            CustomerAssignmentDAO customerAssignmentDAO) {
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO");
         this.detailDAO = Objects.requireNonNull(detailDAO, "detailDAO");
         this.detailQueryService = new CustomerDetailQueryService(
@@ -91,9 +110,14 @@ final class CustomerQueryController {
         this.clock = Objects.requireNonNull(clock, "clock");
         this.activityLoader = Objects.requireNonNull(
                 activityLoader, "activityLoader");
+        this.customerAssignmentDAO = Objects.requireNonNull(
+                customerAssignmentDAO, "customerAssignmentDAO");
     }
 
-    void handle(HttpServletRequest request, HttpServletResponse response)
+    void handle(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
             throws ServletException, IOException {
         String action = request.getParameter("action");
         if ("getDetail".equals(action)) {
@@ -109,9 +133,9 @@ final class CustomerQueryController {
         switch (view) {
             case "list" -> showList(request, response);
             case "export" -> exportList(request, response);
-            case "detail" -> showDetail(request, response);
-            case "edit" -> showEdit(request, response);
-            case "editDetail" -> showDetailEdit(request, response);
+            case "detail" -> showDetail(request, response, user);
+            case "edit" -> showEdit(request, response, user);
+            case "editDetail" -> showDetailEdit(request, response, user);
             case "add" -> forward(request, response, "/customers/customers_add.jsp", "add");
             default -> response.sendRedirect("customers?view=list");
         }
@@ -230,7 +254,10 @@ final class CustomerQueryController {
         }
     }
 
-    private void showDetail(HttpServletRequest request, HttpServletResponse response)
+    private void showDetail(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
             throws ServletException, IOException {
         String customerName = mapper.decodedParameter(request, "customerName");
         if (customerName == null || customerName.isEmpty()) {
@@ -247,6 +274,11 @@ final class CustomerQueryController {
         }
 
         request.setAttribute("customer", viewData.customer());
+        request.setAttribute(
+                "canManageCustomer",
+                viewData.customer() != null
+                        && canManageCustomer(
+                                user, viewData.customer().getCustomerName()));
         request.setAttribute("customerDetail", viewData.production());
         request.setAttribute("customerDetailStg", viewData.staging());
         request.setAttribute("customerDetailDev", viewData.development());
@@ -258,7 +290,10 @@ final class CustomerQueryController {
         forward(request, response, "/customers/customers_detail.jsp", "detail");
     }
 
-    private void showEdit(HttpServletRequest request, HttpServletResponse response)
+    private void showEdit(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
             throws ServletException, IOException {
         String customerName = mapper.decodedParameter(request, "name");
         if (customerName == null || customerName.isEmpty()) {
@@ -272,11 +307,19 @@ final class CustomerQueryController {
             return;
         }
 
+        if (!canManageCustomer(user, customerName)) {
+            sendForbidden(request, response);
+            return;
+        }
+
         request.setAttribute("customer", customer);
         forward(request, response, "/customers/customers_edit.jsp", "edit");
     }
 
-    private void showDetailEdit(HttpServletRequest request, HttpServletResponse response)
+    private void showDetailEdit(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
             throws ServletException, IOException {
         String customerName = mapper.decodedParameter(request, "customerName");
         if (customerName == null || customerName.isEmpty()) {
@@ -303,6 +346,11 @@ final class CustomerQueryController {
             return;
         }
 
+        if (!canManageCustomer(user, customerName)) {
+            sendForbidden(request, response);
+            return;
+        }
+
         CustomerDetailSet details = detailDAO.getCustomerDetails(customerName);
         request.setAttribute("customer", customer);
         request.setAttribute("customerDetail", details.production());
@@ -319,6 +367,25 @@ final class CustomerQueryController {
                                 "dev", "개발", details.development())));
         request.setAttribute("env", environment.externalValue());
         forward(request, response, "/customers/customers_detail_edit.jsp", "editDetail");
+    }
+
+    private boolean canManageCustomer(UserDTO user, String customerName) {
+        return user != null
+                && customerName != null
+                && customerAssignmentDAO.getCustomerNamesByAssignee(
+                        user.getUserId(), user.getUserName())
+                        .contains(customerName);
+    }
+
+    private static void sendForbidden(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        ApplicationError.send(
+                request,
+                response,
+                HttpServletResponse.SC_FORBIDDEN,
+                "customer_assignment_required",
+                "담당 고객사의 정보만 수정할 수 있습니다.");
     }
 
     private void writeDetailJson(HttpServletRequest request, HttpServletResponse response)

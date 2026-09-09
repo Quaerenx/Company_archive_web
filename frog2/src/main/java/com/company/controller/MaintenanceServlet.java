@@ -103,7 +103,7 @@ public class MaintenanceServlet extends HttpServlet {
         }
         switch (viewType) {
             case "cards" -> showCards(request, response, user);
-            case "history" -> showHistory(request, response);
+            case "history" -> showHistory(request, response, user);
             case "export" -> exportHistory(request, response);
             case "add" -> showAddForm(
                     request,
@@ -111,8 +111,9 @@ public class MaintenanceServlet extends HttpServlet {
                     request.getParameter("customerName"),
                     null,
                     Map.of(),
-                    HttpServletResponse.SC_OK);
-            case "formContext" -> writeFormContext(request, response);
+                    HttpServletResponse.SC_OK,
+                    user);
+            case "formContext" -> writeFormContext(request, response, user);
             case "edit" -> showEdit(request, response, user);
             default -> redirectToCards(response);
         }
@@ -214,7 +215,8 @@ public class MaintenanceServlet extends HttpServlet {
 
     private void showHistory(
             HttpServletRequest request,
-            HttpServletResponse response) throws ServletException, IOException {
+            HttpServletResponse response,
+            UserDTO user) throws ServletException, IOException {
         String customerName = request.getParameter("customerName");
         if (customerName == null || customerName.isEmpty()) {
             redirectToCards(response);
@@ -258,6 +260,9 @@ public class MaintenanceServlet extends HttpServlet {
         MaintenanceHistoryViewData.from(
                 page, historyFilter, customer, customerName)
                 .expose(request);
+        request.setAttribute(
+                "canManageCustomer",
+                canManageCustomer(user, customerName));
         request.getRequestDispatcher("/maintenance/maintenance_history.jsp")
                 .forward(request, response);
     }
@@ -273,14 +278,15 @@ public class MaintenanceServlet extends HttpServlet {
         }
         MaintenanceRecordDTO record =
                 maintenanceDAO.getMaintenanceRecordById(maintenanceId);
-        if (record != null && isOwner(record, user)) {
+        if (record != null
+                && canManageCustomer(user, record.getCustomerName())) {
             request.setAttribute("record", record);
             prepareFormView(
                     request,
-                    maintenanceFormOptions(record.getInspectorName()),
+                    maintenanceFormOptions(record.getInspectorName(), user),
                     record,
                     Map.of(),
-                    false);
+                    true);
             request.setAttribute("viewType", "edit");
             request.getRequestDispatcher(
                     "/maintenance/maintenance_edit.jsp")
@@ -382,7 +388,7 @@ public class MaintenanceServlet extends HttpServlet {
         MaintenanceFormSubmission submission = requestMapper.map(
                 request::getParameter,
                 currentUser.getUserId(),
-                maintenanceFormOptions(null));
+                maintenanceFormOptions(null, currentUser));
         MaintenanceRecordDTO record = submission.record();
         if (!submission.valid()) {
             showAddForm(
@@ -391,7 +397,8 @@ public class MaintenanceServlet extends HttpServlet {
                     record.getCustomerName(),
                     record,
                     submission.fieldErrors(),
-                    HttpServletResponse.SC_BAD_REQUEST);
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    currentUser);
             return;
         }
 
@@ -418,7 +425,9 @@ public class MaintenanceServlet extends HttpServlet {
         }
         MaintenanceRecordDTO existing =
                 maintenanceDAO.getMaintenanceRecordById(maintenanceId);
-        if (existing == null || !isOwner(existing, currentUser)) {
+        if (existing == null
+                || !canManageCustomer(
+                        currentUser, existing.getCustomerName())) {
             FlashMessage.redirect(
                     request,
                     response,
@@ -428,7 +437,7 @@ public class MaintenanceServlet extends HttpServlet {
             return;
         }
         MaintenanceFormOptions options = maintenanceFormOptions(
-                existing.getInspectorName());
+                existing.getInspectorName(), currentUser);
         MaintenanceFormSubmission submission = requestMapper.mapForUpdate(
                 request::getParameter,
                 currentUser.getUserId(),
@@ -446,7 +455,7 @@ public class MaintenanceServlet extends HttpServlet {
                     options,
                     record,
                     submission.fieldErrors(),
-                    false);
+                    true);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             request.setAttribute("viewType", "edit");
             request.getRequestDispatcher(
@@ -455,8 +464,8 @@ public class MaintenanceServlet extends HttpServlet {
             return;
         }
 
-        boolean success = maintenanceDAO.updateMaintenanceRecordForOwner(
-                record, currentUser.getUserId());
+        boolean success = maintenanceDAO.updateMaintenanceRecordForCustomer(
+                record, existing.getCustomerName());
         FlashMessage.redirect(
                 request,
                 response,
@@ -479,8 +488,17 @@ public class MaintenanceServlet extends HttpServlet {
         if (maintenanceIdValue != null && !maintenanceIdValue.isEmpty()) {
             try {
                 Long maintenanceId = Long.parseLong(maintenanceIdValue);
-                boolean success = maintenanceDAO.deleteMaintenanceRecordForOwner(
-                        maintenanceId, currentUser.getUserId());
+                MaintenanceRecordDTO existing =
+                        maintenanceDAO.getMaintenanceRecordById(maintenanceId);
+                if (existing != null) {
+                    customerName = existing.getCustomerName();
+                }
+                boolean authorized = existing != null
+                        && canManageCustomer(
+                                currentUser, existing.getCustomerName());
+                boolean success = authorized
+                        && maintenanceDAO.deleteMaintenanceRecordForCustomer(
+                                maintenanceId, existing.getCustomerName());
                 message = success
                         ? "정기점검 이력이 성공적으로 삭제되었습니다."
                         : "정기점검 이력 삭제 중 오류가 발생했습니다.";
@@ -576,8 +594,9 @@ public class MaintenanceServlet extends HttpServlet {
             String customerName,
             MaintenanceRecordDTO submittedRecord,
             Map<String, String> fieldErrors,
-            int status) throws ServletException, IOException {
-        MaintenanceFormOptions options = maintenanceFormOptions(null);
+            int status,
+            UserDTO user) throws ServletException, IOException {
+        MaintenanceFormOptions options = maintenanceFormOptions(null, user);
         CustomerDTO customer = options.customer(customerName);
         MaintenanceRecordDTO formRecord = submittedRecord == null
                 ? defaultFormRecord(customer)
@@ -596,9 +615,11 @@ public class MaintenanceServlet extends HttpServlet {
     }
 
     private MaintenanceFormOptions maintenanceFormOptions(
-            String retainedInspector) {
+            String retainedInspector,
+            UserDTO user) {
         return MaintenanceFormOptions.from(
-                customerDAO.getAllCustomers("", "ASC", "maintenance"),
+                customerAssignmentDAO.getMaintenanceCustomersByAssignee(
+                        user.getUserId(), user.getUserName()),
                 retainedInspector);
     }
 
@@ -653,7 +674,8 @@ public class MaintenanceServlet extends HttpServlet {
 
     private void writeFormContext(
             HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
+            HttpServletResponse response,
+            UserDTO user) throws IOException {
         String customerName = trimToNull(
                 request.getParameter("customerName"));
         Date inspectionDate = parseDate(
@@ -670,6 +692,14 @@ public class MaintenanceServlet extends HttpServlet {
                     HttpServletResponse.SC_BAD_REQUEST,
                     "invalid_maintenance_context",
                     "고객사와 점검일을 확인해 주세요.");
+            return;
+        }
+        if (!canManageCustomer(user, customerName)) {
+            JsonResponse.sendError(
+                    response,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "customer_assignment_required",
+                    "담당 고객사만 이력을 관리할 수 있습니다.");
             return;
         }
         MaintenanceFormHistoryContext context =
@@ -722,12 +752,12 @@ public class MaintenanceServlet extends HttpServlet {
         return second == null || second.isBlank() ? null : second.trim();
     }
 
-    private static boolean isOwner(
-            MaintenanceRecordDTO record, UserDTO user) {
-        return record != null
-                && user != null
-                && Objects.equals(
-                        record.getCreatorUserId(), user.getUserId());
+    private boolean canManageCustomer(UserDTO user, String customerName) {
+        return user != null
+                && customerName != null
+                && customerAssignmentDAO.getCustomerNamesByAssignee(
+                        user.getUserId(), user.getUserName())
+                        .contains(customerName);
     }
 
     private static int parseHistoryPage(String value) {

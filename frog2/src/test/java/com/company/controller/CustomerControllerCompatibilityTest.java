@@ -15,6 +15,8 @@ import com.company.model.CustomerPage;
 import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.model.VerticaEosDAO;
+import com.company.testsupport.StubCustomerAssignmentDAO;
+import com.company.util.BusinessDate;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -114,10 +116,13 @@ class CustomerControllerCompatibilityTest {
                 detailDAO,
                 eosDAO,
                 new CustomerRequestMapper(),
-                utcClockAtSeoulMidnight);
+                utcClockAtSeoulMidnight,
+                CustomerActivityLoader.empty(),
+                assignments());
         CustomerCommandController command = new CustomerCommandController(
                 new CustomerCommandService(customerDAO, detailDAO),
-                new CustomerRequestMapper());
+                new CustomerRequestMapper(),
+                assignments());
         CustomersServlet servlet = new CustomersServlet(query, command);
         RequestFixture request = new RequestFixture();
         request.parameters.put("view", "detail");
@@ -197,6 +202,36 @@ class CustomerControllerCompatibilityTest {
         assertEquals(List.of("dev:Acme Corp"), detailDAO.writes);
         assertTrue(saveResponse.redirect.startsWith(
                 "customers?view=detail&customerName=Acme+Corp&env=dev&_flash="));
+    }
+
+    @Test
+    void unassignedUserCannotOpenOrSubmitCustomerEdits() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customer = customer("Acme");
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        CustomersServlet servlet = servlet(
+                customerDAO,
+                detailDAO,
+                new StubEosDAO(),
+                StubCustomerAssignmentDAO.assignedTo());
+
+        RequestFixture edit = new RequestFixture();
+        edit.parameters.put("view", "editDetail");
+        edit.parameters.put("customerName", "Acme");
+        ResponseFixture editResponse = new ResponseFixture();
+        servlet.doGet(edit.proxy(), editResponse.proxy());
+
+        RequestFixture update = new RequestFixture();
+        update.parameters.put("action", "update");
+        update.parameters.put("customer_name", "Acme");
+        ResponseFixture updateResponse = new ResponseFixture();
+        servlet.doPost(update.proxy(), updateResponse.proxy());
+
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, editResponse.status);
+        assertEquals(null, edit.forwardedPath);
+        assertEquals(null, customerDAO.updated);
+        assertTrue(updateResponse.redirect.startsWith(
+                "customers?view=list&_flash="));
     }
 
     @Test
@@ -390,18 +425,40 @@ class CustomerControllerCompatibilityTest {
         return customer;
     }
 
+    private static StubCustomerAssignmentDAO assignments() {
+        return StubCustomerAssignmentDAO.assignedTo(
+                "Acme", "Acme Corp", "Retired");
+    }
+
     private static CustomersServlet servlet(
             StubCustomerDAO customerDAO, StubDetailDAO detailDAO) {
         return servlet(customerDAO, detailDAO, new StubEosDAO());
     }
 
     private static CustomersServlet servlet(
-            StubCustomerDAO customerDAO, StubDetailDAO detailDAO, StubEosDAO eosDAO) {
+            StubCustomerDAO customerDAO,
+            StubDetailDAO detailDAO,
+            StubEosDAO eosDAO) {
+        return servlet(customerDAO, detailDAO, eosDAO, assignments());
+    }
+
+    private static CustomersServlet servlet(
+            StubCustomerDAO customerDAO,
+            StubDetailDAO detailDAO,
+            StubEosDAO eosDAO,
+            StubCustomerAssignmentDAO assignmentDAO) {
         CustomerQueryController query = new CustomerQueryController(
-                customerDAO, detailDAO, eosDAO, new CustomerRequestMapper());
+                customerDAO,
+                detailDAO,
+                eosDAO,
+                new CustomerRequestMapper(),
+                BusinessDate.systemClock(),
+                CustomerActivityLoader.empty(),
+                assignmentDAO);
         CustomerCommandService service = new CustomerCommandService(customerDAO, detailDAO);
         CustomerCommandController command =
-                new CustomerCommandController(service, new CustomerRequestMapper());
+                new CustomerCommandController(
+                        service, new CustomerRequestMapper(), assignmentDAO);
         return new CustomersServlet(query, command);
     }
 

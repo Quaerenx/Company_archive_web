@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -154,9 +155,29 @@ public final class CustomerHistoryRepository {
             String id,
             CustomerHistoryDraft draft,
             String ownerUserId) {
-        Objects.requireNonNull(draft, "draft");
-        String normalizedId = normalizeId(id);
         String stableUserId = requiredIdentity(ownerUserId);
+        return updateScoped(
+                id, draft, current -> current.isOwnedBy(stableUserId));
+    }
+
+    public MutationResult updateForCustomer(
+            String id,
+            CustomerHistoryDraft draft,
+            String expectedCustomerName) {
+        String customerName = requiredCustomerName(expectedCustomerName);
+        return updateScoped(
+                id,
+                draft,
+                current -> customerName.equals(current.getCustomerName()));
+    }
+
+    private MutationResult updateScoped(
+            String id,
+            CustomerHistoryDraft draft,
+            Predicate<CustomerHistoryRecord> scope) {
+        Objects.requireNonNull(draft, "draft");
+        Objects.requireNonNull(scope, "scope");
+        String normalizedId = normalizeId(id);
         lock.writeLock().lock();
         try {
             Path path = recordPath(normalizedId, false);
@@ -165,7 +186,7 @@ public final class CustomerHistoryRepository {
             }
             ensureSafeRecordFile(path);
             CustomerHistoryRecord current = readRecord(path);
-            if (!current.isOwnedBy(stableUserId)) {
+            if (!scope.test(current)) {
                 return MutationResult.FORBIDDEN;
             }
             CustomerHistoryRecord updated = new CustomerHistoryRecord(
@@ -188,8 +209,23 @@ public final class CustomerHistoryRepository {
     }
 
     public MutationResult deleteOwned(String id, String ownerUserId) {
-        String normalizedId = normalizeId(id);
         String stableUserId = requiredIdentity(ownerUserId);
+        return deleteScoped(
+                id, current -> current.isOwnedBy(stableUserId));
+    }
+
+    public MutationResult deleteForCustomer(
+            String id, String expectedCustomerName) {
+        String customerName = requiredCustomerName(expectedCustomerName);
+        return deleteScoped(
+                id,
+                current -> customerName.equals(current.getCustomerName()));
+    }
+
+    private MutationResult deleteScoped(
+            String id, Predicate<CustomerHistoryRecord> scope) {
+        Objects.requireNonNull(scope, "scope");
+        String normalizedId = normalizeId(id);
         lock.writeLock().lock();
         try {
             Path path = recordPath(normalizedId, false);
@@ -198,7 +234,7 @@ public final class CustomerHistoryRepository {
             }
             ensureSafeRecordFile(path);
             CustomerHistoryRecord current = readRecord(path);
-            if (!current.isOwnedBy(stableUserId)) {
+            if (!scope.test(current)) {
                 return MutationResult.FORBIDDEN;
             }
             try {
@@ -498,6 +534,16 @@ public final class CustomerHistoryRepository {
         String normalized = normalizeOptional(value);
         if (normalized.isEmpty() || normalized.length() > 100) {
             throw new IllegalArgumentException("사용자 식별자가 올바르지 않습니다.");
+        }
+        return normalized;
+    }
+
+    private static String requiredCustomerName(String value) {
+        String normalized = normalizeOptional(value);
+        if (normalized.isEmpty()
+                || normalized.length()
+                        > CustomerHistoryDraft.MAX_CUSTOMER_NAME_LENGTH) {
+            throw new IllegalArgumentException("고객사명이 올바르지 않습니다.");
         }
         return normalized;
     }

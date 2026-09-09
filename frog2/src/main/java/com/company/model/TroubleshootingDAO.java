@@ -265,7 +265,21 @@ public class TroubleshootingDAO {
 
     public boolean updateTroubleshootingForOwner(
             TroubleshootingDTO ts, String creatorUserId) {
-        if (isBlank(creatorUserId)) {
+        return updateTroubleshooting(
+                ts, CREATOR_USER_ID_COLUMN, creatorUserId);
+    }
+
+    public boolean updateTroubleshootingForCustomer(
+            TroubleshootingDTO ts, String expectedCustomerName) {
+        return updateTroubleshooting(
+                ts, "customer_name", expectedCustomerName);
+    }
+
+    private boolean updateTroubleshooting(
+            TroubleshootingDTO ts,
+            String predicateColumn,
+            String predicateValue) {
+        if (isBlank(predicateValue)) {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
@@ -279,7 +293,7 @@ public class TroubleshootingDAO {
                     + "overview = ?, cause_analysis = ?, error_content = ?, "
                     + "action_taken = ?, script_content = ?, note = ?, "
                     + "updated_date = NOW() "
-                    + "WHERE id = ? AND creator_user_id = ?";
+                    + "WHERE id = ? AND " + predicateColumn + " = ?";
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, ts.getTitle());
@@ -304,7 +318,7 @@ public class TroubleshootingDAO {
                 setStringOrNull(pstmt, 13, ts.getScriptContent());
                 setStringOrNull(pstmt, 14, ts.getNote());
                 pstmt.setInt(15, ts.getId());
-                pstmt.setString(16, creatorUserId.trim());
+                pstmt.setString(16, predicateValue.trim());
 
                 return pstmt.executeUpdate() > 0;
             }
@@ -313,8 +327,23 @@ public class TroubleshootingDAO {
         }
     }
 
-    public boolean deleteTroubleshootingForOwner(int id, String creatorUserId) {
-        if (isBlank(creatorUserId)) {
+    public boolean deleteTroubleshootingForOwner(
+            int id, String creatorUserId) {
+        return deleteTroubleshooting(
+                id, CREATOR_USER_ID_COLUMN, creatorUserId);
+    }
+
+    public boolean deleteTroubleshootingForCustomer(
+            int id, String expectedCustomerName) {
+        return deleteTroubleshooting(
+                id, "customer_name", expectedCustomerName);
+    }
+
+    private boolean deleteTroubleshooting(
+            int id,
+            String predicateColumn,
+            String predicateValue) {
+        if (isBlank(predicateValue)) {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
@@ -322,10 +351,10 @@ public class TroubleshootingDAO {
                 return false;
             }
             String sql = "DELETE FROM troubleshooting "
-                    + "WHERE id = ? AND creator_user_id = ?";
+                    + "WHERE id = ? AND " + predicateColumn + " = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setInt(1, id);
-                pstmt.setString(2, creatorUserId.trim());
+                pstmt.setString(2, predicateValue.trim());
 
                 return pstmt.executeUpdate() > 0;
             }

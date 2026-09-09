@@ -108,9 +108,23 @@ public class MaintenanceRecordDAO {
 
     public boolean updateMaintenanceRecordForOwner(
             MaintenanceRecordDTO record, String creatorUserId) {
+        return updateMaintenanceRecord(
+                record, CREATOR_USER_ID_COLUMN, creatorUserId);
+    }
+
+    public boolean updateMaintenanceRecordForCustomer(
+            MaintenanceRecordDTO record, String expectedCustomerName) {
+        return updateMaintenanceRecord(
+                record, "customer_name", expectedCustomerName);
+    }
+
+    private boolean updateMaintenanceRecord(
+            MaintenanceRecordDTO record,
+            String predicateColumn,
+            String predicateValue) {
         if (record == null
                 || record.getMaintenanceId() == null
-                || isBlank(creatorUserId)) {
+                || isBlank(predicateValue)) {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
@@ -127,7 +141,9 @@ public class MaintenanceRecordDAO {
             if (schema.hasLicenseUsageSize()) sb.append(", license_usage_size = ?");
             if (schema.hasLicenseUsagePct()) sb.append(", license_usage_pct = ?");
             sb.append(", updated_at = statement_timestamp() ");
-            sb.append("WHERE maintenance_id = ? AND created_by_user_id = ?");
+            sb.append("WHERE maintenance_id = ? AND ")
+                    .append(predicateColumn)
+                    .append(" = ?");
 
             try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
                 int idx = 1;
@@ -146,7 +162,7 @@ public class MaintenanceRecordDAO {
                     setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
                 }
                 pstmt.setLong(idx++, record.getMaintenanceId());
-                pstmt.setString(idx, creatorUserId.trim());
+                pstmt.setString(idx, predicateValue.trim());
                 return pstmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -156,7 +172,21 @@ public class MaintenanceRecordDAO {
 
     public boolean deleteMaintenanceRecordForOwner(
             Long maintenanceId, String creatorUserId) {
-        if (maintenanceId == null || isBlank(creatorUserId)) {
+        return deleteMaintenanceRecord(
+                maintenanceId, CREATOR_USER_ID_COLUMN, creatorUserId);
+    }
+
+    public boolean deleteMaintenanceRecordForCustomer(
+            Long maintenanceId, String expectedCustomerName) {
+        return deleteMaintenanceRecord(
+                maintenanceId, "customer_name", expectedCustomerName);
+    }
+
+    private boolean deleteMaintenanceRecord(
+            Long maintenanceId,
+            String predicateColumn,
+            String predicateValue) {
+        if (maintenanceId == null || isBlank(predicateValue)) {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
@@ -164,10 +194,11 @@ public class MaintenanceRecordDAO {
                 return false;
             }
             String sql = "DELETE FROM maintenance_records "
-                    + "WHERE maintenance_id = ? AND created_by_user_id = ?";
+                    + "WHERE maintenance_id = ? AND "
+                    + predicateColumn + " = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setLong(1, maintenanceId);
-                pstmt.setString(2, creatorUserId.trim());
+                pstmt.setString(2, predicateValue.trim());
                 return pstmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {

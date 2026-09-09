@@ -14,6 +14,8 @@ import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.PageResult;
 import com.company.model.UserDTO;
+import com.company.testsupport.StubCustomerAssignmentDAO;
+import com.company.util.BusinessDate;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,7 +45,7 @@ class MaintenanceServletAuthorizationTest {
         dao.historyPage = new PageResult<>(
                 List.of(history), 41, 1, 20);
         StubCustomerDAO customerDAO = new StubCustomerDAO();
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, customerDAO);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "history");
@@ -84,7 +86,7 @@ class MaintenanceServletAuthorizationTest {
             throws Exception {
         for (String invalidPage : List.of("0", "-1", "abc")) {
             StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
-            MaintenanceServlet servlet = new MaintenanceServlet(
+            MaintenanceServlet servlet = servlet(
                     dao, new StubCustomerDAO());
             RequestFixture request = new RequestFixture(user("owner-1"));
             request.accept = "application/json";
@@ -105,7 +107,7 @@ class MaintenanceServletAuthorizationTest {
     @Test
     void historyFiltersAreNormalizedAndSharedWithTheView() throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, new StubCustomerDAO());
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "history");
@@ -138,7 +140,7 @@ class MaintenanceServletAuthorizationTest {
                 "historyVersion", "v".repeat(65),
                 "historyQuery", "q".repeat(121)).entrySet()) {
             StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
-            MaintenanceServlet servlet = new MaintenanceServlet(
+            MaintenanceServlet servlet = servlet(
                     dao, new StubCustomerDAO());
             RequestFixture request = new RequestFixture(user("owner-1"));
             request.accept = "application/json";
@@ -159,10 +161,10 @@ class MaintenanceServletAuthorizationTest {
     }
 
     @Test
-    void nonOwnerCannotOpenEditForm() throws Exception {
+    void assignedNonOwnerCanOpenEditForm() throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
         dao.record = record("owner-1");
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, new StubCustomerDAO());
         RequestFixture request = new RequestFixture(user("attacker-1"));
         request.parameters.put("view", "edit");
@@ -171,9 +173,10 @@ class MaintenanceServletAuthorizationTest {
 
         servlet.doGet(request.proxy(), response.proxy());
 
-        assertNull(request.forwardedPath);
-        assertTrue(response.redirect.startsWith(
-                "maintenance?view=history&customerName=Acme&_flash="));
+        assertEquals(
+                "/maintenance/maintenance_edit.jsp",
+                request.forwardedPath);
+        assertNull(response.redirect);
     }
 
     @Test
@@ -181,7 +184,7 @@ class MaintenanceServletAuthorizationTest {
             throws Exception {
         for (String invalidId : new String[] {null, "", "abc", "0", "-1"}) {
             StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
-            MaintenanceServlet servlet = new MaintenanceServlet(
+            MaintenanceServlet servlet = servlet(
                     dao, new StubCustomerDAO());
             RequestFixture request = new RequestFixture(user("owner-1"));
             request.parameters.put("view", "edit");
@@ -212,7 +215,7 @@ class MaintenanceServletAuthorizationTest {
         previous.setVerticaVersion("23.4");
         previous.setLicenseSizeGb("25TB");
         dao.formContext = new MaintenanceFormHistoryContext(previous, null);
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, new StubCustomerDAO());
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "add");
@@ -243,7 +246,7 @@ class MaintenanceServletAuthorizationTest {
         Clock utcClockAtSeoulMidnight = Clock.fixed(
                 Instant.parse("2026-08-31T15:00:00Z"),
                 ZoneOffset.UTC);
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, new StubCustomerDAO(), utcClockAtSeoulMidnight);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "add");
@@ -260,7 +263,7 @@ class MaintenanceServletAuthorizationTest {
     void invalidAddPreservesTheSubmissionAndDoesNotCallTheDaoWrite()
             throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, new StubCustomerDAO());
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("action", "add");
@@ -299,7 +302,7 @@ class MaintenanceServletAuthorizationTest {
         dao.formContext = new MaintenanceFormHistoryContext(
                 previous, duplicate);
         StubCustomerDAO customerDAO = new StubCustomerDAO();
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, customerDAO);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "formContext");
@@ -330,7 +333,7 @@ class MaintenanceServletAuthorizationTest {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
         StubCustomerDAO customerDAO = new StubCustomerDAO();
         customerDAO.customer.setCustomerType("일반 고객사");
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, customerDAO);
         RequestFixture request = new RequestFixture(user("owner-1"));
         request.parameters.put("view", "formContext");
@@ -350,11 +353,11 @@ class MaintenanceServletAuthorizationTest {
     }
 
     @Test
-    void postMutationsUseOnlySessionUserId() throws Exception {
+    void assignedUserMutationsUseServerLoadedCustomerName() throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
         dao.record = record("attacker-1");
         dao.record.setInspectorName("Same Name");
-        MaintenanceServlet servlet = new MaintenanceServlet(
+        MaintenanceServlet servlet = servlet(
                 dao, new StubCustomerDAO());
 
         RequestFixture update = new RequestFixture(user("attacker-1"));
@@ -367,7 +370,7 @@ class MaintenanceServletAuthorizationTest {
 
         servlet.doPost(update.proxy(), updateResponse.proxy());
 
-        assertEquals("attacker-1", dao.lastUpdateOwnerId);
+        assertEquals("Acme", dao.lastUpdateCustomerName);
         assertTrue(updateResponse.redirect.startsWith(
                 "maintenance?view=history&customerName=Acme&_flash="));
 
@@ -379,7 +382,41 @@ class MaintenanceServletAuthorizationTest {
 
         servlet.doPost(delete.proxy(), deleteResponse.proxy());
 
-        assertEquals("attacker-1", dao.lastDeleteOwnerId);
+        assertEquals("Acme", dao.lastDeleteCustomerName);
+        assertTrue(deleteResponse.redirect.startsWith(
+                "maintenance?view=history&customerName=Acme&_flash="));
+    }
+
+    @Test
+    void unassignedUserCannotUpdateOrDeleteMaintenanceRecords()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        dao.record = record("owner-1");
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao,
+                customerDAO,
+                StubCustomerAssignmentDAO.assignedTo(),
+                BusinessDate.systemClock());
+
+        RequestFixture update = new RequestFixture(user("unassigned-1"));
+        update.parameters.put("action", "update");
+        update.parameters.put("maintenance_id", "17");
+        update.parameters.put("customer_name", "Acme");
+        ResponseFixture updateResponse = new ResponseFixture();
+        servlet.doPost(update.proxy(), updateResponse.proxy());
+
+        RequestFixture delete = new RequestFixture(user("unassigned-1"));
+        delete.parameters.put("action", "delete");
+        delete.parameters.put("maintenance_id", "17");
+        delete.parameters.put("customer_name", "forged-customer");
+        ResponseFixture deleteResponse = new ResponseFixture();
+        servlet.doPost(delete.proxy(), deleteResponse.proxy());
+
+        assertNull(dao.lastUpdateCustomerName);
+        assertNull(dao.lastDeleteCustomerName);
+        assertTrue(updateResponse.redirect.startsWith(
+                "maintenance?view=cards&_flash="));
         assertTrue(deleteResponse.redirect.startsWith(
                 "maintenance?view=history&customerName=Acme&_flash="));
     }
@@ -389,7 +426,7 @@ class MaintenanceServletAuthorizationTest {
             throws Exception {
         for (String invalidId : new String[] {null, "", "abc", "0", "-1"}) {
             StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
-            MaintenanceServlet servlet = new MaintenanceServlet(
+            MaintenanceServlet servlet = servlet(
                     dao, new StubCustomerDAO());
             RequestFixture request = new RequestFixture(user("owner-1"));
             request.parameters.put("action", "update");
@@ -411,6 +448,24 @@ class MaintenanceServletAuthorizationTest {
         }
     }
 
+    private static MaintenanceServlet servlet(
+            StubMaintenanceRecordDAO maintenanceDAO,
+            StubCustomerDAO customerDAO) {
+        return servlet(
+                maintenanceDAO, customerDAO, BusinessDate.systemClock());
+    }
+
+    private static MaintenanceServlet servlet(
+            StubMaintenanceRecordDAO maintenanceDAO,
+            StubCustomerDAO customerDAO,
+            Clock clock) {
+        return new MaintenanceServlet(
+                maintenanceDAO,
+                customerDAO,
+                new StubCustomerAssignmentDAO(customerDAO.customer),
+                clock);
+    }
+
     private static MaintenanceRecordDTO record(String creatorUserId) {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
         record.setMaintenanceId(17L);
@@ -427,8 +482,8 @@ class MaintenanceServletAuthorizationTest {
             extends MaintenanceRecordDAO {
         private MaintenanceRecordDTO record;
         private int recordReads;
-        private String lastUpdateOwnerId;
-        private String lastDeleteOwnerId;
+        private String lastUpdateCustomerName;
+        private String lastDeleteCustomerName;
         private PageResult<MaintenanceRecordDTO> historyPage =
                 new PageResult<>(List.of(), 0, 1, 20);
         private String lastHistoryCustomer;
@@ -489,16 +544,16 @@ class MaintenanceServletAuthorizationTest {
         }
 
         @Override
-        public boolean updateMaintenanceRecordForOwner(
-                MaintenanceRecordDTO record, String creatorUserId) {
-            lastUpdateOwnerId = creatorUserId;
+        public boolean updateMaintenanceRecordForCustomer(
+                MaintenanceRecordDTO record, String expectedCustomerName) {
+            lastUpdateCustomerName = expectedCustomerName;
             return false;
         }
 
         @Override
-        public boolean deleteMaintenanceRecordForOwner(
-                Long maintenanceId, String creatorUserId) {
-            lastDeleteOwnerId = creatorUserId;
+        public boolean deleteMaintenanceRecordForCustomer(
+                Long maintenanceId, String expectedCustomerName) {
+            lastDeleteCustomerName = expectedCustomerName;
             return false;
         }
     }

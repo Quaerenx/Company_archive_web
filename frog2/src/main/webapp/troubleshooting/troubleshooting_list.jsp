@@ -14,11 +14,13 @@
         <jsp:attribute name="title"><i class="fas fa-tools" aria-hidden="true"></i> 트러블 슈팅</jsp:attribute>
         <jsp:attribute name="subtitle">기술지원 및 문제 해결 이력 <strong><c:out value="${totalCount}" /></strong>건</jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/troubleshooting?view=add"
-               class="ui-button button--primary button--md">
-                <i class="fas fa-plus" aria-hidden="true"></i>
-                새 트러블 슈팅 등록
-            </a>
+            <c:if test="${canCreateTroubleshooting}">
+                <a href="${pageContext.request.contextPath}/troubleshooting?view=add"
+                   class="ui-button button--primary button--md">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                    새 트러블 슈팅 등록
+                </a>
+            </c:if>
         </jsp:attribute>
     </t:pageHeader>
 

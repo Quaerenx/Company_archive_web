@@ -4,7 +4,6 @@ import static com.company.testsupport.ProxyDefaults.defaultValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.CustomerDAO;
@@ -13,6 +12,7 @@ import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
 import com.company.model.PageResult;
 import com.company.model.UserDTO;
+import com.company.testsupport.StubCustomerAssignmentDAO;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,7 +30,7 @@ class TroubleshootingServletAuthorizationTest {
         CustomerDTO customer = new CustomerDTO();
         customer.setCustomerName("Acme");
         customerDAO.customers = List.of(customer);
-        TroubleshootingServlet servlet = new TroubleshootingServlet(
+        TroubleshootingServlet servlet = servlet(
                 new StubTroubleshootingDAO(), customerDAO);
         RequestFixture request =
                 new RequestFixture(user("owner-1", "Owner"), "GET");
@@ -39,7 +39,7 @@ class TroubleshootingServletAuthorizationTest {
         servlet.doGet(request.proxy(), new ResponseFixture().proxy());
 
         assertEquals(1, customerDAO.calls);
-        assertSame(customerDAO.customers,
+        assertEquals(customerDAO.customers,
                 request.attributes.get("customerList"));
         assertEquals(
                 "/troubleshooting/troubleshooting_add.jsp",
@@ -55,7 +55,7 @@ class TroubleshootingServletAuthorizationTest {
                 41,
                 2,
                 20);
-        TroubleshootingServlet servlet = new TroubleshootingServlet(dao);
+        TroubleshootingServlet servlet = servlet(dao);
         RequestFixture request =
                 new RequestFixture(user("owner-1", "Owner"), "GET");
         request.parameters.put("view", "list");
@@ -82,10 +82,10 @@ class TroubleshootingServletAuthorizationTest {
     }
 
     @Test
-    void sameDisplayNameDoesNotGrantManageActionsToAnotherUser() throws Exception {
+    void assignedNonOwnerCanManageCustomerTroubleshooting() throws Exception {
         StubTroubleshootingDAO dao = new StubTroubleshootingDAO();
         dao.troubleshooting = record("owner-1", "Same Name");
-        TroubleshootingServlet servlet = new TroubleshootingServlet(dao);
+        TroubleshootingServlet servlet = servlet(dao);
 
         RequestFixture attacker =
                 new RequestFixture(user("attacker-1", "Same Name"), "GET");
@@ -97,7 +97,7 @@ class TroubleshootingServletAuthorizationTest {
                 "/troubleshooting/troubleshooting_view.jsp",
                 attacker.forwardedPath);
         assertEquals(
-                Boolean.FALSE,
+                Boolean.TRUE,
                 attacker.attributes.get("canManageTroubleshooting"));
 
         RequestFixture owner =
@@ -112,10 +112,10 @@ class TroubleshootingServletAuthorizationTest {
     }
 
     @Test
-    void nonOwnerCannotOpenTheEditFormEvenWhenNamesMatch() throws Exception {
+    void assignedNonOwnerCanOpenTheEditForm() throws Exception {
         StubTroubleshootingDAO dao = new StubTroubleshootingDAO();
         dao.troubleshooting = record("owner-1", "Same Name");
-        TroubleshootingServlet servlet = new TroubleshootingServlet(dao);
+        TroubleshootingServlet servlet = servlet(dao);
         RequestFixture request =
                 new RequestFixture(user("attacker-1", "Same Name"), "GET");
         request.parameters.put("view", "edit");
@@ -124,16 +124,17 @@ class TroubleshootingServletAuthorizationTest {
 
         servlet.doGet(request.proxy(), response.proxy());
 
-        assertNull(request.forwardedPath);
-        assertTrue(response.redirect.startsWith(
-                "troubleshooting?view=view&id=7&_flash="));
+        assertEquals(
+                "/troubleshooting/troubleshooting_edit.jsp",
+                request.forwardedPath);
+        assertNull(response.redirect);
     }
 
     @Test
-    void postMutationsPassOnlyTheSessionUserIdToOwnerScopedDaoMethods()
+    void assignedUserMutationsUseServerLoadedCustomerName()
             throws Exception {
         StubTroubleshootingDAO dao = new StubTroubleshootingDAO();
-        TroubleshootingServlet servlet = new TroubleshootingServlet(dao);
+        TroubleshootingServlet servlet = servlet(dao);
 
         RequestFixture update =
                 new RequestFixture(user("attacker-1", "Same Name"), "POST");
@@ -144,7 +145,7 @@ class TroubleshootingServletAuthorizationTest {
         ResponseFixture updateResponse = new ResponseFixture();
         servlet.doPost(update.proxy(), updateResponse.proxy());
 
-        assertEquals("attacker-1", dao.lastUpdateOwnerId);
+        assertEquals("Acme", dao.lastUpdateCustomerName);
         assertTrue(updateResponse.redirect.startsWith(
                 "troubleshooting?view=list&_flash="));
 
@@ -155,17 +156,50 @@ class TroubleshootingServletAuthorizationTest {
         ResponseFixture deleteResponse = new ResponseFixture();
         servlet.doPost(delete.proxy(), deleteResponse.proxy());
 
-        assertEquals("attacker-1", dao.lastDeleteOwnerId);
+        assertEquals("Acme", dao.lastDeleteCustomerName);
         assertTrue(deleteResponse.redirect.startsWith(
                 "troubleshooting?view=list&_flash="));
     }
 
     @Test
-    void legitimateOwnerKeepsTheExistingSuccessfulUpdateFlow()
+    void unassignedUserCannotUpdateOrDeleteTroubleshootingRecords()
+            throws Exception {
+        StubTroubleshootingDAO dao = new StubTroubleshootingDAO();
+        TroubleshootingServlet servlet = new TroubleshootingServlet(
+                dao,
+                new StubCustomerDAO(),
+                StubCustomerAssignmentDAO.assignedTo());
+
+        RequestFixture update =
+                new RequestFixture(user("unassigned-1", "Same Name"), "POST");
+        update.parameters.put("action", "update");
+        update.parameters.put("id", "7");
+        update.parameters.put("title", "Updated issue");
+        update.parameters.put("customer_name", "Acme");
+        ResponseFixture updateResponse = new ResponseFixture();
+        servlet.doPost(update.proxy(), updateResponse.proxy());
+
+        RequestFixture delete =
+                new RequestFixture(user("unassigned-1", "Same Name"), "POST");
+        delete.parameters.put("action", "delete");
+        delete.parameters.put("id", "7");
+        ResponseFixture deleteResponse = new ResponseFixture();
+        servlet.doPost(delete.proxy(), deleteResponse.proxy());
+
+        assertNull(dao.lastUpdateCustomerName);
+        assertNull(dao.lastDeleteCustomerName);
+        assertTrue(updateResponse.redirect.startsWith(
+                "troubleshooting?view=list&_flash="));
+        assertTrue(deleteResponse.redirect.startsWith(
+                "troubleshooting?view=list&_flash="));
+    }
+
+    @Test
+    void assignedOwnerKeepsTheExistingSuccessfulUpdateFlow()
             throws Exception {
         StubTroubleshootingDAO dao = new StubTroubleshootingDAO();
         dao.mutationSucceeds = true;
-        TroubleshootingServlet servlet = new TroubleshootingServlet(dao);
+        TroubleshootingServlet servlet = servlet(dao);
         RequestFixture request =
                 new RequestFixture(user("owner-1", "Renamed Owner"), "POST");
         request.parameters.put("action", "update");
@@ -176,9 +210,23 @@ class TroubleshootingServletAuthorizationTest {
 
         servlet.doPost(request.proxy(), response.proxy());
 
-        assertEquals("owner-1", dao.lastUpdateOwnerId);
+        assertEquals("Acme", dao.lastUpdateCustomerName);
         assertTrue(response.redirect.startsWith(
                 "troubleshooting?view=view&id=7&_flash="));
+    }
+
+    private static TroubleshootingServlet servlet(
+            StubTroubleshootingDAO troubleshootingDAO) {
+        return servlet(troubleshootingDAO, new StubCustomerDAO());
+    }
+
+    private static TroubleshootingServlet servlet(
+            StubTroubleshootingDAO troubleshootingDAO,
+            CustomerDAO customerDAO) {
+        return new TroubleshootingServlet(
+                troubleshootingDAO,
+                customerDAO,
+                StubCustomerAssignmentDAO.assignedTo("Acme"));
     }
 
     private static TroubleshootingDTO record(
@@ -186,6 +234,7 @@ class TroubleshootingServletAuthorizationTest {
         TroubleshootingDTO troubleshooting = new TroubleshootingDTO();
         troubleshooting.setId(7);
         troubleshooting.setTitle("Connection issue");
+        troubleshooting.setCustomerName("Acme");
         troubleshooting.setCreatorUserId(creatorUserId);
         troubleshooting.setCreator(creatorName);
         return troubleshooting;
@@ -197,15 +246,16 @@ class TroubleshootingServletAuthorizationTest {
 
     private static final class StubTroubleshootingDAO
             extends TroubleshootingDAO {
-        private TroubleshootingDTO troubleshooting;
+        private TroubleshootingDTO troubleshooting =
+                record("owner-1", "Owner");
         private PageResult<TroubleshootingDTO> page =
                 new PageResult<>(List.of(), 0, 1, 20);
         private String lastQuery;
         private int lastPage;
         private int lastPageSize;
         private boolean lastIncludeContent;
-        private String lastUpdateOwnerId;
-        private String lastDeleteOwnerId;
+        private String lastUpdateCustomerName;
+        private String lastDeleteCustomerName;
         private boolean mutationSucceeds;
 
         @Override
@@ -234,16 +284,16 @@ class TroubleshootingServletAuthorizationTest {
         }
 
         @Override
-        public boolean updateTroubleshootingForOwner(
-                TroubleshootingDTO record, String creatorUserId) {
-            lastUpdateOwnerId = creatorUserId;
+        public boolean updateTroubleshootingForCustomer(
+                TroubleshootingDTO record, String expectedCustomerName) {
+            lastUpdateCustomerName = expectedCustomerName;
             return mutationSucceeds;
         }
 
         @Override
-        public boolean deleteTroubleshootingForOwner(
-                int id, String creatorUserId) {
-            lastDeleteOwnerId = creatorUserId;
+        public boolean deleteTroubleshootingForCustomer(
+                int id, String expectedCustomerName) {
+            lastDeleteCustomerName = expectedCustomerName;
             return mutationSucceeds;
         }
     }

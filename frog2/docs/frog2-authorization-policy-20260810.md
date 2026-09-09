@@ -21,9 +21,9 @@ mode, CSRF checks, and input validation remain independent mandatory controls.
 | Area | Read | Create | Update/delete |
 | --- | --- | --- | --- |
 | Dashboard | Any authenticated user | Not applicable | Not applicable |
-| Customers | Any authenticated user | Any authenticated user | Any authenticated user |
-| Maintenance records | Any authenticated user | Any authenticated user; creator ID comes from the session | Stable creator `userId` only |
-| Troubleshooting | Any authenticated user | Any authenticated user; creator ID comes from the session | Stable creator `userId` only |
+| Customers | Any authenticated user | Any authenticated user | Current primary or secondary customer assignee |
+| Maintenance records | Any authenticated user | Current primary or secondary customer assignee; creator ID comes from the session | Current primary or secondary customer assignee |
+| Troubleshooting | Any authenticated user | Current primary or secondary customer assignee; creator ID comes from the session | Current primary or secondary customer assignee |
 | Meeting records | Any authenticated user | Any authenticated user; author ID comes from the session | Stable author `userId` only |
 | Meeting comments | Any authenticated user | Any authenticated user; author ID comes from the session | Stable author `userId` only |
 | My page and monthly responses | Current user's data | Current user | Current stable `userId` only |
@@ -31,10 +31,7 @@ mode, CSRF checks, and input validation remain independent mandatory controls.
 | File repository | Any authenticated user | Any authenticated user | No delete operation is exposed |
 | Connection-pool monitor | Configured administrator IDs only | Not applicable | Not applicable |
 
-Owner-scoped mutations combine the object ID and stable user ID in the same
-SQL statement. Display names are never an authorization key. A zero-row update
-or delete is treated as denied or missing and does not fall back to a
-name-based mutation.
+Customer-linked mutations authorize against the stable primary or secondary assignee `userId`. Record updates and deletes combine the object ID with the server-loaded customer name, so a request cannot select a different record by forging a customer name. Creator and author IDs remain immutable audit provenance, not customer-level authorization keys. Personal records continue to combine the object ID and stable owner `userId` in one mutation. Display names are used only on installations that have not yet added the stable assignment columns.
 
 ## Administrator rule
 
@@ -68,8 +65,4 @@ The baseline is covered by the following focused tests:
 
 ## Deferred product decision
 
-Customer, maintenance, meeting, troubleshooting, and file-repository reads are
-currently shared by all authenticated employees. Restricting those domains by
-team, customer assignment, or role needs an authoritative role source and a
-product-owned access matrix. Until those requirements exist, the application
-must not infer privilege from display name, department text, or URL visibility.
+Customer, maintenance, meeting, troubleshooting, and file-repository reads remain shared by all authenticated employees. Customer-linked writes use the stable primary and secondary assignee IDs. Meeting records, comments, monthly responses, and personal VM hosts remain owner-scoped because those records have no authoritative customer assignment relationship. Department text and URL visibility never grant privilege.

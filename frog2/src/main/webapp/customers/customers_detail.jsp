@@ -312,7 +312,7 @@
         </section>
     </c:if>
 
-    <c:if test="${not empty customer}">
+    <c:if test="${not empty customer and canManageCustomer}">
         <div class="detail-actions">
             <a href="<c:out value='${currentCustomerEditUrl}' />"
                id="editCustomerButton" data-customer-name="<c:out value='${currentCustomerName}' />"

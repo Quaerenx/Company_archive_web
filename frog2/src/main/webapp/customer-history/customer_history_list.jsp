@@ -38,11 +38,13 @@
                 <i class="fas fa-file-csv" aria-hidden="true"></i>
                 현재 목록 CSV
             </a>
-            <a href="<c:out value='${addHistoryUrl}' />"
-               class="ui-button button--primary button--md">
-                <i class="fas fa-plus" aria-hidden="true"></i>
-                이력 등록
-            </a>
+            <c:if test="${canCreateHistory}">
+                <a href="<c:out value='${addHistoryUrl}' />"
+                   class="ui-button button--primary button--md">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                    이력 등록
+                </a>
+            </c:if>
         </jsp:attribute>
     </t:pageHeader>
 
@@ -151,7 +153,7 @@
                                         </div>
                                     </td>
                                     <td class="col--action">
-                                        <c:if test="${history.creatorUserId eq currentUserId}">
+                                        <c:if test="${customerManagePermissions[history.customerName]}">
                                             <a href="<c:out value='${editHistoryUrl}' />"
                                                class="customer-history-edit-link ui-button button--ghost button--sm"
                                                title="이력 수정">

@@ -28,22 +28,27 @@ a new role model.
 | `/logout` | GET | Authenticated | None; 405 with `Allow: POST` | No | None |
 | `/dashboard` | GET | Authenticated | Shared dashboard read | No | None |
 | `/search` | GET | Authenticated | Read-only cross-domain search; response is not cached | No | Shared customer, history, troubleshooting, meeting, and repository data |
-| `/customers` list/detail/edit/add forms and JSON actions | GET | Authenticated | Shared customer read | No | None |
-| `/customers` `add`, `update`, `delete`, `saveDetail` | POST | Authenticated | Customer mutation | Yes | Accepted policy permits all authenticated users; dev read-only still blocks DB writes |
-| `/customer-history` list/add/edit forms | GET | Authenticated | Shared major-work history read | No | All authenticated users may read; no maintenance data is included |
-| `/customer-history` `add` | POST | Authenticated | External history-file creation | Yes | Stable creator `userId` comes only from the session |
-| `/customer-history` `update`, `delete` | POST | Authenticated | Owner-scoped external history-file mutation | Yes | Record ID and stable creator `userId` are checked atomically in the repository |
-| `/maintenance` cards/history/add form | GET | Authenticated | Shared maintenance read | No | Edit form is exposed only to the stable creator `userId` |
-| `/maintenance` `add` | POST | Authenticated | Create maintenance record | Yes | Creator comes only from the session `userId` |
-| `/maintenance` `update`, `delete` | POST | Authenticated | Owner-scoped mutation | Yes | Object ID and stable creator `userId` are matched in the mutation |
+| `/customers` list/detail/add form and JSON read actions | GET | Authenticated | Shared customer read | No | None |
+| `/customers` edit/editDetail forms | GET | Authenticated | Customer mutation form | No | Current stable primary or secondary customer assignee only |
+| `/customers` `add` | POST | Authenticated | Customer creation | Yes | Any authenticated user may create a new customer; the saved primary and secondary users become its assignees |
+| `/customers` `update`, `delete`, `saveDetail` | POST | Authenticated | Customer mutation | Yes | Current stable primary or secondary customer assignee only |
+| `/customer-history` list | GET | Authenticated | Shared major-work history read | No | All authenticated users may read; no maintenance data is included |
+| `/customer-history` add/edit forms | GET | Authenticated | Customer-scoped history mutation form | No | Add options contain assigned customers only; edit requires assignment to the stored customer |
+| `/customer-history` `add` | POST | Authenticated | External history-file creation | Yes | Current stable primary or secondary customer assignee; creator `userId` comes from the session |
+| `/customer-history` `update`, `delete` | POST | Authenticated | Customer-scoped external history-file mutation | Yes | Current stable primary or secondary customer assignee; repository atomically rechecks the server-loaded customer name |
+| `/maintenance` cards/history | GET | Authenticated | Shared maintenance read | No | Mutation controls are exposed only to a current stable primary or secondary customer assignee |
+| `/maintenance` add/edit forms and form context | GET | Authenticated | Customer-scoped maintenance mutation form | No | Add options contain assigned customers only; edit and form context require assignment to the stored or selected customer |
+| `/maintenance` `add` | POST | Authenticated | Create maintenance record | Yes | Current stable primary or secondary customer assignee; creator comes from the session `userId` |
+| `/maintenance` `update`, `delete` | POST | Authenticated | Customer-scoped mutation | Yes | Current stable primary or secondary customer assignee; object ID and server-loaded customer name are matched in the mutation |
 | `/meeting` list/view/write form | GET | Authenticated | Shared meeting read | No | Edit form is exposed only to the stable author `userId` |
 | `/meeting` `write` | POST | Authenticated | Create meeting | Yes | Author comes only from the session `userId` |
 | `/meeting` `update`, `delete` | POST | Authenticated | Owner-scoped mutation | Yes | Object ID and stable author `userId` are matched in the mutation |
 | `/comment` `add` | POST | Authenticated | Create meeting comment | Yes | Author comes only from the session `userId` |
 | `/comment` `update`, `delete` | POST | Authenticated | Owner-scoped comment mutation | Yes | Comment ID and stable author `userId` are matched in the mutation |
-| `/troubleshooting` list/view/add form | GET | Authenticated | Shared troubleshooting read | No | Edit form is exposed only to the stable creator `userId` |
-| `/troubleshooting` `add` | POST | Authenticated | Create troubleshooting record | Yes | Creator comes only from the session `userId` |
-| `/troubleshooting` `update`, `delete` | POST | Authenticated | Owner-scoped mutation | Yes | Object ID and stable creator `userId` are matched in the mutation |
+| `/troubleshooting` list/view | GET | Authenticated | Shared troubleshooting read | No | Mutation controls are exposed only to a current stable primary or secondary customer assignee |
+| `/troubleshooting` add/edit forms | GET | Authenticated | Customer-scoped troubleshooting mutation form | No | Add options contain assigned customers only; edit requires assignment to the stored customer |
+| `/troubleshooting` `add` | POST | Authenticated | Create troubleshooting record | Yes | Current stable primary or secondary customer assignee; creator comes from the session `userId` |
+| `/troubleshooting` `update`, `delete` | POST | Authenticated | Customer-scoped mutation | Yes | Current stable primary or secondary customer assignee; object ID and server-loaded customer name are matched in the mutation |
 | `/mypage` view/edit/change-password/monthly-response | GET | Authenticated | Current-user data read | No | Session `userId` only |
 | `/mypage` profile/password/monthly-response mutations | POST | Authenticated | Current-user mutation | Yes | Request user ID is not trusted; session `userId` only |
 | `/work-inbox` | GET | Authenticated | Current-user assigned-customer risk and missing-data read | No | Session `userId` and stable customer assignments only; browser-local deferrals never mutate source data |

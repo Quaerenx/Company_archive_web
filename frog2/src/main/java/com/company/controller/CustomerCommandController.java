@@ -1,6 +1,7 @@
 package com.company.controller;
 
 import com.company.model.CustomerDTO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDetailDTO;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
@@ -18,14 +19,27 @@ import java.util.Objects;
 final class CustomerCommandController {
     private final CustomerCommandService service;
     private final CustomerRequestMapper mapper;
+    private final CustomerAssignmentDAO customerAssignmentDAO;
 
     CustomerCommandController() {
-        this(new CustomerCommandService(), new CustomerRequestMapper());
+        this(new CustomerCommandService(), new CustomerRequestMapper(),
+                new CustomerAssignmentDAO());
     }
 
-    CustomerCommandController(CustomerCommandService service, CustomerRequestMapper mapper) {
+    CustomerCommandController(
+            CustomerCommandService service,
+            CustomerRequestMapper mapper) {
+        this(service, mapper, new CustomerAssignmentDAO());
+    }
+
+    CustomerCommandController(
+            CustomerCommandService service,
+            CustomerRequestMapper mapper,
+            CustomerAssignmentDAO customerAssignmentDAO) {
         this.service = Objects.requireNonNull(service, "service");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
+        this.customerAssignmentDAO = Objects.requireNonNull(
+                customerAssignmentDAO, "customerAssignmentDAO");
     }
 
     void handle(
@@ -34,19 +48,18 @@ final class CustomerCommandController {
             HttpSession session) throws IOException {
         String action = request.getParameter("action");
         UserDTO principal = SessionPrincipal.from(session);
-        String actorUserId = principal == null ? null : principal.getUserId();
         if ("saveDetail".equals(action)) {
-            saveDetail(request, response, actorUserId);
+            saveDetail(request, response, principal);
             return;
         }
 
         switch (action == null ? "" : action) {
             case "update" -> updateCustomer(
-                    request, response, actorUserId);
+                    request, response, principal);
             case "add" -> addCustomer(
-                    request, response, actorUserId);
+                    request, response, principal);
             case "delete" -> deleteCustomer(
-                    request, response, actorUserId);
+                    request, response, principal);
             default -> response.sendRedirect("customers?view=list");
         }
     }
@@ -54,17 +67,22 @@ final class CustomerCommandController {
     private void updateCustomer(
             HttpServletRequest request,
             HttpServletResponse response,
-            String actorUserId) throws IOException {
+            UserDTO principal) throws IOException {
         if (rejectInvalidEosDate(
                 request, response, "customers?view=list")) {
             return;
         }
         CustomerDTO customer = mapper.mapCustomer(request);
+        if (!canManageCustomer(principal, customer.getCustomerName())) {
+            redirectForbidden(
+                    request, response, "고객사 정보 수정");
+            return;
+        }
         redirectWithResult(
                 request,
                 response,
                 "customers?view=list",
-                service.updateCustomer(customer, actorUserId),
+                service.updateCustomer(customer, principal.getUserId()),
                 "고객사 정보가 성공적으로 업데이트되었습니다.",
                 "고객사 정보 업데이트 중 오류가 발생했습니다.");
     }
@@ -72,7 +90,7 @@ final class CustomerCommandController {
     private void addCustomer(
             HttpServletRequest request,
             HttpServletResponse response,
-            String actorUserId) throws IOException {
+            UserDTO principal) throws IOException {
         if (rejectInvalidEosDate(
                 request, response, "customers?view=add")) {
             return;
@@ -82,7 +100,7 @@ final class CustomerCommandController {
                 request,
                 response,
                 "customers?view=list",
-                service.addCustomer(customer, actorUserId),
+                service.addCustomer(customer, principal.getUserId()),
                 "새 고객사가 성공적으로 추가되었습니다.",
                 "고객사 추가 중 오류가 발생했습니다.");
     }
@@ -90,13 +108,19 @@ final class CustomerCommandController {
     private void deleteCustomer(
             HttpServletRequest request,
             HttpServletResponse response,
-            String actorUserId) throws IOException {
+            UserDTO principal) throws IOException {
+        String customerName = request.getParameter("customer_name");
+        if (!canManageCustomer(principal, customerName)) {
+            redirectForbidden(
+                    request, response, "고객사 삭제");
+            return;
+        }
         redirectWithResult(
                 request,
                 response,
                 "customers?view=list",
                 service.deleteCustomer(
-                        request.getParameter("customer_name"), actorUserId),
+                        customerName, principal.getUserId()),
                 "고객사가 성공적으로 삭제되었습니다.",
                 "고객사 삭제 중 오류가 발생했습니다.");
     }
@@ -104,7 +128,7 @@ final class CustomerCommandController {
     private void saveDetail(
             HttpServletRequest request,
             HttpServletResponse response,
-            String actorUserId) throws IOException {
+            UserDTO principal) throws IOException {
         CustomerEnvironment environment;
         try {
             environment = mapper.environment(request);
@@ -131,8 +155,19 @@ final class CustomerCommandController {
                         "고객사명이 필요합니다.");
                 return;
             }
+            if (!canManageCustomer(
+                    principal, detail.getCustomerName())) {
+                rejectDetailSave(
+                        request,
+                        response,
+                        environment,
+                        HttpServletResponse.SC_FORBIDDEN,
+                        "customer_assignment_required",
+                        "담당 고객사의 상세정보만 수정할 수 있습니다.");
+                return;
+            }
             boolean success = service.saveCustomerDetail(
-                    environment, detail, actorUserId);
+                    environment, detail, principal.getUserId());
 
             String encodedName = URLEncoder.encode(
                     detail.getCustomerName(), StandardCharsets.UTF_8);
@@ -153,6 +188,27 @@ final class CustomerCommandController {
                     "invalid_date",
                     "날짜 형식이 올바르지 않습니다.");
         }
+    }
+
+    private boolean canManageCustomer(
+            UserDTO principal, String customerName) {
+        return principal != null
+                && customerName != null
+                && customerAssignmentDAO.getCustomerNamesByAssignee(
+                        principal.getUserId(), principal.getUserName())
+                        .contains(customerName);
+    }
+
+    private static void redirectForbidden(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String action) throws IOException {
+        FlashMessage.redirect(
+                request,
+                response,
+                "customers?view=list",
+                "담당 고객사만 " + action + "할 수 있습니다.",
+                "error");
     }
 
     private static void rejectDetailSave(

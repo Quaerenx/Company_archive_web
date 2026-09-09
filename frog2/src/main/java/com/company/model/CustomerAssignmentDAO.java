@@ -10,8 +10,10 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Reads maintenance ownership and schedule data for dashboards and inboxes.
@@ -98,6 +100,45 @@ public class CustomerAssignmentDAO {
         } catch (SQLException exception) {
             throw DataAccessException.from(
                     "load maintenance customers by assignee", exception);
+        }
+    }
+
+    public Set<String> getCustomerNamesByAssignee(
+            String userId,
+            String displayName) {
+        if (isBlank(userId) && isBlank(displayName)) {
+            return Set.of();
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            CustomerAssignmentSupport.Capability capability =
+                    CustomerAssignmentSupport.capability(
+                            connection, schemaCapabilities);
+            String assignee = CustomerAssignmentSupport.assigneeValue(
+                    capability, userId, displayName);
+            if (assignee == null) {
+                return Set.of();
+            }
+            String sql = "SELECT d.customer_name "
+                    + "FROM vertica_customer_detail d "
+                    + "WHERE d.is_deleted = " + ACTIVE_FLAG
+                    + " AND "
+                    + CustomerAssignmentSupport.assigneePredicate(capability)
+                    + " ORDER BY d.customer_name ASC";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, assignee);
+                statement.setString(2, assignee);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    LinkedHashSet<String> customerNames =
+                            new LinkedHashSet<>();
+                    while (resultSet.next()) {
+                        customerNames.add(resultSet.getString("customer_name"));
+                    }
+                    return Set.copyOf(customerNames);
+                }
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load customer names by assignee", exception);
         }
     }
 

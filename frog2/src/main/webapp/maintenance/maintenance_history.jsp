@@ -47,8 +47,10 @@
         <jsp:attribute name="actions">
             <a href="<c:out value='${maintenanceHistoryExportUrl}' />"
                class="ui-button button--secondary button--sm"><i class="fas fa-file-csv" aria-hidden="true"></i> 현재 이력 CSV</a>
-            <a href="${addHistoryUrl}"
-               class="ui-button button--primary button--sm"><i class="fas fa-plus"></i> 새 점검 이력 추가</a>
+            <c:if test="${canManageCustomer}">
+                <a href="${addHistoryUrl}"
+                   class="ui-button button--primary button--sm"><i class="fas fa-plus"></i> 새 점검 이력 추가</a>
+            </c:if>
             <a href="${pageContext.request.contextPath}/maintenance?view=cards"
                class="ui-button button--secondary button--sm"><i class="fas fa-arrow-left"></i> 목록으로</a>
         </jsp:attribute>
@@ -384,9 +386,11 @@
                                                             </div>
                                                         </c:if>
                                                     </dl>
-                                                    <a class="ui-button button--secondary button--sm"
-                                                       data-ui-return-source-key="<c:out value='${row.record.maintenanceId}' />"
-                                                       href="<c:out value='${maintenanceEditUrl}' />">이력 수정</a>
+                                                    <c:if test="${canManageCustomer}">
+                                                        <a class="ui-button button--secondary button--sm"
+                                                           data-ui-return-source-key="<c:out value='${row.record.maintenanceId}' />"
+                                                           href="<c:out value='${maintenanceEditUrl}' />">이력 수정</a>
+                                                    </c:if>
                                                 </section>
                                               </div>
                                             </div>
