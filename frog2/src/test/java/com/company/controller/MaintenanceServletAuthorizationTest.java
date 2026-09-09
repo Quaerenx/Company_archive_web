@@ -34,6 +34,33 @@ import org.junit.jupiter.api.Test;
 
 class MaintenanceServletAuthorizationTest {
     @Test
+    void cardsMarkCustomersWithARecordInTheCurrentSeoulMonth()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        MaintenanceRecordDTO currentMonthRecord = record("owner-1");
+        currentMonthRecord.setInspectionDate(Date.valueOf("2026-09-08"));
+        dao.monthlyRecords = List.of(currentMonthRecord);
+        Clock clock = Clock.fixed(
+                Instant.parse("2026-09-15T00:00:00Z"),
+                ZoneOffset.UTC);
+        MaintenanceServlet servlet = servlet(
+                dao, new StubCustomerDAO(), clock);
+        RequestFixture request = new RequestFixture(user("owner-1"));
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(
+                "/maintenance/maintenance_cards.jsp",
+                request.forwardedPath);
+        Map<?, ?> registeredCustomers = (Map<?, ?>)
+                request.attributes.get("currentMonthMaintenanceCustomers");
+        assertEquals(Boolean.TRUE, registeredCustomers.get("Acme"));
+        assertEquals(Date.valueOf("2026-09-01"), dao.lastMonthStart);
+        assertEquals(Date.valueOf("2026-10-01"), dao.lastMonthEnd);
+        assertEquals(List.of("Acme"), dao.lastMonthCustomers);
+    }
+
+    @Test
     void historyDefaultsToTwentyRecordsAndSharesThePageWithTheChart()
             throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
@@ -496,6 +523,22 @@ class MaintenanceServletAuthorizationTest {
         private MaintenanceFormHistoryContext formContext =
                 MaintenanceFormHistoryContext.empty();
         private String lastFormContextCustomer;
+        private List<MaintenanceRecordDTO> monthlyRecords = List.of();
+        private Date lastMonthStart;
+        private Date lastMonthEnd;
+        private List<String> lastMonthCustomers;
+
+        @Override
+        public List<MaintenanceRecordDTO>
+                getMaintenanceRecordsByMonthForCustomers(
+                        Date startDate,
+                        Date endDate,
+                        List<String> customerNames) {
+            lastMonthStart = startDate;
+            lastMonthEnd = endDate;
+            lastMonthCustomers = List.copyOf(customerNames);
+            return monthlyRecords;
+        }
 
         @Override
         public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(

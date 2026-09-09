@@ -65,6 +65,11 @@ class CustomerControllerCompatibilityTest {
         assertEquals(2, request.attributes.get("maintenanceCount"));
         assertEquals(1, request.attributes.get("currentPage"));
         assertEquals(1, request.attributes.get("totalPages"));
+        Map<?, ?> assignmentFlags = (Map<?, ?>)
+                request.attributes.get("customerAssignmentFlags");
+        assertEquals(Boolean.TRUE, assignmentFlags.get("Acme"));
+        assertEquals(null, assignmentFlags.get("Beta"));
+        assertEquals("Tester", request.attributes.get("currentUserName"));
     }
 
     @Test

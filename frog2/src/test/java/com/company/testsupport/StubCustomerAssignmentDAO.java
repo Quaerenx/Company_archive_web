@@ -2,6 +2,7 @@ package com.company.testsupport;
 
 import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
+import com.company.model.MaintenanceCustomerAssignment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +42,16 @@ public final class StubCustomerAssignmentDAO extends CustomerAssignmentDAO {
             String userId,
             String displayName) {
         return customerNames;
+    }
+
+    @Override
+    public List<MaintenanceCustomerAssignment>
+            getAllMaintenanceCustomerAssignments() {
+        return maintenanceCustomers.stream()
+                .map(customer -> new MaintenanceCustomerAssignment(
+                        customer.getCustomerName(),
+                        customer.getManagerName()))
+                .toList();
     }
 
     private static CustomerDTO maintenanceCustomer(String customerName) {

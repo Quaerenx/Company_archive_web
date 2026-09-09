@@ -26,7 +26,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 final class CustomerQueryController {
@@ -131,7 +133,7 @@ final class CustomerQueryController {
 
         String view = defaultValue(request.getParameter("view"), "list");
         switch (view) {
-            case "list" -> showList(request, response);
+            case "list" -> showList(request, response, user);
             case "export" -> exportList(request, response);
             case "detail" -> showDetail(request, response, user);
             case "edit" -> showEdit(request, response, user);
@@ -198,7 +200,10 @@ final class CustomerQueryController {
                 rows);
     }
 
-    private void showList(HttpServletRequest request, HttpServletResponse response)
+    private void showList(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            UserDTO user)
             throws ServletException, IOException {
         RequestPerformanceContext.markOperation(Operation.CUSTOMERS_LIST);
         long dataLoadStart = System.nanoTime();
@@ -241,6 +246,16 @@ final class CustomerQueryController {
         request.setAttribute("currentPage", page.page());
         request.setAttribute("pageSize", page.pageSize());
         request.setAttribute("totalPages", page.totalPages());
+        Map<String, Boolean> customerAssignmentFlags = new LinkedHashMap<>();
+        for (String customerName
+                : customerAssignmentDAO.getCustomerNamesByAssignee(
+                        user.getUserId(), user.getUserName())) {
+            customerAssignmentFlags.put(customerName, Boolean.TRUE);
+        }
+        request.setAttribute(
+                "customerAssignmentFlags",
+                Map.copyOf(customerAssignmentFlags));
+        request.setAttribute("currentUserName", user.getUserName());
         long viewRenderStart = System.nanoTime();
         try {
             forward(

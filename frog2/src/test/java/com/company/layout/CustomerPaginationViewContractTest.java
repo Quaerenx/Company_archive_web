@@ -124,6 +124,29 @@ class CustomerPaginationViewContractTest {
     }
 
     @Test
+    void assignedCustomersHaveABadgeAndRowAccent() throws Exception {
+        String page = Files.readString(
+                WEBAPP.resolve("customers/customers_list.jsp"));
+        String styles = Files.readString(
+                WEBAPP.resolve("resources/css/pages/customers.css"));
+
+        assertTrue(page.contains("data-assigned-customer="));
+        assertTrue(page.contains(
+                "customerAssignmentFlags[customer.customerName]"));
+        assertFalse(page.contains("내 담당"));
+        assertTrue(page.contains("customer-assignee-badge"));
+        assertTrue(page.contains("<c:out value=\"${currentUserName}\" />"));
+        assertTrue(page.indexOf("customer-assignee-badge")
+                > page.indexOf("<dt>담당자</dt>"));
+        assertTrue(styles.contains(".customer-assignee-badge"));
+        assertTrue(styles.contains(
+                ".customer-row[data-assigned-customer=\"true\"]"));
+        assertTrue(styles.contains(
+                "box-shadow: inset 3px 0 0 var(--color-info-border)"));
+        assertTrue(styles.contains("background: var(--color-info-bg)"));
+    }
+
+    @Test
     void keepsTableFooterMinimalAndOnlyShowsItWithCustomerRows() throws Exception {
         String page = Files.readString(WEBAPP.resolve("customers/customers_list.jsp"));
         String tag = Files.readString(WEBAPP.resolve("WEB-INF/tags/tableFooter.tag"));

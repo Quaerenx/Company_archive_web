@@ -272,6 +272,24 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     display: none;
 }
 
+.customer-list-panel .customer-table .customer-row[data-assigned-customer="true"] {
+    background: var(--color-info-bg);
+    box-shadow: inset 3px 0 0 var(--color-info-border);
+}
+
+.customer-list-panel .customer-table .customer-row[data-assigned-customer="true"]:is(:hover, :focus-within) {
+    background: var(--color-surface-selected);
+    box-shadow: inset 3px 0 0 var(--color-info-border);
+}
+
+.customer-assignee-badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 1024px) {
     .customer-list-toolbar {

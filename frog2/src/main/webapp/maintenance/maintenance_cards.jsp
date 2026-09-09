@@ -44,6 +44,7 @@
                                 </c:url>
                                 <a class="customer-card"
                                    href="<c:out value='${historyUrl}' />"
+                                   data-current-month-registered="${currentMonthMaintenanceCustomers[customer.customerName] ? 'true' : 'false'}"
                                    data-detail-url="<c:out value='${historyUrl}' />">
                                     
                                     <div class="customer-name">
@@ -53,6 +54,12 @@
                                             <span class="maintenance-frequency">분기</span>
                                         </c:if>
                                     </div>
+
+                                    <c:if test="${currentMonthMaintenanceCustomers[customer.customerName]}">
+                                        <i class="fas fa-check-circle maintenance-registration-check"
+                                           role="img"
+                                           aria-label="이번 달 등록 완료"></i>
+                                    </c:if>
                                     
                                     <div class="customer-info">
                                         <div class="info-row">

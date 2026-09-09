@@ -7,6 +7,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.Clock;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -208,6 +209,9 @@ public class MaintenanceServlet extends HttpServlet {
         request.setAttribute(
                 "maintenanceFrequencyLabels",
                 getMaintenanceFrequencyLabels());
+        request.setAttribute(
+                "currentMonthMaintenanceCustomers",
+                getCurrentMonthMaintenanceCustomers(inspectorCustomers));
         request.setAttribute("viewType", "cards");
         request.getRequestDispatcher("/maintenance/maintenance_cards.jsp")
                 .forward(request, response);
@@ -357,6 +361,33 @@ public class MaintenanceServlet extends HttpServlet {
                     assignment.schedule().isQuarterly() ? "분기" : "월별");
         }
         return labels;
+    }
+
+    private Map<String, Boolean> getCurrentMonthMaintenanceCustomers(
+            Map<String, List<CustomerDTO>> inspectorCustomers) {
+        List<String> customerNames = inspectorCustomers.values().stream()
+                .flatMap(List::stream)
+                .map(CustomerDTO::getCustomerName)
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .toList();
+        if (customerNames.isEmpty()) {
+            return Map.of();
+        }
+
+        YearMonth currentMonth = BusinessDate.currentMonth(clock);
+        Date startDate = Date.valueOf(currentMonth.atDay(1));
+        Date endDate = Date.valueOf(currentMonth.plusMonths(1).atDay(1));
+        Map<String, Boolean> registeredCustomers = new LinkedHashMap<>();
+        for (MaintenanceRecordDTO record
+                : maintenanceDAO.getMaintenanceRecordsByMonthForCustomers(
+                        startDate, endDate, customerNames)) {
+            String customerName = record.getCustomerName();
+            if (customerName != null && !customerName.isBlank()) {
+                registeredCustomers.put(customerName, Boolean.TRUE);
+            }
+        }
+        return Map.copyOf(registeredCustomers);
     }
 
     @Override

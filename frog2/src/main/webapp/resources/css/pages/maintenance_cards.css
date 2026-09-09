@@ -20,10 +20,15 @@
     .maintenance-management .customer-card:hover { background: var(--color-surface-hover); border-color: var(--color-border-strong); }
     .maintenance-management .customer-card:focus-visible { border-color: var(--color-focus); box-shadow: 0 0 0 3px var(--color-focus-ring); outline: 2px solid var(--color-focus); outline-offset: 2px; }
 
+    .maintenance-management .customer-card[data-current-month-registered="true"] { background: var(--color-surface); border-color: var(--color-success-border); box-shadow: inset 3px 0 0 var(--color-success); }
+    .maintenance-management .customer-card[data-current-month-registered="true"]:hover { background: var(--color-success-bg); border-color: var(--color-success-border); }
+    .maintenance-management .customer-card[data-current-month-registered="true"] .customer-name { padding-inline-end: var(--space-20); }
+
     .maintenance-management .customer-name { font-size: var(--font-size-md); font-weight: 600; color: var(--color-text); margin-bottom: var(--space-8); display: flex; align-items: center; gap: var(--space-8); }
     .maintenance-management .customer-name i { color: currentColor; font-size: var(--icon-size-sm); }
     .maintenance-management .customer-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .maintenance-management .maintenance-frequency { color: var(--color-text-muted); flex: none; font-size: var(--font-size-xs); font-weight: 400; }
+    .maintenance-management .maintenance-registration-check { color: var(--color-success-text); font-size: var(--icon-size-sm); inset-block-start: var(--space-12); inset-inline-end: var(--space-12); position: absolute; }
 
     .maintenance-management .customer-info { display: grid; gap: var(--space-8); font-size: var(--font-size-sm); color: var(--color-text-muted); }
 

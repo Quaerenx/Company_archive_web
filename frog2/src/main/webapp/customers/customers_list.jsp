@@ -224,6 +224,7 @@
                         <tr class="customer-row ui-data-row"
                             data-ui-return-row
                             data-ui-return-key="<c:out value='${customer.customerName}' />"
+                            data-assigned-customer="${customerAssignmentFlags[customer.customerName] ? 'true' : 'false'}"
                             data-detail-url="<c:out value="${customerDetailUrl}" />">
                             <td class="col--customer" title="<c:out value="${customer.customerName}" />" data-original="<c:out value="${customer.customerName}" />">
                                 <a class="customer-detail-link"
@@ -258,7 +259,14 @@
                                     </div>
                                     <div>
                                         <dt>담당자</dt>
-                                        <dd><c:out value="${customer.managerName}" default="-" /></dd>
+                                        <dd>
+                                            <c:choose>
+                                                <c:when test="${customerAssignmentFlags[customer.customerName]}">
+                                                    <span class="customer-assignee-badge ui-badge ui-badge--info"><c:out value="${currentUserName}" /></span>
+                                                </c:when>
+                                                <c:otherwise><c:out value="${customer.managerName}" default="-" /></c:otherwise>
+                                            </c:choose>
+                                        </dd>
                                     </div>
                                     <div class="customer-mobile-meta__wide">
                                         <dt>SAID</dt>
@@ -279,7 +287,14 @@
                                 </c:choose>
                             </td>
                             <td class="col--identifier" data-original="<c:out value="${customer.said}" />"><c:out value="${customer.said}" default="-" /></td>
-                            <td class="col--author" title="<c:out value="${customer.managerName}" />" data-original="<c:out value="${customer.managerName}" />"><c:out value="${customer.managerName}" default="-" /></td>
+                            <td class="col--author" title="<c:out value='${customerAssignmentFlags[customer.customerName] ? currentUserName : customer.managerName}' />" data-original="<c:out value="${customer.managerName}" />">
+                                <c:choose>
+                                    <c:when test="${customerAssignmentFlags[customer.customerName]}">
+                                        <span class="customer-assignee-badge ui-badge ui-badge--info"><c:out value="${currentUserName}" /></span>
+                                    </c:when>
+                                    <c:otherwise><c:out value="${customer.managerName}" default="-" /></c:otherwise>
+                                </c:choose>
+                            </td>
                         </tr>
                     </c:forEach>
 
