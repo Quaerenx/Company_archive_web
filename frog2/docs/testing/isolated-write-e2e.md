@@ -30,7 +30,8 @@ port, or a WAR outside the isolated runtime root fails closed.
 
 `AuthenticatedMaintenanceE2ETest` is tagged `e2e-write` and excluded from normal builds. Once an isolated database and isolated Tomcat are supplied, it performs:
 
-1. temporary owner and attacker creation;
+1. temporary owner and attacker creation plus an active maintenance customer
+   assigned to the owner by user ID;
 2. login and CSRF acquisition;
 3. owner create and read;
 4. attacker edit/update/delete rejection;
@@ -100,8 +101,13 @@ multipart cleanup, administrator-only selected import, and preservation of
 unselected files. Its maintenance scenario uses a stateful DAO double; it
 does not access any database.
 
-The older real-HTTP maintenance scenario still needs an assigned-customer seed
-fixture before it can run against the current customer-assignment policy.
+The real-HTTP maintenance scenario seeds its own active customer with both
+assignment-ID columns present and removes that customer using its unique name
+and owner ID. Cleanup attempts maintenance records, the customer, and temporary
+users even if an earlier cleanup fails. A normal-CI JDBC-double regression
+checks that the seeded customer is selectable by the original assignment DAO
+for its owner and unavailable to a different user with the same display name.
+This verifies the fixture contract without exercising a database or HTTP.
 Neither task should be reported as a real HTTP write test until an isolated
 Tomcat/database has been provisioned and that scenario has actually run.
 

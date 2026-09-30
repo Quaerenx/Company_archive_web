@@ -11,6 +11,21 @@
 <c:url var="customerHistoryUrl" value="/maintenance">
     <c:param name="view" value="history" />
     <c:param name="customerName" value="${customerName}" />
+    <c:param name="historyPage" value="${param.returnHistoryPage}" />
+    <c:param name="historyYear" value="${param.returnHistoryYear}" />
+    <c:param name="historyVersion" value="${param.returnHistoryVersion}" />
+    <c:param name="historyQuery" value="${param.returnHistoryQuery}" />
+    <c:if test="${not empty returnCardsMonth}">
+        <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+        <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+    </c:if>
+</c:url>
+<c:url var="maintenanceCardsReturnUrl" value="/maintenance">
+    <c:param name="view" value="cards" />
+    <c:if test="${not empty returnCardsMonth}">
+        <c:param name="maintenanceMonth" value="${returnCardsMonth}" />
+        <c:param name="registrationStatus" value="${returnCardsStatus}" />
+    </c:if>
 </c:url>
 
 <!-- 전체를 maintenance-add-page 클래스로 감싸기 -->
@@ -30,7 +45,7 @@
                            class="ui-button button--secondary button--md"><i class="fas fa-history"></i> 이력으로</a>
                     </c:when>
                     <c:otherwise>
-                        <a href="${pageContext.request.contextPath}/maintenance?view=cards"
+                        <a href="<c:out value='${maintenanceCardsReturnUrl}' />"
                            class="ui-button button--secondary button--md"><i class="fas fa-list"></i> 카드로</a>
                     </c:otherwise>
                 </c:choose>
@@ -55,6 +70,14 @@
                   data-ui-submit-lock="auto">
                 <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
                 <input type="hidden" name="action" value="add">
+                <input type="hidden" name="returnHistoryPage" value="<c:out value='${param.returnHistoryPage}' />" />
+                <input type="hidden" name="returnHistoryYear" value="<c:out value='${param.returnHistoryYear}' />" />
+                <input type="hidden" name="returnHistoryVersion" value="<c:out value='${param.returnHistoryVersion}' />" />
+                <input type="hidden" name="returnHistoryQuery" value="<c:out value='${param.returnHistoryQuery}' />" />
+                <c:if test="${not empty returnCardsMonth}">
+                    <input type="hidden" name="returnCardsMonth" value="<c:out value='${returnCardsMonth}' />" />
+                    <input type="hidden" name="returnCardsStatus" value="<c:out value='${returnCardsStatus}' />" />
+                </c:if>
 
                 <%@ include file="/WEB-INF/includes/maintenance_form_fields.jspf" %>
 
@@ -66,7 +89,7 @@
                                class="ui-button button--secondary button--md">취소</a>
                         </c:when>
                         <c:otherwise>
-                            <a href="${pageContext.request.contextPath}/maintenance?view=cards"
+                            <a href="<c:out value='${maintenanceCardsReturnUrl}' />"
                                class="ui-button button--secondary button--md">취소</a>
                         </c:otherwise>
                     </c:choose>

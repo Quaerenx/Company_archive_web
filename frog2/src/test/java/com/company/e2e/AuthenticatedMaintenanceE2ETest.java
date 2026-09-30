@@ -79,6 +79,7 @@ class AuthenticatedMaintenanceE2ETest {
             try {
                 insertUser(database, owner);
                 insertUser(database, attacker);
+                insertMaintenanceCustomer(database, customerName, owner.userId(), owner.userName());
 
                 SessionClient ownerClient = SessionClient.create(baseUri);
                 ownerClient.login(owner);
@@ -258,6 +259,24 @@ class AuthenticatedMaintenanceE2ETest {
         }
     }
 
+    static void insertMaintenanceCustomer(Connection connection, String customerName,
+            String ownerUserId, String ownerName) throws Exception {
+        String sql = "INSERT INTO vertica_customer_detail "
+                + "(customer_name, main_manager, main_manager_user_id, sub_manager_user_id, "
+                + "customer_type, is_deleted, vertica_version, license_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, customerName);
+            statement.setString(2, ownerName);
+            statement.setString(3, ownerUserId);
+            statement.setNull(4, java.sql.Types.VARCHAR);
+            statement.setString(5, "정기점검 계약 고객사");
+            statement.setInt(6, 1);
+            statement.setString(7, "25.4.0-9");
+            statement.setString(8, "1TB");
+            assertEquals(1, statement.executeUpdate());
+        }
+    }
+
     private static DatabaseRecord requiredMaintenanceRecord(
             Connection connection,
             String customerName,
@@ -276,25 +295,37 @@ class AuthenticatedMaintenanceE2ETest {
                 connection, customerName, creatorUserId) != null;
     }
 
-    private static void cleanupTemporaryData(
+    static void cleanupTemporaryData(
             Connection connection,
             String customerName,
             String ownerUserId,
             String attackerUserId) throws Exception {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "DELETE FROM maintenance_records "
-                        + "WHERE customer_name = ? "
-                        + "AND created_by_user_id IN (?, ?)")) {
-            statement.setString(1, customerName);
-            statement.setString(2, ownerUserId);
-            statement.setString(3, attackerUserId);
-            statement.executeUpdate();
+        List<String> sql = List.of(
+                "DELETE FROM maintenance_records WHERE customer_name = ? AND created_by_user_id IN (?, ?)",
+                "DELETE FROM vertica_customer_detail WHERE customer_name = ? AND main_manager_user_id = ?",
+                "DELETE FROM company_users WHERE userId IN (?, ?)");
+        List<List<String>> parameters = List.of(
+                List.of(customerName, ownerUserId, attackerUserId),
+                List.of(customerName, ownerUserId),
+                List.of(ownerUserId, attackerUserId));
+        Exception failure = null;
+        for (int index = 0; index < sql.size(); index++) {
+            try (PreparedStatement statement = connection.prepareStatement(sql.get(index))) {
+                List<String> values = parameters.get(index);
+                for (int parameter = 0; parameter < values.size(); parameter++) {
+                    statement.setString(parameter + 1, values.get(parameter));
+                }
+                statement.executeUpdate();
+            } catch (Exception exception) {
+                if (failure == null) {
+                    failure = exception;
+                } else {
+                    failure.addSuppressed(exception);
+                }
+            }
         }
-        try (PreparedStatement statement = connection.prepareStatement(
-                "DELETE FROM company_users WHERE userId IN (?, ?)")) {
-            statement.setString(1, ownerUserId);
-            statement.setString(2, attackerUserId);
-            statement.executeUpdate();
+        if (failure != null) {
+            throw failure;
         }
     }
 

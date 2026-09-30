@@ -8,6 +8,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +21,8 @@ public final class TestTableJdbcRouter {
             "company_users", "vertica_customer_detail", "customer_maintenance_schedule", "maintenance_records");
     private static final Pattern REFERENCE = Pattern.compile(
             "\\b(FROM|JOIN|INTO|UPDATE)\\s+([a-z_][a-z0-9_]*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FROM_TOKEN = Pattern.compile(
+            "\\b(FROM|WHERE|GROUP|HAVING|ORDER|LIMIT|OFFSET)\\b|[(),]", Pattern.CASE_INSENSITIVE);
     private final String prefix;
 
     public TestTableJdbcRouter(String prefix) {
@@ -54,12 +57,12 @@ public final class TestTableJdbcRouter {
         String leading = masked.stripLeading().toUpperCase(Locale.ROOT);
         if (!leading.matches("(?s)(SELECT|INSERT|UPDATE|DELETE)\\s+.*")
                 || masked.matches("(?is).*\\b(USING|UNION|INTERSECT|EXCEPT|RETURNING|COPY|MERGE|CALL|NEXTVAL|SETVAL|CURRVAL)\\b.*")
-                || masked.matches("(?is).*\\bFROM\\s*\\(.*")
-                || masked.matches("(?is).*\\bFROM\\s+\\w+(?:\\s+(?:AS\\s+)?\\w+)?\\s*,.*")) {
+                || masked.matches("(?is).*\\b(FROM|JOIN)\\s*\\(.*")) {
             throw new SQLException("Only reviewed single-table or explicit-join DML is allowed");
         }
-        if ((leading.startsWith("DELETE ") || leading.startsWith("UPDATE "))
-                && !masked.matches("(?is).*\\bWHERE\\b.*")) {
+        rejectImplicitTableLists(masked);
+        if (leading.matches("(?s)(DELETE|UPDATE)\\s+.*")
+                && !hasOuterWhere(masked)) {
             throw new SQLException("Test-table mutations require a row predicate");
         }
         Matcher references = REFERENCE.matcher(masked);
@@ -80,6 +83,50 @@ public final class TestTableJdbcRouter {
             throw new SQLException("SQL must reference an approved test table");
         }
         return routed.append(sql, end, sql.length()).toString();
+    }
+
+    private static boolean hasOuterWhere(String masked) {
+        int depth = 0;
+        Matcher tokens = FROM_TOKEN.matcher(masked);
+        while (tokens.find()) {
+            String token = tokens.group();
+            if ("(".equals(token)) {
+                depth++;
+            } else if (")".equals(token)) {
+                depth--;
+            } else if (depth == 0 && "WHERE".equalsIgnoreCase(token)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void rejectImplicitTableLists(String masked) throws SQLException {
+        Set<Integer> fromDepths = new HashSet<>();
+        int depth = 0;
+        Matcher tokens = FROM_TOKEN.matcher(masked);
+        while (tokens.find()) {
+            String token = tokens.group().toUpperCase(Locale.ROOT);
+            switch (token) {
+                case "(" -> depth++;
+                case ")" -> {
+                    fromDepths.remove(depth);
+                    if (--depth < 0) {
+                        throw new SQLException("Unbalanced parentheses in test-table routing");
+                    }
+                }
+                case "FROM" -> fromDepths.add(depth);
+                case "," -> {
+                    if (fromDepths.contains(depth)) {
+                        throw new SQLException("Implicit table lists are forbidden in test-table routing");
+                    }
+                }
+                default -> fromDepths.remove(depth);
+            }
+        }
+        if (depth != 0) {
+            throw new SQLException("Unbalanced parentheses in test-table routing");
+        }
     }
 
     private static String maskLiterals(String sql) throws SQLException {

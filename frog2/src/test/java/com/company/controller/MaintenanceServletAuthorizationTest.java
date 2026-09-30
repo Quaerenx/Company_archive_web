@@ -35,6 +35,123 @@ import org.junit.jupiter.api.Test;
 
 class MaintenanceServletAuthorizationTest {
     @Test
+    void historyAndFormsExposeOnlyValidatedCardsReturnFilters() throws Exception {
+        for (String view : List.of("history", "add", "edit")) {
+            StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+            dao.record = record("owner-1");
+            RequestFixture request = new RequestFixture(user("owner-1"));
+            request.parameters.put("view", view);
+            request.parameters.put("customerName", "Acme");
+            request.parameters.put("id", "17");
+            request.parameters.put("returnCardsMonth", " 2026-08 ");
+            request.parameters.put("returnCardsStatus", " unregistered ");
+
+            servlet(dao, new StubCustomerDAO()).doGet(
+                    request.proxy(), new ResponseFixture().proxy());
+
+            assertEquals("2026-08", request.attributes.get("returnCardsMonth"), view);
+            assertEquals("unregistered", request.attributes.get("returnCardsStatus"), view);
+        }
+    }
+
+    @Test
+    void absentOrInvalidCardsReturnHintsKeepTheDefaultListNavigation()
+            throws Exception {
+        for (Map<String, String> hints : List.of(
+                Map.<String, String>of(),
+                Map.of("returnCardsMonth", "2026-13", "returnCardsStatus", "registered"),
+                Map.of("returnCardsMonth", "2101-01", "returnCardsStatus", "registered"),
+                Map.of("returnCardsMonth", "2026-08", "returnCardsStatus", "all&redirect=evil"),
+                Map.of("returnCardsMonth", "https://example.invalid", "returnCardsStatus", "all"),
+                Map.of("returnCardsStatus", "registered"))) {
+            RequestFixture request = new RequestFixture(user("owner-1"));
+            request.parameters.put("view", "history");
+            request.parameters.put("customerName", "Acme");
+            request.parameters.putAll(hints);
+            ResponseFixture response = new ResponseFixture();
+
+            servlet(new StubMaintenanceRecordDAO(), new StubCustomerDAO())
+                    .doGet(request.proxy(), response.proxy());
+
+            assertEquals("/maintenance/maintenance_history.jsp", request.forwardedPath);
+            assertEquals(HttpServletResponse.SC_OK, response.status);
+            assertNull(request.attributes.get("returnCardsMonth"));
+            assertNull(request.attributes.get("returnCardsStatus"));
+        }
+    }
+
+    @Test
+    void postRedirectsPreserveCardsFiltersAndEncodeHistorySearch()
+            throws Exception {
+        for (String action : List.of("add", "update", "delete")) {
+            StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+            dao.record = record("owner-1");
+            RequestFixture request = new RequestFixture(user("owner-1"));
+            request.parameters.put("action", action);
+            request.parameters.put("maintenance_id", "17");
+            request.parameters.put("customer_name", "Acme");
+            request.parameters.put("inspector_name", "Alice");
+            request.parameters.put("inspection_date", "2026-08-03");
+            request.parameters.put("returnCardsMonth", "2026-08");
+            request.parameters.put("returnCardsStatus", "registered");
+            request.parameters.put("returnHistoryPage", "2");
+            request.parameters.put("returnHistoryYear", "2026");
+            request.parameters.put("returnHistoryVersion", "24.3&beta");
+            request.parameters.put("returnHistoryQuery", "Team A&B / 점검");
+            request.parameters.put("returnUrl", "https://example.invalid");
+            ResponseFixture response = new ResponseFixture();
+
+            servlet(dao, new StubCustomerDAO()).doPost(
+                    request.proxy(), response.proxy());
+
+            assertTrue(response.redirect.startsWith(
+                    "maintenance?view=history&customerName=Acme&"), action);
+            assertTrue(response.redirect.contains("&historyPage=2"), action);
+            assertTrue(response.redirect.contains("&historyYear=2026"), action);
+            assertTrue(response.redirect.contains("&historyVersion=24.3%26beta"), action);
+            assertTrue(response.redirect.contains(
+                    "&historyQuery=Team+A%26B+%2F+%EC%A0%90%EA%B2%80"), action);
+            assertTrue(response.redirect.contains("&returnCardsMonth=2026-08"), action);
+            assertTrue(response.redirect.contains("&returnCardsStatus=registered"), action);
+            assertFalse(response.redirect.contains("example.invalid"), action);
+        }
+    }
+
+    @Test
+    void mutationRedirectOmitsInvalidCardsReturnHints() throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        dao.record = record("owner-1");
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("action", "delete");
+        request.parameters.put("maintenance_id", "17");
+        request.parameters.put("returnCardsMonth", "2026-08");
+        request.parameters.put("returnCardsStatus", "registered&customerName=Other");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet(dao, new StubCustomerDAO()).doPost(request.proxy(), response.proxy());
+
+        assertTrue(response.redirect.startsWith("maintenance?view=history&customerName=Acme&_flash="));
+        assertFalse(response.redirect.contains("returnCards"));
+        assertFalse(response.redirect.contains("Other"));
+    }
+
+    @Test
+    void missingRecordReturnsToTheSelectedCardsFilters() throws Exception {
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "edit");
+        request.parameters.put("id", "17");
+        request.parameters.put("returnCardsMonth", "2026-08");
+        request.parameters.put("returnCardsStatus", "unregistered");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet(new StubMaintenanceRecordDAO(), new StubCustomerDAO())
+                .doGet(request.proxy(), response.proxy());
+
+        assertTrue(response.redirect.startsWith(
+                "maintenance?view=cards&maintenanceMonth=2026-08&registrationStatus=unregistered&_flash="));
+    }
+
+    @Test
     void cardsMarkCustomersWithARecordInTheCurrentSeoulMonth()
             throws Exception {
         StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
@@ -299,6 +416,8 @@ class MaintenanceServletAuthorizationTest {
         request.parameters.put("inspector_name", "Alice");
         request.parameters.put("inspection_date", "2026-02-30");
         request.parameters.put("note", "작성 중인 긴 점검 메모");
+        request.parameters.put("returnCardsMonth", "2026-08");
+        request.parameters.put("returnCardsStatus", "unregistered");
         ResponseFixture response = new ResponseFixture();
 
         servlet.doPost(request.proxy(), response.proxy());
@@ -314,6 +433,8 @@ class MaintenanceServletAuthorizationTest {
         Map<?, ?> errors = (Map<?, ?>)
                 request.attributes.get("fieldErrors");
         assertTrue(errors.containsKey("inspection_date"));
+        assertEquals("2026-08", request.attributes.get("returnCardsMonth"));
+        assertEquals("unregistered", request.attributes.get("returnCardsStatus"));
     }
 
     @Test

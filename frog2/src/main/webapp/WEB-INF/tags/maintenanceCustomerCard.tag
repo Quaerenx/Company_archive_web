@@ -4,6 +4,7 @@
 <%@ attribute name="registered" required="true" rtexprvalue="true" type="java.lang.Boolean" %>
 <%@ attribute name="due" required="true" rtexprvalue="true" type="java.lang.Boolean" %>
 <%@ attribute name="monthLabel" required="true" rtexprvalue="true" %>
+<%@ attribute name="registrationFilter" required="true" rtexprvalue="true" %>
 <%@ attribute name="frequencyLabel" required="false" rtexprvalue="true" %>
 
 <c:choose>
@@ -24,6 +25,8 @@
 <c:url var="historyUrl" value="/maintenance">
     <c:param name="view" value="history" />
     <c:param name="customerName" value="${customer.customerName}" />
+    <c:param name="returnCardsMonth" value="${monthLabel}" />
+    <c:param name="returnCardsStatus" value="${registrationFilter}" />
 </c:url>
 <a class="customer-card"
    href="<c:out value='${historyUrl}' />"

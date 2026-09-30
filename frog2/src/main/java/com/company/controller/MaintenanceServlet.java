@@ -102,6 +102,7 @@ public class MaintenanceServlet extends HttpServlet {
             return;
         }
         FlashMessage.expose(request);
+        exposeCardsReturnContext(request);
 
         String viewType = request.getParameter("view");
         if (viewType == null || viewType.isEmpty()) {
@@ -121,7 +122,7 @@ public class MaintenanceServlet extends HttpServlet {
                     user);
             case "formContext" -> writeFormContext(request, response, user);
             case "edit" -> showEdit(request, response, user);
-            default -> redirectToCards(response);
+            default -> redirectToCards(request, response);
         }
     }
 
@@ -290,6 +291,32 @@ public class MaintenanceServlet extends HttpServlet {
         };
     }
 
+    private CardsReturnContext cardsReturnContext(HttpServletRequest request) {
+        String rawMonth = trimToNull(request.getParameter("returnCardsMonth"));
+        if (rawMonth == null) {
+            return null;
+        }
+        try {
+            return new CardsReturnContext(
+                    parseCardsMonth(rawMonth).toString(),
+                    parseRegistrationStatus(request.getParameter("returnCardsStatus")));
+        } catch (IllegalArgumentException exception) {
+            // Invalid optional navigation hints must not prevent viewing or saving history.
+            return null;
+        }
+    }
+
+    private void exposeCardsReturnContext(HttpServletRequest request) {
+        CardsReturnContext context = cardsReturnContext(request);
+        if (context != null) {
+            request.setAttribute("returnCardsMonth", context.month());
+            request.setAttribute("returnCardsStatus", context.registrationStatus());
+        }
+    }
+
+    private record CardsReturnContext(String month, String registrationStatus) {
+    }
+
     private List<CustomerDTO> filterMaintenanceCustomers(
             List<CustomerDTO> customers,
             String registrationStatus,
@@ -313,7 +340,7 @@ public class MaintenanceServlet extends HttpServlet {
             UserDTO user) throws ServletException, IOException {
         String customerName = request.getParameter("customerName");
         if (customerName == null || customerName.isEmpty()) {
-            redirectToCards(response);
+            redirectToCards(request, response);
             return;
         }
         int historyPage;
@@ -392,7 +419,7 @@ public class MaintenanceServlet extends HttpServlet {
             FlashMessage.redirect(
                     request,
                     response,
-                    "maintenance?view=cards",
+                    cardsReturnLocation(request),
                     "해당 정기점검 이력을 찾을 수 없습니다.",
                     "error");
             return;
@@ -538,17 +565,18 @@ public class MaintenanceServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        exposeCardsReturnContext(request);
 
         String actionType = request.getParameter("action");
         if (actionType == null) {
-            redirectToCards(response);
+            redirectToCards(request, response);
             return;
         }
         switch (actionType) {
             case "add" -> addRecord(request, response, currentUser);
             case "update" -> updateRecord(request, response, currentUser);
             case "delete" -> deleteRecord(request, response, currentUser);
-            default -> redirectToCards(response);
+            default -> redirectToCards(request, response);
         }
     }
 
@@ -602,7 +630,7 @@ public class MaintenanceServlet extends HttpServlet {
             FlashMessage.redirect(
                     request,
                     response,
-                    "maintenance?view=cards",
+                    cardsReturnLocation(request),
                     "수정 권한이 없거나 이력을 찾을 수 없습니다.",
                     "error");
             return;
@@ -682,7 +710,7 @@ public class MaintenanceServlet extends HttpServlet {
 
         String location = customerName != null && !customerName.isEmpty()
                 ? historyReturnLocation(request, customerName)
-                : "maintenance?view=cards";
+                : cardsReturnLocation(request);
         if (message == null) {
             response.sendRedirect(location);
             return;
@@ -696,7 +724,7 @@ public class MaintenanceServlet extends HttpServlet {
                 + URLEncoder.encode(customerName, StandardCharsets.UTF_8);
     }
 
-    private static String historyReturnLocation(
+    private String historyReturnLocation(
             HttpServletRequest request, String customerName) {
         StringBuilder location = new StringBuilder(
                 historyLocation(customerName));
@@ -729,6 +757,11 @@ public class MaintenanceServlet extends HttpServlet {
         } catch (IllegalArgumentException ignored) {
             // Ignore invalid return filters instead of reflecting raw values.
         }
+        CardsReturnContext cardsContext = cardsReturnContext(request);
+        if (cardsContext != null) {
+            appendHistoryParameter(location, "returnCardsMonth", cardsContext.month());
+            appendHistoryParameter(location, "returnCardsStatus", cardsContext.registrationStatus());
+        }
         return location.toString();
     }
 
@@ -743,9 +776,20 @@ public class MaintenanceServlet extends HttpServlet {
                 .append(URLEncoder.encode(value, StandardCharsets.UTF_8));
     }
 
-    private static void redirectToCards(HttpServletResponse response)
+    private String cardsReturnLocation(HttpServletRequest request) {
+        StringBuilder location = new StringBuilder("maintenance?view=cards");
+        CardsReturnContext context = cardsReturnContext(request);
+        if (context != null) {
+            appendHistoryParameter(location, "maintenanceMonth", context.month());
+            appendHistoryParameter(location, "registrationStatus", context.registrationStatus());
+        }
+        return location.toString();
+    }
+
+    private void redirectToCards(
+            HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        response.sendRedirect("maintenance?view=cards");
+        response.sendRedirect(cardsReturnLocation(request));
     }
 
     // 날짜 문자열을 Date 객체로 변환

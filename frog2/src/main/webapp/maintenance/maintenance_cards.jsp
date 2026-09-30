@@ -14,7 +14,12 @@
         <jsp:attribute name="title"><i class="fas fa-clipboard-check"></i> 정기점검 이력관리</jsp:attribute>
         <jsp:attribute name="subtitle">담당자별 고객사를 선택하여 정기점검 이력을 관리하세요</jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="${pageContext.request.contextPath}/maintenance?view=add"
+            <c:url var="maintenanceAddUrl" value="/maintenance">
+                <c:param name="view" value="add" />
+                <c:param name="returnCardsMonth" value="${maintenanceMonthParam}" />
+                <c:param name="returnCardsStatus" value="${registrationStatus}" />
+            </c:url>
+            <a href="<c:out value='${maintenanceAddUrl}' />"
                class="ui-button button--primary button--md"><i class="fas fa-plus"></i> 이력 추가</a>
         </jsp:attribute>
     </t:pageHeader>
@@ -81,6 +86,7 @@
                                                        registered="${currentMonthMaintenanceCustomers[customer.customerName]}"
                                                        due="${maintenanceDueCustomers[customer.customerName]}"
                                                        monthLabel="${maintenanceMonthLabel}"
+                                                       registrationFilter="${registrationStatus}"
                                                        frequencyLabel="${maintenanceFrequencyLabels[customer.customerName]}" />
                         </c:forEach>
                     </div>
@@ -123,6 +129,7 @@
                                                            registered="${currentMonthMaintenanceCustomers[customer.customerName]}"
                                                            due="${maintenanceDueCustomers[customer.customerName]}"
                                                            monthLabel="${maintenanceMonthLabel}"
+                                                           registrationFilter="${registrationStatus}"
                                                            frequencyLabel="${maintenanceFrequencyLabels[customer.customerName]}" />
                             </c:forEach>
                         </div>

@@ -18,6 +18,21 @@
     <c:url value="/maintenance" var="addHistoryUrl">
         <c:param name="view" value="add"/>
         <c:param name="customerName" value="${customerName}"/>
+        <c:param name="returnHistoryPage" value="${currentPage}" />
+        <c:param name="returnHistoryYear" value="${historyYear}" />
+        <c:param name="returnHistoryVersion" value="${historyVersion}" />
+        <c:param name="returnHistoryQuery" value="${historyQuery}" />
+        <c:if test="${not empty returnCardsMonth}">
+            <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+            <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+        </c:if>
+    </c:url>
+    <c:url value="/maintenance" var="maintenanceCardsReturnUrl">
+        <c:param name="view" value="cards" />
+        <c:if test="${not empty returnCardsMonth}">
+            <c:param name="maintenanceMonth" value="${returnCardsMonth}" />
+            <c:param name="registrationStatus" value="${returnCardsStatus}" />
+        </c:if>
     </c:url>
     <c:url value="/customers" var="customerDetailUrl">
         <c:param name="view" value="detail" />
@@ -53,7 +68,7 @@
                 <a href="${addHistoryUrl}"
                    class="ui-button button--primary button--sm"><i class="fas fa-plus"></i> 새 점검 이력 추가</a>
             </c:if>
-            <a href="${pageContext.request.contextPath}/maintenance?view=cards"
+            <a href="<c:out value='${maintenanceCardsReturnUrl}' />"
                class="ui-button button--secondary button--sm"><i class="fas fa-arrow-left"></i> 목록으로</a>
         </jsp:attribute>
     </t:pageHeader>
@@ -186,6 +201,10 @@
         <c:url var="maintenanceHistoryResetUrl" value="/maintenance">
             <c:param name="view" value="history" />
             <c:param name="customerName" value="${customerName}" />
+            <c:if test="${not empty returnCardsMonth}">
+                <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+                <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+            </c:if>
         </c:url>
         <form class="history-filter-form ui-table-toolbar ui-form ui-form--compact"
               method="get"
@@ -193,6 +212,10 @@
               aria-label="정기점검 이력 필터">
             <input type="hidden" name="view" value="history" />
             <input type="hidden" name="customerName" value="${fn:escapeXml(customerName)}" />
+            <c:if test="${not empty returnCardsMonth}">
+                <input type="hidden" name="returnCardsMonth" value="<c:out value='${returnCardsMonth}' />" />
+                <input type="hidden" name="returnCardsStatus" value="<c:out value='${returnCardsStatus}' />" />
+            </c:if>
             <label class="history-filter-field history-filter-field--year">
                 <span>연도</span>
                 <input type="number"
@@ -261,6 +284,10 @@
                                 <c:param name="returnHistoryYear" value="${param.historyYear}" />
                                 <c:param name="returnHistoryVersion" value="${param.historyVersion}" />
                                 <c:param name="returnHistoryQuery" value="${param.historyQuery}" />
+                                <c:if test="${not empty returnCardsMonth}">
+                                    <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+                                    <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+                                </c:if>
                             </c:url>
                             <c:choose>
                                 <c:when test="${not empty row.record.inspectionDate}">
@@ -408,6 +435,10 @@
                         <c:param name="view" value="history" />
                         <c:param name="customerName" value="${customerName}" />
                         <c:param name="historyPage" value="${currentPage - 1}" />
+                        <c:if test="${not empty returnCardsMonth}">
+                            <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+                            <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+                        </c:if>
                         <c:param name="historyYear" value="${historyYear}" />
                         <c:param name="historyVersion" value="${historyVersion}" />
                         <c:param name="historyQuery" value="${historyQuery}" />
@@ -418,6 +449,10 @@
                         <c:param name="view" value="history" />
                         <c:param name="customerName" value="${customerName}" />
                         <c:param name="historyPage" value="${currentPage + 1}" />
+                        <c:if test="${not empty returnCardsMonth}">
+                            <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+                            <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+                        </c:if>
                         <c:param name="historyYear" value="${historyYear}" />
                         <c:param name="historyVersion" value="${historyVersion}" />
                         <c:param name="historyQuery" value="${historyQuery}" />

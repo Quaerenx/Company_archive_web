@@ -16,6 +16,10 @@
     <c:param name="historyYear" value="${param.returnHistoryYear}"/>
     <c:param name="historyVersion" value="${param.returnHistoryVersion}"/>
     <c:param name="historyQuery" value="${param.returnHistoryQuery}"/>
+    <c:if test="${not empty returnCardsMonth}">
+        <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+        <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+    </c:if>
 </c:url>
 
 <div class="container maintenance-edit-page maintenance-form-page content-shell"
@@ -38,6 +42,10 @@
                 <input type="hidden" name="returnHistoryYear" value="<c:out value='${param.returnHistoryYear}' />">
                 <input type="hidden" name="returnHistoryVersion" value="<c:out value='${param.returnHistoryVersion}' />">
                 <input type="hidden" name="returnHistoryQuery" value="<c:out value='${param.returnHistoryQuery}' />">
+                <c:if test="${not empty returnCardsMonth}">
+                    <input type="hidden" name="returnCardsMonth" value="<c:out value='${returnCardsMonth}' />" />
+                    <input type="hidden" name="returnCardsStatus" value="<c:out value='${returnCardsStatus}' />" />
+                </c:if>
                 <button type="submit"
                         class="ui-button button--danger button--sm"
                         data-busy-label="삭제 중"><i class="fas fa-trash"></i> 삭제</button>
@@ -49,6 +57,10 @@
                 <c:param name="historyYear" value="${param.returnHistoryYear}"/>
                 <c:param name="historyVersion" value="${param.returnHistoryVersion}"/>
                 <c:param name="historyQuery" value="${param.returnHistoryQuery}"/>
+                <c:if test="${not empty returnCardsMonth}">
+                    <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+                    <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+                </c:if>
             </c:url>
             <a href="${headerHistoryUrl}"
                class="ui-button button--secondary button--sm"><i class="fas fa-history"></i> 이력으로</a>
@@ -78,6 +90,10 @@
             <input type="hidden" name="returnHistoryYear" value="<c:out value='${param.returnHistoryYear}' />">
             <input type="hidden" name="returnHistoryVersion" value="<c:out value='${param.returnHistoryVersion}' />">
             <input type="hidden" name="returnHistoryQuery" value="<c:out value='${param.returnHistoryQuery}' />">
+            <c:if test="${not empty returnCardsMonth}">
+                <input type="hidden" name="returnCardsMonth" value="<c:out value='${returnCardsMonth}' />" />
+                <input type="hidden" name="returnCardsStatus" value="<c:out value='${returnCardsStatus}' />" />
+            </c:if>
             <input type="hidden" id="current_customer_value" value="<c:out value='${record.customerName}'/>">
             <input type="hidden" id="current_inspector_value" value="<c:out value='${record.inspectorName}'/>">
 
@@ -110,6 +126,10 @@
                     <c:param name="historyYear" value="${param.returnHistoryYear}"/>
                     <c:param name="historyVersion" value="${param.returnHistoryVersion}"/>
                     <c:param name="historyQuery" value="${param.returnHistoryQuery}"/>
+                    <c:if test="${not empty returnCardsMonth}">
+                        <c:param name="returnCardsMonth" value="${returnCardsMonth}" />
+                        <c:param name="returnCardsStatus" value="${returnCardsStatus}" />
+                    </c:if>
                 </c:url>
                 <a href="${cancelUrl}"
                    class="ui-button button--secondary button--md">취소</a>

@@ -27,6 +27,14 @@ class TestTableJdbcRouterTest {
         assertTrue(routed.contains("FROM public." + PREFIX + "vertica_customer_detail d"));
         assertTrue(routed.contains("JOIN public." + PREFIX + "customer_maintenance_schedule s"));
         assertTrue(routed.contains("'FROM company_users'"));
+        for (String mutation : new String[] {
+                "UPDATE\nmaintenance_records SET note = ? WHERE maintenance_id = ?",
+                "DELETE\tFROM maintenance_records WHERE maintenance_id = ?",
+                "UPDATE maintenance_records SET note = (SELECT userName FROM company_users WHERE userId = ?) "
+                        + "WHERE maintenance_id = ?"
+        }) {
+            assertTrue(router.routeSql(mutation).contains("public." + PREFIX + "maintenance_records"));
+        }
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueueUpdate(1);
         try (Connection connection = router.wrap(jdbc.open());
@@ -45,6 +53,9 @@ class TestTableJdbcRouterTest {
         try (Connection connection = router.wrap(jdbc.open())) {
             for (String sql : new String[] {
                     "DELETE FROM company_users", "UPDATE company_users SET userName = ?",
+                    "UPDATE\nmaintenance_records SET note = ?", "DELETE\tFROM maintenance_records",
+                    "UPDATE maintenance_records SET note = "
+                            + "(SELECT userName FROM company_users WHERE userId = ?)",
                     "DELETE FROM troubleshooting WHERE troubleshooting_id = ?",
                     "SELECT * FROM public.company_users", "SELECT * FROM company_users, troubleshooting",
                     "SELECT * FROM company_users u JOIN troubleshooting t ON u.userId = t.user_id",
@@ -78,6 +89,43 @@ class TestTableJdbcRouterTest {
             assertThrows(SQLException.class, () -> statement.unwrap(java.sql.PreparedStatement.class));
         }
         assertEquals(1, jdbc.statements.size());
+    }
+
+    @Test
+    void rejectsImplicitTablesAfterExplicitJoinsWithoutPreparingSql() throws Exception {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        try (Connection connection = router.wrap(jdbc.open())) {
+            for (String sql : new String[] {
+                    "SELECT u.userId FROM company_users u JOIN maintenance_records r "
+                            + "ON r.created_by_user_id = u.userId, troubleshooting t WHERE u.userId = ?",
+                    "SELECT u.userId FROM company_users u CROSS JOIN maintenance_records r, troubleshooting t",
+                    "SELECT u.userId FROM company_users u JOIN maintenance_records r "
+                            + "ON r.customer_name IN (?, ?), company_users other_user WHERE u.userId = ?",
+                    "SELECT u.userId FROM company_users u WHERE EXISTS (SELECT r.maintenance_id "
+                            + "FROM maintenance_records r JOIN company_users x "
+                            + "ON r.created_by_user_id = x.userId, troubleshooting t)",
+                    "SELECT u.userId FROM company_users u JOIN "
+                            + "(troubleshooting t CROSS JOIN company_users x) ON x.userId = u.userId"
+            }) {
+                assertThrows(SQLException.class, () -> connection.prepareStatement(sql), sql);
+            }
+        }
+        assertEquals(0, jdbc.statements.size());
+    }
+
+    @Test
+    void allowsSelectFunctionPredicateAndOrderingCommasForReviewedJoins() throws Exception {
+        String sql = "SELECT d.customer_name, COALESCE(d.main_manager, 'FROM unrelated, table') "
+                + "FROM vertica_customer_detail d LEFT JOIN customer_maintenance_schedule s "
+                + "ON s.customer_name = d.customer_name AND s.interval_months IN (?, ?) "
+                + "WHERE d.customer_name IN (?, ?) ORDER BY d.customer_name, d.main_manager";
+
+        String routed = router.routeSql(sql);
+
+        assertTrue(routed.contains("FROM public." + PREFIX + "vertica_customer_detail d"));
+        assertTrue(routed.contains("JOIN public." + PREFIX + "customer_maintenance_schedule s"));
+        assertTrue(routed.contains("COALESCE(d.main_manager, 'FROM unrelated, table')"));
+        assertTrue(routed.contains("ORDER BY d.customer_name, d.main_manager"));
     }
 
     @Test

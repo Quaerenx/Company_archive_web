@@ -11,4 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('is-loading');
         });
     });
+
+    window.addEventListener('pageshow', function() {
+        cards.forEach(card => card.classList.remove('is-loading'));
+    });
 });

@@ -542,6 +542,10 @@
 }
 
 @media (max-width: 768px) {
+    .maintenance-history .ph-actions {
+        flex-wrap: wrap;
+    }
+
     .maintenance-history .usage-chart-canvas {
         inline-size: 100%;
         min-width: 0;
