@@ -254,7 +254,8 @@ public class MaintenanceRecordDAO {
                     + "customer_name ILIKE ? ESCAPE '!' OR "
                     + "inspector_name ILIKE ? ESCAPE '!' OR "
                     + "vertica_version ILIKE ? ESCAPE '!' OR "
-                    + "SUBSTR(note,1,65000) ILIKE ? ESCAPE '!' "
+                    + "CAST(SUBSTR(note,1,65000) AS VARCHAR(65000)) ILIKE "
+                    + "CAST(? AS VARCHAR(65000)) ESCAPE '!' "
                     + "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
                     + "inspection_date DESC, maintenance_id DESC LIMIT ?";
             String pattern = SearchQueryPolicy.literalContainsLikePattern(

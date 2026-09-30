@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 class MaintenanceRecordDAOPaginationTest {
     @Test
-    void globalSearchUsesLiteralPatternsAndAStableNewestFirstLimit() {
+    void globalSearchUsesTypedLiteralPatternsAndAStableNewestFirstLimit() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.enqueue(PaginationJdbcFixture.row(
                 "maintenance_id", 44L,
@@ -34,7 +34,10 @@ class MaintenanceRecordDAOPaginationTest {
         PaginationJdbcFixture.StatementRecord statement =
                 jdbc.statements.getFirst();
         assertTrue(statement.sql.contains(
-                "SUBSTR(note,1,65000) ILIKE ? ESCAPE '!'"));
+                "CAST(SUBSTR(note,1,65000) AS VARCHAR(65000)) ILIKE "
+                        + "CAST(? AS VARCHAR(65000)) ESCAPE '!'"));
+        assertFalse(statement.sql.contains(
+                "SUBSTR(note,1,65000) ILIKE ?"));
         assertTrue(statement.sql.contains(
                 "inspection_date DESC, maintenance_id DESC LIMIT ?"));
         for (int parameter = 1; parameter <= 4; parameter++) {

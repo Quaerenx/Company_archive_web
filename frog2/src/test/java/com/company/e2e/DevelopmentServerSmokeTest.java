@@ -169,12 +169,7 @@ class DevelopmentServerSmokeTest {
         for (String route : TABLE_ROUTES) {
             HttpResponse<String> response = get(route, "text/html");
             assertEquals(200, response.statusCode(), "Table page failed: /" + route);
-            assertTrue(
-                    response.body().contains("class=\"ui-table-footer\""),
-                    "Shared table footer missing: /" + route);
-            assertTrue(
-                    response.body().contains("class=\"ui-table-pagination\""),
-                    "Always-visible table pagination missing: /" + route);
+            assertTablePageState(route, response.body());
         }
 
         HttpResponse<String> customers = get("customers", "text/html");
@@ -194,6 +189,74 @@ class DevelopmentServerSmokeTest {
         assertTrue(detail.body().contains("detail-section--collapsible"));
         assertTrue(detail.body().contains("environment-detail ui-detail"));
         assertFalse(detail.body().contains("id=\"loginForm\""));
+
+        HttpResponse<String> search = get(
+                "search?q=FROG2_READONLY_PROBE_NO_MATCH", "application/json");
+        assertEquals(200, search.statusCode(), "Global search failed");
+        assertTrue(header(search, "Content-Type").startsWith("application/json"));
+        assertTrue(search.body().contains("\"partial\":false"),
+                "Global search returned partial source availability");
+        assertTrue(search.body().contains("\"unavailableCategories\":[]"),
+                "Global search reported unavailable sources");
+    }
+
+    private static void assertTablePageState(String route, String body) {
+        TablePageState state = switch (route) {
+            case "customers" -> new TablePageState(
+                    "customer-table ui-table ui-data-table",
+                    "customer-list-empty ui-empty-state",
+                    "등록된 정기점검 고객사가 없습니다.");
+            case "meeting" -> new TablePageState(
+                    "meeting-list-table ui-table ui-data-table",
+                    "meeting-list-empty ui-empty-state",
+                    "등록된 회의록이 없습니다");
+            case "troubleshooting" -> new TablePageState(
+                    "troubleshooting-table ui-table ui-data-table",
+                    "troubleshooting-empty ui-empty-state",
+                    "등록된 트러블 슈팅이 없습니다.");
+            case "customer-history" -> new TablePageState(
+                    "ui-table ui-data-table customer-history-table",
+                    "customer-history-empty ui-empty-state",
+                    "등록된 작업 이력이 없습니다.");
+            case "vm-hosts" -> new TablePageState(
+                    "vm-table ui-table",
+                    "vm-host-empty ui-empty-state",
+                    "등록된 VM 호스트가 없습니다.");
+            case "file-repository" -> new TablePageState(
+                    "file-table ui-table ui-data-table",
+                    "file-empty-state ui-empty-state",
+                    "등록된 파일이 없습니다.");
+            default -> throw new IllegalArgumentException("Unknown table route: " + route);
+        };
+        String tableMarker = "<table class=\"" + state.tableClass() + "\"";
+        String footerMarker = "class=\"ui-table-footer\"";
+        String paginationMarker = "class=\"ui-table-pagination\"";
+        if (body.contains("class=\"" + state.emptyClass() + "\"")) {
+            Pattern expectedEmptyState = Pattern.compile(
+                    "<div class=\"" + Pattern.quote(state.emptyClass())
+                            + "\">\\s*<i\\b[^>]*></i>\\s*<strong>\\s*"
+                            + Pattern.quote(state.emptyMessage()) + "\\s*</strong>");
+            assertTrue(expectedEmptyState.matcher(body).find(),
+                    "Expected empty-state content missing: /" + route);
+            assertFalse(body.contains(tableMarker),
+                    "Table rendered with empty state: /" + route);
+            assertFalse(body.contains(footerMarker),
+                    "Table footer rendered with empty state: /" + route);
+            assertFalse(body.contains(paginationMarker),
+                    "Table pagination rendered with empty state: /" + route);
+            return;
+        }
+
+        assertTrue(body.contains(tableMarker), "Expected table missing: /" + route);
+        assertTrue(Pattern.compile("<tbody(?:\\s[^>]*)?>\\s*<tr\\b")
+                        .matcher(body).find(),
+                "Table data rows missing: /" + route);
+        assertTrue(body.contains(footerMarker), "Shared table footer missing: /" + route);
+        assertTrue(body.contains(paginationMarker), "Table pagination missing: /" + route);
+    }
+
+    private record TablePageState(
+            String tableClass, String emptyClass, String emptyMessage) {
     }
 
     private static HttpResponse<String> get(String relativePath, String accept) throws Exception {
