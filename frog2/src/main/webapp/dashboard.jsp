@@ -41,6 +41,30 @@
       </jsp:attribute>
     </t:sectionHeader>
     <div class="ui-section-body ui-section-body--flush">
+      <c:if test="${maintenanceDataLoaded and personalMaintenanceAssignedCount gt 0}">
+        <c:url var="personalMaintenanceManageUrl" value="/maintenance">
+          <c:param name="view" value="cards" />
+          <c:param name="maintenanceMonth" value="${maintenanceMonthParam}" />
+        </c:url>
+        <div class="personal-maintenance-summary">
+          <dl class="personal-maintenance-summary__counts" aria-label="선택 월 나의 정기점검 이력 등록 현황">
+            <div>
+              <dt>대상 고객사</dt>
+              <dd><c:out value="${personalMaintenanceTargetCount}" /><span>개</span></dd>
+            </div>
+            <div class="personal-maintenance-summary__registered">
+              <dt>이력 등록</dt>
+              <dd><c:out value="${personalMaintenanceRegisteredCount}" /><span>개</span></dd>
+            </div>
+            <div>
+              <dt>이력 미등록</dt>
+              <dd><c:out value="${personalMaintenanceUnregisteredCount}" /><span>개</span></dd>
+            </div>
+          </dl>
+          <a class="ui-button button--secondary button--sm personal-maintenance-manage-link"
+             href="<c:out value='${personalMaintenanceManageUrl}' />">선택 월 점검 관리 <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+        </div>
+      </c:if>
       <c:choose>
         <c:when test="${not maintenanceDataLoaded}">
           <div class="dashboard-state dashboard-state--error" role="alert">

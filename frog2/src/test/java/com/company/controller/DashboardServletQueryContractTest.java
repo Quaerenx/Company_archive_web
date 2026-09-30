@@ -231,6 +231,9 @@ class DashboardServletQueryContractTest {
         assertEquals(true, personal.getFirst().isDone());
         assertEquals(false, personal.get(1).isDone());
         assertEquals(true, personal.get(1).isLicenseRisk());
+        assertEquals(2, request.attributes.get("personalMaintenanceTargetCount"));
+        assertEquals(2, request.attributes.get("personalMaintenanceRegisteredCount"));
+        assertEquals(0, request.attributes.get("personalMaintenanceUnregisteredCount"));
         assertEquals(1, maintenanceDAO.monthCalls);
         assertEquals(1, customerDAO.assignmentCalls);
         @SuppressWarnings("unchecked")
@@ -266,6 +269,9 @@ class DashboardServletQueryContractTest {
         assertEquals(false, personal.getFirst().isDone());
         assertEquals(true, personal.get(1).isDone());
         assertEquals(true, personal.get(1).isQuarterly());
+        assertEquals(1, request.attributes.get("personalMaintenanceTargetCount"));
+        assertEquals(0, request.attributes.get("personalMaintenanceRegisteredCount"));
+        assertEquals(1, request.attributes.get("personalMaintenanceUnregisteredCount"));
         assertEquals(1, maintenanceDAO.monthCalls);
     }
 
@@ -286,6 +292,48 @@ class DashboardServletQueryContractTest {
 
         assertEquals(1, request.attributes.get("personalMaintenanceAssignedCount"));
         assertEquals(List.of(), personalCustomers(request));
+        assertEquals(0, request.attributes.get("personalMaintenanceTargetCount"));
+        assertEquals(0, request.attributes.get("personalMaintenanceRegisteredCount"));
+        assertEquals(0, request.attributes.get("personalMaintenanceUnregisteredCount"));
+    }
+
+    @Test
+    void personalSummaryUsesOnlyUniqueDueCustomersAndScheduleEffectiveWindow()
+            throws Exception {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        YearMonth month = YearMonth.from(today);
+        MaintenanceSchedule quarterlyDue = new MaintenanceSchedule(
+                3, month.minusMonths(3), LocalDate.of(2000, 1, 1), null, true);
+        MaintenanceSchedule expired = new MaintenanceSchedule(
+                1, YearMonth.of(2000, 1), LocalDate.of(2000, 1, 1),
+                month.minusMonths(1).atEndOfMonth(), true);
+        MaintenanceSchedule disabled = new MaintenanceSchedule(
+                1, YearMonth.of(2000, 1), LocalDate.of(2000, 1, 1), null, false);
+        StubCustomerAssignmentDAO customers = new StubCustomerAssignmentDAO();
+        customers.personalAssignments = List.of(
+                new MaintenanceCustomerAssignment("monthly", "Tester"),
+                new MaintenanceCustomerAssignment("monthly", "Tester"),
+                new MaintenanceCustomerAssignment("quarterly", "Other Manager", quarterlyDue),
+                new MaintenanceCustomerAssignment("expired", "Tester", expired),
+                new MaintenanceCustomerAssignment("disabled", "Tester", disabled));
+        customers.assignments = customers.personalAssignments;
+        StubMaintenanceRecordDAO records = new StubMaintenanceRecordDAO();
+        records.records = List.of(
+                maintenanceRecord("monthly", today.plusDays(1), "40"),
+                maintenanceRecord("monthly", today.plusDays(2), "40"),
+                maintenanceRecord("expired", today, "40"));
+        RequestFixture request = new RequestFixture();
+
+        new DashboardServlet(records, customers, FIXED_CLOCK)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(2, request.attributes.get("personalMaintenanceTargetCount"));
+        assertEquals(1, request.attributes.get("personalMaintenanceRegisteredCount"));
+        assertEquals(1, request.attributes.get("personalMaintenanceUnregisteredCount"));
+        assertEquals(false, personalCustomers(request).getFirst().isDone());
+        assertEquals(1, records.monthCalls);
+        assertEquals(1, customers.assignmentCalls);
+        assertEquals(1, customers.personalAssignmentCalls);
     }
 
     @Test
@@ -304,6 +352,9 @@ class DashboardServletQueryContractTest {
 
         assertEquals(0, request.attributes.get("personalMaintenanceAssignedCount"));
         assertEquals(List.of(), personalCustomers(request));
+        assertEquals(0, request.attributes.get("personalMaintenanceTargetCount"));
+        assertEquals(0, request.attributes.get("personalMaintenanceRegisteredCount"));
+        assertEquals(0, request.attributes.get("personalMaintenanceUnregisteredCount"));
         assertEquals(1, customerDAO.personalAssignmentCalls);
         assertEquals(1, customerDAO.assignmentCalls);
     }

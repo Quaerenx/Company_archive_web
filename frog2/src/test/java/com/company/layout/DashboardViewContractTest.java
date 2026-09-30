@@ -166,6 +166,26 @@ class DashboardViewContractTest {
         assertTrue(styles.contains("@media (max-width: 768px)"));
     }
 
+    @Test
+    void personalSummaryCountsRegistrationsAndLinksToTheSameSelectedMonth()
+            throws Exception {
+        String page = read("dashboard.jsp");
+        int personal = page.indexOf("data-personal-section=\"dashboard-maintenance\"");
+        int global = page.indexOf("data-global-section=\"dashboard-maintenance\"");
+        String personalSection = page.substring(personal, global);
+        assertTrue(personalSection.contains("maintenanceDataLoaded and personalMaintenanceAssignedCount gt 0"));
+        assertTrue(personalSection.contains("personal-maintenance-summary__counts"));
+        for (String count : new String[] {"Target", "Registered", "Unregistered"}) {
+            assertTrue(personalSection.contains(
+                    "<c:out value=\"${personalMaintenance" + count + "Count}\" />"));
+        }
+        assertTrue(personalSection.contains("<dt>이력 등록</dt>"));
+        assertTrue(personalSection.contains("<dt>이력 미등록</dt>"));
+        assertTrue(personalSection.contains("<c:param name=\"maintenanceMonth\" value=\"${maintenanceMonthParam}\" />"));
+        assertTrue(personalSection.contains("href=\"<c:out value='${personalMaintenanceManageUrl}' />\""));
+        assertFalse(personalSection.contains("<c:param name=\"registrationStatus\""));
+    }
+
     private static String tagById(String source, String id) {
         var matcher = Pattern.compile(
                 "<[^>]+\\bid=\"" + Pattern.quote(id) + "\"[^>]*>",

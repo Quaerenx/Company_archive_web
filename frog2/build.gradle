@@ -77,7 +77,7 @@ tasks.withType(Test).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform {
-        excludeTags 'e2e', 'e2e-write', 'e2e-schema', 'e2e-https',
+        excludeTags 'e2e', 'e2e-write', 'e2e-table-write', 'e2e-schema', 'e2e-https',
                 'e2e-customer-audit-migration',
                 'e2e-customer-swap-migration'
     }
@@ -133,6 +133,26 @@ tasks.register('e2eWrite', Test) {
     outputs.upToDateWhen { false }
     useJUnitPlatform {
         includeTags 'e2e-write'
+    }
+}
+
+tasks.register('tableWriteE2e', Test) {
+    description = 'Runs explicitly authorized writes through DAOs routed to four dedicated test tables.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    doFirst {
+        String enabled = providers.environmentVariable('FROG2_TABLE_WRITE_ENABLED').getOrElse('')
+        String prefix = providers.environmentVariable('FROG2_TABLE_WRITE_PREFIX').getOrElse('')
+        String config = providers.environmentVariable('FROG2_TABLE_WRITE_DB_CONFIG').getOrElse('')
+        if (enabled != 'true' || !(prefix ==~ /frog2_test_[a-z0-9_]+_/) || prefix.length() > 64
+                || config.isBlank() || !new File(config).isFile()) {
+            throw new GradleException('Table-write E2E requires explicit enablement, a dedicated test prefix, and an external DB config')
+        }
+    }
+    useJUnitPlatform {
+        includeTags 'e2e-table-write'
     }
 }
 

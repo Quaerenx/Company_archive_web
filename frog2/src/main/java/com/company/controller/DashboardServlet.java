@@ -116,6 +116,8 @@ public class DashboardServlet extends HttpServlet {
         request.setAttribute(
                 "personalMaintenanceCustomers",
                 personalMaintenanceCustomers);
+        exposePersonalMaintenanceSummary(
+                request, personalAssignments.assignments(), stateByCustomer, selectedMonth);
         long viewRenderStart = System.nanoTime();
         try {
             request.getRequestDispatcher("/dashboard.jsp")
@@ -270,6 +272,30 @@ public class DashboardServlet extends HttpServlet {
             }
         }
         return List.copyOf(customers);
+    }
+
+    private void exposePersonalMaintenanceSummary(
+            HttpServletRequest request,
+            List<MaintenanceCustomerAssignment> assignments,
+            Map<String, CustomerMonthState> stateByCustomer,
+            YearMonth selectedMonth) {
+        Set<String> includedCustomers = new HashSet<>();
+        int targetCount = 0;
+        int registeredCount = 0;
+        for (MaintenanceCustomerAssignment assignment : assignments) {
+            String customerName = normalizedName(assignment.customerName());
+            if (customerName.isEmpty() || !includedCustomers.add(customerName)
+                    || !assignment.schedule().isDue(selectedMonth)) {
+                continue;
+            }
+            targetCount++;
+            if (stateByCustomer.containsKey(customerName)) {
+                registeredCount++;
+            }
+        }
+        request.setAttribute("personalMaintenanceTargetCount", targetCount);
+        request.setAttribute("personalMaintenanceRegisteredCount", registeredCount);
+        request.setAttribute("personalMaintenanceUnregisteredCount", targetCount - registeredCount);
     }
 
     private void addMaintenanceCustomer(

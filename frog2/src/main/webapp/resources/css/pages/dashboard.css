@@ -481,3 +481,59 @@
 .dashboard-page .personal-maintenance-board {
   margin-block-end: var(--space-20);
 }
+
+.dashboard-page .personal-maintenance-summary {
+  align-items: end;
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-block-end: var(--space-16);
+}
+
+.dashboard-page .personal-maintenance-summary__counts {
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  min-width: 0;
+}
+
+.dashboard-page .personal-maintenance-summary__counts > div {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
+  min-width: 0;
+  padding: var(--space-12);
+}
+
+.dashboard-page .personal-maintenance-summary dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.dashboard-page .personal-maintenance-summary dd {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-lg);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin: var(--space-4) 0 0;
+}
+
+.dashboard-page .personal-maintenance-summary dd span {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  margin-inline-start: var(--space-4);
+}
+
+.dashboard-page .personal-maintenance-summary__registered dd {
+  color: var(--color-success-text);
+}
+
+@media (max-width: 768px) {
+  .dashboard-page .personal-maintenance-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-page .personal-maintenance-manage-link {
+    justify-self: start;
+  }
+}

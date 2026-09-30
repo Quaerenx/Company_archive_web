@@ -20,6 +20,46 @@
     </t:pageHeader>
 	    
     <t:flashMessages />
+
+    <div class="maintenance-card-toolbar ui-work-surface ui-work-surface--padded">
+        <c:url var="maintenanceCardsUrl" value="/maintenance" />
+        <form class="maintenance-month-form ui-form ui-form--compact"
+              method="get"
+              action="<c:out value='${maintenanceCardsUrl}' />"
+              data-ui-submit-lock="auto">
+            <input type="hidden" name="view" value="cards" />
+            <input type="hidden" name="registrationStatus" value="<c:out value='${registrationStatus}' />" />
+            <label for="maintenanceMonth">점검 월</label>
+            <input type="month"
+                   id="maintenanceMonth"
+                   name="maintenanceMonth"
+                   min="1900-01"
+                   max="2100-12"
+                   value="<c:out value='${maintenanceMonthParam}' />"
+                   aria-describedby="maintenanceRegistrationNote"
+                   required />
+            <button type="submit" class="ui-button button--secondary button--sm">조회</button>
+        </form>
+        <nav class="maintenance-registration-filters" aria-label="선택 월 이력 등록 상태">
+            <c:forTokens items="all,registered,unregistered" delims="," var="statusOption">
+                <c:url var="maintenanceStatusUrl" value="/maintenance">
+                    <c:param name="view" value="cards" />
+                    <c:param name="maintenanceMonth" value="${maintenanceMonthParam}" />
+                    <c:param name="registrationStatus" value="${statusOption}" />
+                </c:url>
+                <a class="maintenance-registration-filter ui-button button--secondary button--sm"
+                   href="<c:out value='${maintenanceStatusUrl}' />"
+                   aria-current="${registrationStatus eq statusOption ? 'page' : 'false'}">
+                    <c:choose>
+                        <c:when test="${statusOption eq 'registered'}">등록</c:when>
+                        <c:when test="${statusOption eq 'unregistered'}">미등록</c:when>
+                        <c:otherwise>전체</c:otherwise>
+                    </c:choose>
+                </a>
+            </c:forTokens>
+        </nav>
+        <p class="maintenance-registration-note" id="maintenanceRegistrationNote">선택 월의 이력 등록 여부를 확인하세요.</p>
+    </div>
     
     <section class="inspector-block ui-work-surface ui-work-surface--padded personal-maintenance-customers"
              data-personal-section="maintenance-customers"
@@ -39,13 +79,21 @@
                         <c:forEach var="customer" items="${personalMaintenanceCustomers}">
                             <t:maintenanceCustomerCard customer="${customer}"
                                                        registered="${currentMonthMaintenanceCustomers[customer.customerName]}"
+                                                       due="${maintenanceDueCustomers[customer.customerName]}"
+                                                       monthLabel="${maintenanceMonthLabel}"
                                                        frequencyLabel="${maintenanceFrequencyLabels[customer.customerName]}" />
                         </c:forEach>
                     </div>
                 </c:when>
-                <c:otherwise>
+                <c:when test="${personalMaintenanceAssignedCount eq 0}">
                     <div class="personal-maintenance-customers-empty ui-empty-state">
                         <strong>담당 고객사가 없습니다.</strong>
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <div class="personal-maintenance-customers-empty ui-empty-state">
+                        <strong>선택한 조건에 해당하는 담당 고객사가 없습니다.</strong>
+                        <span>다른 월이나 등록 상태를 선택해 주세요.</span>
                     </div>
                 </c:otherwise>
             </c:choose>
@@ -53,7 +101,7 @@
     </section>
 
     <!-- 담당자별 고객사 카드 목록 -->
-    <c:if test="${not empty inspectorCustomers or empty personalMaintenanceCustomers}">
+    <c:if test="${globalMaintenanceCustomerCount gt 0 or personalMaintenanceAssignedCount eq 0}">
     <div data-global-section="maintenance-customers">
     <c:choose>
         <c:when test="${not empty inspectorCustomers}">
@@ -73,6 +121,8 @@
                             <c:forEach var="customer" items="${entry.value}">
                                 <t:maintenanceCustomerCard customer="${customer}"
                                                            registered="${currentMonthMaintenanceCustomers[customer.customerName]}"
+                                                           due="${maintenanceDueCustomers[customer.customerName]}"
+                                                           monthLabel="${maintenanceMonthLabel}"
                                                            frequencyLabel="${maintenanceFrequencyLabels[customer.customerName]}" />
                             </c:forEach>
                         </div>
@@ -83,8 +133,16 @@
         <c:otherwise>
             <div class="maintenance-cards-empty ui-empty-state">
                 <i class="fas fa-users" aria-hidden="true"></i>
-                <strong>등록된 고객사 정보가 없습니다.</strong>
-                <span>먼저 고객사 정보를 등록해 주세요.</span>
+                <c:choose>
+                    <c:when test="${globalMaintenanceCustomerCount gt 0}">
+                        <strong>선택한 조건에 해당하는 고객사가 없습니다.</strong>
+                        <span>다른 월이나 등록 상태를 선택해 주세요.</span>
+                    </c:when>
+                    <c:otherwise>
+                        <strong>등록된 고객사 정보가 없습니다.</strong>
+                        <span>먼저 고객사 정보를 등록해 주세요.</span>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </c:otherwise>
     </c:choose>

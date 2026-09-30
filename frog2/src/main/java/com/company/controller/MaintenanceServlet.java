@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.Clock;
 import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,6 +26,7 @@ import com.company.model.MaintenanceFormHistoryContext;
 import com.company.model.MaintenanceHistoryFilter;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
+import com.company.model.MaintenanceSchedule;
 import com.company.model.PageResult;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
@@ -204,6 +206,16 @@ public class MaintenanceServlet extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response,
             UserDTO user) throws ServletException, IOException {
+        YearMonth selectedMonth;
+        String registrationStatus;
+        try {
+            selectedMonth = parseCardsMonth(request.getParameter("maintenanceMonth"));
+            registrationStatus = parseRegistrationStatus(request.getParameter("registrationStatus"));
+        } catch (IllegalArgumentException exception) {
+            ApplicationError.send(request, response, HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_maintenance_filter", "정기점검 조회 월 또는 등록 상태가 올바르지 않습니다.");
+            return;
+        }
         List<CustomerDTO> personalMaintenanceCustomers =
                 customerAssignmentDAO.getMaintenanceCustomersByAssignee(
                         user.getUserId(), user.getUserName());
@@ -213,20 +225,86 @@ public class MaintenanceServlet extends HttpServlet {
                                 getInspectorCustomersMap(),
                                 user.getUserName()),
                         personalMaintenanceCustomers);
-        request.setAttribute("inspectorCustomers", inspectorCustomers);
+        List<MaintenanceCustomerAssignment> assignments =
+                customerAssignmentDAO.getAllMaintenanceCustomerAssignments();
+        Map<String, Boolean> registeredCustomers = getCurrentMonthMaintenanceCustomers(
+                inspectorCustomers, personalMaintenanceCustomers, selectedMonth);
+        Map<String, Boolean> dueCustomers = getMaintenanceDueCustomers(
+                inspectorCustomers, personalMaintenanceCustomers, assignments, selectedMonth);
+        request.setAttribute("maintenanceMonthParam", selectedMonth.toString());
+        request.setAttribute("maintenanceMonthLabel", selectedMonth.toString());
+        request.setAttribute("registrationStatus", registrationStatus);
+        request.setAttribute("personalMaintenanceAssignedCount", personalMaintenanceCustomers.size());
+        request.setAttribute("globalMaintenanceCustomerCount",
+                inspectorCustomers.values().stream().mapToInt(List::size).sum());
+        Map<String, List<CustomerDTO>> filteredInspectorCustomers = new LinkedHashMap<>();
+        inspectorCustomers.forEach((inspector, customers) -> {
+            List<CustomerDTO> filtered = filterMaintenanceCustomers(
+                    customers, registrationStatus, registeredCustomers, dueCustomers);
+            if (!filtered.isEmpty()) {
+                filteredInspectorCustomers.put(inspector, filtered);
+            }
+        });
+        request.setAttribute("inspectorCustomers", filteredInspectorCustomers);
         request.setAttribute(
                 "personalMaintenanceCustomers",
-                personalMaintenanceCustomers);
+                filterMaintenanceCustomers(personalMaintenanceCustomers,
+                        registrationStatus, registeredCustomers, dueCustomers));
         request.setAttribute(
                 "maintenanceFrequencyLabels",
-                getMaintenanceFrequencyLabels());
-        request.setAttribute(
-                "currentMonthMaintenanceCustomers",
-                getCurrentMonthMaintenanceCustomers(
-                        inspectorCustomers, personalMaintenanceCustomers));
+                getMaintenanceFrequencyLabels(assignments));
+        request.setAttribute("currentMonthMaintenanceCustomers", registeredCustomers);
+        request.setAttribute("maintenanceDueCustomers", dueCustomers);
         request.setAttribute("viewType", "cards");
         request.getRequestDispatcher("/maintenance/maintenance_cards.jsp")
                 .forward(request, response);
+    }
+
+    private YearMonth parseCardsMonth(String rawMonth) {
+        String value = trimToNull(rawMonth);
+        if (value == null) {
+            return BusinessDate.currentMonth(clock);
+        }
+        if (!value.matches("[0-9]{4}-[0-9]{2}")) {
+            throw new IllegalArgumentException("Maintenance month must use YYYY-MM");
+        }
+        try {
+            YearMonth month = YearMonth.parse(value);
+            if (month.getYear() < 1900 || month.getYear() > 2100) {
+                throw new IllegalArgumentException("Maintenance month is outside the supported range");
+            }
+            return month;
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException("Maintenance month is invalid", exception);
+        }
+    }
+
+    private String parseRegistrationStatus(String rawStatus) {
+        String status = trimToNull(rawStatus);
+        if (status == null) {
+            return "all";
+        }
+        return switch (status) {
+            case "all", "registered", "unregistered" -> status;
+            default -> throw new IllegalArgumentException("Registration status is invalid");
+        };
+    }
+
+    private List<CustomerDTO> filterMaintenanceCustomers(
+            List<CustomerDTO> customers,
+            String registrationStatus,
+            Map<String, Boolean> registeredCustomers,
+            Map<String, Boolean> dueCustomers) {
+        if ("all".equals(registrationStatus)) {
+            return customers;
+        }
+        return customers.stream().filter(customer -> {
+            String name = customer.getCustomerName();
+            boolean registered = Boolean.TRUE.equals(registeredCustomers.get(name));
+            return "registered".equals(registrationStatus)
+                    ? registered
+                    : Boolean.TRUE.equals(dueCustomers.get(name)) && !registered;
+        }).toList();
     }
 
     private void showHistory(
@@ -387,11 +465,10 @@ public class MaintenanceServlet extends HttpServlet {
         return remainingCustomers;
     }
 
-    private Map<String, String> getMaintenanceFrequencyLabels() {
+    private Map<String, String> getMaintenanceFrequencyLabels(
+            List<MaintenanceCustomerAssignment> assignments) {
         Map<String, String> labels = new LinkedHashMap<>();
-        for (MaintenanceCustomerAssignment assignment
-                : customerAssignmentDAO
-                        .getAllMaintenanceCustomerAssignments()) {
+        for (MaintenanceCustomerAssignment assignment : assignments) {
             labels.put(
                     assignment.customerName(),
                     assignment.schedule().isQuarterly() ? "분기" : "월별");
@@ -399,9 +476,35 @@ public class MaintenanceServlet extends HttpServlet {
         return labels;
     }
 
+    private Map<String, Boolean> getMaintenanceDueCustomers(
+            Map<String, List<CustomerDTO>> inspectorCustomers,
+            List<CustomerDTO> personalMaintenanceCustomers,
+            List<MaintenanceCustomerAssignment> assignments,
+            YearMonth selectedMonth) {
+        Map<String, Boolean> dueByName = new LinkedHashMap<>();
+        for (MaintenanceCustomerAssignment assignment : assignments) {
+            String name = trimToNull(assignment.customerName());
+            if (name != null) {
+                dueByName.putIfAbsent(name, assignment.schedule().isDue(selectedMonth));
+            }
+        }
+        boolean defaultDue = MaintenanceSchedule.monthlyDefault().isDue(selectedMonth);
+        Map<String, Boolean> dueCustomers = new LinkedHashMap<>();
+        Stream.concat(inspectorCustomers.values().stream().flatMap(List::stream),
+                personalMaintenanceCustomers.stream()).forEach(customer -> {
+                    String name = customer.getCustomerName();
+                    String normalizedName = trimToNull(name);
+                    if (normalizedName != null) {
+                        dueCustomers.put(name, dueByName.getOrDefault(normalizedName, defaultDue));
+                    }
+                });
+        return Map.copyOf(dueCustomers);
+    }
+
     private Map<String, Boolean> getCurrentMonthMaintenanceCustomers(
             Map<String, List<CustomerDTO>> inspectorCustomers,
-            List<CustomerDTO> personalMaintenanceCustomers) {
+            List<CustomerDTO> personalMaintenanceCustomers,
+            YearMonth selectedMonth) {
         List<String> customerNames = Stream.concat(
                         inspectorCustomers.values().stream().flatMap(List::stream),
                         personalMaintenanceCustomers.stream())
@@ -413,9 +516,8 @@ public class MaintenanceServlet extends HttpServlet {
             return Map.of();
         }
 
-        YearMonth currentMonth = BusinessDate.currentMonth(clock);
-        Date startDate = Date.valueOf(currentMonth.atDay(1));
-        Date endDate = Date.valueOf(currentMonth.plusMonths(1).atDay(1));
+        Date startDate = Date.valueOf(selectedMonth.atDay(1));
+        Date endDate = Date.valueOf(selectedMonth.plusMonths(1).atDay(1));
         Map<String, Boolean> registeredCustomers = new LinkedHashMap<>();
         for (MaintenanceRecordDTO record
                 : maintenanceDAO.getMaintenanceRecordsByMonthForCustomers(

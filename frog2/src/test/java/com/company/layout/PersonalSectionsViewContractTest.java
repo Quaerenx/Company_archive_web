@@ -86,6 +86,8 @@ class PersonalSectionsViewContractTest {
         String personal = personalSection(page, "maintenance-customers");
         assertTrue(personal.contains("items=\"${personalMaintenanceCustomers}\""));
         assertTrue(page.contains("items=\"${inspectorCustomers}\""));
+        assertTrue(personal.contains("personalMaintenanceAssignedCount eq 0"));
+        assertTrue(personal.contains("선택한 조건에 해당하는 담당 고객사가 없습니다."));
         assertEquals(2, occurrences(page, "<t:maintenanceCustomerCard"));
         assertEquals(1, occurrences(page,
                 "<c:forEach var=\"entry\" items=\"${inspectorCustomers}\">"));

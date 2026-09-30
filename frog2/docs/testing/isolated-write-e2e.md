@@ -50,7 +50,60 @@ The runner command is `./gradlew e2eWrite`. It must never be pointed at the shar
 | duplicate submission | pending policy | decide idempotency key or allowed duplicate rule |
 | file metadata + DB recovery | not applicable today | repository is filesystem-only; reassess if DB metadata is introduced |
 
-No real write E2E ran during this work because no approved isolated database/snapshot was supplied.
+The isolated-database real-HTTP runner had not run during the original
+2026-09-03 investigation because no approved isolated database/snapshot was
+supplied. The separate test-table JDBC/servlet probe below has a different
+execution boundary.
+
+## Dedicated test-table write probe (2026-09-30)
+
+`tableWriteE2e` is a separate opt-in task for explicitly approved, empty test
+tables in the existing database. It does not bypass or change the isolated
+database and deployed-WAR gates of `e2eWrite`.
+
+Required inputs are `FROG2_TABLE_WRITE_ENABLED=true`,
+`FROG2_TABLE_WRITE_PREFIX=frog2_test_<unique_run>_`, and an explicit regular
+external config file in `FROG2_TABLE_WRITE_DB_CONFIG`. This tag is excluded from
+normal `test` and `check` runs.
+
+Before running, provision four empty `public.<prefix><original_table>` tables
+for `company_users`, `vertica_customer_detail`,
+`customer_maintenance_schedule`, and `maintenance_records`. Copy only their
+structure; preserve required nullability and provide test-only timestamp
+defaults. The maintenance ID must use a separate prefixed sequence. Inspect
+defaults and foreign keys before any test write to ensure they cannot change
+shared objects. The test fails before seeding if the tables are nonempty or a
+sequence default lacks the test prefix.
+
+The test-only JDBC router changes reviewed DAO and fixture DML to these four
+fully qualified names. It rejects unknown tables, schema-qualified input,
+unreviewed statement syntax, direct sequence calls, unrestricted mutation,
+raw statements, callable statements, and JDBC unwrapping. Column metadata is
+restricted to exact names in `public` to avoid wildcard or cross-schema matches.
+
+The probe uses production `UserDAO` authentication and production
+`AuthFilter`/`CsrfFilter`/`MaintenanceServlet` with original assignment and
+maintenance DAOs. It checks create, update, delete, same-name non-assignee
+rejection, assigned non-creator access, lost-assignment rejection, invalid CSRF,
+and the atomic customer predicate. Servlet requests and sessions are test
+doubles; this verifies real JDBC and servlet logic without claiming real HTTP,
+multipart parsing, or Tomcat session-container coverage. Synthetic rows are
+removed in `finally`, all four tables are checked empty, and the tables and
+test sequence remain for inspection. Cleanup attempts every table even after
+a failure, then attempts every empty-table check; failures are accumulated and
+reported instead of claiming successful cleanup. No `DROP` is performed.
+
+`IsolatedAuthenticatedWriteFlowTest` independently exercises authenticated and
+CSRF-protected upload/import against JUnit temporary directories. It verifies
+successful storage/download, rollback of a partially failed upload batch,
+multipart cleanup, administrator-only selected import, and preservation of
+unselected files. Its maintenance scenario uses a stateful DAO double; it
+does not access any database.
+
+The older real-HTTP maintenance scenario still needs an assigned-customer seed
+fixture before it can run against the current customer-assignment policy.
+Neither task should be reported as a real HTTP write test until an isolated
+Tomcat/database has been provisioned and that scenario has actually run.
 
 ## CI boundary
 
