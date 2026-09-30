@@ -154,28 +154,35 @@ test('each rendered frame clears old pixels instead of accumulating translucent 
 
     assert.equal(harness.context.clearRectCalls, initialClearCount + 2);
     assert.equal(harness.context.fillRects.filter(rect => rect.width > 10).length, 0);
-    assert.equal(harness.context.lineSegments.length, 36);
+    assert.equal(harness.context.lineSegments.length, 0);
 });
 
-test('resizing does not join a new projection to stale viewport coordinates', () => {
+test('resizing clears the old frame and draws particles in the new viewport', () => {
     const harness = createHarness();
     harness.runAnimationFrame(1040);
     harness.runAnimationFrame(1080);
-    const previousSegments = harness.context.lineSegments.length;
+    const previousFills = harness.context.fillRectCalls;
+    const previousClears = harness.context.clearRectCalls;
 
     harness.resize(1600, 1000);
     harness.runAnimationFrame(1120);
 
-    assert.equal(harness.context.lineSegments.length, previousSegments);
+    assert.equal(harness.context.clearRectCalls, previousClears + 2);
+    assert.equal(harness.context.fillRectCalls, previousFills + 36);
+    for (const rect of harness.context.fillRects.slice(-36)) {
+        assert.ok(rect.x >= 0 && rect.x + rect.width <= 1600);
+        assert.ok(Math.abs(rect.y + rect.height / 2 - 500) < 1e-9);
+    }
     harness.runAnimationFrame(1160);
-    assert.equal(harness.context.lineSegments.length, previousSegments + 36);
+    assert.equal(harness.context.fillRectCalls, previousFills + 72);
+    assert.equal(harness.context.lineSegments.length, 0);
 });
 
-test('resuming visibility clears the old frame and resets projected trail coordinates', () => {
+test('resuming visibility clears the old frame and draws without trails', () => {
     const harness = createHarness();
     harness.runAnimationFrame(1040);
     harness.runAnimationFrame(1080);
-    const previousSegments = harness.context.lineSegments.length;
+    const previousFills = harness.context.fillRectCalls;
     const previousClearCount = harness.context.clearRectCalls;
 
     harness.document.hidden = true;
@@ -185,7 +192,8 @@ test('resuming visibility clears the old frame and resets projected trail coordi
     harness.documentListeners.get('visibilitychange')();
     harness.runAnimationFrame(1120);
 
-    assert.equal(harness.context.lineSegments.length, previousSegments);
+    assert.equal(harness.context.fillRectCalls, previousFills + 36);
+    assert.equal(harness.context.lineSegments.length, 0);
 });
 
 test('movement timing does not count scheduler remainder twice', () => {
@@ -204,12 +212,12 @@ test('movement timing does not count scheduler remainder twice', () => {
         - (singlePosition.y + singlePosition.height / 2)) < 1e-9);
 });
 
-test('desktop, reduced-motion and page lifecycle changes reset trail coordinates', () => {
+test('desktop, reduced-motion and page lifecycle changes clear and resume without trails', () => {
     for (const mode of ['desktop', 'reduced-motion', 'page']) {
         const harness = createHarness();
         harness.runAnimationFrame(1040);
         harness.runAnimationFrame(1080);
-        const previousSegments = harness.context.lineSegments.length;
+        const previousFills = harness.context.fillRectCalls;
         const previousClearCount = harness.context.clearRectCalls;
 
         if (mode === 'desktop') {
@@ -231,10 +239,26 @@ test('desktop, reduced-motion and page lifecycle changes reset trail coordinates
         }
         assert.equal(harness.animationFrames.size, 1, mode);
         harness.runAnimationFrame(1120);
-        assert.equal(harness.context.lineSegments.length, previousSegments, mode);
+        assert.equal(harness.context.fillRectCalls, previousFills + 36, mode);
         harness.runAnimationFrame(1160);
-        assert.equal(harness.context.lineSegments.length, previousSegments + 36, mode);
+        assert.equal(harness.context.fillRectCalls, previousFills + 72, mode);
+        assert.equal(harness.context.lineSegments.length, 0, mode);
     }
+});
+
+test('irregular frames and long pauses never leave particle strokes', () => {
+    const harness = createHarness();
+    const initialClears = harness.context.clearRectCalls;
+    const timestamps = [1040, 1080, 1120, 1600, 1640, 8000, 8040];
+
+    for (const timestamp of timestamps) {
+        harness.runAnimationFrame(timestamp);
+    }
+
+    assert.equal(harness.context.clearRectCalls, initialClears + timestamps.length);
+    assert.equal(harness.context.fillRectCalls, 36 * timestamps.length);
+    assert.equal(harness.context.lineSegments.length, 0);
+    assert.equal(harness.animationFrames.size, 1);
 });
 
 test('low-power desktop reduces the particle loop to 24 items', () => {

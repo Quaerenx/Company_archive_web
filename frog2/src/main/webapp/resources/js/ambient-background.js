@@ -57,8 +57,6 @@
         star.x = Math.cos(angle) * radius;
         star.y = Math.sin(angle) * radius;
         star.z = initial ? Math.random() : 1;
-        star.px = Number.NaN;
-        star.py = Number.NaN;
         star.vmul = 0.6 + Math.random() * 0.8;
         star.flashUntil = 0;
         star.nextFlash = elapsed
@@ -71,8 +69,6 @@
             x: 0,
             y: 0,
             z: 0,
-            px: Number.NaN,
-            py: Number.NaN,
             vmul: 1,
             flashUntil: 0,
             nextFlash: 0
@@ -92,10 +88,6 @@
 
     function clearFrame() {
         context.clearRect(0, 0, size.width, size.height);
-        for (var index = 0; index < stars.length; index += 1) {
-            stars[index].px = Number.NaN;
-            stars[index].py = Number.NaN;
-        }
     }
 
     function resize() {
@@ -176,16 +168,6 @@
                 * brightness
                 * (flashMultiplier > 1 ? 1 : 0.85);
 
-            if (!Number.isNaN(star.px) && !Number.isNaN(star.py)) {
-                context.globalAlpha = alpha * 0.35;
-                context.strokeStyle = particleColor;
-                context.lineWidth = Math.max(0.3, radius * 0.3);
-                context.beginPath();
-                context.moveTo(star.px, star.py);
-                context.lineTo(screenX, screenY);
-                context.stroke();
-            }
-
             context.globalAlpha = alpha;
             context.fillStyle = particleColor;
             context.fillRect(
@@ -194,8 +176,6 @@
                 radius * 2,
                 radius * 2
             );
-            star.px = screenX;
-            star.py = screenY;
         }
 
         context.globalAlpha = 1;
