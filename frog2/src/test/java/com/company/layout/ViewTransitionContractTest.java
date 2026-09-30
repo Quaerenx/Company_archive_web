@@ -1,5 +1,6 @@
 package com.company.layout;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -73,6 +74,77 @@ class ViewTransitionContractTest {
                 "::view-transition-group(archive-login-card) {\n    z-index: 3;\n}"));
         assertTrue(styles.contains(
                 "::view-transition-group(archive-logo) {\n    z-index: 4;\n}"));
+    }
+
+    @Test
+    void flyingDocumentsFadeBeforeTheirFinalTravelWithoutBlurredSnapshots()
+            throws Exception {
+        String styles = read("resources/css/view-transitions.css");
+        for (String direction : new String[] {"left", "right", "center"}) {
+            String frames = block(styles, "@keyframes archive-peek-exit-" + direction);
+            assertTrue(block(frames, "16%").contains("opacity: 1;"));
+            assertTrue(block(frames, "60%").contains("opacity: 0.35;"));
+            assertTrue(block(frames, "82%").contains("opacity: 0;"));
+            assertTrue(block(frames, "100%").contains("opacity: 0;"));
+            assertTrue(block(frames, "100%").contains("transform: translate("));
+            assertFalse(frames.contains("filter:"));
+        }
+        assertTrue(styles.contains("archive-peek-exit-left 588ms linear both"));
+        assertTrue(styles.contains("archive-peek-exit-right 524ms linear both"));
+        assertTrue(styles.contains("archive-peek-exit-center 560ms linear 90ms both"));
+    }
+
+    @Test
+    void logoMovesAsOneImageWhileKeepingTheGroupMorphAndSingleImageFallback()
+            throws Exception {
+        String styles = read("resources/css/view-transitions.css");
+        String images = block(styles,
+                "::view-transition-old(archive-logo),\n::view-transition-new(archive-logo)");
+        assertTrue(images.contains("animation: none;"));
+        assertTrue(images.contains("mix-blend-mode: normal;"));
+        assertTrue(block(styles, "::view-transition-old(archive-logo) {")
+                .contains("opacity: 0;"));
+        assertTrue(block(styles,
+                "::view-transition-new(archive-logo),\n::view-transition-old(archive-logo):only-child")
+                .contains("opacity: 1;"));
+        assertTrue(block(styles, "::view-transition-old(archive-logo):only-child")
+                .contains("opacity: 1;"));
+        assertTrue(styles.contains("animation-delay: 60ms;\n    animation-duration: 560ms;"));
+    }
+
+    @Test
+    void loginAndHeaderKeepOneLogoTargetAndThreeDistinctDocumentTargets()
+            throws Exception {
+        String login = read("login.jsp");
+        String header = read("WEB-INF/includes/header_nav.jspf");
+        assertTrue(login.contains("class=\"login-brand-logo\""));
+        assertTrue(header.contains("class=\"brand-logo\""));
+        assertTrue(login.indexOf("class=\"login-brand-logo\"")
+                == login.lastIndexOf("class=\"login-brand-logo\""));
+        assertTrue(header.indexOf("class=\"brand-logo\"")
+                == header.lastIndexOf("class=\"brand-logo\""));
+        assertEquals(3, login.split("class=\"peek-doc\"", -1).length - 1);
+        assertEquals(3, login.split("class=\"peek-sheet\"", -1).length - 1);
+        String styles = read("resources/css/view-transitions.css");
+        for (int index = 1; index <= 3; index++) {
+            assertTrue(styles.contains(".peek-doc:nth-child(" + index + ") .peek-sheet"));
+        }
+    }
+
+    private static String block(String source, String selector) {
+        int start = source.indexOf(selector);
+        assertTrue(start >= 0, () -> "Missing CSS block: " + selector);
+        int opening = source.indexOf('{', start);
+        int depth = 1;
+        for (int index = opening + 1; index < source.length(); index++) {
+            char character = source.charAt(index);
+            if (character == '{') {
+                depth++;
+            } else if (character == '}' && --depth == 0) {
+                return source.substring(opening + 1, index);
+            }
+        }
+        throw new AssertionError("Unclosed CSS block: " + selector);
     }
 
     private static String read(String path) throws Exception {

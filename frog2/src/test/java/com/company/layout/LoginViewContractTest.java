@@ -233,6 +233,36 @@ class LoginViewContractTest {
     }
 
     @Test
+    void hoverExitPausesEyeLoopsWithoutRemovingTheirCurrentPhase() throws Exception {
+        String styles = read("resources/css/login_style.css");
+        String hoverStyles = styles.substring(styles.indexOf(
+                "@media (hover: hover) and (pointer: fine)"));
+        for (String part : new String[] {"brand-eye", "brand-pupil"}) {
+            String base = ruleBody(hoverStyles, ".login-page ." + part);
+            assertTrue(base.contains("animation: archive-eye-"));
+            assertTrue(base.contains("animation-play-state: paused;"));
+
+            String active = ruleBody(hoverStyles,
+                    ".login-page .login-shell:has(.login-submit.is-loading) ." + part);
+            assertTrue(active.contains("animation-play-state: running;"));
+            assertFalse(active.contains("animation:"));
+        }
+    }
+
+    @Test
+    void reducedMotionRemovesThePaperStaggerAsWellAsItsTravelDuration()
+            throws Exception {
+        String styles = read("resources/css/login_style.css");
+        String reducedStyles = styles.substring(styles.indexOf(
+                "@media (prefers-reduced-motion: reduce)"));
+        String shell = ruleBody(reducedStyles, ".login-page .login-shell");
+        assertTrue(shell.contains("--peek-stagger: 0ms;"));
+        assertTrue(shell.contains("--peek-duration: 0.01ms;"));
+        assertTrue(shell.contains("--peek-fade: 0.01ms;"));
+        assertTrue(shell.contains("--eye-rise-delay: 0ms;"));
+    }
+
+    @Test
     void shortLoginViewportsKeepEveryControlVerticallyReachable() throws Exception {
         String styles = read("resources/css/login_style.css");
 
@@ -294,7 +324,6 @@ class LoginViewContractTest {
         assertTrue(script.contains("var FOCAL_DEPTH = 21;"));
         assertTrue(script.contains("var BRIGHTNESS = 9;"));
         assertTrue(script.contains("var GLITTER_INTENSITY = 0.03;"));
-        assertTrue(script.contains("var TRAIL_AMOUNT = 30;"));
         assertTrue(script.contains("requestAnimationFrame"));
         assertTrue(script.contains("ResizeObserver"));
         assertTrue(script.contains("(min-width: 1051px)"));
@@ -302,6 +331,14 @@ class LoginViewContractTest {
         assertTrue(script.contains("document.hidden"));
         assertFalse(script.contains("localStorage"));
         assertFalse(script.contains("from \"react\""));
+    }
+
+    private static String ruleBody(String styles, String selector) {
+        Matcher matcher = Pattern.compile(
+                Pattern.quote(selector) + "\\s*\\{([^}]*)\\}", Pattern.DOTALL)
+                .matcher(styles);
+        assertTrue(matcher.find(), () -> "CSS rule is missing: " + selector);
+        return matcher.group(1);
     }
 
     private static String tagById(String source, String id) {

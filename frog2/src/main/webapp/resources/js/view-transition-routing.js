@@ -74,6 +74,22 @@
         if (!transition) {
             return;
         }
+        if (transition.ready && typeof transition.ready.catch === 'function') {
+            transition.ready.catch(function (error) {
+                // Hiding the outgoing document or resizing can cancel its capture.
+                if (error && (error.name === 'AbortError'
+                        || (error.name === 'InvalidStateError'
+                            && typeof error.message === 'string'
+                            && error.message.includes('Viewport size changed')))) {
+                    return;
+                }
+                if (root.console && typeof root.console.error === 'function') {
+                    root.console.error('Unable to start login stage transition:', error);
+                } else {
+                    throw error;
+                }
+            });
+        }
         if ((prefersReducedMotion() || !isStageRoutePair(fromUrl, toUrl))
                 && typeof transition.skipTransition === 'function') {
             transition.skipTransition();

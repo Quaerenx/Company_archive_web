@@ -477,6 +477,19 @@ body.login-page::after {
    사라져 :focus-within이 풀린다. 그대로 두면 화면 전환 스냅샷이 찍히기 직전에
    종이가 접혀 퇴장 연출이 빈 화면을 날리게 된다.                            */
 @media (hover: hover) and (pointer: fine) {
+    /* Keep each loop's phase when hover ends; translate handles the retreat. */
+    .login-page .brand-eye {
+        animation: archive-eye-duck var(--duck-cycle) linear
+            calc(var(--eye-rise-delay) + var(--eye-rise-duration)) infinite;
+        animation-play-state: paused;
+    }
+
+    .login-page .brand-pupil {
+        animation: archive-eye-glance var(--glance-cycle) linear
+            calc(var(--eye-rise-delay) + var(--eye-rise-duration)) infinite;
+        animation-play-state: paused;
+    }
+
     .login-page .login-shell:hover .peek-sheet,
     .login-page .login-shell:focus-within .peek-sheet,
     .login-page .login-shell:has(.login-submit.is-loading) .peek-sheet {
@@ -489,13 +502,12 @@ body.login-page::after {
         transition-delay: var(--peek-delay);
     }
 
-    /* 눈은 peek과 같은 조건에서 깨어난다. 흘긋/숨기 루프는 다 올라온 뒤부터
-       시작해야 올라오는 도중에 눈동자가 움직이지 않는다.                      */
+    /* 눈은 peek과 같은 조건에서 깨어난다. 첫 루프는 올라오기가 끝난 뒤 시작하고,
+       다시 들어오면 멈췄던 위치부터 이어 간다.                                */
     .login-page .login-shell:hover .brand-eye,
     .login-page .login-shell:focus-within .brand-eye,
     .login-page .login-shell:has(.login-submit.is-loading) .brand-eye {
-        animation: archive-eye-duck var(--duck-cycle) linear
-            calc(var(--eye-rise-delay) + var(--eye-rise-duration)) infinite;
+        animation-play-state: running;
         transition-delay: var(--eye-rise-delay);
         translate: 0 0;
     }
@@ -503,8 +515,7 @@ body.login-page::after {
     .login-page .login-shell:hover .brand-pupil,
     .login-page .login-shell:focus-within .brand-pupil,
     .login-page .login-shell:has(.login-submit.is-loading) .brand-pupil {
-        animation: archive-eye-glance var(--glance-cycle) linear
-            calc(var(--eye-rise-delay) + var(--eye-rise-duration)) infinite;
+        animation-play-state: running;
     }
 }
 
@@ -513,6 +524,7 @@ body.login-page::after {
    여기서 직접 꺼야 한다.                                                */
 @media (prefers-reduced-motion: reduce) {
     .login-page .login-shell {
+        --peek-stagger: 0ms;
         --peek-duration: 0.01ms;
         --peek-fade: 0.01ms;
         /* 눈도 즉시 자리를 잡는다. 파일 하단의 포괄 규칙보다 명시도가 높아

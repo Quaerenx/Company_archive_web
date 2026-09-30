@@ -22,18 +22,17 @@
     var FOCAL_DEPTH = 21;
     var BRIGHTNESS = 9;
     var GLITTER_INTENSITY = 0.03;
-    var TRAIL_AMOUNT = 30;
 
     var stepZ = SPEED * 0.0008;
     var focalDepth = FOCAL_DEPTH / 100;
     var starScale = STAR_SIZE * 0.15;
     var glitter = GLITTER_INTENSITY * 0.1;
     var brightness = Math.min(1, BRIGHTNESS / 100);
-    var trail = TRAIL_AMOUNT / 100;
     var stars = [];
     var size = { width: 0, height: 0, dpr: 1 };
     var elapsed = 0;
     var lastTime = performance.now();
+    var lastDrawTime = lastTime;
     var frameId = null;
     var desktopQuery = window.matchMedia('(min-width: 1051px)');
     var ambientActive = desktopQuery.matches;
@@ -91,6 +90,14 @@
         }
     }
 
+    function clearFrame() {
+        context.clearRect(0, 0, size.width, size.height);
+        for (var index = 0; index < stars.length; index += 1) {
+            stars[index].px = Number.NaN;
+            stars[index].py = Number.NaN;
+        }
+    }
+
     function resize() {
         var dpr = Math.min(
             window.devicePixelRatio || 1,
@@ -108,7 +115,7 @@
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
         context.setTransform(dpr, 0, 0, dpr, 0, 0);
-        context.clearRect(0, 0, width, height);
+        clearFrame();
         return true;
     }
 
@@ -123,13 +130,7 @@
         var centerY = height / 2;
         var projectionScale = Math.min(width, height) * 0.9;
         var dt = Math.max(0.001, Math.min(0.1, deltaSeconds)) * 60;
-        var keep = Math.pow(Math.min(0.98, Math.max(0, trail)), dt);
-        var trailAlpha = Math.max(0.02, 1 - keep);
-
-        context.globalCompositeOperation = 'destination-out';
-        context.globalAlpha = trailAlpha;
-        context.fillStyle = particleColor;
-        context.fillRect(0, 0, width, height);
+        context.clearRect(0, 0, width, height);
         context.globalCompositeOperation = 'lighter';
 
         for (var index = 0; index < stars.length; index += 1) {
@@ -205,7 +206,8 @@
     function loop(time) {
         var deltaMilliseconds = time - lastTime;
         if (deltaMilliseconds >= FRAME_INTERVAL) {
-            drawFrame(deltaMilliseconds / 1000);
+            drawFrame((time - lastDrawTime) / 1000);
+            lastDrawTime = time;
             lastTime = time - (deltaMilliseconds % FRAME_INTERVAL);
         }
         frameId = window.requestAnimationFrame(loop);
@@ -221,6 +223,7 @@
             return;
         }
         lastTime = performance.now();
+        lastDrawTime = lastTime;
         frameId = window.requestAnimationFrame(loop);
     }
 
@@ -229,17 +232,17 @@
             window.cancelAnimationFrame(frameId);
             frameId = null;
         }
+        clearFrame();
     }
 
     function renderReducedMotionFrame() {
-        context.clearRect(0, 0, size.width, size.height);
+        clearFrame();
     }
 
     function handleResize() {
         var changed = resize();
         if (!ambientActive) {
             stop();
-            context.clearRect(0, 0, size.width, size.height);
             return;
         }
         if (reducedMotion) {
@@ -262,7 +265,6 @@
     function handleReducedMotionChange(event) {
         reducedMotion = event.matches;
         stop();
-        context.clearRect(0, 0, size.width, size.height);
         if (reducedMotion) {
             renderReducedMotionFrame();
         } else {
@@ -273,7 +275,6 @@
     function handleDesktopChange(event) {
         ambientActive = event.matches;
         stop();
-        context.clearRect(0, 0, size.width, size.height);
         if (ambientActive) {
             if (reducedMotion) {
                 renderReducedMotionFrame();

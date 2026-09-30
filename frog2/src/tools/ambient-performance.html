@@ -53,6 +53,7 @@
         var lastDrawTimestamp = null;
         var firstTimestamp = null;
         var lastTimestamp = null;
+        var inAnimationCallback = false;
         var nativeGetContext = HTMLCanvasElement.prototype.getContext;
         var nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
 
@@ -62,10 +63,11 @@
                 return context;
             }
             context.__archivePerformanceWrapped = true;
-            var nativeFillRect = context.fillRect.bind(context);
-            context.fillRect = function (x, y, width, height) {
+            var nativeClearRect = context.clearRect.bind(context);
+            context.clearRect = function (x, y, width, height) {
                 if (
-                    x === 0
+                    inAnimationCallback
+                    && x === 0
                     && y === 0
                     && width === document.documentElement.clientWidth
                     && height === document.documentElement.clientHeight
@@ -77,7 +79,7 @@
                         : firstDrawTimestamp;
                     lastDrawTimestamp = timestamp;
                 }
-                return nativeFillRect.apply(context, arguments);
+                return nativeClearRect.apply(context, arguments);
             };
             return context;
         };
@@ -86,7 +88,12 @@
             return nativeRequestAnimationFrame(function (timestamp) {
                 var drawFramesBeforeCallback = drawFrameCount;
                 var started = performance.now();
-                callback(timestamp);
+                inAnimationCallback = true;
+                try {
+                    callback(timestamp);
+                } finally {
+                    inAnimationCallback = false;
+                }
                 var duration = performance.now() - started;
 
                 callbackCount += 1;

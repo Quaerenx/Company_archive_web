@@ -9,9 +9,15 @@ const createRouteGate = require(
 
 function createHarness(options = {}) {
     const listeners = new Map();
+    const reportedErrors = [];
     let skipTransitionCalls = 0;
     const root = {
         URL,
+        console: {
+            error(...args) {
+                reportedErrors.push(args);
+            }
+        },
         addEventListener(name, listener) {
             listeners.set(name, listener);
         },
@@ -26,8 +32,12 @@ function createHarness(options = {}) {
         }
     };
     const transition = {
+        ready: options.ready,
         skipTransition() {
             skipTransitionCalls += 1;
+            if (options.onSkip) {
+                options.onSkip();
+            }
         }
     };
 
@@ -35,6 +45,7 @@ function createHarness(options = {}) {
 
     return {
         gate,
+        reportedErrors,
         skipTransitionCalls() {
             return skipTransitionCalls;
         },
@@ -142,3 +153,106 @@ test('fails closed for missing route data and reduced motion', () => {
     );
     assert.equal(unsupported.skipTransitionCalls(), 0);
 });
+
+test('observes outgoing ready rejection when a successful navigation hides the document', async () => {
+    let rejectReady;
+    const ready = new Promise((resolve, reject) => { rejectReady = reject; });
+    const harness = createHarness({ ready });
+
+    harness.dispatchPageSwap(
+        'https://archive.test/frog2/login',
+        'https://archive.test/frog2/dashboard'
+    );
+    rejectReady(new DOMException('The outgoing document was hidden', 'AbortError'));
+    await new Promise(setImmediate);
+
+    assert.equal(harness.skipTransitionCalls(), 0);
+    assert.deepEqual(harness.reportedErrors, []);
+});
+
+test('observes incoming ready rejection when the viewport changes before capture', async () => {
+    let rejectReady;
+    const ready = new Promise((resolve, reject) => { rejectReady = reject; });
+    const harness = createHarness({
+        ready,
+        currentUrl: 'https://archive.test/frog2/dashboard',
+        fromUrl: 'https://archive.test/frog2/login',
+        toUrl: 'https://archive.test/frog2/dashboard'
+    });
+
+    harness.dispatchPageReveal();
+    rejectReady(new DOMException(
+        'Transition was aborted because of invalid state. Viewport size changed',
+        'InvalidStateError'
+    ));
+    await new Promise(setImmediate);
+
+    assert.equal(harness.skipTransitionCalls(), 0);
+    assert.deepEqual(harness.reportedErrors, []);
+});
+
+test('observes ready before explicitly skipping reduced motion and failed login', async () => {
+    for (const reducedMotion of [true, false]) {
+        let rejectReady;
+        const ready = new Promise((resolve, reject) => { rejectReady = reject; });
+        const harness = createHarness({
+            ready,
+            reducedMotion,
+            onSkip() {
+                rejectReady(new DOMException('Transition was skipped', 'AbortError'));
+            }
+        });
+
+        harness.dispatchPageSwap(
+            'https://archive.test/frog2/login',
+            reducedMotion
+                ? 'https://archive.test/frog2/dashboard'
+                : 'https://archive.test/frog2/login'
+        );
+        await new Promise(setImmediate);
+
+        assert.equal(harness.skipTransitionCalls(), 1);
+        assert.deepEqual(harness.reportedErrors, []);
+    }
+});
+
+test('reports unexpected transition readiness failures without changing navigation', async () => {
+    let rejectReady;
+    const ready = new Promise((resolve, reject) => { rejectReady = reject; });
+    const harness = createHarness({ ready });
+    const failure = new TypeError('Unexpected transition failure');
+
+    harness.dispatchPageSwap(
+        'https://archive.test/frog2/login',
+        'https://archive.test/frog2/dashboard'
+    );
+    rejectReady(failure);
+    await new Promise(setImmediate);
+
+    assert.equal(harness.skipTransitionCalls(), 0);
+    assert.equal(harness.reportedErrors.length, 1);
+    assert.equal(harness.reportedErrors[0][1], failure);
+});
+
+for (const [description, message] of [
+    ['duplicate snapshot names', 'Duplicate view-transition-name: archive-logo'],
+    ['other invalid capture states', 'Transition was aborted because of invalid state']
+]) {
+    test('reports ' + description + ' instead of treating them as viewport cancellation', async () => {
+        let rejectReady;
+        const ready = new Promise((resolve, reject) => { rejectReady = reject; });
+        const harness = createHarness({ ready });
+        const failure = new DOMException(message, 'InvalidStateError');
+
+        harness.dispatchPageSwap(
+            'https://archive.test/frog2/login',
+            'https://archive.test/frog2/dashboard'
+        );
+        rejectReady(failure);
+        await new Promise(setImmediate);
+
+        assert.equal(harness.skipTransitionCalls(), 0);
+        assert.equal(harness.reportedErrors.length, 1);
+        assert.equal(harness.reportedErrors[0][1], failure);
+    });
+}
