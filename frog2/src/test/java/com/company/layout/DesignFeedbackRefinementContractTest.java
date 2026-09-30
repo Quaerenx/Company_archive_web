@@ -139,7 +139,7 @@ class DesignFeedbackRefinementContractTest {
                 "customer-table ui-table ui-data-table"));
         assertTrue(page.contains("customer-col-nodes col--numeric"));
         assertTrue(page.contains("customer-col-license col--numeric"));
-        assertTrue(page.contains("customer-license-unit"));
+        assertTrue(read("WEB-INF/tags/customerListRows.tag").contains("customer-license-unit"));
         assertFalse(customerStyles.contains("td:nth-child"));
         assertFalse(customerStyles.contains("th:nth-child"));
         assertTrue(system.contains(

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.company.model.CustomerAssignmentDAO;
+import com.company.model.MaintenanceAssigneeData;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
 import com.company.model.MaintenanceCustomerAssignment;
@@ -92,6 +93,14 @@ public class DashboardServlet extends HttpServlet {
                         allAssignments,
                         stateByCustomer,
                         selectedMonth);
+        MaintenanceAssigneeData personalAssignments =
+                customerAssignmentDAO.getMaintenanceAssigneeData(
+                        user.getUserId(), user.getUserName());
+        List<MonthlyMaintenanceCustomer> personalMaintenanceCustomers =
+                buildPersonalMaintenanceCustomers(
+                        personalAssignments.assignments(),
+                        stateByCustomer,
+                        selectedMonth);
         RequestPerformanceContext.recordDataLoad(
                 System.nanoTime() - dataLoadStart);
 
@@ -101,6 +110,12 @@ public class DashboardServlet extends HttpServlet {
         request.setAttribute(
                 "monthlyMaintenanceAssigneeGroups",
                 monthlyMaintenanceAssigneeGroups);
+        request.setAttribute(
+                "personalMaintenanceAssignedCount",
+                personalAssignments.customers().size());
+        request.setAttribute(
+                "personalMaintenanceCustomers",
+                personalMaintenanceCustomers);
         long viewRenderStart = System.nanoTime();
         try {
             request.getRequestDispatcher("/dashboard.jsp")
@@ -232,6 +247,29 @@ public class DashboardServlet extends HttpServlet {
         customersByManager.forEach((managerName, customers) ->
                 groups.add(new MaintenanceAssigneeGroup(managerName, customers)));
         return groups;
+    }
+
+    private List<MonthlyMaintenanceCustomer> buildPersonalMaintenanceCustomers(
+            List<MaintenanceCustomerAssignment> assignments,
+            Map<String, CustomerMonthState> stateByCustomer,
+            YearMonth selectedMonth) {
+        List<MonthlyMaintenanceCustomer> customers = new ArrayList<>();
+        Set<String> includedCustomers = new HashSet<>();
+        for (MaintenanceCustomerAssignment assignment : assignments) {
+            String customerName = normalizedName(assignment.customerName());
+            if (customerName.isEmpty() || !includedCustomers.add(customerName)) {
+                continue;
+            }
+            CustomerMonthState state = stateByCustomer.get(customerName);
+            if (assignment.schedule().isDue(selectedMonth) || state != null) {
+                customers.add(new MonthlyMaintenanceCustomer(
+                        customerName,
+                        state != null && state.done,
+                        state != null && state.licenseRisk,
+                        assignment.schedule().isQuarterly()));
+            }
+        }
+        return List.copyOf(customers);
     }
 
     private void addMaintenanceCustomer(

@@ -28,6 +28,7 @@
             window.sessionStorage.setItem(storageKey(), JSON.stringify({
                 url: currentUrlKey(),
                 rowKey: key,
+                listKey: list.getAttribute('data-ui-return-list-key') || '',
                 scrollY: window.scrollY || 0,
                 savedAt: Date.now()
             }));
@@ -61,7 +62,14 @@
         var row = Array.prototype.find.call(
             document.querySelectorAll('[data-ui-return-row]'),
             function (candidate) {
-                return candidate.getAttribute('data-ui-return-key') === state.rowKey;
+                if (candidate.getAttribute('data-ui-return-key') !== state.rowKey) {
+                    return false;
+                }
+                var list = candidate.closest('[data-ui-return-list]');
+                var listKey = list
+                    ? list.getAttribute('data-ui-return-list-key') || ''
+                    : '';
+                return listKey === (state.listKey || '');
             });
         if (!row) return;
 

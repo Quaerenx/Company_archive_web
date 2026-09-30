@@ -243,11 +243,13 @@ final class CustomerQueryController {
         request.setAttribute("currentPage", page.page());
         request.setAttribute("pageSize", page.pageSize());
         request.setAttribute("totalPages", page.totalPages());
+        List<CustomerDTO> personalCustomers =
+                customerAssignmentDAO.getCustomersByAssignee(
+                        user.getUserId(), user.getUserName());
+        request.setAttribute("personalCustomers", personalCustomers);
         Map<String, Boolean> customerAssignmentFlags = new LinkedHashMap<>();
-        for (String customerName
-                : customerAssignmentDAO.getCustomerNamesByAssignee(
-                        user.getUserId(), user.getUserName())) {
-            customerAssignmentFlags.put(customerName, Boolean.TRUE);
+        for (CustomerDTO customer : personalCustomers) {
+            customerAssignmentFlags.put(customer.getCustomerName(), Boolean.TRUE);
         }
         request.setAttribute(
                 "customerAssignmentFlags",

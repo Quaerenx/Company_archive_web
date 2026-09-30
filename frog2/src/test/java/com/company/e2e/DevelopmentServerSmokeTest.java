@@ -164,6 +164,9 @@ class DevelopmentServerSmokeTest {
             assertTrue(header(response, "Content-Type").startsWith("text/html"));
             assertTrue(response.body().toLowerCase(Locale.ROOT).contains("<html"));
             assertFalse(response.body().contains("id=\"loginForm\""));
+            if (List.of("dashboard", "customers", "maintenance").contains(route)) {
+                assertPersonalSectionState(route, response.body());
+            }
         }
 
         for (String route : TABLE_ROUTES) {
@@ -200,7 +203,47 @@ class DevelopmentServerSmokeTest {
                 "Global search reported unavailable sources");
     }
 
+    private static void assertPersonalSectionState(String route, String body) {
+        String section = switch (route) {
+            case "dashboard" -> "dashboard-maintenance";
+            case "customers" -> "customers";
+            case "maintenance" -> "maintenance-customers";
+            default -> throw new IllegalArgumentException("Unknown personal route: " + route);
+        };
+        String title = switch (route) {
+            case "dashboard" -> "나의 정기점검";
+            case "customers" -> "나의 고객사";
+            case "maintenance" -> "나의 정기점검 고객사";
+            default -> throw new IllegalArgumentException("Unknown personal route: " + route);
+        };
+        int personalIndex = body.indexOf("data-personal-section=\"" + section + "\"");
+        int globalIndex = body.indexOf("data-global-section=\"" + section + "\"");
+        assertTrue(personalIndex >= 0, "Personal section missing: /" + route);
+        assertTrue(globalIndex > personalIndex,
+                "Personal section must appear above the existing global section: /" + route);
+        String personal = body.substring(personalIndex, globalIndex);
+        assertTrue(personal.contains(title), "Personal heading missing: /" + route);
+        String dataMarker = switch (route) {
+            case "dashboard" -> "data-maintenance-status=";
+            case "customers" -> "data-ui-return-key=";
+            case "maintenance" -> "class=\"customer-card\"";
+            default -> throw new IllegalArgumentException("Unknown personal route: " + route);
+        };
+        boolean empty = personal.contains("담당 고객사가 없습니다.")
+                || ("dashboard".equals(route)
+                        && personal.contains("선택한 달의 정기점검 대상 고객사가 없습니다."));
+        assertTrue(empty || personal.contains(dataMarker),
+                "Personal section must show assigned data or its empty state: /" + route);
+        assertFalse(personal.contains("연결된 담당 고객사가 없습니다"),
+                "Personal section uses the wrong empty message: /" + route);
+    }
+
     private static void assertTablePageState(String route, String body) {
+        if ("customers".equals(route)) {
+            int globalIndex = body.indexOf("data-global-section=\"customers\"");
+            assertTrue(globalIndex >= 0, "Global customer section missing");
+            body = body.substring(globalIndex);
+        }
         TablePageState state = switch (route) {
             case "customers" -> new TablePageState(
                     "customer-table ui-table ui-data-table",

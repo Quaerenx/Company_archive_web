@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerAssignmentDAO;
@@ -205,13 +206,20 @@ public class MaintenanceServlet extends HttpServlet {
                 prioritizeInspector(
                         getInspectorCustomersMap(),
                         user.getUserName());
+        List<CustomerDTO> personalMaintenanceCustomers =
+                customerAssignmentDAO.getMaintenanceCustomersByAssignee(
+                        user.getUserId(), user.getUserName());
         request.setAttribute("inspectorCustomers", inspectorCustomers);
+        request.setAttribute(
+                "personalMaintenanceCustomers",
+                personalMaintenanceCustomers);
         request.setAttribute(
                 "maintenanceFrequencyLabels",
                 getMaintenanceFrequencyLabels());
         request.setAttribute(
                 "currentMonthMaintenanceCustomers",
-                getCurrentMonthMaintenanceCustomers(inspectorCustomers));
+                getCurrentMonthMaintenanceCustomers(
+                        inspectorCustomers, personalMaintenanceCustomers));
         request.setAttribute("viewType", "cards");
         request.getRequestDispatcher("/maintenance/maintenance_cards.jsp")
                 .forward(request, response);
@@ -365,9 +373,11 @@ public class MaintenanceServlet extends HttpServlet {
     }
 
     private Map<String, Boolean> getCurrentMonthMaintenanceCustomers(
-            Map<String, List<CustomerDTO>> inspectorCustomers) {
-        List<String> customerNames = inspectorCustomers.values().stream()
-                .flatMap(List::stream)
+            Map<String, List<CustomerDTO>> inspectorCustomers,
+            List<CustomerDTO> personalMaintenanceCustomers) {
+        List<String> customerNames = Stream.concat(
+                        inspectorCustomers.values().stream().flatMap(List::stream),
+                        personalMaintenanceCustomers.stream())
                 .map(CustomerDTO::getCustomerName)
                 .filter(name -> name != null && !name.isBlank())
                 .distinct()

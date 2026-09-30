@@ -81,7 +81,12 @@ class UsabilityEnhancementContractTest {
                 "meeting/meeting_list.jsp",
                 "troubleshooting/troubleshooting_list.jsp"
         }) {
-            assertTrue(read(path).contains("data-ui-return-row"), path);
+            String source = read(path);
+            if (path.equals("customers/customers_list.jsp")) {
+                assertTrue(source.contains("<t:customerListRows"));
+                source += read("WEB-INF/tags/customerListRows.tag");
+            }
+            assertTrue(source.contains("data-ui-return-row"), path);
         }
 
         assertTrue(customerDetail.contains("data-customer-edit-url"));

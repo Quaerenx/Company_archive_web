@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.company.model.CustomerAssignmentDAO;
+import com.company.model.CustomerDTO;
+import com.company.model.MaintenanceAssigneeData;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
@@ -194,6 +196,125 @@ class DashboardServletQueryContractTest {
                 groups.getFirst().getCustomers().getFirst().isDone());
     }
 
+    @Test
+    void personalSectionUsesSessionIdentityAndIncludesSubAssignedCustomers()
+            throws Exception {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
+        maintenanceDAO.records = List.of(
+                maintenanceRecord("my-primary", today, "40"),
+                maintenanceRecord("my-sub-assignment", today.plusDays(1), "95"),
+                maintenanceRecord("same-name-other-user", today, "40"),
+                maintenanceRecord("unassigned-record", today, "40"));
+        StubCustomerAssignmentDAO customerDAO = new StubCustomerAssignmentDAO();
+        customerDAO.expectedUserId = "session-owner";
+        customerDAO.assignments = List.of(
+                new MaintenanceCustomerAssignment("my-primary", "Same Name"),
+                new MaintenanceCustomerAssignment("my-sub-assignment", "Another Manager"),
+                new MaintenanceCustomerAssignment("same-name-other-user", "Same Name"));
+        customerDAO.personalAssignments = customerDAO.assignments.subList(0, 2);
+        RequestFixture request = new RequestFixture(
+                new UserDTO("session-owner", "", "Same Name", "QA"));
+        request.parameters.put("userId", "another-user");
+        request.parameters.put("userName", "Another Manager");
+
+        new DashboardServlet(maintenanceDAO, customerDAO, FIXED_CLOCK)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals("session-owner", customerDAO.lastUserId);
+        assertEquals("Same Name", customerDAO.lastDisplayName);
+        assertEquals(1, customerDAO.personalAssignmentCalls);
+        assertEquals(2, request.attributes.get("personalMaintenanceAssignedCount"));
+        List<DashboardServlet.MonthlyMaintenanceCustomer> personal = personalCustomers(request);
+        assertEquals(List.of("my-primary", "my-sub-assignment"),
+                personal.stream().map(DashboardServlet.MonthlyMaintenanceCustomer::getCustomerName).toList());
+        assertEquals(true, personal.getFirst().isDone());
+        assertEquals(false, personal.get(1).isDone());
+        assertEquals(true, personal.get(1).isLicenseRisk());
+        assertEquals(1, maintenanceDAO.monthCalls);
+        assertEquals(1, customerDAO.assignmentCalls);
+        @SuppressWarnings("unchecked")
+        List<DashboardServlet.MaintenanceAssigneeGroup> global =
+                (List<DashboardServlet.MaintenanceAssigneeGroup>) request.attributes.get(
+                        "monthlyMaintenanceAssigneeGroups");
+        assertEquals(4, global.stream().mapToInt(group -> group.getCustomers().size()).sum());
+    }
+
+    @Test
+    void personalMonthlySectionKeepsRecordedOffCycleCustomerAndSkipsUndueCustomer()
+            throws Exception {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        MaintenanceSchedule offCycle = new MaintenanceSchedule(
+                3, YearMonth.from(today).minusMonths(1), LocalDate.of(2000, 1, 1), null, true);
+        StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
+        maintenanceDAO.records = List.of(maintenanceRecord("off-cycle-recorded", today, "40"));
+        StubCustomerAssignmentDAO customerDAO = new StubCustomerAssignmentDAO();
+        customerDAO.personalAssignments = List.of(
+                new MaintenanceCustomerAssignment("monthly-due", "Tester"),
+                new MaintenanceCustomerAssignment("off-cycle-recorded", "Another Manager", offCycle),
+                new MaintenanceCustomerAssignment("off-cycle-not-recorded", "Tester", offCycle));
+        customerDAO.assignments = customerDAO.personalAssignments;
+        RequestFixture request = new RequestFixture();
+
+        new DashboardServlet(maintenanceDAO, customerDAO, FIXED_CLOCK)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(3, request.attributes.get("personalMaintenanceAssignedCount"));
+        List<DashboardServlet.MonthlyMaintenanceCustomer> personal = personalCustomers(request);
+        assertEquals(List.of("monthly-due", "off-cycle-recorded"),
+                personal.stream().map(DashboardServlet.MonthlyMaintenanceCustomer::getCustomerName).toList());
+        assertEquals(false, personal.getFirst().isDone());
+        assertEquals(true, personal.get(1).isDone());
+        assertEquals(true, personal.get(1).isQuarterly());
+        assertEquals(1, maintenanceDAO.monthCalls);
+    }
+
+    @Test
+    void offCycleAssignmentsRemainAssignedWhenThereAreNoMonthlyTargets()
+            throws Exception {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        StubCustomerAssignmentDAO customerDAO = new StubCustomerAssignmentDAO();
+        customerDAO.personalAssignments = List.of(new MaintenanceCustomerAssignment(
+                "quarterly-not-due", "Another Manager", new MaintenanceSchedule(
+                        3, YearMonth.from(today).minusMonths(1),
+                        LocalDate.of(2000, 1, 1), null, true)));
+        customerDAO.assignments = customerDAO.personalAssignments;
+        RequestFixture request = new RequestFixture();
+
+        new DashboardServlet(new StubMaintenanceRecordDAO(), customerDAO, FIXED_CLOCK)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(1, request.attributes.get("personalMaintenanceAssignedCount"));
+        assertEquals(List.of(), personalCustomers(request));
+    }
+
+    @Test
+    void personalSectionStaysEmptyWhenOnlyGlobalRecordsAndAssignmentsExist()
+            throws Exception {
+        StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
+        MaintenanceRecordDTO record = maintenanceRecord("another-users-customer", LocalDate.now(FIXED_CLOCK), "40");
+        record.setInspectorName("Tester");
+        maintenanceDAO.records = List.of(record);
+        StubCustomerAssignmentDAO customerDAO = new StubCustomerAssignmentDAO();
+        customerDAO.assignments = List.of(new MaintenanceCustomerAssignment("another-users-customer", "Tester"));
+        RequestFixture request = new RequestFixture();
+
+        new DashboardServlet(maintenanceDAO, customerDAO, FIXED_CLOCK)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(0, request.attributes.get("personalMaintenanceAssignedCount"));
+        assertEquals(List.of(), personalCustomers(request));
+        assertEquals(1, customerDAO.personalAssignmentCalls);
+        assertEquals(1, customerDAO.assignmentCalls);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<DashboardServlet.MonthlyMaintenanceCustomer> personalCustomers(
+            RequestFixture request) {
+        return (List<DashboardServlet.MonthlyMaintenanceCustomer>)
+                request.attributes.get("personalMaintenanceCustomers");
+    }
+
     private static MaintenanceRecordDTO maintenanceRecord(
             String customerName, LocalDate inspectionDate, String usagePercentage) {
         MaintenanceRecordDTO record = new MaintenanceRecordDTO();
@@ -219,7 +340,28 @@ class DashboardServletQueryContractTest {
     private static final class StubCustomerAssignmentDAO
             extends CustomerAssignmentDAO {
         private List<MaintenanceCustomerAssignment> assignments = new ArrayList<>();
+        private List<MaintenanceCustomerAssignment> personalAssignments = List.of();
         private int assignmentCalls;
+        private int personalAssignmentCalls;
+        private String expectedUserId = "tester";
+        private String lastUserId;
+        private String lastDisplayName;
+
+        @Override
+        public MaintenanceAssigneeData getMaintenanceAssigneeData(
+                String userId, String displayName) {
+            personalAssignmentCalls++;
+            lastUserId = userId;
+            lastDisplayName = displayName;
+            List<MaintenanceCustomerAssignment> selected = expectedUserId.equals(userId)
+                    ? personalAssignments : List.of();
+            List<CustomerDTO> customers = selected.stream().map(assignment -> {
+                CustomerDTO customer = new CustomerDTO();
+                customer.setCustomerName(assignment.customerName());
+                return customer;
+            }).toList();
+            return new MaintenanceAssigneeData(customers, selected);
+        }
 
         @Override
         public List<MaintenanceCustomerAssignment>
@@ -231,11 +373,15 @@ class DashboardServletQueryContractTest {
 
     private static final class RequestFixture {
         private final Map<String, Object> attributes = new HashMap<>();
+        private final Map<String, String> parameters = new HashMap<>();
         private final HttpSession session;
         private String forwardedPath;
 
         private RequestFixture() {
-            UserDTO user = new UserDTO("tester", "", "Tester", "QA");
+            this(new UserDTO("tester", "", "Tester", "QA"));
+        }
+
+        private RequestFixture(UserDTO user) {
             session = (HttpSession) Proxy.newProxyInstance(
                     HttpSession.class.getClassLoader(),
                     new Class<?>[] {HttpSession.class},
@@ -252,7 +398,7 @@ class DashboardServletQueryContractTest {
                     (ignored, call, args) -> switch (call.getName()) {
                         case "getSession" -> session;
                         case "getServletPath" -> "/dashboard";
-                        case "getParameter" -> null;
+                        case "getParameter" -> parameters.get((String) args[0]);
                         case "setAttribute" -> {
                             attributes.put((String) args[0], args[1]);
                             yield null;

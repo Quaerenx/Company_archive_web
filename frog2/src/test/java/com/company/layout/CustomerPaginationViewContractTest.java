@@ -96,8 +96,9 @@ class CustomerPaginationViewContractTest {
         assertTrue(page.contains("class=\"customer-list-toolbar\""));
         assertTrue(page.contains("class=\"filter-btn__count\""));
         assertTrue(page.contains("class=\"customer-secondary-action\""));
+        int fullListStart = page.indexOf("data-global-section=\"customers\"");
         assertTrue(page.indexOf("class=\"customer-secondary-action\"")
-                > page.indexOf("</table>"));
+                > page.indexOf("</table>", fullListStart));
         assertFalse(page.contains("class=\"filter-info\""));
         assertFalse(page.contains("class=\"search-stats\""));
         assertFalse(page.contains("정기점검만 보기"));
@@ -126,13 +127,13 @@ class CustomerPaginationViewContractTest {
     @Test
     void assignedCustomersHaveABadgeAndRowAccent() throws Exception {
         String page = Files.readString(
-                WEBAPP.resolve("customers/customers_list.jsp"));
+                WEBAPP.resolve("WEB-INF/tags/customerListRows.tag"));
         String styles = Files.readString(
                 WEBAPP.resolve("resources/css/pages/customers.css"));
 
         assertTrue(page.contains("data-assigned-customer="));
         assertTrue(page.contains(
-                "customerAssignmentFlags[customer.customerName]"));
+                "assignedCustomers[customer.customerName]"));
         assertFalse(page.contains("내 담당"));
         assertTrue(page.contains("customer-assignee-badge"));
         assertTrue(page.contains("<c:out value=\"${currentUserName}\" />"));

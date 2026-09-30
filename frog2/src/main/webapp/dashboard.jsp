@@ -25,8 +25,53 @@
     </jsp:attribute>
   </t:pageHeader>
 
+  <section class="maintenance-month-board ui-work-surface ui-work-surface--padded personal-maintenance-board"
+           data-personal-section="dashboard-maintenance"
+           aria-labelledby="personalMaintenanceTitle">
+    <t:sectionHeader className="maintenance-month-header" flush="true">
+      <jsp:attribute name="title">
+        <div class="maintenance-month-title">
+          <h2 id="personalMaintenanceTitle" class="ui-section-title">
+            <span>나의 정기점검</span>
+            <c:if test="${not empty maintenanceMonthLabel}">
+              <span class="maintenance-month-label"><c:out value="${maintenanceMonthLabel}" /></span>
+            </c:if>
+          </h2>
+        </div>
+      </jsp:attribute>
+    </t:sectionHeader>
+    <div class="ui-section-body ui-section-body--flush">
+      <c:choose>
+        <c:when test="${not maintenanceDataLoaded}">
+          <div class="dashboard-state dashboard-state--error" role="alert">
+            <strong>정기점검 현황을 불러오지 못했습니다.</strong>
+          </div>
+        </c:when>
+        <c:when test="${personalMaintenanceAssignedCount eq 0}">
+          <div class="dashboard-state dashboard-state--empty personal-maintenance-empty">
+            <strong>담당 고객사가 없습니다.</strong>
+          </div>
+        </c:when>
+        <c:when test="${empty personalMaintenanceCustomers}">
+          <div class="dashboard-state dashboard-state--empty personal-maintenance-empty">
+            <strong>선택한 달의 정기점검 대상 고객사가 없습니다.</strong>
+          </div>
+        </c:when>
+        <c:otherwise>
+          <ul class="maintenance-status-legend" aria-label="정기점검 상태 범례">
+            <li class="maintenance-status-legend__item maintenance-status-legend__item--done">완료</li>
+            <li class="maintenance-status-legend__item maintenance-status-legend__item--due">미진행</li>
+            <li class="maintenance-status-legend__frequency">분기</li>
+          </ul>
+          <t:monthlyMaintenanceCustomerList customers="${personalMaintenanceCustomers}" />
+        </c:otherwise>
+      </c:choose>
+    </div>
+  </section>
+
   <section class="maintenance-month-board ui-work-surface ui-work-surface--padded"
            id="maintenanceMonthBoard"
+           data-global-section="dashboard-maintenance"
            aria-labelledby="maintenanceMonthTitle">
     <div class="maintenance-month-header ui-section-header ui-section-header--flush">
       <div class="maintenance-month-title">
@@ -113,28 +158,7 @@
                 <h3 class="maintenance-assignee-name">
                   <c:out value="${group.managerName}" />
                 </h3>
-                <ul class="maintenance-assignee-customers">
-                  <c:forEach var="customer" items="${group.customers}">
-                    <c:url value="/maintenance" var="customerHistoryUrl">
-                      <c:param name="view" value="history" />
-                      <c:param name="customerName" value="${customer.customerName}" />
-                    </c:url>
-                    <li class="maintenance-assignee-customer maintenance-assignee-customer--${customer.statusCode}"
-                        data-maintenance-status="${customer.statusCode}">
-                      <a href="${customerHistoryUrl}">
-                        <span class="maintenance-assignee-customer-name">
-                          <c:out value="${customer.customerName}" />
-                        </span>
-                        <c:if test="${customer.quarterly}">
-                          <span class="maintenance-assignee-frequency" aria-label="분기 점검">분기</span>
-                        </c:if>
-                        <span class="sr-only">
-                          , <c:out value="${customer.statusLabel}" />
-                        </span>
-                      </a>
-                    </li>
-                  </c:forEach>
-                </ul>
+                <t:monthlyMaintenanceCustomerList customers="${group.customers}" />
               </li>
             </c:forEach>
           </ul>

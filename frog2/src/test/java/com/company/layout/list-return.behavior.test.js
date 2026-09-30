@@ -10,13 +10,15 @@ const source = fs.readFileSync(
     'utf8'
 );
 
-function harness(initialValue, search = '?q=KT&page=2') {
+function harness(initialValue, search = '?q=KT&page=2', duplicateRows = false) {
     const listeners = new Map();
     const storage = new Map();
     if (initialValue) storage.set('frog2.listReturn.v1:user-1', initialValue);
     const classChanges = [];
+    const personalClassChanges = [];
     let scrolled = false;
-    const list = {};
+    let personalScrolled = false;
+    const list = { getAttribute() { return null; } };
     const row = {
         classList: {
             add(name) { classChanges.push('add:' + name); },
@@ -27,12 +29,29 @@ function harness(initialValue, search = '?q=KT&page=2') {
         hasAttribute() { return false; },
         scrollIntoView() { scrolled = true; }
     };
+    const personalList = {
+        getAttribute(name) {
+            return name === 'data-ui-return-list-key' ? 'personal-customers' : null;
+        }
+    };
+    const personalRow = {
+        ...row,
+        classList: {
+            add(name) { personalClassChanges.push('add:' + name); },
+            remove(name) { personalClassChanges.push('remove:' + name); }
+        },
+        closest(selector) {
+            return selector === '[data-ui-return-list]' ? personalList : null;
+        },
+        scrollIntoView() { personalScrolled = true; }
+    };
     const document = {
         readyState: 'complete',
         body: { getAttribute() { return 'user-1'; } },
         addEventListener(name, listener) { listeners.set(name, listener); },
         querySelectorAll(selector) {
-            return selector === '[data-ui-return-row]' ? [row] : [];
+            return selector === '[data-ui-return-row]'
+                ? (duplicateRows ? [personalRow, row] : [row]) : [];
         }
     };
     const window = {
@@ -55,7 +74,10 @@ function harness(initialValue, search = '?q=KT&page=2') {
         Number,
         URLSearchParams
     });
-    return { listeners, storage, row, classChanges, wasScrolled: () => scrolled };
+    return {
+        listeners, storage, row, personalRow, classChanges, personalClassChanges,
+        wasScrolled: () => scrolled, wasPersonalScrolled: () => personalScrolled
+    };
 }
 
 test('list return remembers the exact row before following its link', () => {
@@ -104,7 +126,8 @@ test('list return remembers a detail action linked to its summary row', () => {
     const state = harness();
     const action = {
         closest(selector) {
-            return selector === '[data-ui-return-list]' ? {} : null;
+            return selector === '[data-ui-return-list]'
+                ? { getAttribute() { return null; } } : null;
         },
         getAttribute(name) {
             return name === 'data-ui-return-source-key'
@@ -134,4 +157,42 @@ test('list return remembers a detail action linked to its summary row', () => {
 
     const saved = JSON.parse(state.storage.get('frog2.listReturn.v1:user-1'));
     assert.equal(saved.rowKey, 'maintenance-42');
+});
+
+test('legacy list return restores the full row when a personal row has the same key', () => {
+    const state = harness(JSON.stringify({
+        url: '/customers?page=2&q=KT',
+        rowKey: 'row-7',
+        scrollY: 440,
+        savedAt: Date.now()
+    }), '?q=KT&page=2', true);
+
+    assert.equal(state.wasScrolled(), true);
+    assert.equal(state.wasPersonalScrolled(), false);
+    assert.deepEqual(state.classChanges, [
+        'add:ui-return-highlight', 'remove:ui-return-highlight'
+    ]);
+    assert.deepEqual(state.personalClassChanges, []);
+});
+
+test('personal list return saves its list identity and restores its own duplicate row', () => {
+    const state = harness(undefined, '?q=KT&page=2', true);
+    const link = {
+        closest(selector) {
+            if (selector === '[data-ui-return-row]') return state.personalRow;
+            if (selector === 'a[href]') return link;
+            return null;
+        }
+    };
+    state.listeners.get('click')({ target: link, button: 0 });
+
+    const raw = state.storage.get('frog2.listReturn.v1:user-1');
+    const saved = JSON.parse(raw);
+    assert.equal(saved.listKey, 'personal-customers');
+    assert.equal(saved.rowKey, 'row-7');
+
+    const restored = harness(raw, '?q=KT&page=2', true);
+    assert.equal(restored.wasPersonalScrolled(), true);
+    assert.equal(restored.wasScrolled(), false);
+    assert.deepEqual(restored.classChanges, []);
 });

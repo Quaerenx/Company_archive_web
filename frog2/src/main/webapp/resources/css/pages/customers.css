@@ -594,3 +594,7 @@ body.ui-system.page-customers .customer-management form.search-container.ui-form
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
 }
+
+.personal-customer-list-panel {
+    margin-block-end: var(--space-20);
+}

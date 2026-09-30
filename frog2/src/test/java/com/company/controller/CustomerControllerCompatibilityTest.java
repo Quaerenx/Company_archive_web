@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerCounts;
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDAO;
@@ -32,6 +33,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class CustomerControllerCompatibilityTest {
@@ -70,6 +72,66 @@ class CustomerControllerCompatibilityTest {
         assertEquals(Boolean.TRUE, assignmentFlags.get("Acme"));
         assertEquals(null, assignmentFlags.get("Beta"));
         assertEquals("Tester", request.attributes.get("currentUserName"));
+    }
+
+    @Test
+    void personalCustomersUseSessionIdentityAndIgnoreGlobalSearchAndPage()
+            throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customers = List.of(customer("global-search-result"));
+        TrackingCustomerAssignmentDAO assignmentDAO = new TrackingCustomerAssignmentDAO();
+        CustomerDTO primary = customer("my-primary");
+        primary.setManagerName("Same Name");
+        CustomerDTO secondary = customer("my-sub-assignment");
+        secondary.setManagerName("Another Manager");
+        secondary.setSubManagerName("Same Name");
+        assignmentDAO.customers = List.of(primary, secondary);
+        RequestFixture request = new RequestFixture();
+        request.sessionAttributes.put("user", new UserDTO("session-owner", "", "Same Name", "QA"));
+        request.parameters.put("q", "global-search");
+        request.parameters.put("filter", "all");
+        request.parameters.put("page", "2");
+        request.parameters.put("userId", "another-user");
+        request.parameters.put("userName", "Another Manager");
+
+        servlet(customerDAO, new StubDetailDAO(), new StubEosDAO(), assignmentDAO)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals("session-owner", assignmentDAO.lastUserId);
+        assertEquals("Same Name", assignmentDAO.lastDisplayName);
+        assertEquals(1, assignmentDAO.customerCalls);
+        assertEquals(0, assignmentDAO.nameCalls);
+        assertSame(assignmentDAO.customers, request.attributes.get("personalCustomers"));
+        assertSame(customerDAO.customers, request.attributes.get("customerList"));
+        assertEquals("global-search", customerDAO.lastQuery);
+        assertEquals("all", customerDAO.lastFilter);
+        assertEquals(2, customerDAO.lastPage);
+        Map<?, ?> flags = (Map<?, ?>) request.attributes.get("customerAssignmentFlags");
+        assertEquals(Boolean.TRUE, flags.get("my-primary"));
+        assertEquals(Boolean.TRUE, flags.get("my-sub-assignment"));
+        assertEquals(null, flags.get("global-search-result"));
+        assertEquals("/customers/customers_list.jsp", request.forwardedPath);
+    }
+
+    @Test
+    void emptyPersonalCustomersKeepGlobalListAndUnassignedPermissions()
+            throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        CustomerDTO other = customer("same-name-other-users-customer");
+        other.setManagerName("Tester");
+        customerDAO.customers = List.of(other);
+        TrackingCustomerAssignmentDAO assignmentDAO = new TrackingCustomerAssignmentDAO();
+        RequestFixture request = new RequestFixture();
+
+        servlet(customerDAO, new StubDetailDAO(), new StubEosDAO(), assignmentDAO)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(List.of(), request.attributes.get("personalCustomers"));
+        assertSame(customerDAO.customers, request.attributes.get("customerList"));
+        assertEquals(Map.of(), request.attributes.get("customerAssignmentFlags"));
+        assertEquals("tester", assignmentDAO.lastUserId);
+        assertEquals(1, assignmentDAO.customerCalls);
+        assertEquals(0, assignmentDAO.nameCalls);
     }
 
     @Test
@@ -451,7 +513,7 @@ class CustomerControllerCompatibilityTest {
             StubCustomerDAO customerDAO,
             StubDetailDAO detailDAO,
             StubEosDAO eosDAO,
-            StubCustomerAssignmentDAO assignmentDAO) {
+            CustomerAssignmentDAO assignmentDAO) {
         CustomerQueryController query = new CustomerQueryController(
                 customerDAO,
                 detailDAO,
@@ -465,6 +527,28 @@ class CustomerControllerCompatibilityTest {
                 new CustomerCommandController(
                         service, new CustomerRequestMapper(), assignmentDAO);
         return new CustomersServlet(query, command);
+    }
+
+    private static final class TrackingCustomerAssignmentDAO extends CustomerAssignmentDAO {
+        private List<CustomerDTO> customers = List.of();
+        private int customerCalls;
+        private int nameCalls;
+        private String lastUserId;
+        private String lastDisplayName;
+
+        @Override
+        public List<CustomerDTO> getCustomersByAssignee(String userId, String displayName) {
+            customerCalls++;
+            lastUserId = userId;
+            lastDisplayName = displayName;
+            return customers;
+        }
+
+        @Override
+        public Set<String> getCustomerNamesByAssignee(String userId, String displayName) {
+            nameCalls++;
+            throw new AssertionError("The list must reuse its personal customer query for permissions");
+        }
     }
 
     private static final class StubCustomerDAO extends CustomerDAO {

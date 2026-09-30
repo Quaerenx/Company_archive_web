@@ -110,7 +110,7 @@ class PageShellContractTest {
         assertTrue(header.contains("${initParam.frog2AssetVersion}"));
         assertTrue(webXml.contains("<param-name>frog2AssetVersion</param-name>"));
         assertEquals(1, occurrences(
-                webXml, "20260930-followup-remediation-2"));
+                webXml, "20260930-personal-sections-1"));
         assertEquals(7, occurrences(coreStyles, "?v=${frog2AssetVersion}"));
         assertEquals(4, occurrences(header, "?v=${frog2AssetVersion}"));
         assertTrue(navigation.contains("header_nav.js?v=${frog2AssetVersion}"));

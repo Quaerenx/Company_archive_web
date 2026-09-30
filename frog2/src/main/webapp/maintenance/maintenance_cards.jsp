@@ -21,7 +21,39 @@
 	    
     <t:flashMessages />
     
+    <section class="inspector-block ui-work-surface ui-work-surface--padded personal-maintenance-customers"
+             data-personal-section="maintenance-customers"
+             aria-labelledby="personalMaintenanceCustomersTitle">
+        <div class="inspector-section">
+            <t:sectionHeader className="inspector-header" compact="true">
+                <jsp:attribute name="title">
+                    <h2 id="personalMaintenanceCustomersTitle" class="inspector-title ui-section-title">
+                        <i class="fas fa-user-tie" aria-hidden="true"></i>
+                        <span>나의 정기점검 고객사</span>
+                    </h2>
+                </jsp:attribute>
+            </t:sectionHeader>
+            <c:choose>
+                <c:when test="${not empty personalMaintenanceCustomers}">
+                    <div class="customer-grid">
+                        <c:forEach var="customer" items="${personalMaintenanceCustomers}">
+                            <t:maintenanceCustomerCard customer="${customer}"
+                                                       registered="${currentMonthMaintenanceCustomers[customer.customerName]}"
+                                                       frequencyLabel="${maintenanceFrequencyLabels[customer.customerName]}" />
+                        </c:forEach>
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <div class="personal-maintenance-customers-empty ui-empty-state">
+                        <strong>담당 고객사가 없습니다.</strong>
+                    </div>
+                </c:otherwise>
+            </c:choose>
+        </div>
+    </section>
+
     <!-- 담당자별 고객사 카드 목록 -->
+    <div data-global-section="maintenance-customers">
     <c:choose>
         <c:when test="${not empty inspectorCustomers}">
             <c:forEach var="entry" items="${inspectorCustomers}">
@@ -38,57 +70,9 @@
                         
                         <div class="customer-grid">
                             <c:forEach var="customer" items="${entry.value}">
-                                <c:url var="historyUrl" value="/maintenance">
-                                    <c:param name="view" value="history" />
-                                    <c:param name="customerName" value="${customer.customerName}" />
-                                </c:url>
-                                <a class="customer-card"
-                                   href="<c:out value='${historyUrl}' />"
-                                   data-current-month-registered="${currentMonthMaintenanceCustomers[customer.customerName] ? 'true' : 'false'}"
-                                   data-detail-url="<c:out value='${historyUrl}' />">
-                                    
-                                    <div class="customer-name">
-                                        <i class="fas fa-building"></i>
-                                        <span class="customer-name-text"><c:out value="${customer.customerName}" /></span>
-                                        <c:if test="${maintenanceFrequencyLabels[customer.customerName] eq '분기'}">
-                                            <span class="maintenance-frequency">분기</span>
-                                        </c:if>
-                                    </div>
-
-                                    <c:if test="${currentMonthMaintenanceCustomers[customer.customerName]}">
-                                        <i class="fas fa-check-circle maintenance-registration-check"
-                                           role="img"
-                                           aria-label="이번 달 등록 완료"></i>
-                                    </c:if>
-                                    
-                                    <div class="customer-info">
-                                        <div class="info-row">
-                                            <span class="info-label">DB명</span>
-                                            <span class="info-value" title="<c:out value='${customer.dbName}' />"><c:out value="${customer.dbName}" /></span>
-                                        </div>
-                                        <div class="info-row">
-                                            <span class="info-label">버전</span>
-                                            <span class="info-value">
-                                                <c:if test="${not empty customer.verticaVersion}">
-                                                    <span class="version-badge ui-badge ui-badge--neutral"><c:out value="${customer.verticaVersion}" /></span>
-                                                </c:if>
-                                            </span>
-                                        </div>
-                                        <div class="info-row">
-                                            <span class="info-label">모드</span>
-                                            <span class="info-value">
-                                                <c:if test="${not empty customer.mode}">
-                                                    <span class="mode-badge ui-badge ui-badge--neutral"><c:out value="${customer.mode}" /></span>
-                                                </c:if>
-                                            </span>
-                                        </div>
-                                        <div class="info-row">
-                                            <span class="info-label">노드수</span>
-                                            <span class="info-value"><c:out value="${customer.nodes}" /></span>
-                                        </div>
-                                    </div>
-                                    
-                                </a>
+                                <t:maintenanceCustomerCard customer="${customer}"
+                                                           registered="${currentMonthMaintenanceCustomers[customer.customerName]}"
+                                                           frequencyLabel="${maintenanceFrequencyLabels[customer.customerName]}" />
                             </c:forEach>
                         </div>
                     </div>
@@ -103,6 +87,7 @@
             </div>
         </c:otherwise>
     </c:choose>
+    </div>
 </div>
 
 

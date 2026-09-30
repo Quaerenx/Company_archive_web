@@ -14,6 +14,7 @@ class DashboardViewContractTest {
     @Test
     void dashboardKeepsMaintenanceContractWithoutQuickActionsOrPersonalHosts() throws Exception {
         String page = read("dashboard.jsp");
+        String customerLinks = read("WEB-INF/tags/monthlyMaintenanceCustomerList.tag");
         assertTrue(page.contains("/resources/css/pages/dashboard.css"));
         assertFalse(page.contains("maintenance-kpi-section"));
         assertFalse(page.contains("월간 정기점검 요약"));
@@ -37,7 +38,7 @@ class DashboardViewContractTest {
         assertTrue(page.contains("monthlyMaintenanceAssigneeGroups"));
         assertTrue(Pattern.compile(
                 "<li\\b[^>]*class=\"[^\"]*maintenance-assignee-customer[^\"]*\"",
-                Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(page).find());
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(customerLinks).find());
         assertFalse(Pattern.compile(
                 "<article\\b[^>]*class=\"[^\"]*maintenance-record-card[^\"]*\"",
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(page).find(),
@@ -46,10 +47,10 @@ class DashboardViewContractTest {
         assertTrue(page.contains("<c:out value=\"${group.managerName}\" />"));
         assertFalse(page.contains("maintenance-assignee-count"));
         assertFalse(page.contains("fn:length(group.customers)"));
-        assertTrue(page.contains("<c:out value=\"${customer.customerName}\" />"));
-        assertTrue(page.contains("data-maintenance-status=\"${customer.statusCode}\""));
+        assertTrue(customerLinks.contains("<c:out value=\"${customer.customerName}\" />"));
+        assertTrue(customerLinks.contains("data-maintenance-status=\"${customer.statusCode}\""));
         assertFalse(page.contains("data-license-risk="));
-        assertTrue(page.contains("href=\"${customerHistoryUrl}\""));
+        assertTrue(customerLinks.contains("href=\"${customerHistoryUrl}\""));
         assertTrue(page.contains("aria-current=\"page\""));
 
         String behavior = page.contains("/resources/js/pages/dashboard.js")

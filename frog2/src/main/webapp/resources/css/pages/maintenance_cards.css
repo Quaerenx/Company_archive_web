@@ -120,3 +120,18 @@
 .maintenance-management .customer-card.is-loading {
     opacity: 0.7;
 }
+
+.maintenance-management .personal-maintenance-customers {
+    margin-block-end: var(--space-20);
+}
+
+.maintenance-management [data-global-section="maintenance-customers"] {
+    display: grid;
+    gap: var(--page-section-gap);
+}
+
+.maintenance-management .personal-maintenance-customers-empty {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+}

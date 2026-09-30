@@ -14,25 +14,29 @@ class MaintenanceCardsViewContractTest {
     void customerCardsShowTheConfiguredMaintenanceFrequency() throws Exception {
         String page = Files.readString(
                 WEBAPP.resolve("maintenance/maintenance_cards.jsp"));
+        String card = Files.readString(
+                WEBAPP.resolve("WEB-INF/tags/maintenanceCustomerCard.tag"));
         String styles = Files.readString(
                 WEBAPP.resolve("resources/css/pages/maintenance_cards.css"));
 
-        assertEquals(1, occurrences(page, "class=\"maintenance-frequency\""));
-        assertEquals(1, occurrences(page, "class=\"customer-card\""));
+        assertEquals(1, occurrences(card, "class=\"maintenance-frequency\""));
+        assertEquals(1, occurrences(card, "class=\"customer-card\""));
+        assertEquals(2, occurrences(page, "<t:maintenanceCustomerCard"));
         assertEquals(1, occurrences(page,
                 "<c:forEach var=\"entry\" items=\"${inspectorCustomers}\">"));
         assertTrue(page.contains(
                 "class=\"inspector-block ui-work-surface ui-work-surface--padded\""));
         assertTrue(page.contains("maintenanceFrequencyLabels[customer.customerName]"));
         assertTrue(page.contains(
-                "data-current-month-registered=\"${currentMonthMaintenanceCustomers[customer.customerName] ? 'true' : 'false'}\""));
-        assertTrue(page.contains("fas fa-check-circle"));
-        assertTrue(page.contains("maintenance-registration-check"));
-        assertTrue(page.contains("aria-label=\"이번 달 등록 완료\""));
-        assertTrue(!page.contains("maintenance-registration-status"));
-        assertTrue(!page.contains("ui-badge--success"));
-        assertTrue(page.contains("eq '분기'"));
-        assertTrue(!page.contains("? '월별' :"));
+                "registered=\"${currentMonthMaintenanceCustomers[customer.customerName]}\""));
+        assertTrue(card.contains("data-current-month-registered=\"${registered ? 'true' : 'false'}\""));
+        assertTrue(card.contains("fas fa-check-circle"));
+        assertTrue(card.contains("maintenance-registration-check"));
+        assertTrue(card.contains("aria-label=\"이번 달 등록 완료\""));
+        assertTrue(!card.contains("maintenance-registration-status"));
+        assertTrue(!card.contains("ui-badge--success"));
+        assertTrue(card.contains("eq '분기'"));
+        assertTrue(!card.contains("? '월별' :"));
         assertTrue(styles.contains(
                 ".maintenance-management .maintenance-frequency"));
         assertTrue(styles.contains("font-size: var(--font-size-xs)"));

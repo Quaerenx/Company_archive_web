@@ -477,3 +477,7 @@
 .dashboard-page [hidden] {
   display: none;
 }
+
+.dashboard-page .personal-maintenance-board {
+  margin-block-end: var(--space-20);
+}

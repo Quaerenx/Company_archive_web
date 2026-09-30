@@ -211,6 +211,10 @@ class UiDesignSystemContractTest {
                 "meeting/meeting_list.jsp",
                 "troubleshooting/troubleshooting_list.jsp")) {
             String source = read(page);
+            if (page.equals("customers/customers_list.jsp")) {
+                assertTrue(source.contains("<t:customerListRows"));
+                source += read("WEB-INF/tags/customerListRows.tag");
+            }
             assertTrue(source.contains("ui-data-row"), page);
             assertTrue(source.contains("data-detail-url"), page);
         }

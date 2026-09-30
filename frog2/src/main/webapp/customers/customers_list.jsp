@@ -36,6 +36,57 @@
     </t:pageHeader>
 
     <t:flashMessages />
+    <section class="customer-list-panel ui-work-surface personal-customer-list-panel"
+             data-personal-section="customers"
+             aria-labelledby="personalCustomersTitle">
+        <t:sectionHeader>
+            <jsp:attribute name="title">
+                <h2 id="personalCustomersTitle" class="ui-section-title">나의 고객사</h2>
+            </jsp:attribute>
+        </t:sectionHeader>
+        <c:choose>
+            <c:when test="${not empty personalCustomers}">
+                <div class="ui-table-wrap"
+                     data-ui-return-list
+                     data-ui-return-list-key="personal-customers"
+                     data-ui-scroll-region
+                     data-ui-scroll-label="나의 고객사 정보 표">
+                    <table class="customer-table ui-table ui-data-table">
+                        <caption class="sr-only">나의 고객사 정보 목록</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col" class="col--customer">고객사</th>
+                                <th scope="col" class="customer-col-version col--identifier">버전</th>
+                                <th scope="col" class="customer-col-mode col--type">모드</th>
+                                <th scope="col" class="col--text">OS</th>
+                                <th scope="col" class="customer-col-nodes col--numeric">노드수</th>
+                                <th scope="col" class="customer-col-license col--numeric">라이선스</th>
+                                <th scope="col" class="col--identifier">SAID</th>
+                                <th scope="col" class="col--author">담당자</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t:customerListRows customers="${personalCustomers}"
+                                                assignedCustomers="${customerAssignmentFlags}"
+                                                currentUserName="${currentUserName}"
+                                                returnFilter="${filter}"
+                                                returnSortField="${sortField}"
+                                                returnSortDirection="${sortDirection}"
+                                                returnQuery="${q}"
+                                                returnPage="${currentPage}"
+                                                returnPageSize="${pageSize}" />
+                        </tbody>
+                    </table>
+                </div>
+            </c:when>
+            <c:otherwise>
+                <div class="personal-customers-empty ui-empty-state">
+                    <strong>담당 고객사가 없습니다.</strong>
+                </div>
+            </c:otherwise>
+        </c:choose>
+    </section>
+
     <c:url var="maintenanceFilterUrl" value="/customers">
         <c:param name="view" value="list" />
         <c:param name="filter" value="maintenance" />
@@ -52,7 +103,7 @@
         <c:param name="q" value="${q}" />
         <c:param name="pageSize" value="${pageSize}" />
     </c:url>
-    <div class="customer-list-panel ui-work-surface">
+    <div class="customer-list-panel ui-work-surface" data-global-section="customers">
       <div class="customer-list-toolbar">
         <nav class="filter-toggle" aria-label="고객사 목록 범위">
             <a href="<c:out value='${maintenanceFilterUrl}' />"
@@ -210,93 +261,15 @@
                     </tr>
                 </thead>
                 <tbody id="customer-table-body">
-                    <c:forEach var="customer" items="${customerList}">
-                        <c:url var="customerDetailUrl" value="/customers">
-                            <c:param name="view" value="detail" />
-                            <c:param name="customerName" value="${customer.customerName}" />
-                            <c:param name="returnFilter" value="${filter}" />
-                            <c:param name="returnSortField" value="${sortField}" />
-                            <c:param name="returnSortDirection" value="${sortDirection}" />
-                            <c:param name="returnQ" value="${q}" />
-                            <c:param name="returnPage" value="${currentPage}" />
-                            <c:param name="returnPageSize" value="${pageSize}" />
-                        </c:url>
-                        <tr class="customer-row ui-data-row"
-                            data-ui-return-row
-                            data-ui-return-key="<c:out value='${customer.customerName}' />"
-                            data-assigned-customer="${customerAssignmentFlags[customer.customerName] ? 'true' : 'false'}"
-                            data-detail-url="<c:out value="${customerDetailUrl}" />">
-                            <td class="col--customer" title="<c:out value="${customer.customerName}" />" data-original="<c:out value="${customer.customerName}" />">
-                                <a class="customer-detail-link"
-                                   href="<c:out value='${customerDetailUrl}' />"><c:out value="${customer.customerName}" default="" /></a>
-                                <dl class="customer-mobile-meta">
-                                    <div>
-                                        <dt>버전</dt>
-                                        <dd><c:out value="${customer.verticaVersion}" default="-" /></dd>
-                                    </div>
-                                    <div>
-                                        <dt>모드</dt>
-                                        <dd><c:out value="${customer.mode}" default="-" /></dd>
-                                    </div>
-                                    <div>
-                                        <dt>OS</dt>
-                                        <dd><c:out value="${customer.os}" default="-" /></dd>
-                                    </div>
-                                    <div>
-                                        <dt>노드</dt>
-                                        <dd><c:out value="${customer.nodes}" default="-" /></dd>
-                                    </div>
-                                    <div>
-                                        <dt>라이선스</dt>
-                                        <dd>
-                                            <c:choose>
-                                                <c:when test="${not empty customer.licenseAmount}">
-                                                    <c:out value="${customer.licenseAmount}" /><c:if test="${not empty customer.licenseUnit}"> <c:out value="${customer.licenseUnit}" /></c:if>
-                                                </c:when>
-                                                <c:otherwise><c:out value="${customer.licenseSize}" default="-" /></c:otherwise>
-                                            </c:choose>
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt>담당자</dt>
-                                        <dd>
-                                            <c:choose>
-                                                <c:when test="${customerAssignmentFlags[customer.customerName]}">
-                                                    <span class="customer-assignee-badge ui-badge ui-badge--info"><c:out value="${currentUserName}" /></span>
-                                                </c:when>
-                                                <c:otherwise><c:out value="${customer.managerName}" default="-" /></c:otherwise>
-                                            </c:choose>
-                                        </dd>
-                                    </div>
-                                    <div class="customer-mobile-meta__wide">
-                                        <dt>SAID</dt>
-                                        <dd><c:out value="${customer.said}" default="-" /></dd>
-                                    </div>
-                                </dl>
-                            </td>
-                            <td class="customer-col-version col--identifier" data-original="<c:out value="${customer.verticaVersion}" />"><c:out value="${customer.verticaVersion}" default="-" /></td>
-                            <td class="customer-col-mode col--type" data-original="<c:out value="${customer.mode}" />"><c:out value="${customer.mode}" default="-" /></td>
-                            <td class="col--text" data-original="<c:out value="${customer.os}" />"><c:out value="${customer.os}" default="-" /></td>
-                            <td class="customer-col-nodes col--numeric" data-original="<c:out value="${customer.nodes}" />"><c:out value="${customer.nodes}" default="-" /></td>
-                            <td class="customer-col-license col--numeric" data-original="<c:out value="${customer.licenseSize}" />">
-                                <c:choose>
-                                    <c:when test="${not empty customer.licenseAmount}">
-                                        <span class="customer-license-amount"><c:out value="${customer.licenseAmount}" /></span><c:if test="${not empty customer.licenseUnit}"> <span class="customer-license-unit"><c:out value="${customer.licenseUnit}" /></span></c:if>
-                                    </c:when>
-                                    <c:otherwise><c:out value="${customer.licenseSize}" default="-" /></c:otherwise>
-                                </c:choose>
-                            </td>
-                            <td class="col--identifier" data-original="<c:out value="${customer.said}" />"><c:out value="${customer.said}" default="-" /></td>
-                            <td class="col--author" title="<c:out value='${customerAssignmentFlags[customer.customerName] ? currentUserName : customer.managerName}' />" data-original="<c:out value="${customer.managerName}" />">
-                                <c:choose>
-                                    <c:when test="${customerAssignmentFlags[customer.customerName]}">
-                                        <span class="customer-assignee-badge ui-badge ui-badge--info"><c:out value="${currentUserName}" /></span>
-                                    </c:when>
-                                    <c:otherwise><c:out value="${customer.managerName}" default="-" /></c:otherwise>
-                                </c:choose>
-                            </td>
-                        </tr>
-                    </c:forEach>
+                    <t:customerListRows customers="${customerList}"
+                                        assignedCustomers="${customerAssignmentFlags}"
+                                        currentUserName="${currentUserName}"
+                                        returnFilter="${filter}"
+                                        returnSortField="${sortField}"
+                                        returnSortDirection="${sortDirection}"
+                                        returnQuery="${q}"
+                                        returnPage="${currentPage}"
+                                        returnPageSize="${pageSize}" />
 
                 </tbody>
             </table>
