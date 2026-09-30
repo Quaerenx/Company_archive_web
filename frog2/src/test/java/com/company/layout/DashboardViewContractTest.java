@@ -183,7 +183,16 @@ class DashboardViewContractTest {
         assertTrue(personalSection.contains("<dt>이력 미등록</dt>"));
         assertTrue(personalSection.contains("<c:param name=\"maintenanceMonth\" value=\"${maintenanceMonthParam}\" />"));
         assertTrue(personalSection.contains("href=\"<c:out value='${personalMaintenanceManageUrl}' />\""));
-        assertFalse(personalSection.contains("<c:param name=\"registrationStatus\""));
+        int manageUrlStart = personalSection.indexOf("<c:url var=\"personalMaintenanceManageUrl\"");
+        String manageUrl = personalSection.substring(
+                manageUrlStart, personalSection.indexOf("</c:url>", manageUrlStart));
+        assertFalse(manageUrl.contains("<c:param name=\"registrationStatus\""));
+        int unregisteredUrlStart = personalSection.indexOf(
+                "<c:url var=\"personalMaintenanceUnregisteredUrl\"");
+        String unregisteredUrl = personalSection.substring(
+                unregisteredUrlStart, personalSection.indexOf("</c:url>", unregisteredUrlStart));
+        assertTrue(unregisteredUrl.contains(
+                "<c:param name=\"registrationStatus\" value=\"unregistered\" />"));
     }
 
     private static String tagById(String source, String id) {

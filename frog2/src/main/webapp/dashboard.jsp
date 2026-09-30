@@ -23,10 +23,39 @@
       </span>
       확인이 필요한 업무부터 살펴보세요.
     </jsp:attribute>
+    <jsp:attribute name="extra">
+      <div class="maintenance-month-selector">
+        <span class="maintenance-month-selector-label">점검 월</span>
+        <nav class="maintenance-month-tabs" aria-label="점검 월 선택"
+             aria-describedby="dashboardMaintenanceMonthScope">
+          <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
+            <c:url value="/dashboard" var="monthTabUrl">
+              <c:param name="maintenanceMonth" value="${monthTab.value}" />
+            </c:url>
+            <c:choose>
+              <c:when test="${monthTab.active}">
+                <a class="maintenance-month-tab active"
+                   href="${monthTabUrl}"
+                   aria-current="page">
+                  <c:out value="${monthTab.label}" />
+                </a>
+              </c:when>
+              <c:otherwise>
+                <a class="maintenance-month-tab" href="${monthTabUrl}">
+                  <c:out value="${monthTab.label}" />
+                </a>
+              </c:otherwise>
+            </c:choose>
+          </c:forEach>
+        </nav>
+        <span id="dashboardMaintenanceMonthScope" class="maintenance-month-scope">나의·전체 점검에 적용</span>
+      </div>
+    </jsp:attribute>
   </t:pageHeader>
 
   <section class="maintenance-month-board ui-work-surface ui-work-surface--padded personal-maintenance-board"
            data-personal-section="dashboard-maintenance"
+           aria-busy="false"
            aria-labelledby="personalMaintenanceTitle">
     <t:sectionHeader className="maintenance-month-header" flush="true">
       <jsp:attribute name="title">
@@ -61,8 +90,19 @@
               <dd><c:out value="${personalMaintenanceUnregisteredCount}" /><span>개</span></dd>
             </div>
           </dl>
-          <a class="ui-button button--secondary button--sm personal-maintenance-manage-link"
-             href="<c:out value='${personalMaintenanceManageUrl}' />">선택 월 점검 관리 <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+          <div class="personal-maintenance-actions">
+            <c:if test="${personalMaintenanceUnregisteredCount gt 0}">
+              <c:url var="personalMaintenanceUnregisteredUrl" value="/maintenance">
+                <c:param name="view" value="cards" />
+                <c:param name="maintenanceMonth" value="${maintenanceMonthParam}" />
+                <c:param name="registrationStatus" value="unregistered" />
+              </c:url>
+              <a class="ui-button button--primary button--sm personal-maintenance-unregistered-link"
+                 href="<c:out value='${personalMaintenanceUnregisteredUrl}' />#personalMaintenanceCustomersTitle">미등록 점검 확인 <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+            </c:if>
+            <a class="ui-button button--secondary button--sm personal-maintenance-manage-link"
+               href="<c:out value='${personalMaintenanceManageUrl}' />">선택 월 점검 관리 <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+          </div>
         </div>
       </c:if>
       <c:choose>
@@ -109,27 +149,6 @@
         </h2>
       </div>
       <div class="maintenance-month-actions">
-        <div class="maintenance-month-tabs" aria-label="점검 월 선택">
-          <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
-            <c:url value="/dashboard" var="monthTabUrl">
-              <c:param name="maintenanceMonth" value="${monthTab.value}" />
-            </c:url>
-            <c:choose>
-              <c:when test="${monthTab.active}">
-                <a class="maintenance-month-tab active"
-                   href="${monthTabUrl}"
-                   aria-current="page">
-                  <c:out value="${monthTab.label}" />
-                </a>
-              </c:when>
-              <c:otherwise>
-                <a class="maintenance-month-tab" href="${monthTabUrl}">
-                  <c:out value="${monthTab.label}" />
-                </a>
-              </c:otherwise>
-            </c:choose>
-          </c:forEach>
-        </div>
         <button type="button"
                 class="ui-button button--secondary button--sm maintenance-toggle-btn"
                 id="toggleMaintenanceBoardBtn"

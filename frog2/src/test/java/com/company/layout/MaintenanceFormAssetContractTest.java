@@ -205,7 +205,7 @@ class MaintenanceFormAssetContractTest {
         assertTrue(comparisonTable.contains(
                 "<td class=\"history-detail-cell ui-disclosure-cell\" colspan=\"6\">"));
         assertFalse(comparisonTable.contains("data-history-toggle"));
-        assertFalse(comparisonTable.contains("fa-chevron-down"));
+        assertTrue(comparisonTable.contains("fa-chevron-down history-row-toggle-icon\" aria-hidden=\"true\""));
         assertFalse(comparisonTable.contains("history-detail-toggle-cell"));
         assertFalse(comparisonTable.contains(
                 "class=\"history-detail-metrics\""));
@@ -394,7 +394,7 @@ class MaintenanceFormAssetContractTest {
     }
 
     @Test
-    void expandedHistoryRowsHavePersistentStateWithoutDirectionalIcons()
+    void expandedHistoryRowsHavePersistentStateAndDisclosureIndicator()
             throws Exception {
         String page = readWebapp("maintenance/maintenance_history.jsp");
         String styles = Files.readString(
@@ -410,7 +410,9 @@ class MaintenanceFormAssetContractTest {
                 "border-bottom-color: var(--color-primary);"));
         assertTrue(styles.contains(
                 ".history-summary-row.is-expanded .history-row-toggle"));
-        assertFalse(page.contains("fa-chevron"));
+        assertTrue(page.contains("history-row-toggle-icon\" aria-hidden=\"true\""));
+        assertTrue(styles.contains(
+                ".history-row-toggle[aria-expanded=\"true\"] .history-row-toggle-icon"));
         assertFalse(styles.contains(
                 ".history-summary-row > th:first-child::before"));
     }

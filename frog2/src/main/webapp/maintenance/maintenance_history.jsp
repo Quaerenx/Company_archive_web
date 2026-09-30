@@ -311,6 +311,7 @@
                                                 aria-expanded="false"
                                                 aria-controls="${row.detailId}"
                                                 aria-label="${inspectionDateLabel} 정기점검 상세">
+                                            <i class="fas fa-chevron-down history-row-toggle-icon" aria-hidden="true"></i>
                                             <c:choose>
                                                 <c:when test="${not empty row.record.inspectionDate}">
                                                     <fmt:formatDate value="${row.record.inspectionDate}" pattern="yyyy-MM-dd" />

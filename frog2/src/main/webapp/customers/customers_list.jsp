@@ -103,7 +103,16 @@
         <c:param name="q" value="${q}" />
         <c:param name="pageSize" value="${pageSize}" />
     </c:url>
-    <div class="customer-list-panel ui-work-surface" data-global-section="customers">
+    <div class="customer-list-panel ui-work-surface" data-global-section="customers"
+         role="region" aria-labelledby="customerListTitle" aria-describedby="customerListScope">
+      <t:sectionHeader>
+          <jsp:attribute name="title">
+              <div>
+                  <h2 id="customerListTitle" class="ui-section-title">고객사 목록</h2>
+                  <span id="customerListScope" class="ui-help-text">검색·필터·정렬은 아래 고객사 목록에만 적용됩니다.</span>
+              </div>
+          </jsp:attribute>
+      </t:sectionHeader>
       <div class="customer-list-toolbar">
         <nav class="filter-toggle" aria-label="고객사 목록 범위">
             <a href="<c:out value='${maintenanceFilterUrl}' />"
@@ -128,12 +137,13 @@
             <input type="hidden" name="sortDirection" value="<c:out value='${sortDirection}' />" />
             <input type="hidden" name="pageSize" value="<c:out value='${pageSize}' />" />
             <div class="search-input-wrapper ${not empty q ? 'has-query' : ''}">
-                <label for="search-input" class="sr-only">고객사 검색</label>
+                <label for="search-input" class="sr-only">고객사 목록 검색</label>
                 <i class="fas fa-search search-icon" aria-hidden="true"></i>
                 <input type="text"
                        id="search-input"
                        name="q"
                        class="search-input"
+                       aria-describedby="customerListScope"
                        value="<c:out value='${q}' />"
                        placeholder="고객사명, 버전, 모드, OS, SAID, 담당자 검색..."
                        minlength="2"

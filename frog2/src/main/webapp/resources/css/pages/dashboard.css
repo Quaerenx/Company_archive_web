@@ -63,6 +63,19 @@
   justify-content: flex-end;
 }
 
+.dashboard-page .maintenance-month-selector {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8) var(--space-12);
+}
+
+.dashboard-page .maintenance-month-selector-label,
+.dashboard-page .maintenance-month-scope {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
 .dashboard-page .maintenance-month-tabs {
   align-items: center;
   background: transparent;
@@ -231,7 +244,7 @@
 }
 
 .dashboard-page .maintenance-assignee-customer a {
-  align-items: baseline;
+  align-items: center;
   color: inherit;
   display: inline-flex;
   flex: 1 1 auto;
@@ -239,6 +252,7 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: var(--line-height-ui);
+  min-block-size: 32px;
   min-inline-size: 0;
   overflow-wrap: anywhere;
   text-decoration: none;
@@ -490,6 +504,11 @@
   margin-block-end: var(--space-16);
 }
 
+.dashboard-page .personal-maintenance-actions {
+  display: grid;
+  gap: var(--space-8);
+}
+
 .dashboard-page .personal-maintenance-summary__counts {
   display: grid;
   gap: var(--space-8);
@@ -533,7 +552,7 @@
     grid-template-columns: 1fr;
   }
 
-  .dashboard-page .personal-maintenance-manage-link {
-    justify-self: start;
+  .dashboard-page .personal-maintenance-actions {
+    justify-items: start;
   }
 }

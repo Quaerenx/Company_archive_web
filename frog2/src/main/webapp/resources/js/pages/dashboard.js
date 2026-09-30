@@ -2,6 +2,8 @@
   'use strict';
 
   const maintenanceBody = document.getElementById('maintenanceMonthBoardBody');
+  const personalMaintenanceBoard = document.querySelector(
+      '[data-personal-section="dashboard-maintenance"]');
   const toggleMaintenanceBtn =
       document.getElementById('toggleMaintenanceBoardBtn');
   const maintenanceCollapseStorageKey =
@@ -55,6 +57,9 @@
               || event.altKey) {
             return;
           }
+          if (personalMaintenanceBoard) {
+            personalMaintenanceBoard.setAttribute('aria-busy', 'true');
+          }
           if (loadingState) {
             loadingState.hidden = false;
           }
@@ -64,6 +69,19 @@
           }
         });
       });
+
+  window.addEventListener('pageshow', function () {
+    if (personalMaintenanceBoard) {
+      personalMaintenanceBoard.setAttribute('aria-busy', 'false');
+    }
+    if (loadingState) {
+      loadingState.hidden = true;
+    }
+    if (maintenanceBody) {
+      maintenanceBody.classList.remove('is-loading');
+      maintenanceBody.setAttribute('aria-busy', 'false');
+    }
+  });
 
   setMaintenanceCollapsed(readCollapsePreference(false));
 }());

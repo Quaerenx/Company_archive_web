@@ -148,7 +148,7 @@
 }
 
 .maintenance-history .history-comparison-table thead th:nth-child(1) {
-    width: 112px;
+    width: 128px;
 }
 
 .maintenance-history .history-comparison-table thead th:nth-child(2) {
@@ -214,10 +214,21 @@
     display: inline-flex;
     font: inherit;
     font-variant-numeric: tabular-nums;
+    gap: var(--space-4);
     justify-content: center;
     min-block-size: var(--control-height-sm);
     padding: 0;
     width: 100%;
+}
+
+.maintenance-history .history-row-toggle > .history-row-toggle-icon {
+    color: currentColor;
+    flex-shrink: 0;
+    font-size: var(--font-size-xs);
+}
+
+.maintenance-history .history-row-toggle[aria-expanded="true"] .history-row-toggle-icon {
+    transform: rotate(180deg);
 }
 
 .maintenance-history .history-row-toggle:focus-visible {
