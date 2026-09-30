@@ -107,23 +107,41 @@ if [ ! -f "$LIVE_WAR" ]; then
     exit 1
 fi
 BACKUP_READY=false
+HAD_EXPLODED=false
+HAD_WORK=false
+EXPLODED_BACKED_UP=false
+WORK_BACKED_UP=false
+[ ! -e "$LIVE_EXPLODED" ] || HAD_EXPLODED=true
+[ ! -e "$LIVE_WORK" ] || HAD_WORK=true
 
 rollback() {
     trap - ERR
     set +e
     systemctl stop "$SERVICE"
+    if systemctl is-active --quiet "$SERVICE"; then
+        printf 'Rollback could not stop service; live artifacts were preserved: %s\n' \
+            "$SERVICE" >&2
+        return 1
+    fi
     install -d -m 0700 -o root -g root "$BACKUP_DIR/failed"
     [ ! -e "$LIVE_WAR" ] || mv "$LIVE_WAR" "$BACKUP_DIR/failed/frog2.war.failed"
-    [ ! -e "$LIVE_EXPLODED" ] || mv "$LIVE_EXPLODED" "$BACKUP_DIR/failed/frog2.exploded.failed"
-    [ ! -e "$LIVE_WORK" ] || mv "$LIVE_WORK" "$BACKUP_DIR/failed/frog2.work.failed"
-    if [ -f "$BACKUP_DIR/frog2.war.before" ]; then
-        install -m 0640 -o "$OWNER" -g "$GROUP" \
-            "$BACKUP_DIR/frog2.war.before" "$LIVE_WAR"
+    if [ "$EXPLODED_BACKED_UP" = true ] || [ "$HAD_EXPLODED" = false ]; then
+        [ ! -e "$LIVE_EXPLODED" ] \
+            || mv "$LIVE_EXPLODED" "$BACKUP_DIR/failed/frog2.exploded.failed"
     fi
-    [ ! -e "$BACKUP_DIR/frog2.exploded.before" ] \
-        || mv "$BACKUP_DIR/frog2.exploded.before" "$LIVE_EXPLODED"
-    [ ! -e "$BACKUP_DIR/frog2.work.before" ] \
-        || mv "$BACKUP_DIR/frog2.work.before" "$LIVE_WORK"
+    if [ "$WORK_BACKED_UP" = true ] || [ "$HAD_WORK" = false ]; then
+        [ ! -e "$LIVE_WORK" ] \
+            || mv "$LIVE_WORK" "$BACKUP_DIR/failed/frog2.work.failed"
+    fi
+    if [ -f "$BACKUP_DIR/frog2.war.before" ]; then
+        cp -a "$BACKUP_DIR/frog2.war.before" "$LIVE_WAR"
+    fi
+    if [ "$EXPLODED_BACKED_UP" = true ]; then
+        mv "$BACKUP_DIR/frog2.exploded.before" "$LIVE_EXPLODED"
+    fi
+    if [ "$WORK_BACKED_UP" = true ]; then
+        mv "$BACKUP_DIR/frog2.work.before" "$LIVE_WORK"
+    fi
     systemctl start "$SERVICE"
     printf 'Deployment failed and rollback was attempted: %s\n' "$BACKUP_DIR" >&2
 }
@@ -137,18 +155,28 @@ on_error() {
 trap on_error ERR
 
 install -d -m 0700 -o root -g root "$BACKUP_DIR"
+PREVIOUS_HASH="$(sha256sum "$LIVE_WAR" | awk '{print $1}')"
+cp -a "$LIVE_WAR" "$BACKUP_DIR/frog2.war.before"
+if [ "$(sha256sum "$BACKUP_DIR/frog2.war.before" | awk '{print $1}')" != "$PREVIOUS_HASH" ]; then
+    printf 'Previous WAR backup hash mismatch.\n' >&2
+    exit 1
+fi
+BACKUP_READY=true
+
 systemctl stop "$SERVICE"
 if systemctl is-active --quiet "$SERVICE"; then
     printf 'Service did not stop: %s\n' "$SERVICE" >&2
-    exit 1
+    on_error
 fi
 
-cp -a "$LIVE_WAR" "$BACKUP_DIR/frog2.war.before"
-[ ! -e "$LIVE_EXPLODED" ] \
-    || mv "$LIVE_EXPLODED" "$BACKUP_DIR/frog2.exploded.before"
-[ ! -e "$LIVE_WORK" ] \
-    || mv "$LIVE_WORK" "$BACKUP_DIR/frog2.work.before"
-BACKUP_READY=true
+if [ "$HAD_EXPLODED" = true ]; then
+    mv "$LIVE_EXPLODED" "$BACKUP_DIR/frog2.exploded.before"
+    EXPLODED_BACKED_UP=true
+fi
+if [ "$HAD_WORK" = true ]; then
+    mv "$LIVE_WORK" "$BACKUP_DIR/frog2.work.before"
+    WORK_BACKED_UP=true
+fi
 
 install -m 0640 -o "$OWNER" -g "$GROUP" "$WAR" "$LIVE_WAR"
 systemctl start "$SERVICE"
