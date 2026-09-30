@@ -165,24 +165,47 @@
         }
         var key = draftKey(form);
         var baseline = serialize(form);
+        var baselineValues = JSON.stringify(baseline);
+        var lastSavedValues = baselineValues;
         var timer = null;
+        var periodicTimer = null;
 
         function save() {
+            if (timer !== null) window.clearTimeout(timer);
             timer = null;
             var values = serialize(form);
-            if (sameValues(values, baseline)) {
+            var serializedValues = JSON.stringify(values);
+            if (serializedValues === lastSavedValues) return;
+            if (serializedValues === baselineValues) {
                 window.sessionStorage.removeItem(key);
+                lastSavedValues = serializedValues;
                 return;
             }
             var payload = JSON.stringify({savedAt: Date.now(), values: values});
             if (payload.length <= MAX_SERIALIZED_LENGTH) {
                 window.sessionStorage.setItem(key, payload);
+                lastSavedValues = serializedValues;
             }
         }
 
         function scheduleSave() {
             if (timer !== null) window.clearTimeout(timer);
+            if (document.hidden) return;
             timer = window.setTimeout(save, SAVE_DELAY_MS);
+        }
+
+        function startPeriodicSave() {
+            if (!document.hidden && periodicTimer === null) {
+                periodicTimer = window.setInterval(save, PERIODIC_SAVE_MS);
+            }
+        }
+
+        function pauseSaving() {
+            save();
+            if (periodicTimer !== null) {
+                window.clearInterval(periodicTimer);
+                periodicTimer = null;
+            }
         }
 
         var stored = safeParse(window.sessionStorage.getItem(key), null);
@@ -215,7 +238,17 @@
                 writePending(pending);
             });
         });
-        window.setInterval(save, PERIODIC_SAVE_MS);
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                pauseSaving();
+            } else {
+                save();
+                startPeriodicSave();
+            }
+        });
+        window.addEventListener('pagehide', pauseSaving);
+        window.addEventListener('pageshow', startPeriodicSave);
+        startPeriodicSave();
         return key;
     }
 

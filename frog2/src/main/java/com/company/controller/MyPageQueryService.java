@@ -2,6 +2,7 @@ package com.company.controller;
 
 import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
+import com.company.model.MaintenanceAssigneeData;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
@@ -111,9 +112,10 @@ final class MyPageQueryService {
         if (user == null || user.getUserName() == null) {
             return WorkInbox.empty();
         }
-        List<CustomerDTO> assignedCustomers =
-                customerAssignmentDAO.getMaintenanceCustomersByAssignee(
+        MaintenanceAssigneeData assigneeData =
+                customerAssignmentDAO.getMaintenanceAssigneeData(
                         user.getUserId(), user.getUserName());
+        List<CustomerDTO> assignedCustomers = assigneeData.customers();
         if (assignedCustomers.isEmpty()) {
             return WorkInbox.empty();
         }
@@ -127,9 +129,7 @@ final class MyPageQueryService {
                 .map(CustomerDTO::getCustomerName)
                 .toList();
         List<MaintenanceCustomerAssignment> assignments =
-                customerAssignmentDAO
-                        .getMaintenanceCustomerAssignmentsByAssignee(
-                                user.getUserId(), user.getUserName());
+                assigneeData.assignments();
         List<MaintenanceRecordDTO> currentMonthRecords =
                 maintenanceDAO.getMaintenanceRecordsByMonthForCustomers(
                         monthStart, nextMonthStart, customerNames);

@@ -14,7 +14,6 @@ import com.company.model.MeetingRecordDAO;
 import com.company.model.MeetingRecordDTO;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
-import com.company.model.PageResult;
 import com.company.model.TroubleshootingDAO;
 import com.company.model.TroubleshootingDTO;
 import java.io.ByteArrayInputStream;
@@ -168,13 +167,10 @@ class GlobalSearchServiceTest {
         }
 
         @Override
-        public PageResult<TroubleshootingDTO> getTroubleshootingPage(
-                String query,
-                boolean includeContent,
-                int requestedPage,
-                int pageSize) {
-            return new PageResult<>(
-                    List.of(troubleshooting), 1, 1, pageSize);
+        public List<TroubleshootingDTO> searchTroubleshootings(
+                String query, int limit) {
+            assertEquals(5, limit);
+            return List.of(troubleshooting);
         }
     }
 

@@ -3,6 +3,7 @@ package com.company.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashSet;
 import java.util.List;
@@ -91,6 +92,136 @@ class DatabaseSchemaReadinessTest {
         assertEquals(1, jdbc.openCount);
         assertEquals(1, jdbc.closeCount);
         assertTrue(jdbc.statements.isEmpty());
+    }
+
+    @Test
+    void successfulInspectionWarmsRequiredAndAbsentOptionalCapabilities() throws Exception {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = ALL_REQUIRED_COLUMNS;
+        SchemaCapabilityCache warmed = new SchemaCapabilityCache();
+        assertTrue(DatabaseSchemaReadiness.inspect(jdbc::open, warmed).ready());
+        com.company.performance.RequestPerformanceContext.begin();
+        com.company.performance.RequestPerformanceContext.Snapshot timing;
+        try (java.sql.Connection connection = jdbc.open()) {
+            assertTrue(warmed.columnExists(connection, "maintenance_records", "license_usage_pct"));
+            assertTrue(warmed.columnExists(connection, "customer_maintenance_schedule", "interval_months"));
+            assertFalse(warmed.columnExists(connection, "company_users", "department"));
+        } finally {
+            timing = com.company.performance.RequestPerformanceContext.finish();
+        }
+        assertEquals(0, timing.metadataCount());
+    }
+
+    @Test
+    void failedRefreshKeepsPreviouslyVerifiedCapabilities() throws Exception {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = ALL_REQUIRED_COLUMNS;
+        SchemaCapabilityCache warmed = new SchemaCapabilityCache();
+        DatabaseSchemaReadiness.inspect(jdbc::open, warmed);
+        assertThrows(DataAccessException.class, () -> DatabaseSchemaReadiness.inspect(
+                () -> { throw new java.sql.SQLException("Transient probe failure", "08006"); }, warmed));
+        try (java.sql.Connection connection = jdbc.open()) {
+            assertTrue(warmed.columnExists(connection, "maintenance_records", "license_usage_pct"));
+        }
+    }
+
+    @Test
+    void allColumnsUseOneMetadataQueryPerTable() {
+        SchemaMetadataJdbcFixture jdbc = completeMetadata();
+        com.company.performance.RequestPerformanceContext.begin();
+        com.company.performance.RequestPerformanceContext.Snapshot timing;
+        try {
+            assertTrue(DatabaseSchemaReadiness.inspect(jdbc::open).ready());
+        } finally {
+            timing = com.company.performance.RequestPerformanceContext.finish();
+        }
+
+        assertEquals(184, jdbc.columns.size());
+        assertEquals(10, jdbc.queries.size());
+        assertEquals(10, timing.metadataCount());
+        assertEquals(0, timing.sqlCount());
+        assertTrue(jdbc.queries.stream().allMatch(query -> query.catalog() == null
+                && query.schema() == null && "%".equals(query.column())));
+        assertEquals(10, jdbc.resultCloses);
+        assertEquals(1, jdbc.connectionCloses);
+    }
+
+    @Test
+    void emptySchemaReportsMissingRequirementsWithTwoQueriesPerTable() {
+        SchemaMetadataJdbcFixture jdbc = new SchemaMetadataJdbcFixture();
+
+        DatabaseSchemaReadiness.Report report = DatabaseSchemaReadiness.inspect(jdbc::open);
+
+        assertFalse(report.ready());
+        assertEquals(ALL_REQUIRED_COLUMNS.size(), report.missingRequirements().size());
+        assertEquals(OPTIONAL_COLUMNS.size(), report.missingOptionalRequirements().size());
+        assertEquals(20, jdbc.queries.size());
+        assertEquals(20, jdbc.resultCloses);
+    }
+
+    @Test
+    void uppercaseSchemaRemainsReadyUsingOneFallbackPerTable() {
+        SchemaMetadataJdbcFixture jdbc = completeMetadata();
+        List<SchemaMetadataJdbcFixture.Column> lowercase = List.copyOf(jdbc.columns);
+        jdbc.columns.clear();
+        for (var column : lowercase) {
+            jdbc.add(column.schema(), column.table().toUpperCase(java.util.Locale.ROOT),
+                    column.name().toUpperCase(java.util.Locale.ROOT));
+        }
+
+        DatabaseSchemaReadiness.Report report = DatabaseSchemaReadiness.inspect(jdbc::open);
+
+        assertTrue(report.ready());
+        assertTrue(report.missingOptionalRequirements().isEmpty());
+        assertEquals(20, jdbc.queries.size());
+        assertEquals(20, jdbc.resultCloses);
+    }
+
+    @Test
+    void failedConnectionCloseDoesNotPublishRefreshedCapabilities() {
+        SchemaMetadataJdbcFixture jdbc = completeMetadata();
+        SchemaCapabilityCache warmed = new SchemaCapabilityCache();
+        DatabaseSchemaReadiness.inspect(jdbc::open, warmed);
+        jdbc.columns.clear();
+        jdbc.failConnectionClose = true;
+
+        assertThrows(DataAccessException.class,
+                () -> DatabaseSchemaReadiness.inspect(jdbc::open, warmed));
+
+        jdbc.failConnectionClose = false;
+        int queriesBeforeCacheRead = jdbc.queries.size();
+        assertTrue(warmed.columnExists(jdbc.open(), "maintenance_records", "license_usage_pct"));
+        assertEquals(queriesBeforeCacheRead, jdbc.queries.size());
+    }
+
+    @Test
+    void failedMetadataRefreshKeepsSnapshotAndSuccessfulRetryReplacesIt() {
+        SchemaMetadataJdbcFixture jdbc = completeMetadata();
+        SchemaCapabilityCache warmed = new SchemaCapabilityCache();
+        DatabaseSchemaReadiness.inspect(jdbc::open, warmed);
+        jdbc.columns.removeIf(column -> "company_users".equals(column.table()));
+        jdbc.failureQuery = jdbc.queries.size() + 2;
+
+        assertThrows(DataAccessException.class,
+                () -> DatabaseSchemaReadiness.inspect(jdbc::open, warmed));
+        assertTrue(warmed.columnExists(jdbc.open(), "company_users", "department"));
+
+        jdbc.failureQuery = -1;
+        assertTrue(DatabaseSchemaReadiness.inspect(jdbc::open, warmed).ready());
+        int queriesBeforeCacheRead = jdbc.queries.size();
+        assertFalse(warmed.columnExists(jdbc.open(), "company_users", "department"));
+        assertEquals(queriesBeforeCacheRead, jdbc.queries.size());
+    }
+
+    private static SchemaMetadataJdbcFixture completeMetadata() {
+        SchemaMetadataJdbcFixture jdbc = new SchemaMetadataJdbcFixture();
+        java.util.Set<String> columns = new java.util.HashSet<>(ALL_REQUIRED_COLUMNS);
+        columns.addAll(OPTIONAL_COLUMNS);
+        for (String column : columns) {
+            int dot = column.indexOf('.');
+            jdbc.add("application", column.substring(0, dot), column.substring(dot + 1));
+        }
+        return jdbc;
     }
 
     @Test

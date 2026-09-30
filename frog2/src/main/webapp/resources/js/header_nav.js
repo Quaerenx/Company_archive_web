@@ -229,6 +229,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var activeIndex = -1;
         var requestVersion = 0;
         var searchTimer = null;
+        var searchQuery = null;
+        var activeSearchRequest = null;
         var searchEndpoint = quickNavBackdrop.getAttribute('data-search-url');
         var storageNamespace = quickNavBackdrop.getAttribute('data-user-id')
                 || 'anonymous';
@@ -430,6 +432,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.clearTimeout(searchTimer);
                 searchTimer = null;
             }
+            searchQuery = null;
+            if (activeSearchRequest && activeSearchRequest.controller) {
+                activeSearchRequest.controller.abort();
+            }
+            activeSearchRequest = null;
         }
 
         function setActive(index) {
@@ -600,11 +607,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function runRemoteSearch(query, version) {
             searchTimer = null;
+            var request = {
+                controller: typeof window.AbortController === 'function'
+                        ? new window.AbortController() : null
+            };
+            activeSearchRequest = request;
             window.fetch(
                     searchEndpoint + '?q=' + encodeURIComponent(query),
                     {
                         credentials: 'same-origin',
-                        headers: {'Accept': 'application/json'}
+                        headers: {'Accept': 'application/json'},
+                        signal: request.controller
+                                ? request.controller.signal : undefined
                     })
                     .then(function(response) {
                         if (!response.ok) {
@@ -638,21 +652,30 @@ document.addEventListener('DOMContentLoaded', function() {
                         renderResults();
                     })
                     .catch(function(error) {
-                        if (version !== requestVersion) {
+                        if (version !== requestVersion
+                                || (error && error.name === 'AbortError')) {
                             return;
                         }
+                        searchQuery = null;
                         remoteEntries = [];
                         setStatus(error && error.status === 401
                                 ? '로그인이 만료되었습니다. 새로고침 후 다시 시도해 주세요.'
                                 : '업무 데이터 검색을 일시적으로 사용할 수 없습니다.');
                         renderResults();
+                    })
+                    .finally(function() {
+                        if (activeSearchRequest === request) {
+                            activeSearchRequest = null;
+                        }
                     });
         }
 
         function searchInputChanged() {
-            cancelPendingSearch();
-            remoteEntries = [];
             var query = quickNavInput.value.trim();
+            if (query === searchQuery) return;
+            cancelPendingSearch();
+            searchQuery = query;
+            remoteEntries = [];
             if (queryLength(query) < 2) {
                 setStatus(query
                         ? '2자 이상 입력하면 업무 데이터까지 검색합니다.'
@@ -734,6 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeQuickNavigation();
             }
         });
+        window.addEventListener('pagehide', cancelPendingSearch);
         quickNavInput.addEventListener('input', searchInputChanged);
         quickNavInput.addEventListener('keydown', function(event) {
             if (event.key === 'ArrowDown') {

@@ -5,6 +5,7 @@
     var TABLE_STICKY_READY_CLASS = 'is-table-sticky-ready';
     var tableHeaderResizeObserver = null;
     var scrollRegionFrame = 0;
+    var tableRegionsInitialized = false;
 
     function updateTableStickyOffset() {
         var header = document.querySelector('.main-header');
@@ -111,8 +112,13 @@
     }
 
     function initializeScrollableTableRegions() {
+        if (!document.querySelector('[data-ui-scroll-region]')) return;
         updateScrollableTableRegions();
         observeTableHeaderSize();
+        if (!tableRegionsInitialized) {
+            window.addEventListener('resize', scheduleScrollableTableRegionUpdate);
+            tableRegionsInitialized = true;
+        }
     }
 
     if (document.readyState === 'loading') {
@@ -126,5 +132,4 @@
     }
     window.addEventListener(
         'load', initializeScrollableTableRegions, { once: true });
-    window.addEventListener('resize', scheduleScrollableTableRegionUpdate);
 }());

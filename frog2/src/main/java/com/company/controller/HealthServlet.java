@@ -15,13 +15,24 @@ import java.util.function.Function;
 public final class HealthServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private final Function<jakarta.servlet.ServletContext, Report> readiness;
+    private final OperationalReadiness managedReadiness;
 
     public HealthServlet() {
-        this(new OperationalReadiness()::inspect);
+        managedReadiness = new OperationalReadiness();
+        readiness = managedReadiness::inspect;
     }
 
     HealthServlet(Function<jakarta.servlet.ServletContext, Report> readiness) {
         this.readiness = Objects.requireNonNull(readiness, "readiness");
+        managedReadiness = null;
+    }
+
+    @Override
+    public void destroy() {
+        if (managedReadiness != null) {
+            managedReadiness.close();
+        }
+        super.destroy();
     }
 
     @Override

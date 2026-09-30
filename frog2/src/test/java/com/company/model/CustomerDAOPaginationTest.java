@@ -184,4 +184,73 @@ class CustomerDAOPaginationTest {
         assertEquals(2, customerPage.result().page());
         assertEquals(51, customerPage.result().totalCount());
     }
+
+    @Test
+    void deletedRowsDuringCorrectionReturnEmptyFirstPage() {
+        PaginationJdbcFixture jdbc = customerDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 0));
+
+        CustomerPage result = new CustomerDAO(jdbc::open).getCustomerPage(
+                "customer_name", "ASC", "maintenance", "needle", 999, 20);
+
+        assertEquals(5, jdbc.statements.size());
+        assertEquals(1, result.result().page());
+        assertEquals(0, result.result().totalCount());
+        assertTrue(result.result().items().isEmpty());
+        assertEquals(100, result.counts().total());
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void furtherDeletesDuringCorrectionRecountAndUseRemainingPage() {
+        PaginationJdbcFixture jdbc = customerDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "customer_name", "Acme", "result_count", 21));
+
+        CustomerPage result = new CustomerDAO(jdbc::open).getCustomerPage(
+                "customer_name", "ASC", "maintenance", "needle", 999, 20);
+
+        assertEquals(6, jdbc.statements.size());
+        assertEquals(2, result.result().page());
+        assertEquals(21, result.result().totalCount());
+        assertEquals("Acme", result.result().items().getFirst().getCustomerName());
+        assertEquals(40, jdbc.statements.get(3).parameters.get(8));
+        assertEquals(20, jdbc.statements.get(5).parameters.get(8));
+        assertEquals(jdbc.statements.get(1).sql, jdbc.statements.get(5).sql);
+        assertEquals(jdbc.statements.get(2).sql, jdbc.statements.get(4).sql);
+        for (int parameter = 1; parameter <= 6; parameter++) {
+            assertEquals(jdbc.statements.get(1).parameters.get(parameter),
+                    jdbc.statements.get(5).parameters.get(parameter));
+            assertEquals(jdbc.statements.get(2).parameters.get(parameter),
+                    jdbc.statements.get(4).parameters.get(parameter));
+        }
+    }
+
+    @Test
+    void repeatedDeletesStopAfterOneRecount() {
+        PaginationJdbcFixture jdbc = customerDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue();
+
+        CustomerPage result = new CustomerDAO(jdbc::open).getCustomerPage(
+                "", "ASC", "maintenance", "needle", 999, 20);
+
+        assertEquals(6, jdbc.statements.size());
+        assertEquals(1, result.result().page());
+        assertEquals(0, result.result().totalCount());
+        assertTrue(result.result().items().isEmpty());
+        assertTrue(jdbc.queryResults.isEmpty());
+    }
+
+    private static PaginationJdbcFixture customerDeletionFixture() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "total_count", 100, "maintenance_count", 100));
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 41));
+        jdbc.enqueue();
+        return jdbc;
+    }
 }

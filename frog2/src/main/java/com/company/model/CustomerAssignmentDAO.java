@@ -29,7 +29,7 @@ public class CustomerAssignmentDAO {
     private static final String CUSTOMER_COLUMNS =
             CustomerFieldContract.selectColumns("d");
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
-            new SchemaCapabilityCache();
+            SchemaCapabilityCache.application();
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
@@ -67,6 +67,19 @@ public class CustomerAssignmentDAO {
     public List<CustomerDTO> getMaintenanceCustomersByAssignee(
             String userId,
             String displayName) {
+        return loadCustomersByAssignee(userId, displayName, true);
+    }
+
+    public List<CustomerDTO> getCustomersByAssignee(
+            String userId,
+            String displayName) {
+        return loadCustomersByAssignee(userId, displayName, false);
+    }
+
+    private List<CustomerDTO> loadCustomersByAssignee(
+            String userId,
+            String displayName,
+            boolean maintenanceOnly) {
         if (isBlank(userId) && isBlank(displayName)) {
             return List.of();
         }
@@ -82,13 +95,17 @@ public class CustomerAssignmentDAO {
             String sql = "SELECT " + CUSTOMER_COLUMNS
                     + " FROM vertica_customer_detail d "
                     + "WHERE d.is_deleted = " + ACTIVE_FLAG
-                    + " AND d.customer_type = ? AND "
+                    + (maintenanceOnly ? " AND d.customer_type = ?" : "")
+                    + " AND "
                     + CustomerAssignmentSupport.assigneePredicate(capability)
                     + " ORDER BY d.customer_name ASC";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, MAINTENANCE_CUSTOMER_TYPE);
-                statement.setString(2, assignee);
-                statement.setString(3, assignee);
+                int parameter = 1;
+                if (maintenanceOnly) {
+                    statement.setString(parameter++, MAINTENANCE_CUSTOMER_TYPE);
+                }
+                statement.setString(parameter++, assignee);
+                statement.setString(parameter, assignee);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     List<CustomerDTO> customers = new ArrayList<>();
                     while (resultSet.next()) {
@@ -99,7 +116,70 @@ public class CustomerAssignmentDAO {
             }
         } catch (SQLException exception) {
             throw DataAccessException.from(
-                    "load maintenance customers by assignee", exception);
+                    "load customers by assignee", exception);
+        }
+    }
+
+    public MaintenanceAssigneeData getMaintenanceAssigneeData(
+            String userId,
+            String displayName) {
+        if (isBlank(userId) && isBlank(displayName)) {
+            return new MaintenanceAssigneeData(List.of(), List.of());
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            CustomerAssignmentSupport.Capability capability =
+                    CustomerAssignmentSupport.capability(
+                            connection, schemaCapabilities);
+            String assignee = CustomerAssignmentSupport.assigneeValue(
+                    capability, userId, displayName);
+            if (capability == CustomerAssignmentSupport.Capability.PARTIAL) {
+                throw new SQLException(
+                        "Customer assignment user-ID columns are partially applied");
+            }
+            if (assignee == null) {
+                return new MaintenanceAssigneeData(List.of(), List.of());
+            }
+            boolean scheduleAvailable = schemaCapabilities.columnExists(
+                    connection,
+                    MAINTENANCE_SCHEDULE_TABLE,
+                    MAINTENANCE_SCHEDULE_CAPABILITY);
+            String scheduleColumns = scheduleAvailable
+                    ? ", s.interval_months, s.anchor_month, s.enabled, "
+                            + "s.effective_from, s.effective_to "
+                    : " ";
+            String scheduleJoin = scheduleAvailable
+                    ? "LEFT JOIN customer_maintenance_schedule s "
+                            + "ON s.customer_name = d.customer_name "
+                    : "";
+            String sql = "SELECT " + CUSTOMER_COLUMNS + scheduleColumns
+                    + "FROM vertica_customer_detail d " + scheduleJoin
+                    + "WHERE d.is_deleted = " + ACTIVE_FLAG
+                    + " AND d.customer_type = ? AND "
+                    + CustomerAssignmentSupport.assigneePredicate(capability)
+                    + " ORDER BY d.customer_name ASC";
+            List<CustomerDTO> customers = new ArrayList<>();
+            List<MaintenanceCustomerAssignment> assignments = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, MAINTENANCE_CUSTOMER_TYPE);
+                statement.setString(2, assignee);
+                statement.setString(3, assignee);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        CustomerDTO customer = CustomerFieldContract.read(resultSet);
+                        customers.add(customer);
+                        assignments.add(new MaintenanceCustomerAssignment(
+                                customer.getCustomerName(),
+                                customer.getManagerName(),
+                                scheduleAvailable
+                                        ? readMaintenanceSchedule(resultSet)
+                                        : MaintenanceSchedule.monthlyDefault()));
+                    }
+                }
+            }
+            return new MaintenanceAssigneeData(customers, assignments);
+        } catch (SQLException exception) {
+            throw DataAccessException.from(
+                    "load maintenance customers and schedules by assignee", exception);
         }
     }
 

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.TroubleshootingDAO;
@@ -21,24 +22,31 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class TroubleshootingServletAuthorizationTest {
     @Test
-    void addFormUsesTheInjectedCustomerDao() throws Exception {
+    void addFormLoadsOnlyAssignedCustomersWithOneQuery() throws Exception {
         StubCustomerDAO customerDAO = new StubCustomerDAO();
         CustomerDTO customer = new CustomerDTO();
         customer.setCustomerName("Acme");
         customerDAO.customers = List.of(customer);
-        TroubleshootingServlet servlet = servlet(
-                new StubTroubleshootingDAO(), customerDAO);
+        RecordingAssignmentDAO assignments = new RecordingAssignmentDAO(
+                List.of(customer));
+        TroubleshootingServlet servlet = new TroubleshootingServlet(
+                new StubTroubleshootingDAO(), customerDAO, assignments);
         RequestFixture request =
                 new RequestFixture(user("owner-1", "Owner"), "GET");
         request.parameters.put("view", "add");
 
         servlet.doGet(request.proxy(), new ResponseFixture().proxy());
 
-        assertEquals(1, customerDAO.calls);
+        assertEquals(0, customerDAO.calls);
+        assertEquals(1, assignments.customerCalls);
+        assertEquals(0, assignments.nameCalls);
+        assertEquals("owner-1", assignments.userId);
+        assertEquals("Owner", assignments.displayName);
         assertEquals(customerDAO.customers,
                 request.attributes.get("customerList"));
         assertEquals(
@@ -128,6 +136,73 @@ class TroubleshootingServletAuthorizationTest {
                 "/troubleshooting/troubleshooting_edit.jsp",
                 request.forwardedPath);
         assertNull(response.redirect);
+    }
+
+    @Test
+    void editFormReusesAssignedCustomersForItsPermissionCheck() throws Exception {
+        CustomerDTO customer = new CustomerDTO();
+        customer.setCustomerName("Acme");
+        RecordingAssignmentDAO assignments = new RecordingAssignmentDAO(
+                List.of(customer));
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        TroubleshootingServlet servlet = new TroubleshootingServlet(
+                new StubTroubleshootingDAO(), customerDAO, assignments);
+        RequestFixture request = new RequestFixture(
+                user("assigned-1", "Renamed Assignee"), "GET");
+        request.parameters.put("view", "edit");
+        request.parameters.put("id", "7");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(
+                "/troubleshooting/troubleshooting_edit.jsp",
+                request.forwardedPath);
+        assertEquals(List.of(customer), request.attributes.get("customerList"));
+        assertEquals(1, assignments.customerCalls);
+        assertEquals(0, assignments.nameCalls);
+        assertEquals(0, customerDAO.calls);
+        assertEquals("assigned-1", assignments.userId);
+    }
+
+    @Test
+    void unassignedUserCannotOpenEditFormAfterQueryConsolidation() throws Exception {
+        RecordingAssignmentDAO assignments = new RecordingAssignmentDAO(
+                List.of());
+        TroubleshootingServlet servlet = new TroubleshootingServlet(
+                new StubTroubleshootingDAO(), new StubCustomerDAO(), assignments);
+        RequestFixture request = new RequestFixture(
+                user("unassigned-1", "Owner"), "GET");
+        request.parameters.put("view", "edit");
+        request.parameters.put("id", "7");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doGet(request.proxy(), response.proxy());
+
+        assertNull(request.forwardedPath);
+        assertTrue(response.redirect.startsWith(
+                "troubleshooting?view=view&id=7&_flash="));
+        assertEquals(1, assignments.customerCalls);
+        assertEquals(0, assignments.nameCalls);
+    }
+
+    @Test
+    void missingRecordCustomerNameCannotAuthorizeTheEditForm() throws Exception {
+        StubTroubleshootingDAO dao = new StubTroubleshootingDAO();
+        dao.troubleshooting.setCustomerName(null);
+        RecordingAssignmentDAO assignments = new RecordingAssignmentDAO(
+                List.of(new CustomerDTO()));
+        TroubleshootingServlet servlet = new TroubleshootingServlet(
+                dao, new StubCustomerDAO(), assignments);
+        RequestFixture request = new RequestFixture(user("owner-1", "Owner"), "GET");
+        request.parameters.put("view", "edit");
+        request.parameters.put("id", "7");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doGet(request.proxy(), response.proxy());
+
+        assertNull(request.forwardedPath);
+        assertTrue(response.redirect.startsWith(
+                "troubleshooting?view=view&id=7&_flash="));
     }
 
     @Test
@@ -295,6 +370,35 @@ class TroubleshootingServletAuthorizationTest {
                 int id, String expectedCustomerName) {
             lastDeleteCustomerName = expectedCustomerName;
             return mutationSucceeds;
+        }
+    }
+
+    private static final class RecordingAssignmentDAO
+            extends CustomerAssignmentDAO {
+        private final List<CustomerDTO> customers;
+        private int customerCalls;
+        private int nameCalls;
+        private String userId;
+        private String displayName;
+
+        private RecordingAssignmentDAO(List<CustomerDTO> customers) {
+            this.customers = customers;
+        }
+
+        @Override
+        public List<CustomerDTO> getCustomersByAssignee(
+                String userId, String displayName) {
+            customerCalls++;
+            this.userId = userId;
+            this.displayName = displayName;
+            return customers;
+        }
+
+        @Override
+        public Set<String> getCustomerNamesByAssignee(
+                String userId, String displayName) {
+            nameCalls++;
+            throw new AssertionError("Form must reuse its assigned customer query");
         }
     }
 

@@ -102,6 +102,12 @@ class MaintenanceHistoryViewContractTest {
                 "?v=${initParam.frog2AssetVersion}"));
         assertFalse(vendorScriptDeclaration.contains(
                 "?v=${frog2AssetVersion}"));
+        int dataConditionIndex = page.lastIndexOf(
+                "<c:if test=\"${not empty usageSeries}\">", vendorScriptIndex);
+        int dataConditionEnd = page.indexOf("</c:if>", vendorScriptIndex);
+        assertTrue(dataConditionIndex >= 0);
+        assertTrue(dataConditionEnd > vendorScriptIndex);
+        assertTrue(dataConditionEnd < headerIncludeIndex);
     }
 
     @Test

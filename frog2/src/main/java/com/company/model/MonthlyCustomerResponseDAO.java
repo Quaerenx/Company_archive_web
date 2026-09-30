@@ -15,7 +15,7 @@ public class MonthlyCustomerResponseDAO {
     private static final String TABLE_NAME = "monthly_customer_response";
     private static final String CREATOR_USER_ID_COLUMN = "created_by_user_id";
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
-            new SchemaCapabilityCache();
+            SchemaCapabilityCache.application();
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;

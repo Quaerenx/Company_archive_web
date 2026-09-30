@@ -30,6 +30,7 @@ class RequestTimingFilterTest {
             RequestPerformanceContext.markOperation(
                     RequestPerformanceContext.Operation.TROUBLESHOOTING_SUMMARY_SEARCH);
             RequestPerformanceContext.recordSql(7_000_000);
+            RequestPerformanceContext.recordMetadata(2_000_000);
             RequestPerformanceContext.recordDbAcquisition(3_000_000);
             RequestPerformanceContext.recordFileSnapshotCacheMiss();
             RequestPerformanceContext.recordFileSnapshotScan(5_000_000);
@@ -48,6 +49,9 @@ class RequestTimingFilterTest {
         assertEquals(200, event.status());
         assertEquals(25_000_000, event.elapsedNanos());
         assertEquals(1, event.sqlCount());
+        assertEquals(1, event.metadataCount());
+        assertEquals(2_000_000, event.metadataDurationNanos());
+        assertEquals(2_000_000, event.maxMetadataNanos());
         assertEquals(7_000_000, event.sqlDurationNanos());
         assertEquals(
                 RequestPerformanceContext.Operation.TROUBLESHOOTING_SUMMARY_SEARCH,

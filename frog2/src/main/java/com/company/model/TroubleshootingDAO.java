@@ -37,7 +37,7 @@ public class TroubleshootingDAO {
             " ORDER BY CASE WHEN occurrence_date IS NULL THEN 1 ELSE 0 END, "
                     + "occurrence_date DESC, create_date DESC, id DESC";
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
-            new SchemaCapabilityCache();
+            SchemaCapabilityCache.application();
 
     private final JdbcConnectionProvider connectionProvider;
     private final SchemaCapabilityCache schemaCapabilities;
@@ -97,6 +97,37 @@ public class TroubleshootingDAO {
         } catch (SQLException exception) {
             throw DataAccessException.from(
                     "load troubleshooting page", exception);
+        }
+    }
+
+    public List<TroubleshootingDTO> searchTroubleshootings(
+            String query, int limit) {
+        if (limit <= 0 || limit > 20) {
+            throw new IllegalArgumentException(
+                    "Search limit must be between 1 and 20");
+        }
+        String normalizedQuery = normalizedQuery(query);
+        if (normalizedQuery == null) {
+            return List.of();
+        }
+        RequestPerformanceContext.markOperation(
+                Operation.TROUBLESHOOTING_CONTENT_SEARCH);
+        String sql = "SELECT " + SUMMARY_COLUMNS + " FROM " + TABLE_NAME
+                + " WHERE " + CONTENT_SEARCH_PREDICATE
+                + STABLE_SUMMARY_ORDER + " LIMIT ?";
+        try (Connection connection = connectionProvider.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            int parameter = bindSearch(statement, 1, normalizedQuery, true);
+            statement.setInt(parameter, limit);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<TroubleshootingDTO> records = new ArrayList<>();
+                while (resultSet.next()) {
+                    records.add(mapSummary(resultSet, false));
+                }
+                return List.copyOf(records);
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from("search troubleshooting", exception);
         }
     }
 
@@ -414,6 +445,27 @@ public class TroubleshootingDAO {
                 includeCreatorUserId,
                 correctedPage,
                 pageSize);
+        if (correctedRows.items().isEmpty()) {
+            int refreshedCount = countSummaryRows(
+                    connection, whereClause, binder);
+            if (refreshedCount == 0) {
+                return new PageResult<>(List.of(), 0, 1, pageSize);
+            }
+            int refreshedPage = Pagination.clampPage(
+                    correctedPage,
+                    Pagination.totalPages(refreshedCount, pageSize));
+            correctedRows = loadSummaryRows(
+                    connection,
+                    whereClause,
+                    binder,
+                    includeCreatorUserId,
+                    refreshedPage,
+                    pageSize);
+            if (correctedRows.items().isEmpty()) {
+                return new PageResult<>(List.of(), 0, 1, pageSize);
+            }
+            correctedPage = refreshedPage;
+        }
         return new PageResult<>(
                 correctedRows.items(),
                 correctedRows.totalCount(),

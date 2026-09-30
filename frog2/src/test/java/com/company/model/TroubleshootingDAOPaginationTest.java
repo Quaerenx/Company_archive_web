@@ -3,12 +3,56 @@ package com.company.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Set;
 import com.company.performance.RequestPerformanceContext;
 import org.junit.jupiter.api.Test;
 
 class TroubleshootingDAOPaginationTest {
+    @Test
+    void globalSearchUsesBoundedContentQueryWithoutUnusedCountOrOffset() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "id", 9,
+                "title", "Deep issue",
+                "customer_name", "Acme",
+                "occurrence_date", null,
+                "creator", "Tester",
+                "create_date", null));
+        TroubleshootingDAO dao = new TroubleshootingDAO(jdbc::open, new SchemaCapabilityCache());
+
+        var records = dao.searchTroubleshootings("  disk_100% [x].*  ", 5);
+
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+        assertEquals(1, jdbc.statements.size());
+        var statement = jdbc.statements.getFirst();
+        assertFalse(statement.sql.contains("COUNT("));
+        assertFalse(statement.sql.contains("OFFSET"));
+        assertTrue(statement.sql.contains("REGEXP_ILIKE(overview, ?)"));
+        assertTrue(statement.sql.contains("REGEXP_ILIKE(note, ?)"));
+        assertTrue(statement.sql.endsWith(
+                "occurrence_date DESC, create_date DESC, id DESC LIMIT ?"));
+        assertEquals("%disk!_100!% [x].*%", statement.parameters.get(1));
+        assertEquals("disk_100%\\x{20}\\[x\\]\\.\\*", statement.parameters.get(4));
+        assertEquals(statement.parameters.get(4), statement.parameters.get(9));
+        assertEquals(5, statement.parameters.get(10));
+        assertEquals(9, records.getFirst().getId());
+    }
+
+    @Test
+    void globalSearchValidatesBoundsAndSkipsBlankQueries() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        TroubleshootingDAO dao = new TroubleshootingDAO(jdbc::open, new SchemaCapabilityCache());
+
+        assertThrows(IllegalArgumentException.class, () -> dao.searchTroubleshootings("disk", 0));
+        assertThrows(IllegalArgumentException.class, () -> dao.searchTroubleshootings("disk", 21));
+        assertThrows(IllegalArgumentException.class, () -> dao.searchTroubleshootings("x", 5));
+        assertTrue(dao.searchTroubleshootings(" ", 5).isEmpty());
+        assertEquals(0, jdbc.openCount);
+    }
+
     @Test
     void searchUsesOneBoundedQueryWithWindowCount() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
@@ -204,5 +248,79 @@ class TroubleshootingDAOPaginationTest {
                 jdbc.statements.get(0).parameters.get(4));
         assertEquals(0, result.totalCount());
         assertEquals(1, result.page());
+    }
+
+    @Test
+    void deletedRowsDuringCorrectionReturnEmptyFirstPage() {
+        PaginationJdbcFixture jdbc = troubleshootingDeletionFixture();
+        jdbc.availableColumns = Set.of("troubleshooting.creator_user_id");
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 0));
+        TroubleshootingDAO dao = new TroubleshootingDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<TroubleshootingDTO> result =
+                dao.getTroubleshootingPageByOwner("owner-1", 999, 20);
+
+        assertEquals(4, jdbc.statements.size());
+        assertEquals(1, result.page());
+        assertEquals(0, result.totalCount());
+        assertTrue(result.items().isEmpty());
+        assertTrue(jdbc.statements.get(3).sql.contains("creator_user_id = ?"));
+        assertEquals("owner-1", jdbc.statements.get(3).parameters.get(1));
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void furtherDeletesDuringCorrectionRecountAndUseRemainingPage() {
+        PaginationJdbcFixture jdbc = troubleshootingDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue(PaginationJdbcFixture.row("id", 7, "total_count", 21));
+        TroubleshootingDAO dao = new TroubleshootingDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<TroubleshootingDTO> result =
+                dao.getTroubleshootingPage("disk_100%", true, 999, 20);
+
+        assertEquals(5, jdbc.statements.size());
+        assertEquals(2, result.page());
+        assertEquals(21, result.totalCount());
+        assertEquals(7, result.items().getFirst().getId());
+        assertEquals(40, jdbc.statements.get(2).parameters.get(11));
+        assertEquals(20, jdbc.statements.get(4).parameters.get(11));
+        assertEquals(jdbc.statements.get(0).sql, jdbc.statements.get(4).sql);
+        assertEquals(jdbc.statements.get(1).sql, jdbc.statements.get(3).sql);
+        for (int parameter = 1; parameter <= 9; parameter++) {
+            assertEquals(jdbc.statements.get(0).parameters.get(parameter),
+                    jdbc.statements.get(4).parameters.get(parameter));
+            assertEquals(jdbc.statements.get(1).parameters.get(parameter),
+                    jdbc.statements.get(3).parameters.get(parameter));
+        }
+    }
+
+    @Test
+    void repeatedDeletesStopAfterOneRecount() {
+        PaginationJdbcFixture jdbc = troubleshootingDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue();
+        TroubleshootingDAO dao = new TroubleshootingDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<TroubleshootingDTO> result =
+                dao.getTroubleshootingPage("needle", 999, 20);
+
+        assertEquals(5, jdbc.statements.size());
+        assertEquals(1, result.page());
+        assertEquals(0, result.totalCount());
+        assertTrue(result.items().isEmpty());
+        assertTrue(jdbc.queryResults.isEmpty());
+    }
+
+    private static PaginationJdbcFixture troubleshootingDeletionFixture() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 41));
+        jdbc.enqueue();
+        return jdbc;
     }
 }

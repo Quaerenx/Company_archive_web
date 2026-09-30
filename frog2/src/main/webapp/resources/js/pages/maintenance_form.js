@@ -265,8 +265,8 @@
 
     function applyCustomerDefaults(context) {
         if (!context) return;
-        applyIfUntouched(inspectorField, context.defaultInspector);
         if (formMode === 'add') {
+            applyIfUntouched(inspectorField, context.defaultInspector);
             setFixedVersion(context.defaultVersion);
             setFixedCapacity(context.defaultLicenseSize);
         }

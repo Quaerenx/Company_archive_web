@@ -35,6 +35,21 @@ class OperationalReadinessTest {
     }
 
     @Test
+    void failedDatabaseProbeBlocksAnOtherwiseReadyPool() {
+        OperationalReadiness readiness = new OperationalReadiness(
+                () -> new DBConnection.PoolSnapshot(true, 0, 2, 2, 0),
+                () -> temporaryDirectory,
+                () -> temporaryDirectory,
+                () -> true,
+                () -> false);
+
+        OperationalReadiness.Report report = readiness.inspect(context(SchemaStatus.READY));
+
+        assertFalse(report.databaseReady());
+        assertFalse(report.ready());
+    }
+
+    @Test
     void missingSchemaPoolOrStorageFailsClosed() {
         Path missing = temporaryDirectory.resolve("missing");
         OperationalReadiness readiness = new OperationalReadiness(

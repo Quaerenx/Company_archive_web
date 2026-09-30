@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
+import com.company.model.MaintenanceAssigneeData;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
@@ -95,13 +96,11 @@ class MyPageQueryServiceTest {
         assertEquals(1, result.workInbox().getDangerCount());
         assertEquals(1, result.workInbox().getWarningCount());
         assertEquals(1, customerDAO.listCalls);
-        assertEquals(1, customerDAO.assignmentCalls);
+        assertEquals(0, customerDAO.assignmentCalls);
         assertEquals(1, maintenanceDAO.monthCalls);
         assertEquals(1, maintenanceDAO.latestCalls);
         assertEquals("user-3", customerDAO.listUserId);
-        assertEquals("user-3", customerDAO.assignmentUserId);
         assertEquals("Tester", customerDAO.listAssignee);
-        assertEquals("Tester", customerDAO.assignmentAssignee);
         assertEquals(List.of("Alpha"), maintenanceDAO.monthCustomerNames);
         assertEquals(List.of("Alpha"), maintenanceDAO.latestCustomerNames);
     }
@@ -229,9 +228,7 @@ class MyPageQueryServiceTest {
         private int listCalls;
         private int assignmentCalls;
         private String listAssignee;
-        private String assignmentAssignee;
         private String listUserId;
-        private String assignmentUserId;
 
         private RecordingCustomerAssignmentDAO() {
             this(List.of(), List.of());
@@ -245,14 +242,14 @@ class MyPageQueryServiceTest {
         }
 
         @Override
-        public List<CustomerDTO> getMaintenanceCustomersByAssignee(
+        public MaintenanceAssigneeData getMaintenanceAssigneeData(
                 String userId,
                 String assigneeName) {
             listCalls++;
             assertTrue("user-1".equals(userId) || "user-3".equals(userId));
             listUserId = userId;
             listAssignee = assigneeName;
-            return customers;
+            return new MaintenanceAssigneeData(customers, assignments);
         }
 
         @Override
@@ -261,8 +258,6 @@ class MyPageQueryServiceTest {
                         String userId,
                         String assigneeName) {
             assignmentCalls++;
-            assignmentUserId = userId;
-            assignmentAssignee = assigneeName;
             return assignments;
         }
     }

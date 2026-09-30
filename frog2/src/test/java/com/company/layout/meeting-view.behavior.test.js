@@ -20,7 +20,7 @@ function createButton() {
     };
 }
 
-function createHarness() {
+function createHarness(search = '') {
     const editButton = createButton();
     const deleteButton = createButton();
     const saveButton = createButton();
@@ -37,10 +37,11 @@ function createHarness() {
             remove() {}
         }
     };
-    const commentForm = {
-        addEventListener() {},
-        querySelector() { return null; }
-    };
+    const commentButton = createButton();
+    const commentForm = createButton();
+    commentForm.querySelector = () => commentButton;
+    const requests = [];
+    const assignedLocations = [];
     const item = {
         getAttribute() { return '17'; },
         querySelector(selector) {
@@ -60,6 +61,7 @@ function createHarness() {
     };
     const elements = {
         commentForm,
+        commentContent: { value: 'Synthetic comment' },
         'content-17': content,
         'edit-form-17': editForm,
         'edit-content-17': editContent
@@ -78,14 +80,17 @@ function createHarness() {
 
     vm.runInNewContext(source, {
         document,
+        URLSearchParams,
+        fetch(url, options) { return new Promise((resolve) => requests.push({ resolve, options })); },
         window: {
-            Frog2UI: {},
-            Frog2Csrf: {},
-            Frog2Session: {}
+            location: { search, assign(url) { assignedLocations.push(url); } },
+            Frog2UI: { setButtonLoading(button, loading) { button.disabled = loading; }, notify() {} },
+            Frog2Csrf: { token() { return 'synthetic-token'; } },
+            Frog2Session: { requireActiveSession() {}, isSessionExpired() { return false; } }
         }
     });
 
-    return { cancelButton, editButton, editContent };
+    return { cancelButton, editButton, editContent, commentForm, commentButton, requests, assignedLocations };
 }
 
 test('cancelling a comment edit restores the persisted content', () => {
@@ -96,4 +101,31 @@ test('cancelling a comment edit restores the persisted content', () => {
     harness.cancelButton.listeners.click();
 
     assert.equal(harness.editContent.value, '저장된 원래 댓글');
+});
+
+test('adding a comment preserves list filters while returning to the newest comments', async () => {
+    const expected = { returnPage: '3', returnQ: 'synthetic & query', returnType: 'project', returnAuthor: '7', returnStartDate: '2026-08-01', returnEndDate: '2026-08-31' };
+    const parameters = new URLSearchParams(expected);
+    parameters.set('commentBefore', '29');
+    const harness = createHarness('?' + parameters.toString());
+    harness.commentForm.listeners.submit.call(harness.commentForm, { preventDefault() {} });
+    harness.requests[0].resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(harness.assignedLocations.length, 1);
+    const destination = new URL(harness.assignedLocations[0], 'https://example.invalid');
+    assert.equal(destination.pathname, '/frog2/meeting');
+    assert.equal(destination.searchParams.get('view'), 'view');
+    assert.equal(destination.searchParams.get('id'), '31');
+    Object.entries(expected).forEach(([key, value]) => assert.equal(destination.searchParams.get(key), value));
+    assert.equal(destination.searchParams.has('commentBefore'), false);
+    assert.equal(destination.hash, '#comments');
+});
+
+test('a rejected comment stays on the current page and unlocks submission', async () => {
+    const harness = createHarness('?returnPage=3');
+    harness.commentForm.listeners.submit.call(harness.commentForm, { preventDefault() {} });
+    harness.requests[0].resolve({ ok: false, json: () => Promise.resolve({ message: 'Synthetic error' }) });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(harness.assignedLocations.length, 0);
+    assert.equal(harness.commentButton.disabled, false);
 });

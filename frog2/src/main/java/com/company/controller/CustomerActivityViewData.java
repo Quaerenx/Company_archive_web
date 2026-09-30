@@ -5,6 +5,7 @@ import com.company.model.MaintenanceRecordDTO;
 import com.company.model.TroubleshootingDTO;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class CustomerActivityViewData {
     private static final CustomerActivityViewData EMPTY = new CustomerActivityViewData(
@@ -13,17 +14,39 @@ public final class CustomerActivityViewData {
     private final List<MaintenanceRecordDTO> maintenanceRecords;
     private final List<CustomerHistoryRecord> historyRecords;
     private final List<TroubleshootingDTO> troubleshootingRecords;
+    private final Set<String> unavailableSources;
 
     public CustomerActivityViewData(
             List<MaintenanceRecordDTO> maintenanceRecords,
             List<CustomerHistoryRecord> historyRecords,
             List<TroubleshootingDTO> troubleshootingRecords) {
+        this(maintenanceRecords, historyRecords, troubleshootingRecords, Set.of());
+    }
+
+    public CustomerActivityViewData(
+            List<MaintenanceRecordDTO> maintenanceRecords,
+            List<CustomerHistoryRecord> historyRecords,
+            List<TroubleshootingDTO> troubleshootingRecords,
+            Set<String> unavailableSources) {
+        this.unavailableSources = Set.copyOf(Objects.requireNonNull(unavailableSources, "unavailableSources"));
         this.maintenanceRecords = List.copyOf(Objects.requireNonNull(
                 maintenanceRecords, "maintenanceRecords"));
         this.historyRecords = List.copyOf(Objects.requireNonNull(
                 historyRecords, "historyRecords"));
         this.troubleshootingRecords = List.copyOf(Objects.requireNonNull(
                 troubleshootingRecords, "troubleshootingRecords"));
+    }
+
+    public boolean isMaintenanceUnavailable() {
+        return unavailableSources.contains("maintenance");
+    }
+
+    public boolean isHistoryUnavailable() {
+        return unavailableSources.contains("history");
+    }
+
+    public boolean isTroubleshootingUnavailable() {
+        return unavailableSources.contains("troubleshooting");
     }
 
     public static CustomerActivityViewData empty() {

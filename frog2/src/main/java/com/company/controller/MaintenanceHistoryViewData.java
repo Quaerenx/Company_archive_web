@@ -43,12 +43,21 @@ record MaintenanceHistoryViewData(
             MaintenanceHistoryFilter filter,
             CustomerDTO customer,
             String customerName) {
+        return from(page, filter, customer, customerName, null);
+    }
+
+    static MaintenanceHistoryViewData from(
+            PageResult<MaintenanceRecordDTO> page,
+            MaintenanceHistoryFilter filter,
+            CustomerDTO customer,
+            String customerName,
+            MaintenanceRecordDTO olderRecordAfterPage) {
         Objects.requireNonNull(page, "page");
         Objects.requireNonNull(filter, "filter");
         List<MaintenanceRecordDTO> records = page.items();
         return new MaintenanceHistoryViewData(
                 records,
-                MaintenanceHistoryRowView.fromRecords(records),
+                MaintenanceHistoryRowView.fromRecords(records, olderRecordAfterPage),
                 LicenseUsageSeriesBuilder.build(records),
                 customer,
                 customerName,

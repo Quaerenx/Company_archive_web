@@ -22,7 +22,7 @@ public class MaintenanceRecordDAO {
     private static final String LICENSE_USAGE_PCT_COLUMN = "license_usage_pct";
     private static final String LICENSE_USAGE_SIZE_COLUMN = "license_usage_size";
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
-            new SchemaCapabilityCache();
+            SchemaCapabilityCache.application();
     private static final String BASE_SELECT_COLUMNS =
             "maintenance_id, customer_name, inspector_name, inspection_date, "
                     + "vertica_version, note, created_at, updated_at";
@@ -366,10 +366,35 @@ public class MaintenanceRecordDAO {
             int requestedPage,
             int pageSize,
             MaintenanceHistoryFilter filter) {
+        return loadCustomerHistoryPage(
+                customerName, requestedPage, pageSize, filter, false).page();
+    }
+
+    public MaintenanceHistoryPage getMaintenanceHistoryPageByCustomer(
+            String customerName,
+            int requestedPage,
+            int pageSize,
+            MaintenanceHistoryFilter filter) {
+        return loadCustomerHistoryPage(
+                customerName, requestedPage, pageSize, filter, true);
+    }
+
+    private MaintenanceHistoryPage loadCustomerHistoryPage(
+            String customerName,
+            int requestedPage,
+            int pageSize,
+            MaintenanceHistoryFilter filter,
+            boolean includeOlderRecord) {
         Pagination.totalPages(0, pageSize);
         Objects.requireNonNull(filter, "filter");
+        if (includeOlderRecord && pageSize == Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                    "Page size must allow one comparison record.");
+        }
+        int rowLimit = includeOlderRecord ? pageSize + 1 : pageSize;
         if (isBlank(customerName)) {
-            return new PageResult<>(List.of(), 0, 1, pageSize);
+            return customerHistoryPage(
+                    new CustomerHistoryRows(List.of(), 0), 1, pageSize);
         }
 
         try (Connection connection = connectionProvider.getConnection()) {
@@ -382,6 +407,7 @@ public class MaintenanceRecordDAO {
                         customerName,
                         page,
                         pageSize,
+                        rowLimit,
                         filter,
                         schema);
             } catch (ArithmeticException exception) {
@@ -389,8 +415,7 @@ public class MaintenanceRecordDAO {
             }
 
             if (!rows.items().isEmpty() || page == 1) {
-                return new PageResult<>(
-                        rows.items(), rows.totalCount(), page, pageSize);
+                return customerHistoryPage(rows, page, pageSize);
             }
 
             int totalCount = countCustomerHistory(
@@ -398,25 +423,61 @@ public class MaintenanceRecordDAO {
             int correctedPage = Pagination.clampPage(
                     page, Pagination.totalPages(totalCount, pageSize));
             if (totalCount == 0) {
-                return new PageResult<>(
-                        List.of(), 0, correctedPage, pageSize);
+                return customerHistoryPage(
+                        new CustomerHistoryRows(List.of(), 0), 1, pageSize);
             }
             CustomerHistoryRows correctedRows = loadCustomerHistoryRows(
                     connection,
                     customerName,
                     correctedPage,
                     pageSize,
+                    rowLimit,
                     filter,
                     schema);
-            return new PageResult<>(
-                    correctedRows.items(),
-                    correctedRows.totalCount(),
-                    correctedPage,
-                    pageSize);
+            if (correctedRows.items().isEmpty()) {
+                int refreshedCount = countCustomerHistory(
+                        connection, customerName, filter);
+                if (refreshedCount == 0) {
+                    return customerHistoryPage(
+                            new CustomerHistoryRows(List.of(), 0), 1, pageSize);
+                }
+                int refreshedPage = Pagination.clampPage(
+                        correctedPage,
+                        Pagination.totalPages(refreshedCount, pageSize));
+                correctedRows = loadCustomerHistoryRows(
+                        connection,
+                        customerName,
+                        refreshedPage,
+                        pageSize,
+                        rowLimit,
+                        filter,
+                        schema);
+                if (correctedRows.items().isEmpty()) {
+                    return customerHistoryPage(
+                            new CustomerHistoryRows(List.of(), 0), 1, pageSize);
+                }
+                correctedPage = refreshedPage;
+            }
+            return customerHistoryPage(correctedRows, correctedPage, pageSize);
         } catch (SQLException exception) {
             throw DataAccessException.from(
                     "load maintenance page by customer", exception);
         }
+    }
+
+    private static MaintenanceHistoryPage customerHistoryPage(
+            CustomerHistoryRows rows, int page, int pageSize) {
+        int visibleCount = Math.min(rows.items().size(), pageSize);
+        MaintenanceRecordDTO olderRecord = rows.items().size() > pageSize
+                ? rows.items().get(pageSize)
+                : null;
+        return new MaintenanceHistoryPage(
+                new PageResult<>(
+                        rows.items().subList(0, visibleCount),
+                        rows.totalCount(),
+                        page,
+                        pageSize),
+                olderRecord);
     }
 
     private CustomerHistoryRows loadCustomerHistoryRows(
@@ -424,6 +485,7 @@ public class MaintenanceRecordDAO {
             String customerName,
             int page,
             int pageSize,
+            int rowLimit,
             MaintenanceHistoryFilter filter,
             MaintenanceSchemaProfile schema) throws SQLException {
         String sql = "SELECT "
@@ -438,7 +500,7 @@ public class MaintenanceRecordDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int parameter = bindCustomerHistoryPredicate(
                     statement, customerName, filter);
-            statement.setInt(parameter++, pageSize);
+            statement.setInt(parameter++, rowLimit);
             statement.setInt(parameter, Pagination.offset(page, pageSize));
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
@@ -450,6 +512,14 @@ public class MaintenanceRecordDAO {
             }
         }
         return new CustomerHistoryRows(records, totalCount);
+    }
+
+    public record MaintenanceHistoryPage(
+            PageResult<MaintenanceRecordDTO> page,
+            MaintenanceRecordDTO olderRecord) {
+        public MaintenanceHistoryPage {
+            Objects.requireNonNull(page, "page");
+        }
     }
 
     private static int countCustomerHistory(

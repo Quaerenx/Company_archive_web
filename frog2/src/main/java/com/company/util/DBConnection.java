@@ -145,8 +145,21 @@ public class DBConnection {
             throw new SQLException("DataSource가 초기화되지 않았습니다.");
         }
         
+        Connection acquired;
+        try {
+            acquired = JdbcConnectionAcquisition.acquire(currentDataSource::getConnection);
+        } catch (SQLException exception) {
+            PoolSnapshot snapshot;
+            try {
+                snapshot = getPoolSnapshot();
+            } catch (RuntimeException unavailableStatistics) {
+                snapshot = PoolSnapshot.unavailable();
+            }
+            JdbcConnectionFailureDiagnostics.log(exception, snapshot);
+            throw exception;
+        }
         Connection conn = JdbcConnectionDecorator.decorate(
-                JdbcConnectionAcquisition.acquire(currentDataSource::getConnection),
+                acquired,
                 queryTimeoutSeconds,
                 ApplicationEnvironment.isReadOnly());
         if (logger.isDebugEnabled()) {
@@ -160,6 +173,14 @@ public class DBConnection {
         }
         
         return conn;
+    }
+
+    public static boolean probeDatabase() {
+        PoolSnapshot snapshot = getPoolSnapshot();
+        if (!snapshot.available() || snapshot.idle() <= 0) {
+            return false;
+        }
+        return JdbcReadinessValidation.check(DBConnection::getConnection);
     }
     
     /**

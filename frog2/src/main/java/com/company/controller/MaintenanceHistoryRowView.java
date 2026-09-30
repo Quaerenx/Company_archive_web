@@ -91,13 +91,19 @@ public final class MaintenanceHistoryRowView {
 
     public static List<MaintenanceHistoryRowView> fromRecords(
             List<MaintenanceRecordDTO> records) {
+        return fromRecords(records, null);
+    }
+
+    public static List<MaintenanceHistoryRowView> fromRecords(
+            List<MaintenanceRecordDTO> records,
+            MaintenanceRecordDTO olderRecordAfterPage) {
         Objects.requireNonNull(records, "records");
         List<MaintenanceHistoryRowView> rows =
                 new ArrayList<>(records.size());
         for (int index = 0; index < records.size(); index++) {
             MaintenanceRecordDTO olderRecord = index + 1 < records.size()
                     ? records.get(index + 1)
-                    : null;
+                    : olderRecordAfterPage;
             MaintenanceRecordDTO newerRecord = index > 0
                     ? records.get(index - 1)
                     : null;

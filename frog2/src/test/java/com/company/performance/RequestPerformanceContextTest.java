@@ -13,6 +13,8 @@ class RequestPerformanceContextTest {
         RequestPerformanceContext.recordSql(2_000_000);
         RequestPerformanceContext.recordSql(5_000_000);
         RequestPerformanceContext.recordDbAcquisition(3_000_000);
+        RequestPerformanceContext.recordMetadata(2_000_000);
+        RequestPerformanceContext.recordMetadata(4_000_000);
         RequestPerformanceContext.recordFileSnapshotCacheMiss();
         RequestPerformanceContext.recordFileSnapshotCacheHit();
         RequestPerformanceContext.recordFileSnapshotScan(4_000_000);
@@ -31,6 +33,9 @@ class RequestPerformanceContextTest {
         assertEquals(
                 RequestPerformanceContext.Operation.TROUBLESHOOTING_CONTENT_SEARCH,
                 snapshot.operation());
+        assertEquals(2, snapshot.metadataCount());
+        assertEquals(6_000_000, snapshot.metadataDurationNanos());
+        assertEquals(4_000_000, snapshot.maxMetadataNanos());
         assertEquals(1, snapshot.dbAcquisitionCount());
         assertEquals(3_000_000, snapshot.dbAcquisitionDurationNanos());
         assertEquals(3_000_000, snapshot.maxDbAcquisitionNanos());
@@ -52,6 +57,7 @@ class RequestPerformanceContextTest {
         RequestPerformanceContext.Snapshot cleared =
                 RequestPerformanceContext.finish();
         assertEquals(0, cleared.sqlCount());
+        assertEquals(0, cleared.metadataCount());
         assertEquals(
                 RequestPerformanceContext.Operation.NONE,
                 cleared.operation());

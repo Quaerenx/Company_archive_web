@@ -16,7 +16,7 @@ public class CustomerDAO {
     private static final int ACTIVE_FLAG = 1;
     private static final int DELETED_FLAG = 0;
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
-            new SchemaCapabilityCache();
+            SchemaCapabilityCache.application();
     private static final String MAINTENANCE_FILTER = "maintenance";
     private static final String MAINTENANCE_CUSTOMER_TYPE =
             "정기점검 계약 고객사";
@@ -209,6 +209,24 @@ public class CustomerDAO {
                     normalizedQuery,
                     correctedPage,
                     pageSize);
+            if (correctedRows.items().isEmpty()) {
+                int refreshedCount = countCustomerMatches(
+                        connection, selectionPredicate, normalizedQuery);
+                if (refreshedCount == 0) {
+                    return customerPage(
+                            new CustomerRows(List.of(), 0), 1, pageSize, counts);
+                }
+                int refreshedPage = Pagination.clampPage(
+                        correctedPage,
+                        Pagination.totalPages(refreshedCount, pageSize));
+                correctedRows = loadCustomerRows(
+                        connection, itemSql, normalizedQuery, refreshedPage, pageSize);
+                if (correctedRows.items().isEmpty()) {
+                    return customerPage(
+                            new CustomerRows(List.of(), 0), 1, pageSize, counts);
+                }
+                correctedPage = refreshedPage;
+            }
             return customerPage(
                     correctedRows, correctedPage, pageSize, counts);
         } catch (SQLException exception) {

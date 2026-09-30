@@ -14,18 +14,21 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-public final class OperationalReadiness {
+public final class OperationalReadiness implements AutoCloseable {
     private final Supplier<DBConnection.PoolSnapshot> poolSnapshot;
     private final Supplier<Path> fileRepositoryRoot;
     private final Supplier<Path> customerHistoryRoot;
     private final BooleanSupplier readOnly;
+    private final BooleanSupplier databaseProbe;
+    private final CachedDatabaseProbe managedProbe;
 
     public OperationalReadiness() {
         this(
                 DBConnection::getPoolSnapshot,
                 FileRepositoryConfig::repositoryRoot,
                 CustomerHistoryConfig::repositoryRoot,
-                ApplicationEnvironment::isReadOnly);
+                ApplicationEnvironment::isReadOnly,
+                new CachedDatabaseProbe());
     }
 
     OperationalReadiness(
@@ -33,6 +36,15 @@ public final class OperationalReadiness {
             Supplier<Path> fileRepositoryRoot,
             Supplier<Path> customerHistoryRoot,
             BooleanSupplier readOnly) {
+        this(poolSnapshot, fileRepositoryRoot, customerHistoryRoot, readOnly, () -> true);
+    }
+
+    OperationalReadiness(
+            Supplier<DBConnection.PoolSnapshot> poolSnapshot,
+            Supplier<Path> fileRepositoryRoot,
+            Supplier<Path> customerHistoryRoot,
+            BooleanSupplier readOnly,
+            BooleanSupplier databaseProbe) {
         this.poolSnapshot = Objects.requireNonNull(
                 poolSnapshot, "poolSnapshot");
         this.fileRepositoryRoot = Objects.requireNonNull(
@@ -40,6 +52,8 @@ public final class OperationalReadiness {
         this.customerHistoryRoot = Objects.requireNonNull(
                 customerHistoryRoot, "customerHistoryRoot");
         this.readOnly = Objects.requireNonNull(readOnly, "readOnly");
+        this.databaseProbe = Objects.requireNonNull(databaseProbe, "databaseProbe");
+        managedProbe = databaseProbe instanceof CachedDatabaseProbe probe ? probe : null;
     }
 
     public Report inspect(ServletContext context) {
@@ -63,9 +77,16 @@ public final class OperationalReadiness {
     private boolean safePoolReady() {
         try {
             DBConnection.PoolSnapshot snapshot = poolSnapshot.get();
-            return snapshot != null && snapshot.ready();
+            return snapshot != null && snapshot.ready() && databaseProbe.getAsBoolean();
         } catch (RuntimeException exception) {
             return false;
+        }
+    }
+
+    @Override
+    public void close() {
+        if (managedProbe != null) {
+            managedProbe.close();
         }
     }
 

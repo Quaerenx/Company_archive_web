@@ -27,6 +27,7 @@ import java.sql.Date;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -513,6 +514,8 @@ class MaintenanceServletAuthorizationTest {
         private String lastDeleteCustomerName;
         private PageResult<MaintenanceRecordDTO> historyPage =
                 new PageResult<>(List.of(), 0, 1, 20);
+        private MaintenanceRecordDTO olderHistoryRecord;
+        private int historyContextReads;
         private String lastHistoryCustomer;
         private int lastHistoryPage;
         private int lastHistoryPageSize;
@@ -562,6 +565,18 @@ class MaintenanceServletAuthorizationTest {
             lastHistoryPageSize = pageSize;
             lastHistoryFilter = filter;
             return historyPage;
+        }
+
+        @Override
+        public MaintenanceHistoryPage getMaintenanceHistoryPageByCustomer(
+                String customerName,
+                int page,
+                int pageSize,
+                MaintenanceHistoryFilter filter) {
+            historyContextReads++;
+            return new MaintenanceHistoryPage(
+                    getMaintenanceRecordsByCustomer(customerName, page, pageSize, filter),
+                    olderHistoryRecord);
         }
 
         @Override
@@ -733,4 +748,74 @@ class MaintenanceServletAuthorizationTest {
         }
     }
 
+
+    @Test
+    void historyUsesBoundaryContextButKeepsTwentyRowsAndChartPoints()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        List<MaintenanceRecordDTO> visible = new ArrayList<>();
+        for (long id = 21; id >= 2; id--) {
+            MaintenanceRecordDTO item = record("owner-1");
+            item.setMaintenanceId(id);
+            item.setInspectionDate(Date.valueOf("2026-08-10"));
+            item.setLicenseUsagePct(Long.toString(60 + id));
+            visible.add(item);
+        }
+        dao.historyPage = new PageResult<>(visible, 41, 2, 20);
+        dao.olderHistoryRecord = record("owner-1");
+        dao.olderHistoryRecord.setMaintenanceId(1L);
+        dao.olderHistoryRecord.setLicenseUsagePct("61");
+        MaintenanceServlet servlet = servlet(dao, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "history");
+        request.parameters.put("customerName", "Acme");
+        request.parameters.put("historyPage", "2");
+
+        servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals(1, dao.historyReads);
+        assertEquals(1, dao.historyContextReads);
+        assertEquals(2, dao.lastHistoryPage);
+        assertEquals(20, dao.lastHistoryPageSize);
+        assertEquals(visible, request.attributes.get("records"));
+        assertEquals(20, ((List<?>) request.attributes.get("usageSeries")).size());
+        List<?> rows = (List<?>) request.attributes.get("historyRows");
+        assertEquals(20, rows.size());
+        var boundary = (MaintenanceHistoryRowView) rows.getLast();
+        assertEquals(2L, boundary.getRecord().getMaintenanceId());
+        assertEquals("↑ 1.0%p", boundary.getDeltaLabel());
+        assertEquals(41, request.attributes.get("totalCount"));
+        assertEquals(3, request.attributes.get("totalPages"));
+        assertEquals(20, request.attributes.get("pageSize"));
+    }
+
+    @Test
+    void exportPreservesFullResultWithoutRequestingComparisonContext()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        MaintenanceRecordDTO newest = record("owner-1");
+        newest.setInspectionDate(Date.valueOf("2026-08-10"));
+        newest.setLicenseUsagePct("62");
+        MaintenanceRecordDTO older = record("owner-1");
+        older.setInspectionDate(Date.valueOf("2026-07-10"));
+        older.setLicenseUsagePct("61");
+        dao.historyPage = new PageResult<>(List.of(newest, older), 2, 1, 10_001);
+        MaintenanceServlet servlet = servlet(dao, new StubCustomerDAO());
+        RequestFixture request = new RequestFixture(user("owner-1"));
+        request.parameters.put("view", "export");
+        request.parameters.put("customerName", "Acme");
+        request.parameters.put("historyYear", "2026");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doGet(request.proxy(), response.proxy());
+
+        assertEquals(1, dao.historyReads);
+        assertEquals(0, dao.historyContextReads);
+        assertEquals(10_001, dao.lastHistoryPageSize);
+        assertEquals(2026, dao.lastHistoryFilter.year());
+        assertEquals(HttpServletResponse.SC_OK, response.status);
+        assertTrue(response.body.toString().contains("↑ 1.0%p"));
+        assertTrue(response.body.toString().contains("2026-08-10"));
+        assertTrue(response.body.toString().contains("2026-07-10"));
+    }
 }

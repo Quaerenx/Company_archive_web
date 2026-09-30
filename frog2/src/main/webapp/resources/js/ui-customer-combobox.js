@@ -23,6 +23,9 @@
             select.options,
             function (option) { return option.value !== '' && !option.disabled; });
         if (!options.length) return;
+        var normalizedLabels = options.map(function (option) {
+            return normalize(option.textContent);
+        });
 
         generatedId += 1;
         var listboxId = 'ui-customer-combobox-list-' + generatedId;
@@ -80,6 +83,7 @@
         select.setAttribute('aria-hidden', 'true');
 
         var visibleOptions = [];
+        var renderedOptions = [];
         var activeIndex = -1;
         var syncingFromInput = false;
 
@@ -104,28 +108,34 @@
             toggle.setAttribute(
                 'aria-label', expanded ? '고객사 목록 닫기' : '고객사 목록 열기');
             if (!expanded) {
-                activeIndex = -1;
-                input.removeAttribute('aria-activedescendant');
+                clearActive();
             }
+        }
+
+        function clearActive() {
+            var previous = renderedOptions[activeIndex];
+            if (previous) {
+                previous.classList.toggle('is-active', false);
+                previous.setAttribute('aria-selected', 'false');
+            }
+            activeIndex = -1;
+            input.removeAttribute('aria-activedescendant');
         }
 
         function setActive(index) {
             if (!visibleOptions.length) {
-                activeIndex = -1;
-                input.removeAttribute('aria-activedescendant');
+                clearActive();
                 return;
             }
-            activeIndex = (index + visibleOptions.length) % visibleOptions.length;
-            listbox.querySelectorAll('[role="option"]').forEach(
-                function (item, itemIndex) {
-                    var active = itemIndex === activeIndex;
-                    item.classList.toggle('is-active', active);
-                    item.setAttribute('aria-selected', String(active));
-                    if (active) {
-                        input.setAttribute('aria-activedescendant', item.id);
-                        item.scrollIntoView({block: 'nearest'});
-                    }
-                });
+            var nextIndex = (index + visibleOptions.length) % visibleOptions.length;
+            if (nextIndex === activeIndex) return;
+            clearActive();
+            activeIndex = nextIndex;
+            var item = renderedOptions[activeIndex];
+            item.classList.toggle('is-active', true);
+            item.setAttribute('aria-selected', 'true');
+            input.setAttribute('aria-activedescendant', item.id);
+            item.scrollIntoView({block: 'nearest'});
         }
 
         function selectOption(option) {
@@ -138,10 +148,12 @@
 
         function renderOptions(query) {
             var needle = normalize(query);
-            visibleOptions = options.filter(function (option) {
-                return !needle || normalize(option.textContent).indexOf(needle) >= 0;
+            visibleOptions = options.filter(function (option, index) {
+                return !needle || normalizedLabels[index].indexOf(needle) >= 0;
             });
+            clearActive();
             listbox.textContent = '';
+            renderedOptions = [];
             visibleOptions.forEach(function (option, index) {
                 var item = document.createElement('li');
                 item.id = listboxId + '-option-' + index;
@@ -149,16 +161,8 @@
                 item.setAttribute('role', 'option');
                 item.setAttribute('aria-selected', 'false');
                 item.textContent = text(option.textContent);
-                item.addEventListener('mousedown', function (event) {
-                    event.preventDefault();
-                });
-                item.addEventListener('click', function () {
-                    selectOption(option);
-                    input.focus();
-                });
-                item.addEventListener('mouseenter', function () {
-                    setActive(index);
-                });
+                item.dataset.optionIndex = String(index);
+                renderedOptions.push(item);
                 listbox.appendChild(item);
             });
             if (!visibleOptions.length) {
@@ -174,8 +178,8 @@
 
         function syncSelectionFromInput() {
             var needle = normalize(input.value);
-            var match = options.find(function (option) {
-                return normalize(option.textContent) === needle;
+            var match = options.find(function (option, index) {
+                return normalizedLabels[index] === needle;
             });
             var nextValue = match ? match.value : '';
             var changed = select.value !== nextValue;
@@ -191,6 +195,27 @@
                 }
             }
         }
+
+        function optionIndexForEvent(event) {
+            var item = event.target && typeof event.target.closest === 'function'
+                ? event.target.closest('[role="option"]') : null;
+            if (!item || !listbox.contains(item)) return -1;
+            return Number(item.dataset.optionIndex);
+        }
+
+        listbox.addEventListener('mousedown', function (event) {
+            if (optionIndexForEvent(event) >= 0) event.preventDefault();
+        });
+        listbox.addEventListener('click', function (event) {
+            var index = optionIndexForEvent(event);
+            if (index < 0 || !visibleOptions[index]) return;
+            selectOption(visibleOptions[index]);
+            input.focus();
+        });
+        listbox.addEventListener('mouseover', function (event) {
+            var index = optionIndexForEvent(event);
+            if (index >= 0 && visibleOptions[index]) setActive(index);
+        });
 
         input.addEventListener('focus', function () {
             renderOptions(input.value);

@@ -12,14 +12,20 @@ const source = fs.readFileSync(
 
 function createStorage(initial = {}) {
     const values = new Map(Object.entries(initial));
+    const writes = [];
+    const removals = [];
     return {
+        writes,
+        removals,
         getItem(key) {
             return values.has(key) ? values.get(key) : null;
         },
         removeItem(key) {
+            removals.push(key);
             values.delete(key);
         },
         setItem(key, value) {
+            writes.push(key);
             values.set(key, String(value));
         },
         values
@@ -55,7 +61,8 @@ function createField({name, value = '', type = 'text', excluded = false}) {
     };
 }
 
-function createHarness({storedDraft = null, sensitive = false} = {}) {
+function createHarness({storedDraft = null, sensitive = false,
+        hidden = false, immediateTimers = true} = {}) {
     const key = 'frog2.formDraft.v1:user-1:%2Ffrog2%2Fmeeting:meeting%3Anew';
     const storage = createStorage(storedDraft ? {
         [key]: JSON.stringify(storedDraft)
@@ -91,8 +98,9 @@ function createHarness({storedDraft = null, sensitive = false} = {}) {
             return title;
         }
     });
-    const document = {
+    const document = eventTarget({
         readyState: 'complete',
+        hidden,
         body: {
             getAttribute(name) {
                 return name === 'data-user-id' ? 'user-1' : null;
@@ -116,17 +124,27 @@ function createHarness({storedDraft = null, sensitive = false} = {}) {
         querySelectorAll(selector) {
             return selector === 'form[data-ui-draft="auto"]' ? [form] : [];
         }
-    };
-    const window = {
+    });
+    const intervals = new Map();
+    const timeouts = new Map();
+    let timerId = 0;
+    const window = eventTarget({
         location: {pathname: '/frog2/meeting', search: '?view=write'},
         sessionStorage: storage,
-        clearTimeout() {},
-        setInterval() {},
+        clearTimeout(id) { timeouts.delete(id); },
+        clearInterval(id) { intervals.delete(id); },
+        setInterval(callback) {
+            const id = ++timerId;
+            intervals.set(id, callback);
+            return id;
+        },
         setTimeout(callback) {
-            callback();
-            return 1;
+            const id = ++timerId;
+            if (immediateTimers) callback();
+            else timeouts.set(id, callback);
+            return id;
         }
-    };
+    });
     class BrowserEvent {
         constructor(type) {
             this.type = type;
@@ -138,7 +156,8 @@ function createHarness({storedDraft = null, sensitive = false} = {}) {
         Event: BrowserEvent,
         URLSearchParams
     });
-    return {excluded, form, inserted, key, password, storage, title};
+    return {document, excluded, form, inserted, intervals, key, password,
+        storage, timeouts, title, window};
 }
 
 test('drafts are scoped and omit hidden or explicitly excluded values', async () => {
@@ -161,6 +180,8 @@ test('an unexpired draft can be restored and credential forms are ignored', () =
     const stored = {savedAt: Date.now(), values: {title: '저장된 초안'}};
     const harness = createHarness({storedDraft: stored});
     assert.equal(harness.inserted.length, 1);
+    harness.intervals.forEach((callback) => callback());
+    assert.notEqual(harness.storage.getItem(harness.key), null);
 
     const banner = harness.inserted[0];
     const restore = banner.children[1].children[0];
@@ -172,4 +193,63 @@ test('an unexpired draft can be restored and credential forms are ignored', () =
     sensitive.title.value = '저장하면 안 됨';
     sensitive.form.dispatch('input');
     assert.equal(sensitive.storage.getItem(sensitive.key), null);
+});
+
+
+test('drafts avoid duplicate storage writes and remove reverted changes once', () => {
+    const harness = createHarness();
+    harness.title.value = 'Edited draft';
+    harness.form.dispatch('input');
+    harness.form.dispatch('change');
+    harness.intervals.forEach((callback) => callback());
+    assert.equal(harness.storage.writes.filter((key) => key === harness.key).length, 1);
+    harness.title.value = '';
+    harness.form.dispatch('input');
+    harness.form.dispatch('change');
+    harness.intervals.forEach((callback) => callback());
+    assert.equal(harness.storage.getItem(harness.key), null);
+    assert.equal(harness.storage.removals.filter((key) => key === harness.key).length, 1);
+});
+
+test('drafts still detect programmatic changes without input events', () => {
+    const harness = createHarness();
+    harness.title.value = 'Programmatically inserted template';
+    harness.intervals.forEach((callback) => callback());
+    assert.equal(JSON.parse(harness.storage.getItem(harness.key)).values.title,
+        'Programmatically inserted template');
+});
+
+test('drafts flush pending edits and pause timers while hidden or outside the page', () => {
+    const harness = createHarness({immediateTimers: false});
+    assert.equal(harness.intervals.size, 1);
+    harness.title.value = 'Pending draft';
+    harness.form.dispatch('input');
+    assert.equal(harness.timeouts.size, 1);
+    harness.document.hidden = true;
+    harness.document.dispatch('visibilitychange');
+    assert.equal(harness.intervals.size, 0);
+    assert.equal(harness.timeouts.size, 0);
+    assert.equal(JSON.parse(harness.storage.getItem(harness.key)).values.title,
+        'Pending draft');
+    harness.title.value = 'Changed while hidden';
+    harness.form.dispatch('input');
+    assert.equal(harness.timeouts.size, 0);
+    harness.document.hidden = false;
+    harness.document.dispatch('visibilitychange');
+    assert.equal(harness.intervals.size, 1);
+    assert.equal(JSON.parse(harness.storage.getItem(harness.key)).values.title,
+        'Changed while hidden');
+    harness.window.dispatch('pagehide');
+    assert.equal(harness.intervals.size, 0);
+    harness.window.dispatch('pageshow');
+    harness.window.dispatch('pageshow');
+    assert.equal(harness.intervals.size, 1);
+});
+
+test('drafts do not start periodic timers when initially hidden', () => {
+    const harness = createHarness({hidden: true});
+    assert.equal(harness.intervals.size, 0);
+    harness.document.hidden = false;
+    harness.document.dispatch('visibilitychange');
+    assert.equal(harness.intervals.size, 1);
 });

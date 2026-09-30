@@ -226,10 +226,19 @@
             .then(function(data) {
                 if (data.success) {
                     if (action === 'add') {
+                        const detailParameters = new URLSearchParams({
+                            view: 'view', id: meetingId
+                        });
+                        const returnParameters = new URLSearchParams(
+                            window.location.search);
+                        ['returnPage', 'returnQ', 'returnType', 'returnAuthor',
+                            'returnStartDate', 'returnEndDate'].forEach(function(name) {
+                            const value = returnParameters.get(name);
+                            if (value !== null) detailParameters.set(name, value);
+                        });
                         window.location.assign(
                             root.getAttribute('data-context-path')
-                                + '/meeting?view=view&id='
-                                + encodeURIComponent(meetingId)
+                                + '/meeting?' + detailParameters.toString()
                                 + '#comments');
                         return;
                     }

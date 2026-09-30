@@ -1,9 +1,13 @@
 package com.company.controller;
 
 import com.company.customerhistory.CustomerHistoryRepository;
+import com.company.customerhistory.CustomerHistoryStorageException;
+import com.company.model.DataAccessException;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.TroubleshootingDAO;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -32,33 +36,35 @@ final class CustomerActivityQueryService implements CustomerActivityLoader {
 
     @Override
     public CustomerActivityViewData load(String customerName) {
+        Set<String> unavailableSources = new HashSet<>();
         return new CustomerActivityViewData(
-                safely("maintenance", customerName, () -> maintenanceDAO
+                safely("maintenance", unavailableSources, () -> maintenanceDAO
                         .getMaintenanceRecordsByCustomer(
                                 customerName, 1, RECENT_LIMIT)
                         .items()),
-                safely("history", customerName, () -> historyRepository
+                safely("history", unavailableSources, () -> historyRepository
                         .findPage(customerName, "all", "", 1, RECENT_LIMIT)
                         .items()),
-                safely("troubleshooting", customerName, () -> troubleshootingDAO
+                safely("troubleshooting", unavailableSources, () -> troubleshootingDAO
                         .getTroubleshootingPageByCustomer(
                                 customerName, 1, RECENT_LIMIT)
-                        .items()));
+                        .items()),
+                unavailableSources);
     }
 
     private static <T> List<T> safely(
             String source,
-            String customerName,
+            Set<String> unavailableSources,
             Supplier<List<T>> loader) {
         try {
             List<T> records = loader.get();
             return records == null ? List.of() : records;
-        } catch (RuntimeException exception) {
+        } catch (DataAccessException | CustomerHistoryStorageException exception) {
+            unavailableSources.add(source);
             LOGGER.warn(
-                    "Unable to load recent customer activity source={} customer={}",
+                    "Unable to load recent customer activity source={} errorType={}",
                     source,
-                    customerName,
-                    exception);
+                    exception.getClass().getSimpleName());
             return List.of();
         }
     }

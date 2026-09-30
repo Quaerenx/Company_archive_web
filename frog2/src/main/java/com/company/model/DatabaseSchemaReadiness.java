@@ -4,8 +4,10 @@ import com.company.util.DBConnection;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public final class DatabaseSchemaReadiness {
     private static final String CUSTOMER_DETAIL_BASELINE =
@@ -173,13 +175,24 @@ public final class DatabaseSchemaReadiness {
     }
 
     public static Report inspect() {
-        return inspect(DBConnection::getConnection);
+        return inspect(DBConnection::getConnection, SchemaCapabilityCache.application());
     }
 
     static Report inspect(JdbcConnectionProvider connectionProvider) {
+        return inspect(connectionProvider, new SchemaCapabilityCache());
+    }
+
+    static Report inspect(
+            JdbcConnectionProvider connectionProvider,
+            SchemaCapabilityCache verifiedCapabilities) {
         Objects.requireNonNull(connectionProvider, "connectionProvider");
+        Objects.requireNonNull(verifiedCapabilities, "verifiedCapabilities");
         SchemaCapabilityCache capabilities = new SchemaCapabilityCache();
+        Report report;
         try (Connection connection = connectionProvider.getConnection()) {
+            capabilities.inspectColumns(connection, REQUIREMENTS.stream().collect(
+                    Collectors.groupingBy(Requirement::tableName, LinkedHashMap::new,
+                            Collectors.mapping(Requirement::columnName, Collectors.toList()))));
             CustomerAuditSupport.Capability customerAuditCapability =
                     CustomerAuditSupport.capability(connection, capabilities);
             CustomerAssignmentSupport.Capability
@@ -231,11 +244,13 @@ public final class DatabaseSchemaReadiness {
                                     requirement,
                                     customerIdentityCapability))
                     .toList();
-            return new Report(missingRequired, missingOptional);
+            report = new Report(missingRequired, missingOptional);
         } catch (SQLException exception) {
             throw DataAccessException.from(
                     "inspect database schema readiness", exception);
         }
+        verifiedCapabilities.replaceWith(capabilities);
+        return report;
     }
 
     private static boolean isIncompleteCustomerAuditRequirement(

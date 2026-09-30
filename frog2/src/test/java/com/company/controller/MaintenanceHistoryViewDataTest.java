@@ -68,4 +68,30 @@ class MaintenanceHistoryViewDataTest {
                 });
     }
 
+
+    @Test
+    void comparisonContextIsUsedOnlyForTheLastRowAndExcludedFromTheChart() {
+        MaintenanceRecordDTO visible = new MaintenanceRecordDTO();
+        visible.setMaintenanceId(2L);
+        visible.setInspectionDate(Date.valueOf("2026-08-10"));
+        visible.setLicenseUsagePct("62");
+        MaintenanceRecordDTO older = new MaintenanceRecordDTO();
+        older.setMaintenanceId(1L);
+        older.setInspectionDate(Date.valueOf("2026-08-10"));
+        older.setLicenseUsagePct("61");
+        PageResult<MaintenanceRecordDTO> page =
+                new PageResult<>(List.of(visible), 21, 2, 20);
+
+        MaintenanceHistoryViewData view = MaintenanceHistoryViewData.from(
+                page, MaintenanceHistoryFilter.empty(), null, "Acme", older);
+
+        assertEquals(List.of(visible), view.records());
+        assertEquals(1, view.historyRows().size());
+        assertEquals("↑ 1.0%p", view.historyRows().getFirst().getDeltaLabel());
+        assertEquals(1, view.usageSeries().size());
+        assertEquals(2, view.currentPage());
+        assertEquals(20, view.pageSize());
+        assertEquals(2, view.totalPages());
+        assertEquals(21, view.totalCount());
+    }
 }

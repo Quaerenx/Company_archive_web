@@ -28,6 +28,8 @@ function element(tagName) {
     const node = {
         tagName: tagName.toUpperCase(),
         children,
+        listeners,
+        attributeWrites: [],
         classList: new ClassList(),
         dataset: {},
         hidden: false,
@@ -41,7 +43,14 @@ function element(tagName) {
             (listeners.get(name) || []).forEach((listener) =>
                 listener(Object.assign({ preventDefault() {} }, overrides)));
         },
-        setAttribute(name, value) { attributes.set(name, String(value)); },
+        setAttribute(name, value) {
+            node.attributeWrites.push(name);
+            attributes.set(name, String(value));
+        },
+        closest(selector) {
+            return selector === '[role="option"]'
+                && attributes.get('role') === 'option' ? node : null;
+        },
         getAttribute(name) { return attributes.get(name) || null; },
         removeAttribute(name) { attributes.delete(name); },
         querySelectorAll(selector) {
@@ -68,7 +77,7 @@ function element(tagName) {
     return node;
 }
 
-test('customer combobox filters and keeps the submitted native value in sync', () => {
+function createHarness() {
     const select = element('select');
     select.id = 'customer_name';
     select.required = true;
@@ -104,7 +113,16 @@ test('customer combobox filters and keeps the submitted native value in sync', (
 
     vm.runInNewContext(source, { document, Event, window: { setTimeout(callback) { callback(); } } });
 
-    const input = root.children[0];
+    return {
+        select, root, label,
+        input: root.children[0], listbox: root.children[2],
+        get nativeChangeCount() { return nativeChangeCount; }
+    };
+}
+
+test('customer combobox filters and keeps the submitted native value in sync', () => {
+    const harness = createHarness();
+    const {select, input, label} = harness;
     assert.equal(input.value, 'KT');
     assert.equal(label.htmlFor, 'customer_name-combobox');
     assert.equal(select.required, false);
@@ -112,7 +130,7 @@ test('customer combobox filters and keeps the submitted native value in sync', (
     input.value = '삼성전자';
     input.dispatch('input');
     assert.equal(select.value, '삼성전자');
-    assert.equal(nativeChangeCount, 1);
+    assert.equal(harness.nativeChangeCount, 1);
     assert.equal(input.validationMessage, '');
 
     input.value = '없는 고객사';
@@ -126,4 +144,60 @@ test('customer combobox filters and keeps the submitted native value in sync', (
     input.dispatch('keydown', { key: 'Enter' });
     assert.equal(select.value, '삼성전자');
     assert.equal(input.value, '삼성전자');
+});
+
+
+test('customer combobox delegates pointer selection and updates only active options', () => {
+    const {input, listbox, select} = createHarness();
+    input.value = '';
+    input.dispatch('focus');
+    const [first, second] = listbox.children;
+    assert.equal(first.listeners.size, 0);
+    assert.equal(second.listeners.size, 0);
+    assert.equal(listbox.listeners.get('click').length, 1);
+    first.attributeWrites.length = 0;
+    second.attributeWrites.length = 0;
+    listbox.dispatch('mouseover', {target: first});
+    assert.deepEqual(first.attributeWrites, ['aria-selected']);
+    assert.deepEqual(second.attributeWrites, []);
+    assert.equal(input.getAttribute('aria-activedescendant'), first.id);
+
+    first.attributeWrites.length = 0;
+    listbox.dispatch('mouseover', {target: first});
+    assert.deepEqual(first.attributeWrites, []);
+    listbox.dispatch('mouseover', {target: second});
+    assert.equal(first.getAttribute('aria-selected'), 'false');
+    assert.equal(second.getAttribute('aria-selected'), 'true');
+    assert.equal(input.getAttribute('aria-activedescendant'), second.id);
+    let prevented = false;
+    listbox.dispatch('mousedown', {
+        target: second, preventDefault() { prevented = true; }
+    });
+    assert.equal(prevented, true);
+    listbox.dispatch('click', {target: second});
+    assert.equal(select.value, '삼성전자');
+    assert.equal(input.value, '삼성전자');
+    assert.equal(listbox.hidden, true);
+    assert.equal(input.getAttribute('aria-activedescendant'), null);
+    assert.equal(second.getAttribute('aria-selected'), 'false');
+});
+
+test('customer combobox keeps keyboard wraparound and resets active state when filtering', () => {
+    const {input, listbox, select} = createHarness();
+    input.value = '';
+    input.dispatch('focus');
+    input.dispatch('keydown', {key: 'ArrowDown'});
+    input.dispatch('keydown', {key: 'ArrowDown'});
+    input.dispatch('keydown', {key: 'ArrowDown'});
+    assert.equal(input.getAttribute('aria-activedescendant'), listbox.children[0].id);
+    input.value = '삼';
+    input.dispatch('input');
+    assert.equal(listbox.children.length, 1);
+    assert.equal(input.getAttribute('aria-activedescendant'), null);
+    input.dispatch('keydown', {key: 'ArrowUp'});
+    input.dispatch('keydown', {key: 'Enter'});
+    assert.equal(select.value, '삼성전자');
+    input.dispatch('focus');
+    input.dispatch('keydown', {key: 'Escape'});
+    assert.equal(listbox.hidden, true);
 });

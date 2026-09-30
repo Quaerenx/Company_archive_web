@@ -286,6 +286,7 @@ function createHarness(options = {}) {
     }
 
     document.querySelector = function (selector) {
+        if (selector === '[data-ui-scroll-region]') return scrollRegions[0] || null;
         return selector === '.main-header' ? header : null;
     };
     document.querySelectorAll = function (selector) {
@@ -377,6 +378,7 @@ function createHarness(options = {}) {
         header,
         elementsById,
         scrollRegions,
+        resizeObserverCallbacks,
         scrollHints,
         workSurfaces,
         flushFrames() {
@@ -877,4 +879,15 @@ test('scroll hint is exposed only while its table actually overflows', () => {
 
     assert.equal(hint.hidden, true);
     assert.equal(region.getAttribute('aria-describedby'), 'historyTableHelp');
+});
+
+test('pages without table regions skip header measurements and ResizeObserver setup', () => {
+    const harness = createHarness({ headerBottom: 72, resizeObserver: true });
+    assert.equal(harness.document.documentElement.style.getPropertyValue('--table-sticky-offset'), '');
+    assert.equal(harness.resizeObserverCallbacks.length, 0);
+    harness.window.dispatch('load');
+    harness.window.dispatch('resize');
+    harness.flushFrames();
+    assert.equal(harness.document.documentElement.style.getPropertyValue('--table-sticky-offset'), '');
+    assert.equal(harness.resizeObserverCallbacks.length, 0);
 });

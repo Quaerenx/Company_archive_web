@@ -14,7 +14,7 @@ public class CustomerDetailDAO {
     private static final int SAVE_LOCK_STRIPES = 64;
     private static final ReentrantLock[] SAVE_LOCKS = createSaveLocks();
     private static final SchemaCapabilityCache APPLICATION_SCHEMA_CAPABILITIES =
-            new SchemaCapabilityCache();
+            SchemaCapabilityCache.application();
     private static final String COLUMNS =
             "customer_name, system_name, customer_manager, si_company, si_manager, creator, create_date, "
                     + "main_manager, sub_manager, install_date, introduction_year, db_name, db_mode, "

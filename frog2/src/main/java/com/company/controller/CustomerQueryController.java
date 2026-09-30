@@ -231,9 +231,6 @@ final class CustomerQueryController {
                 mapper.requestedPageSize(request));
         PageResult<CustomerDTO> page = customerPage.result();
         CustomerCounts counts = customerPage.counts();
-        RequestPerformanceContext.recordDataLoad(
-                System.nanoTime() - dataLoadStart);
-
         request.setAttribute("customerList", page.items());
         request.setAttribute("sortField", sortField);
         request.setAttribute("sortDirection", sortDirection);
@@ -256,6 +253,8 @@ final class CustomerQueryController {
                 "customerAssignmentFlags",
                 Map.copyOf(customerAssignmentFlags));
         request.setAttribute("currentUserName", user.getUserName());
+        RequestPerformanceContext.recordDataLoad(
+                System.nanoTime() - dataLoadStart);
         long viewRenderStart = System.nanoTime();
         try {
             forward(

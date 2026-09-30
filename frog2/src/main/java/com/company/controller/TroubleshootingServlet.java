@@ -170,8 +170,11 @@ public class TroubleshootingServlet extends HttpServlet {
             TroubleshootingDTO troubleshooting =
                     troubleshootingDAO.getTroubleshootingById(id);
             if (troubleshooting != null) {
-                if (canManageCustomer(user, troubleshooting.getCustomerName())) {
-                    List<CustomerDTO> customerList = assignedCustomers(user);
+                List<CustomerDTO> customerList = assignedCustomers(user);
+                if (troubleshooting.getCustomerName() != null
+                        && customerList.stream().anyMatch(customer ->
+                                Objects.equals(customer.getCustomerName(),
+                                        troubleshooting.getCustomerName()))) {
 
                     request.setAttribute("troubleshooting", troubleshooting);
                     request.setAttribute("customerList", customerList);
@@ -312,11 +315,8 @@ public class TroubleshootingServlet extends HttpServlet {
     }
 
     private List<CustomerDTO> assignedCustomers(UserDTO user) {
-        Set<String> customerNames = assignedCustomerNames(user);
-        return customerDAO.getAllCustomers("", "ASC").stream()
-                .filter(customer -> customerNames.contains(
-                        customer.getCustomerName()))
-                .toList();
+        return customerAssignmentDAO.getCustomersByAssignee(
+                user.getUserId(), user.getUserName());
     }
 
     private Set<String> assignedCustomerNames(UserDTO user) {

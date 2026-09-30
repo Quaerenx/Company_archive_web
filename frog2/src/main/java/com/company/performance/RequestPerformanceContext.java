@@ -21,6 +21,15 @@ public final class RequestPerformanceContext {
         state.maxSqlNanos = Math.max(state.maxSqlNanos, safeElapsed);
     }
 
+    public static void recordMetadata(long elapsedNanos) {
+        State state = CURRENT.get();
+        if (state != null) {
+            state.metadataCount++;
+            state.metadataDurationNanos += Math.max(0, elapsedNanos);
+            state.maxMetadataNanos = Math.max(state.maxMetadataNanos, Math.max(0, elapsedNanos));
+        }
+    }
+
     public static void recordDbAcquisition(long elapsedNanos) {
         State state = CURRENT.get();
         if (state == null) {
@@ -121,7 +130,8 @@ public final class RequestPerformanceContext {
                     0, 0, 0, 0, 0,
                     0, 0,
                     0, 0, 0, 0,
-                    0, 0, 0, 0);
+                    0, 0, 0, 0,
+                    0, 0, 0);
         }
         return new Snapshot(
                 state.operation,
@@ -145,7 +155,10 @@ public final class RequestPerformanceContext {
                 state.dataLoadCount,
                 state.dataLoadDurationNanos,
                 state.viewRenderCount,
-                state.viewRenderDurationNanos);
+                state.viewRenderDurationNanos,
+                state.metadataCount,
+                state.metadataDurationNanos,
+                state.maxMetadataNanos);
     }
 
     public enum Operation {
@@ -191,7 +204,10 @@ public final class RequestPerformanceContext {
             int dataLoadCount,
             long dataLoadDurationNanos,
             int viewRenderCount,
-            long viewRenderDurationNanos) {
+            long viewRenderDurationNanos,
+            int metadataCount,
+            long metadataDurationNanos,
+            long maxMetadataNanos) {
     }
 
     private static final class State {
@@ -217,5 +233,8 @@ public final class RequestPerformanceContext {
         private long dataLoadDurationNanos;
         private int viewRenderCount;
         private long viewRenderDurationNanos;
+        private int metadataCount;
+        private long metadataDurationNanos;
+        private long maxMetadataNanos;
     }
 }

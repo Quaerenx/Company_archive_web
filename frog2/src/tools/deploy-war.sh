@@ -166,13 +166,13 @@ for attempt in $(seq 1 60); do
 done
 if [ "$healthy" != true ]; then
     printf 'Health checks failed for %s.\n' "$TARGET" >&2
-    exit 1
+    on_error
 fi
 
 DEPLOYED_HASH="$(sha256sum "$LIVE_WAR" | awk '{print $1}')"
 if [ "$DEPLOYED_HASH" != "$EXPECTED_HASH" ]; then
     printf 'Deployed hash mismatch: %s\n' "$DEPLOYED_HASH" >&2
-    exit 1
+    on_error
 fi
 
 {

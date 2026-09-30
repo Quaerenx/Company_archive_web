@@ -107,9 +107,8 @@ public final class GlobalSearchService {
                 unavailableCategories);
         appendSource(
                 "트러블슈팅",
-                () -> troubleshootingDAO.getTroubleshootingPage(
-                                query, true, 1, RESULTS_PER_CATEGORY)
-                        .items().stream()
+                () -> troubleshootingDAO.searchTroubleshootings(
+                                query, RESULTS_PER_CATEGORY).stream()
                         .map(record -> troubleshootingResult(record, query))
                         .toList(),
                 results,

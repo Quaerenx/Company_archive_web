@@ -2,10 +2,13 @@ package com.company.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -394,5 +397,188 @@ class MaintenanceRecordDAOPaginationTest {
         assertEquals(Date.valueOf("2026-09-01"),
                 jdbc.statements.get(1).parameters.get(3));
         assertEquals(99L, jdbc.statements.get(1).parameters.get(4));
+    }
+
+    @Test
+    void deletedRowsDuringCorrectionReturnEmptyFirstPage() {
+        PaginationJdbcFixture jdbc = maintenanceDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 0));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<MaintenanceRecordDTO> result =
+                dao.getMaintenanceRecordsByCustomer("Acme", 999, 20);
+
+        assertEquals(4, jdbc.statements.size());
+        assertEquals(1, result.page());
+        assertEquals(0, result.totalCount());
+        assertTrue(result.items().isEmpty());
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void furtherDeletesDuringCorrectionRecountAndUseRemainingPage() {
+        PaginationJdbcFixture jdbc = maintenanceDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 7L, "total_count", 21));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+        MaintenanceHistoryFilter filter = MaintenanceHistoryFilter.parse(
+                "2026", "12_", "disk%");
+
+        PageResult<MaintenanceRecordDTO> result =
+                dao.getMaintenanceRecordsByCustomer("Acme", 999, 20, filter);
+
+        assertEquals(5, jdbc.statements.size());
+        assertEquals(2, result.page());
+        assertEquals(21, result.totalCount());
+        assertEquals(7L, result.items().getFirst().getMaintenanceId());
+        assertEquals(40, jdbc.statements.get(2).parameters.get(9));
+        assertEquals(20, jdbc.statements.get(4).parameters.get(9));
+        assertEquals(jdbc.statements.get(0).sql, jdbc.statements.get(4).sql);
+        assertEquals(jdbc.statements.get(1).sql, jdbc.statements.get(3).sql);
+        for (int parameter = 1; parameter <= 7; parameter++) {
+            assertEquals(jdbc.statements.get(0).parameters.get(parameter),
+                    jdbc.statements.get(4).parameters.get(parameter));
+            assertEquals(jdbc.statements.get(1).parameters.get(parameter),
+                    jdbc.statements.get(3).parameters.get(parameter));
+        }
+    }
+
+    @Test
+    void repeatedDeletesStopAfterOneRecount() {
+        PaginationJdbcFixture jdbc = maintenanceDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue();
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        PageResult<MaintenanceRecordDTO> result =
+                dao.getMaintenanceRecordsByCustomer("Acme", 999, 20);
+
+        assertEquals(5, jdbc.statements.size());
+        assertEquals(1, result.page());
+        assertEquals(0, result.totalCount());
+        assertTrue(result.items().isEmpty());
+        assertTrue(jdbc.queryResults.isEmpty());
+    }
+
+    private static PaginationJdbcFixture maintenanceDeletionFixture() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 41));
+        jdbc.enqueue();
+        return jdbc;
+    }
+
+    @Test
+    void historyPageIncludesOneComparisonRecordWithoutChangingTheOffset() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = Set.of("maintenance_records.license_usage_pct");
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (long id = 21; id >= 1; id--) {
+            rows.add(PaginationJdbcFixture.row(
+                    "maintenance_id", id,
+                    "inspection_date", Date.valueOf("2026-08-10"),
+                    "license_usage_pct", Long.toString(60 + id),
+                    "total_count", 41));
+        }
+        jdbc.queryResults.addLast(rows);
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+        MaintenanceHistoryFilter filter = MaintenanceHistoryFilter.parse(
+                "2026", "12_", "disk%");
+
+        MaintenanceRecordDAO.MaintenanceHistoryPage history =
+                dao.getMaintenanceHistoryPageByCustomer("Acme", 2, 20, filter);
+
+        assertEquals(1, jdbc.statements.size());
+        var statement = jdbc.statements.getFirst();
+        assertEquals(21, statement.parameters.get(8));
+        assertEquals(20, statement.parameters.get(9));
+        assertEquals("Acme", statement.parameters.get(1));
+        assertEquals(Date.valueOf("2026-01-01"), statement.parameters.get(2));
+        assertEquals(Date.valueOf("2027-01-01"), statement.parameters.get(3));
+        assertEquals("%12!_%", statement.parameters.get(4));
+        assertEquals("%disk!%%", statement.parameters.get(5));
+        assertEquals("%disk!%%", statement.parameters.get(6));
+        assertEquals("%disk!%%", statement.parameters.get(7));
+        assertTrue(statement.sql.contains(
+                "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
+                        + "inspection_date DESC, maintenance_id DESC LIMIT ? OFFSET ?"));
+        assertEquals(20, history.page().items().size());
+        assertEquals(20, history.page().pageSize());
+        assertEquals(2, history.page().page());
+        assertEquals(41, history.page().totalCount());
+        assertEquals(3, history.page().totalPages());
+        assertEquals(2L, history.page().items().getLast().getMaintenanceId());
+        assertEquals("62", history.page().items().getLast().getLicenseUsagePct());
+        assertEquals(1L, history.olderRecord().getMaintenanceId());
+        assertEquals("61", history.olderRecord().getLicenseUsagePct());
+        assertEquals(1, jdbc.openCount);
+        assertEquals(1, jdbc.closeCount);
+    }
+
+    @Test
+    void historyLastPageHasNoComparisonRecord() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 1L, "total_count", 41));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        MaintenanceRecordDAO.MaintenanceHistoryPage history =
+                dao.getMaintenanceHistoryPageByCustomer(
+                        "Acme", 3, 20, MaintenanceHistoryFilter.empty());
+
+        assertEquals(1, history.page().items().size());
+        assertEquals(3, history.page().page());
+        assertEquals(20, history.page().pageSize());
+        assertEquals(21, jdbc.statements.getFirst().parameters.get(2));
+        assertEquals(40, jdbc.statements.getFirst().parameters.get(3));
+        assertNull(history.olderRecord());
+    }
+
+    @Test
+    void historyContextCorrectionPreservesFetchLimitAndVisiblePageSize() {
+        PaginationJdbcFixture jdbc = maintenanceDeletionFixture();
+        jdbc.enqueue(PaginationJdbcFixture.row("count", 21));
+        jdbc.enqueue(PaginationJdbcFixture.row(
+                "maintenance_id", 1L, "total_count", 21));
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        MaintenanceRecordDAO.MaintenanceHistoryPage history =
+                dao.getMaintenanceHistoryPageByCustomer(
+                        "Acme", 999, 20, MaintenanceHistoryFilter.empty());
+
+        assertEquals(5, jdbc.statements.size());
+        assertEquals(2, history.page().page());
+        assertEquals(21, history.page().totalCount());
+        assertEquals(20, history.page().pageSize());
+        assertEquals(21, jdbc.statements.get(0).parameters.get(2));
+        assertEquals(21, jdbc.statements.get(2).parameters.get(2));
+        assertEquals(21, jdbc.statements.get(4).parameters.get(2));
+        assertEquals(20, jdbc.statements.get(4).parameters.get(3));
+        assertNull(history.olderRecord());
+    }
+
+    @Test
+    void blankHistoryContextDoesNotOpenAConnection() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        MaintenanceRecordDAO dao = new MaintenanceRecordDAO(
+                jdbc::open, new SchemaCapabilityCache());
+
+        MaintenanceRecordDAO.MaintenanceHistoryPage history =
+                dao.getMaintenanceHistoryPageByCustomer(
+                        " ", 999, 20, MaintenanceHistoryFilter.empty());
+
+        assertEquals(1, history.page().page());
+        assertEquals(0, history.page().totalCount());
+        assertTrue(history.page().items().isEmpty());
+        assertNull(history.olderRecord());
+        assertEquals(0, jdbc.openCount);
     }
 }

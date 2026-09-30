@@ -10,6 +10,7 @@ import com.company.model.MaintenanceRecordDTO;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -194,5 +195,50 @@ class MaintenanceHistoryRowViewTest {
         record.setLicenseUsageSize(used);
         record.setLicenseUsagePct(percentage);
         return record;
+    }
+
+    @Test
+    void comparisonContextMatchesWholeHistoryWithoutAddingADisplayedRow() {
+        List<MaintenanceRecordDTO> allRecords = new ArrayList<>();
+        for (long id = 41; id >= 1; id--) {
+            allRecords.add(record(id, "2026-08-10", "100", null,
+                    Long.toString(60 + id)));
+        }
+        List<MaintenanceHistoryRowView> allRows =
+                MaintenanceHistoryRowView.fromRecords(allRecords);
+        for (int offset : new int[] {0, 20}) {
+            List<MaintenanceHistoryRowView> pagedRows =
+                    MaintenanceHistoryRowView.fromRecords(
+                            allRecords.subList(offset, offset + 20),
+                            allRecords.get(offset + 20));
+
+            assertEquals(20, pagedRows.size());
+            for (int index = 0; index < 20; index++) {
+                assertSame(allRows.get(offset + index).getRecord(),
+                        pagedRows.get(index).getRecord());
+                assertEquals(allRows.get(offset + index).getDeltaLabel(),
+                        pagedRows.get(index).getDeltaLabel());
+                assertEquals(allRows.get(offset + index).getPreviousUsagePercentage(),
+                        pagedRows.get(index).getPreviousUsagePercentage());
+            }
+            assertEquals("↑ 1.0%p", pagedRows.getLast().getDeltaLabel());
+        }
+        assertEquals("-", MaintenanceHistoryRowView.fromRecords(
+                allRecords.subList(40, 41), null).getFirst().getDeltaLabel());
+    }
+
+    @Test
+    void missingUsageInComparisonContextRemainsUnavailable() {
+        MaintenanceRecordDTO visible = record(
+                2L, "2026-08-10", "100", "62", "62");
+        MaintenanceRecordDTO older = record(
+                1L, "2026-08-10", null, null, null);
+
+        var row = MaintenanceHistoryRowView.fromRecords(
+                List.of(visible), older).getFirst();
+
+        assertEquals("-", row.getDeltaLabel());
+        assertNull(row.getPreviousUsagePercentage());
+        assertTrue(MaintenanceHistoryRowView.fromRecords(List.of(), older).isEmpty());
     }
 }

@@ -241,6 +241,9 @@
                         <a href="<c:out value='${maintenanceHistoryUrl}' />">전체 보기</a>
                     </div>
                     <c:choose>
+                        <c:when test="${customerActivity.maintenanceUnavailable}">
+                            <p class="customer-activity__empty" role="status">최근 점검을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
+                        </c:when>
                         <c:when test="${not empty customerActivity.maintenanceRecords}">
                             <ul class="customer-activity__list">
                                 <c:forEach var="record" items="${customerActivity.maintenanceRecords}">
@@ -263,6 +266,9 @@
                         <a href="<c:out value='${customerHistoryUrl}' />">전체 보기</a>
                     </div>
                     <c:choose>
+                        <c:when test="${customerActivity.historyUnavailable}">
+                            <p class="customer-activity__empty" role="status">최근 히스토리를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
+                        </c:when>
                         <c:when test="${not empty customerActivity.historyRecords}">
                             <ul class="customer-activity__list">
                                 <c:forEach var="record" items="${customerActivity.historyRecords}">
@@ -289,6 +295,9 @@
                         <a href="<c:out value='${troubleshootingUrl}' />">전체 보기</a>
                     </div>
                     <c:choose>
+                        <c:when test="${customerActivity.troubleshootingUnavailable}">
+                            <p class="customer-activity__empty" role="status">최근 트러블슈팅을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
+                        </c:when>
                         <c:when test="${not empty customerActivity.troubleshootingRecords}">
                             <ul class="customer-activity__list">
                                 <c:forEach var="record" items="${customerActivity.troubleshootingRecords}">

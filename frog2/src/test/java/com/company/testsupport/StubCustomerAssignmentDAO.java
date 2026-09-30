@@ -31,6 +31,13 @@ public final class StubCustomerAssignmentDAO extends CustomerAssignmentDAO {
     }
 
     @Override
+    public List<CustomerDTO> getCustomersByAssignee(
+            String userId,
+            String displayName) {
+        return maintenanceCustomers;
+    }
+
+    @Override
     public List<CustomerDTO> getMaintenanceCustomersByAssignee(
             String userId,
             String displayName) {

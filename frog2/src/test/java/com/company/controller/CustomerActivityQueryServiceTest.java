@@ -2,6 +2,9 @@ package com.company.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.company.model.DataAccessException;
 
 import com.company.customerhistory.CustomerHistoryCategory;
 import com.company.customerhistory.CustomerHistoryDraft;
@@ -48,9 +51,35 @@ class CustomerActivityQueryServiceTest {
         CustomerActivityViewData result = service.load("Alpha");
 
         assertTrue(result.getMaintenanceRecords().isEmpty());
+        assertTrue(result.isMaintenanceUnavailable());
+        assertFalse(result.isHistoryUnavailable());
+        assertFalse(result.isTroubleshootingUnavailable());
         assertEquals("TLS 적용", result.getHistoryRecords().getFirst().getTitle());
         assertEquals("백업 복구",
                 result.getTroubleshootingRecords().getFirst().getTitle());
+    }
+
+    @Test
+    void programmingErrorsAreNotPresentedAsMissingActivity() {
+        CustomerActivityQueryService service = new CustomerActivityQueryService(
+                new MaintenanceRecordDAO() {
+                    @Override
+                    public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
+                            String customerName, int requestedPage, int pageSize) {
+                        throw new IllegalStateException("Unexpected programming failure");
+                    }
+                },
+                new CustomerHistoryRepository(temporaryDirectory.resolve("history")),
+                new StubTroubleshootingDAO(new TroubleshootingDTO()));
+        assertThrows(IllegalStateException.class, () -> service.load("Alpha"));
+    }
+
+    @Test
+    void genuinelyEmptyActivityDoesNotReportUnavailable() {
+        CustomerActivityViewData empty = CustomerActivityViewData.empty();
+        assertFalse(empty.isMaintenanceUnavailable());
+        assertFalse(empty.isHistoryUnavailable());
+        assertFalse(empty.isTroubleshootingUnavailable());
     }
 
     private static final class FailingMaintenanceDAO
@@ -58,7 +87,7 @@ class CustomerActivityQueryServiceTest {
         @Override
         public PageResult<MaintenanceRecordDTO> getMaintenanceRecordsByCustomer(
                 String customerName, int requestedPage, int pageSize) {
-            throw new IllegalStateException("test failure");
+            throw DataAccessException.from(new java.sql.SQLException("test failure"));
         }
     }
 

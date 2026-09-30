@@ -17,6 +17,7 @@
     var retryButton = document.getElementById('import-retry-button');
     var csrfInput = form.querySelector('input[name="_csrf"]');
     var failedPaths = [];
+    var submitting = false;
 
     function selectableInputs() {
         return Array.prototype.slice.call(
@@ -33,7 +34,8 @@
         var available = selectableInputs();
         var selected = selectedInputs();
         selectedCount.textContent = selected.length + '개 선택';
-        submitButton.disabled = selected.length === 0;
+        submitButton.disabled = submitting || selected.length === 0;
+        retryButton.disabled = submitting;
         if (selectAll) {
             selectAll.checked = available.length > 0 && selected.length === available.length;
             selectAll.indeterminate = selected.length > 0 && selected.length < available.length;
@@ -50,6 +52,10 @@
     function renderResult(payload) {
         resultBody.textContent = '';
         failedPaths = [];
+        var inputsByPath = new Map();
+        selectableInputs().forEach(function (input) {
+            inputsByPath.set(input.value, input);
+        });
         payload.files.forEach(function (file) {
             var row = document.createElement('tr');
             row.appendChild(createCell(file.name, '파일'));
@@ -60,12 +66,11 @@
                 failedPaths.push(file.path);
             }
             if (['imported', 'conflict', 'rejected'].indexOf(file.status) >= 0) {
-                selectableInputs().forEach(function (input) {
-                    if (input.value === file.path) {
-                        input.checked = false;
-                        input.disabled = true;
-                    }
-                });
+                var input = inputsByPath.get(file.path);
+                if (input) {
+                    input.checked = false;
+                    input.disabled = true;
+                }
             }
         });
         var summary = payload.summary;
@@ -96,8 +101,10 @@
     });
 
     retryButton.addEventListener('click', function () {
+        if (submitting) return;
+        var retryPaths = new Set(failedPaths);
         selectableInputs().forEach(function (input) {
-            input.checked = failedPaths.indexOf(input.value) >= 0;
+            input.checked = retryPaths.has(input.value);
         });
         updateSelection();
         form.requestSubmit();
@@ -105,6 +112,7 @@
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+        if (submitting) return;
         if (selectedInputs().length === 0) {
             window.Frog2UI.setStatus(status, '반입할 파일을 선택해 주세요.', 'danger');
             return;
@@ -117,6 +125,8 @@
             return;
         }
 
+        submitting = true;
+        retryButton.disabled = true;
         progress.hidden = false;
         progress.removeAttribute('value');
         window.Frog2UI.setButtonLoading(submitButton, true, '반입 중');
@@ -153,6 +163,7 @@
                 error.message || '서버 파일 반입에 실패했습니다.',
                 'danger');
         }).finally(function () {
+            submitting = false;
             progress.hidden = true;
             window.Frog2UI.setButtonLoading(submitButton, false);
             updateSelection();

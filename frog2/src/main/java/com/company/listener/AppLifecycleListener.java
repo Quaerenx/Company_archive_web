@@ -24,6 +24,7 @@ public class AppLifecycleListener implements ServletContextListener {
     public static final String SCHEMA_OPTIONAL_MISSING_ATTRIBUTE =
             "frog2.schemaOptionalMissingRequirements";
     private static final Logger logger = LoggerFactory.getLogger(AppLifecycleListener.class);
+    private SchemaReadinessRecovery schemaRecovery;
     
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -37,6 +38,12 @@ public class AppLifecycleListener implements ServletContextListener {
 
         publishSchemaReadiness(
                 sce.getServletContext(), DatabaseSchemaReadiness::inspect);
+        if (sce.getServletContext().getAttribute(SCHEMA_STATUS_ATTRIBUTE)
+                == SchemaStatus.UNAVAILABLE) {
+            schemaRecovery = new SchemaReadinessRecovery(
+                    sce.getServletContext(), DatabaseSchemaReadiness::inspect);
+            schemaRecovery.start();
+        }
     }
 
     static void publishSchemaReadiness(
@@ -93,6 +100,9 @@ public class AppLifecycleListener implements ServletContextListener {
         logger.info("========================================");
         
         // Connection Pool 종료
+        if (schemaRecovery != null) {
+            schemaRecovery.close();
+        }
         DBConnection.shutdown();
         
         logger.info("애플리케이션 종료 완료");

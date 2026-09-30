@@ -122,13 +122,14 @@ final class PaginationJdbcFixture {
                     if ("getColumns".equals(call.getName())) {
                         String table = String.valueOf(args[2])
                                 .toLowerCase(Locale.ROOT);
-                        String column = String.valueOf(args[3])
-                                .toLowerCase(Locale.ROOT);
-                        boolean available = availableColumns.contains(
-                                table + "." + column);
-                        return resultSet(available
-                                ? List.of(row("column_name", column))
-                                : List.of());
+                        String pattern = args[3] == null ? "%"
+                                : String.valueOf(args[3]).toLowerCase(Locale.ROOT);
+                        return resultSet(availableColumns.stream()
+                                .filter(column -> column.startsWith(table + "."))
+                                .map(column -> column.substring(table.length() + 1))
+                                .filter(column -> "%".equals(pattern) || column.equals(pattern))
+                                .map(column -> row("TABLE_NAME", table, "COLUMN_NAME", column))
+                                .toList());
                     }
                     return defaultValue(call.getReturnType());
                 });

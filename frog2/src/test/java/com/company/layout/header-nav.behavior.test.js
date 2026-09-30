@@ -111,7 +111,7 @@ function createElement(document, options = {}) {
 
 function createHarness({ mobile, dropdown = false, quickNav = false,
         otherDialogOpen = false, searchPayload = null,
-        searchStatus = 200 }) {
+        searchStatus = 200, deferredSearch = false, abortSupported = true }) {
     const documentListeners = new Map();
     const document = {
         activeElement: null,
@@ -224,8 +224,18 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
         addEventListener() {}
     };
     const fetchCalls = [];
+    const pendingSearches = [];
+    const windowListeners = new Map();
     let assignedLocation = null;
     const window = {
+        AbortController: abortSupported ? AbortController : undefined,
+        addEventListener(name, listener) {
+            if (!windowListeners.has(name)) windowListeners.set(name, []);
+            windowListeners.get(name).push(listener);
+        },
+        dispatch(name) {
+            (windowListeners.get(name) || []).forEach((listener) => listener());
+        },
         clearTimeout() {},
         location: {
             assign(url) {
@@ -243,6 +253,11 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
     if (searchPayload !== null) {
         window.fetch = (url, options) => {
             fetchCalls.push({ url, options });
+            if (deferredSearch) {
+                return new Promise((resolve, reject) => {
+                    pendingSearches.push({resolve, reject});
+                });
+            }
             return Promise.resolve({
                 ok: searchStatus >= 200 && searchStatus < 300,
                 status: searchStatus,
@@ -291,9 +306,21 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
         quickNavEmpty,
         quickNavInput,
         quickNavOpenButton,
+        quickNavCloseButton,
         quickNavResults,
         quickNavStatus,
         fetchCalls,
+        window,
+        resolveSearch(index, payload = {results: []}) {
+            pendingSearches[index].resolve({
+                ok: true,
+                status: 200,
+                json() { return Promise.resolve(payload); }
+            });
+        },
+        rejectSearch(index, error) {
+            pendingSearches[index].reject(error);
+        },
         get assignedLocation() {
             return assignedLocation;
         },
@@ -455,4 +482,94 @@ test('quick navigation stays closed while another dialog is open', () => {
         assert.equal(shortcut.defaultPrevented, true);
         assert.equal(harness.quickNavOpenCalls, 0);
     }
+});
+
+
+test('integrated search reuses an unchanged query and aborts superseded requests', async () => {
+    const harness = createHarness({
+        mobile: false, quickNav: true, searchPayload: {results: []}, deferredSearch: true
+    });
+    harness.quickNavOpenButton.dispatch('click');
+    harness.quickNavInput.value = 'alpha';
+    harness.quickNavInput.dispatch('input');
+    harness.quickNavInput.value = ' alpha ';
+    harness.quickNavInput.dispatch('input');
+    assert.equal(harness.fetchCalls.length, 1);
+    assert.equal(harness.fetchCalls[0].options.signal.aborted, false);
+
+    harness.quickNavInput.value = 'beta';
+    harness.quickNavInput.dispatch('input');
+    assert.equal(harness.fetchCalls.length, 2);
+    assert.equal(harness.fetchCalls[0].options.signal.aborted, true);
+    harness.resolveSearch(1, {results: [{
+        category: '고객사', label: 'Beta', url: '/frog2/customers?customerName=Beta'
+    }]});
+    await new Promise((resolve) => setImmediate(resolve));
+    const currentResult = harness.quickNavResults.children[1];
+    harness.resolveSearch(0, {results: [{
+        category: '고객사', label: 'Alpha', url: '/frog2/customers?customerName=Alpha'
+    }]});
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(harness.quickNavResults.children[1], currentResult);
+    harness.quickNavInput.dispatch('input');
+    assert.equal(harness.fetchCalls.length, 2);
+});
+
+test('integrated search cancels requests on short input, close and pagehide', () => {
+    const harness = createHarness({
+        mobile: false, quickNav: true, searchPayload: {results: []}, deferredSearch: true
+    });
+    harness.quickNavOpenButton.dispatch('click');
+    harness.quickNavInput.value = 'alpha';
+    harness.quickNavInput.dispatch('input');
+    harness.quickNavInput.value = 'a';
+    harness.quickNavInput.dispatch('input');
+    assert.equal(harness.fetchCalls.length, 1);
+    assert.equal(harness.fetchCalls[0].options.signal.aborted, true);
+
+    harness.quickNavInput.value = 'beta';
+    harness.quickNavInput.dispatch('input');
+    harness.quickNavCloseButton.dispatch('click');
+    assert.equal(harness.fetchCalls[1].options.signal.aborted, true);
+    harness.quickNavOpenButton.dispatch('click');
+    harness.quickNavInput.value = 'gamma';
+    harness.quickNavInput.dispatch('input');
+    harness.window.dispatch('pagehide');
+    assert.equal(harness.fetchCalls[2].options.signal.aborted, true);
+});
+
+test('integrated search can retry an unchanged query after a request failure', async () => {
+    const harness = createHarness({
+        mobile: false, quickNav: true, searchPayload: {results: []}, deferredSearch: true
+    });
+    harness.quickNavOpenButton.dispatch('click');
+    harness.quickNavInput.value = 'alpha';
+    harness.quickNavInput.dispatch('input');
+    harness.rejectSearch(0, new Error('Temporary search failure'));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(harness.quickNavStatus.textContent,
+        '업무 데이터 검색을 일시적으로 사용할 수 없습니다.');
+    harness.quickNavInput.dispatch('input');
+    assert.equal(harness.fetchCalls.length, 2);
+});
+
+test('integrated search preserves the stale-response guard without AbortController', async () => {
+    const harness = createHarness({
+        mobile: false, quickNav: true, searchPayload: {results: []},
+        deferredSearch: true, abortSupported: false
+    });
+    harness.quickNavOpenButton.dispatch('click');
+    harness.quickNavInput.value = 'alpha';
+    harness.quickNavInput.dispatch('input');
+    harness.quickNavInput.value = 'beta';
+    harness.quickNavInput.dispatch('input');
+    assert.equal(harness.fetchCalls[0].options.signal, undefined);
+    harness.resolveSearch(1);
+    await new Promise((resolve) => setImmediate(resolve));
+    const currentStatus = harness.quickNavStatus.textContent;
+    harness.resolveSearch(0, {results: [{
+        category: '고객사', label: 'Alpha', url: '/frog2/customers?customerName=Alpha'
+    }]});
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(harness.quickNavStatus.textContent, currentStatus);
 });

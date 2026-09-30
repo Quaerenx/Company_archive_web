@@ -6,7 +6,9 @@
 <c:set var="pageTitle" value="정기점검 이력 - ${fn:escapeXml(customerName)}" scope="request" />
 <c:set var="pageBodyClass" value="page-1050 page-maintenance" scope="request" />
 <c:set var="pageCss" value="/resources/css/pages/maintenance_history.css" scope="request" />
-<c:set var="vendorScript" value="${pageContext.request.contextPath}/resources/vendor/chart.js/4.4.4/chart.umd.min.js?v=${initParam.frog2AssetVersion}" scope="request" />
+<c:if test="${not empty usageSeries}">
+    <c:set var="vendorScript" value="${pageContext.request.contextPath}/resources/vendor/chart.js/4.4.4/chart.umd.min.js?v=${initParam.frog2AssetVersion}" scope="request" />
+</c:if>
 <c:set var="pageScript" value="/resources/js/pages/maintenance_history.js" scope="request" />
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <%@ include file="/includes/header.jsp" %>

@@ -254,15 +254,16 @@ public class MaintenanceServlet extends HttpServlet {
                     "점검 이력 검색 조건이 올바르지 않습니다.");
             return;
         }
-        PageResult<MaintenanceRecordDTO> page =
-                maintenanceDAO.getMaintenanceRecordsByCustomer(
+        MaintenanceRecordDAO.MaintenanceHistoryPage history =
+                maintenanceDAO.getMaintenanceHistoryPageByCustomer(
                         customerName,
                         historyPage,
                         HISTORY_PAGE_SIZE,
                         historyFilter);
         CustomerDTO customer = customerDAO.getCustomerByName(customerName);
         MaintenanceHistoryViewData.from(
-                page, historyFilter, customer, customerName)
+                history.page(), historyFilter, customer, customerName,
+                history.olderRecord())
                 .expose(request);
         request.setAttribute(
                 "canManageCustomer",
