@@ -53,6 +53,7 @@
     </section>
 
     <!-- 담당자별 고객사 카드 목록 -->
+    <c:if test="${not empty inspectorCustomers or empty personalMaintenanceCustomers}">
     <div data-global-section="maintenance-customers">
     <c:choose>
         <c:when test="${not empty inspectorCustomers}">
@@ -88,6 +89,7 @@
         </c:otherwise>
     </c:choose>
     </div>
+    </c:if>
 </div>
 
 

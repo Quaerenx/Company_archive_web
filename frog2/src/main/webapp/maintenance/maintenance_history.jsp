@@ -47,8 +47,8 @@
             </c:if>
         </jsp:attribute>
         <jsp:attribute name="actions">
-            <a href="<c:out value='${maintenanceHistoryExportUrl}' />"
-               class="ui-button button--secondary button--sm"><i class="fas fa-file-csv" aria-hidden="true"></i> 현재 이력 CSV</a>
+            <a href="<c:out value='${customerDetailUrl}' />"
+               class="ui-button button--secondary button--sm maintenance-customer-info-button"><i class="fas fa-building" aria-hidden="true"></i> 고객사 정보</a>
             <c:if test="${canManageCustomer}">
                 <a href="${addHistoryUrl}"
                    class="ui-button button--primary button--sm"><i class="fas fa-plus"></i> 새 점검 이력 추가</a>
@@ -448,6 +448,11 @@
                 </div>
             </c:otherwise>
         </c:choose>
+    </div>
+
+    <div class="history-export-actions">
+        <a href="<c:out value='${maintenanceHistoryExportUrl}' />"
+           class="ui-button button--secondary button--sm history-export-button"><i class="fas fa-file-csv" aria-hidden="true"></i> 현재 이력 CSV</a>
     </div>
 </div>
 

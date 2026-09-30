@@ -32,6 +32,8 @@ class DevelopmentServerSmokeTest {
             "name=\\\"_csrf\\\"\\s+value=\\\"([^\\\"]+)\\\"");
     private static final Pattern CUSTOMER_DETAIL_LINK = Pattern.compile(
             "<a class=\\\"customer-detail-link\\\"\\s+href=\\\"([^\\\"]+)\\\"");
+    private static final Pattern MAINTENANCE_HISTORY_LINK = Pattern.compile(
+            "<a class=\\\"customer-card\\\"\\s+href=\\\"([^\\\"]+)\\\"");
     private static final List<String> PROTECTED_ROUTES = List.of(
             "dashboard",
             "customers",
@@ -193,6 +195,26 @@ class DevelopmentServerSmokeTest {
         assertTrue(detail.body().contains("environment-detail ui-detail"));
         assertFalse(detail.body().contains("id=\"loginForm\""));
 
+        HttpResponse<String> maintenance = get("maintenance", "text/html");
+        Matcher historyLink = MAINTENANCE_HISTORY_LINK.matcher(maintenance.body());
+        assertTrue(historyLink.find(), "Maintenance cards did not expose a history link");
+        URI historyUri = baseUri.resolve(historyLink.group(1).replace("&amp;", "&"));
+        HttpResponse<String> history = client.send(
+                HttpRequest.newBuilder(historyUri)
+                        .timeout(Duration.ofSeconds(20))
+                        .header("Accept", "text/html")
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        assertEquals(200, history.statusCode());
+        assertFalse(history.body().contains("id=\"loginForm\""));
+        assertTrue(history.body().contains("maintenance-customer-info-button"));
+        assertTrue(history.body().contains("고객사 정보"));
+        int exportIndex = history.body().indexOf("class=\"history-export-actions\"");
+        assertTrue(exportIndex > history.body().lastIndexOf("class=\"history-container"),
+                "CSV export must follow the history containers");
+        assertTrue(history.body().contains("history-export-button"));
+
         HttpResponse<String> search = get(
                 "search?q=FROG2_READONLY_PROBE_NO_MATCH", "application/json");
         assertEquals(200, search.statusCode(), "Global search failed");
@@ -219,9 +241,18 @@ class DevelopmentServerSmokeTest {
         int personalIndex = body.indexOf("data-personal-section=\"" + section + "\"");
         int globalIndex = body.indexOf("data-global-section=\"" + section + "\"");
         assertTrue(personalIndex >= 0, "Personal section missing: /" + route);
-        assertTrue(globalIndex > personalIndex,
-                "Personal section must appear above the existing global section: /" + route);
-        String personal = body.substring(personalIndex, globalIndex);
+        int personalEnd = body.indexOf("</section>", personalIndex);
+        assertTrue(personalEnd > personalIndex, "Personal section is not closed: /" + route);
+        String personal = body.substring(personalIndex, personalEnd);
+        if (globalIndex >= 0) {
+            assertTrue(globalIndex > personalEnd,
+                    "Personal section must appear above the remaining global section: /" + route);
+        } else {
+            assertTrue("maintenance".equals(route)
+                            && personal.contains("class=\"customer-card\""),
+                    "Only an entirely personal maintenance list may omit the global section");
+            assertFalse(body.contains("등록된 고객사 정보가 없습니다."));
+        }
         assertTrue(personal.contains(title), "Personal heading missing: /" + route);
         String dataMarker = switch (route) {
             case "dashboard" -> "data-maintenance-status=";

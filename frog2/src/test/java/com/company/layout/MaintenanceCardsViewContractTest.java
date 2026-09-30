@@ -11,6 +11,23 @@ class MaintenanceCardsViewContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
 
     @Test
+    void globalCardsHideTheirEmptyStateWhenAllCustomersArePersonal()
+            throws Exception {
+        String page = Files.readString(
+                WEBAPP.resolve("maintenance/maintenance_cards.jsp"));
+        String guard = "<c:if test=\"${not empty inspectorCustomers or empty personalMaintenanceCustomers}\">";
+        int guardStart = page.indexOf(guard);
+        int globalStart = page.indexOf("data-global-section=\"maintenance-customers\"");
+        int emptyState = page.indexOf("등록된 고객사 정보가 없습니다.");
+        int guardEnd = page.indexOf("</c:if>", globalStart);
+
+        assertTrue(guardStart >= 0 && globalStart > guardStart);
+        assertTrue(emptyState > globalStart && guardEnd > emptyState);
+        assertEquals(1, occurrences(page, guard));
+        assertTrue(page.contains("<strong>담당 고객사가 없습니다.</strong>"));
+    }
+
+    @Test
     void customerCardsShowTheConfiguredMaintenanceFrequency() throws Exception {
         String page = Files.readString(
                 WEBAPP.resolve("maintenance/maintenance_cards.jsp"));

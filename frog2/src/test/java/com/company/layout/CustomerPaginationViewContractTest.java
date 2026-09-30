@@ -125,7 +125,7 @@ class CustomerPaginationViewContractTest {
     }
 
     @Test
-    void assignedCustomersHaveABadgeAndRowAccent() throws Exception {
+    void assignedCustomersHaveABadgeWithoutRowAccent() throws Exception {
         String page = Files.readString(
                 WEBAPP.resolve("WEB-INF/tags/customerListRows.tag"));
         String styles = Files.readString(
@@ -140,11 +140,10 @@ class CustomerPaginationViewContractTest {
         assertTrue(page.indexOf("customer-assignee-badge")
                 > page.indexOf("<dt>담당자</dt>"));
         assertTrue(styles.contains(".customer-assignee-badge"));
-        assertTrue(styles.contains(
+        assertFalse(styles.contains(
                 ".customer-row[data-assigned-customer=\"true\"]"));
-        assertTrue(styles.contains(
+        assertFalse(styles.contains(
                 "box-shadow: inset 3px 0 0 var(--color-info-border)"));
-        assertTrue(styles.contains("background: var(--color-info-bg)"));
     }
 
     @Test

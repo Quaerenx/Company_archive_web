@@ -61,9 +61,9 @@ class MaintenancePersonalCardsQueryTest {
         assertSame(assignments.personalCustomers,
                 request.attributes.get("personalMaintenanceCustomers"));
         Map<?, ?> global = (Map<?, ?>) request.attributes.get("inspectorCustomers");
-        assertEquals(List.of(primary, anotherUsers), global.get("Same Name"));
-        assertEquals(List.of(secondary), global.get("Other Manager"));
-        assertEquals(2, global.size());
+        assertEquals(List.of(anotherUsers), global.get("Same Name"));
+        assertEquals(null, global.get("Other Manager"));
+        assertEquals(1, global.size());
         assertEquals(1, records.monthReads);
         assertEquals(4, records.customerNames.size());
         assertEquals(new HashSet<>(List.of(
@@ -78,6 +78,54 @@ class MaintenancePersonalCardsQueryTest {
         assertEquals("manager_name", customers.sortField);
         assertEquals("ASC", customers.sortDirection);
         assertEquals("maintenance", customers.filter);
+    }
+
+    @Test
+    void personalOnlyCustomersRemoveEveryGlobalGroupButKeepMonthStatus()
+            throws Exception {
+        CustomerDTO primary = customer("my-primary", "Same Name", null);
+        CustomerDTO secondary = customer("my-sub-assignment", "Other Manager", "Same Name");
+        StubCustomerDAO customers = new StubCustomerDAO();
+        customers.customers = List.of(primary, secondary);
+        StubAssignmentDAO assignments = new StubAssignmentDAO();
+        assignments.personalCustomers = customers.customers;
+        assignments.allAssignments = List.of(
+                new MaintenanceCustomerAssignment("my-primary", "Same Name"),
+                new MaintenanceCustomerAssignment("my-sub-assignment", "Other Manager"));
+        StubRecordDAO records = new StubRecordDAO();
+        records.records = List.of(record("my-sub-assignment"));
+        RequestFixture request = new RequestFixture();
+
+        new MaintenanceServlet(records, customers, assignments, FIXED_CLOCK)
+                .doGet(request.proxy(), response());
+
+        assertSame(assignments.personalCustomers,
+                request.attributes.get("personalMaintenanceCustomers"));
+        assertEquals(Map.of(), request.attributes.get("inspectorCustomers"));
+        assertEquals(List.of("my-primary", "my-sub-assignment"), records.customerNames);
+        assertEquals(1, records.monthReads);
+        assertEquals(Map.of("my-sub-assignment", true),
+                request.attributes.get("currentMonthMaintenanceCustomers"));
+    }
+
+    @Test
+    void overlapMatchesTrimmedCustomerNamesWithoutMergingDifferentNames()
+            throws Exception {
+        CustomerDTO globalOverlap = customer("Acme", "Other Manager", "Same Name");
+        CustomerDTO distinct = customer("ACME", "Other Manager", null);
+        StubCustomerDAO customers = new StubCustomerDAO();
+        customers.customers = List.of(globalOverlap, distinct);
+        StubAssignmentDAO assignments = new StubAssignmentDAO();
+        assignments.personalCustomers = List.of(customer(" Acme ", "Other Manager", "Same Name"));
+        RequestFixture request = new RequestFixture();
+
+        new MaintenanceServlet(new StubRecordDAO(), customers, assignments, FIXED_CLOCK)
+                .doGet(request.proxy(), response());
+
+        assertEquals(Map.of("Other Manager", List.of(distinct)),
+                request.attributes.get("inspectorCustomers"));
+        assertSame(assignments.personalCustomers,
+                request.attributes.get("personalMaintenanceCustomers"));
     }
 
     @Test

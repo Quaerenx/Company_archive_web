@@ -32,6 +32,18 @@ class MaintenanceHistoryViewContractTest {
                 "class=\"maintenance-customer-title-link\""));
         assertTrue(page.contains(
                 "href=\"<c:out value='${customerDetailUrl}' />\""));
+        int headerActionsStart = page.indexOf("<jsp:attribute name=\"actions\">");
+        String headerActions = page.substring(headerActionsStart,
+                page.indexOf("</jsp:attribute>", headerActionsStart));
+        assertTrue(headerActions.contains("maintenance-customer-info-button"));
+        assertTrue(headerActions.contains("고객사 정보"));
+        assertFalse(headerActions.contains("maintenanceHistoryExportUrl"));
+        int exportActions = page.indexOf("class=\"history-export-actions\"");
+        assertTrue(exportActions > page.lastIndexOf("</c:choose>"));
+        String exportAction = page.substring(exportActions);
+        assertTrue(exportAction.contains("history-export-button"));
+        assertTrue(exportAction.contains(
+                "href=\"<c:out value='${maintenanceHistoryExportUrl}' />\""));
         assertTrue(page.contains(
                 "class=\"history-filter-form ui-table-toolbar ui-form ui-form--compact\""));
         assertTrue(page.contains("name=\"historyYear\""));

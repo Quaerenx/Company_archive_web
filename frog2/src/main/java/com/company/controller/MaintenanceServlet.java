@@ -9,10 +9,12 @@ import java.sql.Date;
 import java.time.Clock;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import com.company.model.CustomerDAO;
@@ -202,13 +204,15 @@ public class MaintenanceServlet extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response,
             UserDTO user) throws ServletException, IOException {
-        Map<String, List<CustomerDTO>> inspectorCustomers =
-                prioritizeInspector(
-                        getInspectorCustomersMap(),
-                        user.getUserName());
         List<CustomerDTO> personalMaintenanceCustomers =
                 customerAssignmentDAO.getMaintenanceCustomersByAssignee(
                         user.getUserId(), user.getUserName());
+        Map<String, List<CustomerDTO>> inspectorCustomers =
+                excludePersonalCustomers(
+                        prioritizeInspector(
+                                getInspectorCustomersMap(),
+                                user.getUserName()),
+                        personalMaintenanceCustomers);
         request.setAttribute("inspectorCustomers", inspectorCustomers);
         request.setAttribute(
                 "personalMaintenanceCustomers",
@@ -358,6 +362,29 @@ public class MaintenanceServlet extends HttpServlet {
         }
         inspectorCustomers.forEach(ordered::putIfAbsent);
         return ordered;
+    }
+
+    private Map<String, List<CustomerDTO>> excludePersonalCustomers(
+            Map<String, List<CustomerDTO>> inspectorCustomers,
+            List<CustomerDTO> personalMaintenanceCustomers) {
+        Set<String> personalCustomerNames = new HashSet<>();
+        for (CustomerDTO customer : personalMaintenanceCustomers) {
+            String customerName = trimToNull(customer.getCustomerName());
+            if (customerName != null) {
+                personalCustomerNames.add(customerName);
+            }
+        }
+        Map<String, List<CustomerDTO>> remainingCustomers = new LinkedHashMap<>();
+        inspectorCustomers.forEach((inspector, customers) -> {
+            List<CustomerDTO> remaining = customers.stream()
+                    .filter(customer -> !personalCustomerNames.contains(
+                            trimToNull(customer.getCustomerName())))
+                    .toList();
+            if (!remaining.isEmpty()) {
+                remainingCustomers.put(inspector, remaining);
+            }
+        });
+        return remainingCustomers;
     }
 
     private Map<String, String> getMaintenanceFrequencyLabels() {

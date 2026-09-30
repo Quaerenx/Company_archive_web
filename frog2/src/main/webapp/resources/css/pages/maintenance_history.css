@@ -39,6 +39,22 @@
     min-width: 0;
 }
 
+.maintenance-history .history-export-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.maintenance-history .history-export-button {
+    background: var(--color-surface-subtle);
+    border-color: var(--color-secondary);
+    color: var(--color-text-muted);
+}
+
+.maintenance-history .history-export-button:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+}
+
 .maintenance-history .history-chart-container {
     margin-bottom: var(--space-16);
 }
