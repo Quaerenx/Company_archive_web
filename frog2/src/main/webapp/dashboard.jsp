@@ -54,7 +54,16 @@
         <span id="dashboardMaintenanceMonthHelp" class="sr-only">
           좌우 방향키, Home, End로 월을 변경할 수 있습니다.
         </span>
-        <span id="dashboardMaintenanceMonthScope" class="maintenance-month-scope">나의·전체 점검에 적용</span>
+        <span id="dashboardMaintenanceMonthScope" class="maintenance-month-scope">
+          <span id="maintenanceMonthScopeText">나의·전체 점검에 적용</span>
+          <span id="maintenanceLoadingState" role="status" aria-live="polite" hidden>점검 현황을 불러오는 중…</span>
+        </span>
+        <div id="maintenanceMonthError" class="maintenance-month-error" role="alert" hidden>
+          <span>점검 현황을 불러오지 못했습니다. 다시 시도해 주세요.</span>
+          <button type="button" id="retryMaintenanceMonthBtn"
+                  class="ui-button button--secondary button--sm">다시 시도</button>
+        </div>
+        <span id="maintenanceMonthAnnouncement" class="sr-only" role="status" aria-live="polite"></span>
       </div>
     </jsp:attribute>
   </t:pageHeader>
@@ -168,14 +177,6 @@
     <div class="maintenance-month-body ui-section-body ui-section-body--flush"
          id="maintenanceMonthBoardBody"
          aria-busy="false">
-      <div class="dashboard-state dashboard-state--loading"
-           id="maintenanceLoadingState"
-           role="status"
-           aria-live="polite"
-           hidden>
-        점검 현황을 불러오는 중입니다.
-      </div>
-
       <c:choose>
         <c:when test="${not maintenanceDataLoaded}">
           <div class="dashboard-state dashboard-state--error" role="alert">

@@ -37,6 +37,21 @@ class DashboardViewContractTest {
     }
 
     @Test
+    void monthRefreshKeepsExistingContentsAndOffersRetryWithoutReloading() throws Exception {
+        String page = read("dashboard.jsp");
+        assertTrue(page.indexOf("id=\"maintenanceLoadingState\"")
+                < page.indexOf("id=\"maintenanceMonthBoardBody\""));
+        assertTrue(page.contains("id=\"retryMaintenanceMonthBtn\""));
+        assertTrue(page.contains("id=\"maintenanceMonthAnnouncement\""));
+        String styles = read("resources/css/pages/dashboard.css");
+        assertFalse(styles.contains(".is-loading > :not(#maintenanceLoadingState)"));
+        assertTrue(styles.contains(".personal-maintenance-board.is-loading .ui-section-body"));
+        String behavior = read("resources/js/pages/dashboard.js");
+        assertFalse(behavior.contains("window.location.assign("));
+        assertTrue(behavior.contains("window.Frog2Session.requireActiveSession(response)"));
+    }
+
+    @Test
     void dashboardKeepsMaintenanceContractWithoutQuickActionsOrPersonalHosts() throws Exception {
         String page = read("dashboard.jsp");
         String customerLinks = read("WEB-INF/tags/monthlyMaintenanceCustomerList.tag");
@@ -84,7 +99,7 @@ class DashboardViewContractTest {
         assertTrue(behavior.contains("frog2.dashboard.monthly-maintenance.collapsed"));
         assertTrue(behavior.contains("setAttribute('aria-expanded'"));
         assertTrue(behavior.contains("event.button !== 0"));
-        assertTrue(behavior.contains("maintenanceBody.classList.add('is-loading')"));
+        assertTrue(behavior.contains("board.classList.toggle('is-loading', loading)"));
         assertFalse(behavior.contains("maintenanceItems"));
         assertFalse(behavior.contains("maintenanceGroups"));
         assertFalse(behavior.contains("maintenance-kpi-link"));

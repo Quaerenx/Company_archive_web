@@ -82,6 +82,7 @@
 }
 
 .dashboard-page .maintenance-month-scope {
+  min-inline-size: 11rem;
   grid-column: 2;
   grid-row: 2;
 }
@@ -175,7 +176,23 @@
   display: none;
 }
 
-.dashboard-page .maintenance-month-body.is-loading > :not(#maintenanceLoadingState) {
+.dashboard-page .maintenance-month-body.is-loading,
+.dashboard-page .personal-maintenance-board.is-loading .ui-section-body {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.dashboard-page .maintenance-month-error {
+  align-items: center;
+  color: var(--color-danger-text);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--font-size-xs);
+  gap: var(--space-8);
+  grid-column: 1 / -1;
+}
+
+.dashboard-page .maintenance-month-error[hidden] {
   display: none;
 }
 

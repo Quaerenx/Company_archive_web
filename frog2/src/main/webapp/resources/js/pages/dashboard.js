@@ -4,17 +4,38 @@
   const maintenanceBody = document.getElementById('maintenanceMonthBoardBody');
   const personalMaintenanceBoard = document.querySelector(
       '[data-personal-section="dashboard-maintenance"]');
-  const toggleMaintenanceBtn =
-      document.getElementById('toggleMaintenanceBoardBtn');
-  const maintenanceCollapseStorageKey =
-      'frog2.dashboard.monthly-maintenance.collapsed';
+  const maintenanceMonthLabel = document.querySelector(
+      '#maintenanceMonthTitle .maintenance-month-label');
+  const toggleMaintenanceBtn = document.getElementById('toggleMaintenanceBoardBtn');
+  const maintenanceCollapseStorageKey = 'frog2.dashboard.monthly-maintenance.collapsed';
   const loadingState = document.getElementById('maintenanceLoadingState');
+  const scopeText = document.getElementById('maintenanceMonthScopeText');
+  const errorState = document.getElementById('maintenanceMonthError');
+  const retryButton = document.getElementById('retryMaintenanceMonthBtn');
+  const announcement = document.getElementById('maintenanceMonthAnnouncement');
+  const monthViewport = document.querySelector('.maintenance-month-tabs');
+  const monthTrack = document.querySelector('.maintenance-month-track');
+  const monthLinks = Array.from(document.querySelectorAll('.maintenance-month-tab'));
+  let currentMonthLink = monthLinks.find(function (link) {
+    return link.getAttribute('aria-current') === 'page';
+  });
+  const initialMonthLink = currentMonthLink;
+  const initialScrollRestoration = window.history && window.history.scrollRestoration;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const carouselAvailable = monthViewport && monthTrack && currentMonthLink
+      && maintenanceBody && personalMaintenanceBoard && maintenanceMonthLabel
+      && typeof monthTrack.animate === 'function'
+      && typeof window.fetch === 'function'
+      && typeof window.AbortController === 'function'
+      && typeof window.DOMParser === 'function'
+      && window.history && typeof window.history.pushState === 'function';
+  let positionAnimation = null;
+  let pendingRequest = null;
+  let failedRequest = null;
 
   function writeCollapsePreference(collapsed) {
     try {
-      window.localStorage.setItem(
-          maintenanceCollapseStorageKey,
-          collapsed ? 'true' : 'false');
+      window.localStorage.setItem(maintenanceCollapseStorageKey, collapsed ? 'true' : 'false');
     } catch (ignore) {
       // The dashboard remains usable when browser storage is unavailable.
     }
@@ -30,9 +51,7 @@
   }
 
   function setMaintenanceCollapsed(collapsed) {
-    if (!maintenanceBody || !toggleMaintenanceBtn) {
-      return;
-    }
+    if (!maintenanceBody || !toggleMaintenanceBtn) return;
     maintenanceBody.classList.toggle('is-collapsed', collapsed);
     toggleMaintenanceBtn.textContent = collapsed ? '펼치기' : '접기';
     toggleMaintenanceBtn.setAttribute('aria-expanded', String(!collapsed));
@@ -41,51 +60,52 @@
 
   if (toggleMaintenanceBtn && maintenanceBody) {
     toggleMaintenanceBtn.addEventListener('click', function () {
-      setMaintenanceCollapsed(
-          !maintenanceBody.classList.contains('is-collapsed'));
+      setMaintenanceCollapsed(!maintenanceBody.classList.contains('is-collapsed'));
     });
   }
 
-  function setMaintenanceLoading(loading) {
-    if (personalMaintenanceBoard) {
-      personalMaintenanceBoard.setAttribute('aria-busy', String(loading));
-    }
-    if (loadingState) {
-      loadingState.hidden = !loading;
-    }
-    if (maintenanceBody) {
-      if (loading) {
-        maintenanceBody.classList.add('is-loading');
-      } else {
-        maintenanceBody.classList.remove('is-loading');
-      }
-      maintenanceBody.setAttribute('aria-busy', String(loading));
-    }
+  function showLoadingIndicator(visible) {
+    if (loadingState) loadingState.hidden = !visible;
+    if (scopeText) scopeText.hidden = visible;
   }
 
-  const monthViewport = document.querySelector('.maintenance-month-tabs');
-  const monthTrack = document.querySelector('.maintenance-month-track');
-  const monthLinks = Array.from(document.querySelectorAll('.maintenance-month-tab'));
-  const currentMonthLink = monthLinks.find(function (link) {
-    return link.getAttribute('aria-current') === 'page';
-  });
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const monthFocusStorageKey = 'frog2.dashboard.month.focus';
-  const carouselAvailable = monthViewport && monthTrack && currentMonthLink
-      && typeof monthTrack.animate === 'function';
-  let positionAnimation = null;
-  let pendingMonthLink = null;
-  let keyboardSelection = false;
-  let navigationStarted = false;
+  function setMaintenanceLoading(loading) {
+    for (const board of [personalMaintenanceBoard, maintenanceBody]) {
+      if (!board) continue;
+      board.setAttribute('aria-busy', String(loading));
+      board.classList.toggle('is-loading', loading);
+      board.inert = loading;
+    }
+    if (monthViewport) monthViewport.setAttribute('aria-busy', String(loading));
+    if (!loading) showLoadingIndicator(false);
+  }
+
+  function clearRequest() {
+    if (!pendingRequest) return;
+    const previous = pendingRequest;
+    pendingRequest = null;
+    window.clearTimeout(previous.loadingTimer);
+    window.clearTimeout(previous.timeoutTimer);
+    previous.controller.abort();
+  }
+
+  function setActiveMonth(link) {
+    monthLinks.forEach(function (monthLink) {
+      monthLink.classList.toggle('active', monthLink === link);
+      monthLink.setAttribute('tabindex', monthLink === link ? '0' : '-1');
+      if (monthLink === currentMonthLink) {
+        monthLink.setAttribute('aria-current', 'page');
+      } else {
+        monthLink.removeAttribute('aria-current');
+      }
+    });
+  }
 
   function centerMonth(link, animate) {
     const startTransform = window.getComputedStyle(monthTrack).transform;
-    const offset = monthViewport.clientWidth / 2
-        - link.offsetLeft - link.offsetWidth / 2;
-    if (positionAnimation) {
-      positionAnimation.cancel();
-    }
-    const animation = monthTrack.animate([
+    const offset = monthViewport.clientWidth / 2 - link.offsetLeft - link.offsetWidth / 2;
+    if (positionAnimation) positionAnimation.cancel();
+    positionAnimation = monthTrack.animate([
       { transform: startTransform },
       { transform: 'translateX(' + offset + 'px)' }
     ], {
@@ -93,96 +113,132 @@
       easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
       fill: 'forwards'
     });
-    positionAnimation = animation;
-    animation.onfinish = function () {
-      if (positionAnimation !== animation || !pendingMonthLink || navigationStarted) {
-        return;
-      }
-      if (keyboardSelection) {
-        try {
-          window.sessionStorage.setItem(monthFocusStorageKey,
-              new URL(pendingMonthLink.href).searchParams.get('maintenanceMonth'));
-        } catch (ignore) {
-          // Native links remain usable when focus persistence is unavailable.
-        }
-      }
-      navigationStarted = true;
-      monthLinks.forEach(function (link) {
-        link.setAttribute('aria-disabled', 'true');
-      });
-      window.location.assign(pendingMonthLink.href);
-    };
   }
 
-  function selectMonth(link, fromKeyboard) {
-    if (navigationStarted || link === pendingMonthLink) {
-      return;
-    }
-    pendingMonthLink = link === currentMonthLink ? null : link;
-    keyboardSelection = fromKeyboard;
-    monthLinks.forEach(function (monthLink) {
-      monthLink.classList.toggle('active', monthLink === link);
-      monthLink.setAttribute('tabindex', monthLink === link ? '0' : '-1');
-    });
-    monthViewport.setAttribute('aria-busy', String(Boolean(pendingMonthLink)));
-    setMaintenanceLoading(Boolean(pendingMonthLink));
-    centerMonth(link, true);
+  function syncHistory(link, mode) {
+    if (mode === 'none') return;
+    const url = new URL(window.location.href);
+    const month = new URL(link.href).searchParams.get('maintenanceMonth');
+    url.searchParams.set('maintenanceMonth', month);
+    window.history[mode === 'replace' ? 'replaceState' : 'pushState'](
+        Object.assign({}, window.history.state, { maintenanceMonth: month }),
+        '', url.pathname + url.search + url.hash);
   }
 
-  function resetMonthCarousel() {
-    if (!carouselAvailable) {
-      return;
-    }
-    pendingMonthLink = null;
-    keyboardSelection = false;
-    navigationStarted = false;
-    let restoreFocus = monthLinks.includes(document.activeElement);
-    monthLinks.forEach(function (link) {
-      link.classList.toggle('active', link === currentMonthLink);
-      link.setAttribute('tabindex', link === currentMonthLink ? '0' : '-1');
-      link.removeAttribute('aria-disabled');
+  function cloneContents(node) {
+    return Array.from(node.childNodes, function (child) {
+      return document.importNode(child, true);
     });
-    monthViewport.setAttribute('aria-busy', 'false');
-    centerMonth(currentMonthLink, false);
+  }
+
+  function readMaintenanceContents(html, link) {
+    const page = new window.DOMParser().parseFromString(html, 'text/html');
+    if (page.body.getAttribute('data-user-id') !== document.body.getAttribute('data-user-id')) {
+      window.Frog2Session.requireActiveSession({ status: 401 });
+    }
+    const selected = page.querySelector('.maintenance-month-tab[aria-current="page"]');
+    const personal = page.querySelector('[data-personal-section="dashboard-maintenance"]');
+    const body = page.getElementById('maintenanceMonthBoardBody');
+    const label = page.querySelector('#maintenanceMonthTitle .maintenance-month-label');
+    const personalLabel = page.querySelector('#personalMaintenanceTitle .maintenance-month-label');
+    const month = new URL(link.href).searchParams.get('maintenanceMonth');
+    if (!selected || new URL(selected.getAttribute('href'), window.location.href)
+        .searchParams.get('maintenanceMonth') !== month
+        || !personal || !body || !label || !personalLabel
+        || label.textContent.trim() !== month || personalLabel.textContent.trim() !== month
+        || personal.querySelector('.dashboard-state--error')
+        || body.querySelector('.dashboard-state--error')) {
+      throw new Error('The dashboard month response is incomplete or inconsistent');
+    }
+    return { personal: cloneContents(personal), body: cloneContents(body), label: label.textContent };
+  }
+
+  async function loadMonth(request) {
     try {
-      const focusMonth = window.sessionStorage.getItem(monthFocusStorageKey);
-      window.sessionStorage.removeItem(monthFocusStorageKey);
-      if (focusMonth === new URL(currentMonthLink.href).searchParams.get('maintenanceMonth')) {
-        restoreFocus = true;
+      const response = await window.fetch(request.link.href, {
+        headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin', cache: 'no-store', signal: request.controller.signal
+      });
+      if (pendingRequest !== request) return;
+      window.Frog2Session.requireActiveSession(response);
+      if (!response.ok || !response.headers.get('Content-Type')?.includes('text/html')) {
+        throw new Error('Unable to load dashboard month (HTTP ' + response.status + ')');
       }
-    } catch (ignore) {
-      // Focus restoration is optional when browser storage is unavailable.
+      const html = await response.text();
+      if (pendingRequest !== request) return;
+      const contents = readMaintenanceContents(html, request.link);
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+      syncHistory(request.link, request.historyMode);
+      personalMaintenanceBoard.replaceChildren(...contents.personal);
+      maintenanceBody.replaceChildren(...contents.body);
+      maintenanceMonthLabel.textContent = contents.label;
+      currentMonthLink = request.link;
+      clearRequest();
+      setActiveMonth(currentMonthLink);
+      setMaintenanceLoading(false);
+      window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
+      if (announcement) announcement.textContent = contents.label + ' 점검 현황을 업데이트했습니다.';
+    } catch (error) {
+      if (pendingRequest !== request) return;
+      clearRequest();
+      setActiveMonth(currentMonthLink);
+      setMaintenanceLoading(false);
+      centerMonth(currentMonthLink, true);
+      if (monthLinks.includes(document.activeElement)) currentMonthLink.focus({ preventScroll: true });
+      if (request.historyMode === 'none') syncHistory(currentMonthLink, 'replace');
+      if (window.Frog2Session.isSessionExpired(error)) return;
+      failedRequest = request;
+      if (errorState) errorState.hidden = false;
     }
-    if (restoreFocus) {
-      currentMonthLink.focus({ preventScroll: true });
+  }
+
+  function selectMonth(link, fromKeyboard, historyMode = 'push') {
+    if (pendingRequest && pendingRequest.link === link) return;
+    clearRequest();
+    failedRequest = null;
+    if (errorState) errorState.hidden = true;
+    if (announcement) announcement.textContent = '';
+    showLoadingIndicator(false);
+    setActiveMonth(link);
+    if (fromKeyboard || monthLinks.includes(document.activeElement)) link.focus({ preventScroll: true });
+    centerMonth(link, true);
+    if (link === currentMonthLink) {
+      setMaintenanceLoading(false);
+      return;
     }
+    const request = { link: link, historyMode: historyMode, controller: new window.AbortController() };
+    pendingRequest = request;
+    setMaintenanceLoading(true);
+    request.loadingTimer = window.setTimeout(function () {
+      if (pendingRequest === request) showLoadingIndicator(true);
+    }, 250);
+    request.timeoutTimer = window.setTimeout(function () {
+      if (pendingRequest === request) request.controller.abort();
+    }, 15000);
+    loadMonth(request);
+  }
+
+  function monthFromLocation() {
+    const month = new URL(window.location.href).searchParams.get('maintenanceMonth');
+    return monthLinks.find(function (link) {
+      return new URL(link.href).searchParams.get('maintenanceMonth') === month;
+    }) || initialMonthLink;
   }
 
   monthLinks.forEach(function (link, index) {
     link.addEventListener('click', function (event) {
-      if (event.defaultPrevented
-          || event.button !== 0
-          || event.metaKey
-          || event.ctrlKey
-          || event.shiftKey
-          || event.altKey) {
-        return;
-      }
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey
+          || event.shiftKey || event.altKey) return;
       if (carouselAvailable) {
         event.preventDefault();
         selectMonth(link, event.detail === 0);
-      } else if (link !== currentMonthLink) {
-        setMaintenanceLoading(true);
       }
     });
-    if (!carouselAvailable) {
-      return;
-    }
+    if (!carouselAvailable) return;
     link.addEventListener('keydown', function (event) {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey
-          || event.shiftKey || event.altKey) {
-        return;
-      }
+          || event.shiftKey || event.altKey) return;
       let nextIndex;
       switch (event.key) {
         case 'ArrowLeft': nextIndex = Math.max(0, index - 1); break;
@@ -193,19 +249,25 @@
         default: return;
       }
       event.preventDefault();
-      if (navigationStarted) {
-        return;
-      }
-      monthLinks[nextIndex].focus({ preventScroll: true });
       selectMonth(monthLinks[nextIndex], true);
     });
   });
 
+  if (retryButton) {
+    retryButton.addEventListener('click', function () {
+      if (!failedRequest) return;
+      selectMonth(failedRequest.link, true,
+          failedRequest.historyMode === 'none' ? 'replace' : failedRequest.historyMode);
+    });
+  }
+
   if (carouselAvailable) {
     monthViewport.classList.add('is-carousel');
-    resetMonthCarousel();
+    setActiveMonth(currentMonthLink);
+    centerMonth(currentMonthLink, false);
+    window.history.scrollRestoration = 'manual';
     const recenter = function () {
-      centerMonth(pendingMonthLink || currentMonthLink, false);
+      centerMonth(pendingRequest ? pendingRequest.link : currentMonthLink, false);
     };
     if (typeof window.ResizeObserver === 'function') {
       const observer = new window.ResizeObserver(recenter);
@@ -215,22 +277,24 @@
       window.addEventListener('resize', recenter);
     }
     reducedMotion.addEventListener('change', function () {
-      if (reducedMotion.matches) {
-        recenter();
-      }
+      if (reducedMotion.matches) recenter();
+    });
+    window.addEventListener('popstate', function () {
+      selectMonth(monthFromLocation(), false, 'none');
     });
   }
 
   window.addEventListener('pagehide', function () {
-    pendingMonthLink = null;
-    if (positionAnimation) {
-      positionAnimation.cancel();
-    }
+    clearRequest();
+    if (positionAnimation) positionAnimation.cancel();
+    if (carouselAvailable) window.history.scrollRestoration = initialScrollRestoration;
   });
 
   window.addEventListener('pageshow', function () {
+    if (!carouselAvailable) return;
+    window.history.scrollRestoration = 'manual';
     setMaintenanceLoading(false);
-    resetMonthCarousel();
+    selectMonth(monthFromLocation(), false, 'none');
   });
 
   setMaintenanceCollapsed(readCollapsePreference(false));
