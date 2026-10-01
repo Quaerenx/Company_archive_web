@@ -92,7 +92,14 @@ class DevelopmentServerSmokeTest {
         assertTrue(login.body().contains("id=\"loginForm\""));
         assertTrue(login.body().contains("autocomplete=\"off\""));
         assertFalse(login.body().contains("autocomplete=\"on\""));
-        assertTrue(login.body().contains("autocomplete=\"username\""));
+        for (String inputId : List.of("userId", "password")) {
+            assertTrue(Pattern.compile(
+                    "<input\\b(?=[^>]*\\bid=\"" + inputId + "\")"
+                            + "(?=[^>]*\\bautocomplete=\"off\")[^>]*>",
+                    Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
+                    .matcher(login.body()).find(),
+                    "Login history autocomplete must be disabled: " + inputId);
+        }
         assertTrue(CSRF_INPUT.matcher(login.body()).find());
         assertEquals("nosniff", header(login, "X-Content-Type-Options"));
         assertTrue(header(login, "Cache-Control").contains("no-store"));
