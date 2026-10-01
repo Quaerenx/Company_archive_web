@@ -27,27 +27,33 @@
       <div class="maintenance-month-selector">
         <span class="maintenance-month-selector-label">점검 월</span>
         <nav class="maintenance-month-tabs" aria-label="점검 월 선택"
-             aria-describedby="dashboardMaintenanceMonthScope">
-          <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
-            <c:url value="/dashboard" var="monthTabUrl">
-              <c:param name="maintenanceMonth" value="${monthTab.value}" />
-            </c:url>
-            <c:choose>
-              <c:when test="${monthTab.active}">
-                <a class="maintenance-month-tab active"
-                   href="${monthTabUrl}"
-                   aria-current="page">
-                  <c:out value="${monthTab.label}" />
-                </a>
-              </c:when>
-              <c:otherwise>
-                <a class="maintenance-month-tab" href="${monthTabUrl}">
-                  <c:out value="${monthTab.label}" />
-                </a>
-              </c:otherwise>
-            </c:choose>
-          </c:forEach>
+             aria-describedby="dashboardMaintenanceMonthScope dashboardMaintenanceMonthHelp"
+             aria-busy="false">
+          <div class="maintenance-month-track">
+            <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
+              <c:url value="/dashboard" var="monthTabUrl">
+                <c:param name="maintenanceMonth" value="${monthTab.value}" />
+              </c:url>
+              <c:choose>
+                <c:when test="${monthTab.active}">
+                  <a class="maintenance-month-tab active"
+                     href="${monthTabUrl}"
+                     aria-current="page">
+                    <span><c:out value="${monthTab.label}" /></span>
+                  </a>
+                </c:when>
+                <c:otherwise>
+                  <a class="maintenance-month-tab" href="${monthTabUrl}">
+                    <span><c:out value="${monthTab.label}" /></span>
+                  </a>
+                </c:otherwise>
+              </c:choose>
+            </c:forEach>
+          </div>
         </nav>
+        <span id="dashboardMaintenanceMonthHelp" class="sr-only">
+          좌우 방향키, Home, End로 월을 변경할 수 있습니다.
+        </span>
         <span id="dashboardMaintenanceMonthScope" class="maintenance-month-scope">나의·전체 점검에 적용</span>
       </div>
     </jsp:attribute>

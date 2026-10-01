@@ -36,6 +36,35 @@ class DashboardServletQueryContractTest {
             ZoneId.of("Asia/Seoul"));
 
     @Test
+    void availableMonthsAndQueryBoundsFollowTheServerSelectionAcrossYearEnd() throws Exception {
+        Clock januaryClock = Clock.fixed(
+                Instant.parse("2026-01-15T03:00:00Z"), ZoneId.of("Asia/Seoul"));
+        for (String rawMonth : new String[] {null, "2026-01", "2025-12", "2025-11", "invalid"}) {
+            StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
+            DashboardServlet servlet = new DashboardServlet(
+                    maintenanceDAO, new StubCustomerAssignmentDAO(), januaryClock);
+            RequestFixture request = new RequestFixture();
+            request.parameters.put("maintenanceMonth", rawMonth);
+
+            servlet.doGet(request.proxy(), new ResponseFixture().proxy());
+
+            String expected = "2025-12".equals(rawMonth) ? "2025-12" : "2026-01";
+            YearMonth selected = YearMonth.parse(expected);
+            assertEquals(expected, request.attributes.get("maintenanceMonthParam"));
+            assertEquals(expected, request.attributes.get("maintenanceMonthLabel"));
+            assertEquals(Date.valueOf(selected.atDay(1)), maintenanceDAO.lastStartDate);
+            assertEquals(Date.valueOf(selected.plusMonths(1).atDay(1)), maintenanceDAO.lastEndDate);
+            @SuppressWarnings("unchecked")
+            List<DashboardServlet.MonthTab> tabs =
+                    (List<DashboardServlet.MonthTab>) request.attributes.get("maintenanceMonthTabs");
+            assertEquals(List.of("2025-12", "2026-01"),
+                    tabs.stream().map(DashboardServlet.MonthTab::getValue).toList());
+            assertEquals(List.of(expected), tabs.stream().filter(DashboardServlet.MonthTab::isActive)
+                    .map(DashboardServlet.MonthTab::getValue).toList());
+        }
+    }
+
+    @Test
     void dashboardLoadsOnlyMaintenanceSummaryAndViewContract() throws Exception {
         StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
         LocalDate today = LocalDate.now(FIXED_CLOCK);
@@ -380,10 +409,14 @@ class DashboardServletQueryContractTest {
     private static final class StubMaintenanceRecordDAO extends MaintenanceRecordDAO {
         private List<MaintenanceRecordDTO> records = new ArrayList<>();
         private int monthCalls;
+        private Date lastStartDate;
+        private Date lastEndDate;
 
         @Override
         public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
             monthCalls++;
+            lastStartDate = startDate;
+            lastEndDate = endDate;
             return records;
         }
     }

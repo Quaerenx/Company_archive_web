@@ -12,6 +12,23 @@ class DashboardViewContractTest {
     private static final Path WEBAPP = Path.of("src/main/webapp");
 
     @Test
+    void monthCarouselUsesServerLinksAndKeepsTheSelectionSlotFixed() throws Exception {
+        String page = read("dashboard.jsp");
+        assertTrue(page.contains("items=\"${maintenanceMonthTabs}\""));
+        assertTrue(page.contains("class=\"maintenance-month-track\""));
+        assertTrue(page.contains("<c:param name=\"maintenanceMonth\" value=\"${monthTab.value}\" />"));
+        assertTrue(page.contains("dashboardMaintenanceMonthHelp"));
+        assertTrue(page.contains("aria-current=\"page\""));
+        String styles = read("resources/css/pages/dashboard.css");
+        String slot = cssRule(styles,
+                ".dashboard-page .maintenance-month-tabs.is-carousel::before");
+        assertTrue(slot.contains("inset-inline-start: 50%;"));
+        assertTrue(slot.contains("background: var(--color-surface-selected);"));
+        assertTrue(slot.contains("pointer-events: none;"));
+        assertTrue(styles.contains("min-block-size: 44px;"));
+    }
+
+    @Test
     void dashboardKeepsMaintenanceContractWithoutQuickActionsOrPersonalHosts() throws Exception {
         String page = read("dashboard.jsp");
         String customerLinks = read("WEB-INF/tags/monthlyMaintenanceCustomerList.tag");

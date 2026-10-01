@@ -65,9 +65,10 @@
 
 .dashboard-page .maintenance-month-selector {
   align-items: center;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-8) var(--space-12);
+  grid-template-columns: max-content minmax(0, 21rem) max-content;
+  justify-content: start;
 }
 
 .dashboard-page .maintenance-month-selector-label,
@@ -77,13 +78,19 @@
 }
 
 .dashboard-page .maintenance-month-tabs {
-  align-items: center;
-  background: transparent;
-  border: 0;
+  --month-slot-width: 6.5rem;
   border-radius: var(--radius-lg);
-  display: inline-flex;
-  gap: var(--space-2);
-  padding: 0;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding-block: var(--space-8);
+}
+
+.dashboard-page .maintenance-month-track {
+  align-items: center;
+  display: flex;
+  gap: var(--space-8);
+  inline-size: max-content;
+  position: relative;
 }
 
 .dashboard-page .maintenance-month-tab {
@@ -91,28 +98,57 @@
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   display: inline-flex;
+  flex: 0 0 var(--month-slot-width);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
   justify-content: center;
-  min-block-size: var(--control-height-md);
-  padding-inline: var(--space-12);
+  min-block-size: 44px;
   text-decoration: none;
-  transition:
-    background-color var(--motion-fast) var(--motion-ease),
-    color var(--motion-fast) var(--motion-ease);
+  transition: color var(--motion-fast) var(--motion-ease);
   white-space: nowrap;
 }
 
+.dashboard-page .maintenance-month-tab > span {
+  display: inline-block;
+  transform: scale(0.9);
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
 .dashboard-page .maintenance-month-tab:hover {
-  background: var(--color-surface-muted);
   color: var(--color-text-strong);
   text-decoration: none;
 }
 
 .dashboard-page .maintenance-month-tab.active {
-  background: var(--color-primary-subtle);
-  box-shadow: none;
-  color: var(--color-primary);
+  background: var(--color-surface-selected);
+  color: var(--color-text-strong);
+  font-weight: 600;
+}
+
+.dashboard-page .maintenance-month-tab.active > span {
+  transform: scale(1);
+}
+
+.dashboard-page .maintenance-month-tabs.is-carousel {
+  overflow: hidden;
+  position: relative;
+}
+
+.dashboard-page .maintenance-month-tabs.is-carousel::before {
+  background: var(--color-surface-selected);
+  border-radius: var(--radius-md);
+  content: '';
+  inline-size: var(--month-slot-width);
+  inset-block: var(--space-8);
+  inset-inline-start: 50%;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.dashboard-page .maintenance-month-tabs.is-carousel .maintenance-month-tab.active {
+  background: transparent;
 }
 
 .dashboard-page .maintenance-month-body {
@@ -345,13 +381,12 @@
     width: 100%;
   }
 
-  .dashboard-page .maintenance-month-tabs {
-    flex: 1 1 auto;
+  .dashboard-page .maintenance-month-selector {
+    grid-template-columns: max-content minmax(0, 21rem);
   }
 
-  .dashboard-page .maintenance-month-tab {
-    flex: 1 1 0;
-    min-width: 0;
+  .dashboard-page .maintenance-month-scope {
+    grid-column: 2;
   }
 
   .dashboard-page .maintenance-assignee-grid {
@@ -372,6 +407,18 @@
 }
 
 @media (max-width: 480px) {
+  .dashboard-page .maintenance-month-selector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-page .maintenance-month-tabs {
+    --month-slot-width: 4.75rem;
+  }
+
+  .dashboard-page .maintenance-month-scope {
+    grid-column: auto;
+  }
+
   .dashboard-page .dashboard-workspace {
     padding-inline: 0;
   }
@@ -424,14 +471,8 @@
 }
 
 .dashboard-page .dashboard-greeting-user,
-.dashboard-page .maintenance-month-tab,
 .dashboard-page .maintenance-assignee-name {
   font-weight: 600;
-}
-
-.dashboard-page .maintenance-month-tab.active {
-  background: var(--color-primary-subtle);
-  box-shadow: none;
 }
 
 .dashboard-page .maintenance-toggle-btn.button--secondary {
