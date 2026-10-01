@@ -9,7 +9,6 @@
   const toggleMaintenanceBtn = document.getElementById('toggleMaintenanceBoardBtn');
   const maintenanceCollapseStorageKey = 'frog2.dashboard.monthly-maintenance.collapsed';
   const loadingState = document.getElementById('maintenanceLoadingState');
-  const scopeText = document.getElementById('maintenanceMonthScopeText');
   const errorState = document.getElementById('maintenanceMonthError');
   const retryButton = document.getElementById('retryMaintenanceMonthBtn');
   const announcement = document.getElementById('maintenanceMonthAnnouncement');
@@ -66,7 +65,6 @@
 
   function showLoadingIndicator(visible) {
     if (loadingState) loadingState.hidden = !visible;
-    if (scopeText) scopeText.hidden = visible;
   }
 
   function setMaintenanceLoading(loading) {

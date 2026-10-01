@@ -34,17 +34,24 @@
               data-ui-submit-lock="auto">
             <input type="hidden" name="view" value="cards" />
             <input type="hidden" name="registrationStatus" value="<c:out value='${registrationStatus}' />" />
-            <label for="maintenanceMonth">점검 월</label>
+            <div class="maintenance-filter-heading">
+                <label for="maintenanceMonth">점검 월</label>
+                <span id="maintenanceMonthApplyNote">변경하면 바로 적용됩니다.</span>
+            </div>
             <input type="month"
                    id="maintenanceMonth"
                    name="maintenanceMonth"
                    min="1900-01"
                    max="2100-12"
                    value="<c:out value='${maintenanceMonthParam}' />"
-                   aria-describedby="maintenanceRegistrationNote"
+                   aria-describedby="maintenanceMonthApplyNote maintenanceRegistrationNote"
                    required />
-            <button type="submit" class="ui-button button--secondary button--sm">조회</button>
+            <noscript>
+                <button type="submit" class="ui-button button--secondary button--sm">조회</button>
+            </noscript>
         </form>
+        <div class="maintenance-registration-group">
+        <span class="maintenance-filter-label" id="maintenanceRegistrationFilterLabel">이력 등록 상태</span>
         <nav class="maintenance-registration-filters" aria-label="선택 월 이력 등록 상태">
             <c:forTokens items="all,registered,unregistered" delims="," var="statusOption">
                 <c:url var="maintenanceStatusUrl" value="/maintenance">
@@ -63,6 +70,7 @@
                 </a>
             </c:forTokens>
         </nav>
+        </div>
         <p class="maintenance-registration-note" id="maintenanceRegistrationNote">선택 월의 이력 등록 여부를 확인하세요.</p>
     </div>
     
@@ -92,12 +100,12 @@
                     </div>
                 </c:when>
                 <c:when test="${personalMaintenanceAssignedCount eq 0}">
-                    <div class="personal-maintenance-customers-empty ui-empty-state">
+                    <div class="personal-maintenance-customers-empty">
                         <strong>담당 고객사가 없습니다.</strong>
                     </div>
                 </c:when>
                 <c:otherwise>
-                    <div class="personal-maintenance-customers-empty ui-empty-state">
+                    <div class="personal-maintenance-customers-empty">
                         <strong>선택한 조건에 해당하는 담당 고객사가 없습니다.</strong>
                         <span>다른 월이나 등록 상태를 선택해 주세요.</span>
                     </div>

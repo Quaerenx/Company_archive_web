@@ -381,7 +381,9 @@ class UiDesignSystemContractTest {
         assertTrue(myPageHosts.contains(
                 "ui-button button--primary button--md"));
         assertTrue(myPageProfile.contains(
-                "ui-button button--secondary button--sm"));
+                "ui-button button--primary button--sm"));
+        assertTrue(myPageProfile.contains(
+                "mypage-text-link profile-summary__password-link"));
         assertFalse(myPageProfile.contains("btn btn-secondary"));
 
         String password = read("mypage/change_password.jsp");

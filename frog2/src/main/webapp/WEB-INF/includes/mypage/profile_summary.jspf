@@ -3,25 +3,32 @@
     <div class="profile-summary__identity">
         <h2 id="profileSummaryTitle"><c:out value="${userInfo.userName}" /></h2>
         <p class="profile-summary__meta">
-            <span><c:out value="${userInfo.userId}" /></span>
-            <span aria-hidden="true">·</span>
+            <c:if test="${userInfo.userName ne userInfo.userId}">
+                <span>아이디 <c:out value="${userInfo.userId}" /></span>
+                <span aria-hidden="true">·</span>
+            </c:if>
             <span>
                 <c:choose>
                     <c:when test="${not empty userInfo.department}">
                         <c:out value="${userInfo.department}" />
                     </c:when>
-                    <c:otherwise>소속 미등록</c:otherwise>
+                    <c:otherwise>
+                        <span class="profile-summary__missing-department">
+                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i> 소속 미등록
+                        </span>
+                        <span class="profile-summary__department-help">소속 정보 등록을 관리자에게 요청해 주세요.</span>
+                    </c:otherwise>
                 </c:choose>
             </span>
         </p>
     </div>
     <div class="profile-summary__actions">
         <a href="${pageContext.request.contextPath}/mypage?action=editProfile"
-           class="ui-button button--secondary button--sm">
+           class="ui-button button--primary button--sm">
             프로필 수정
         </a>
         <a href="${pageContext.request.contextPath}/mypage?action=changePassword"
-           class="ui-button button--secondary button--sm">
+           class="mypage-text-link profile-summary__password-link">
             비밀번호 변경
         </a>
     </div>

@@ -6,20 +6,20 @@
     .maintenance-management .maintenance-month-form { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-8); margin: 0; }
     .maintenance-management .maintenance-month-form label { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: 0; }
     .maintenance-management .maintenance-month-form input { inline-size: 164px; min-inline-size: 0; }
-    .maintenance-management .maintenance-registration-filters { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-inline-start: auto; }
+    .maintenance-management .maintenance-registration-filters { display: flex; flex-wrap: wrap; gap: var(--space-4); }
     .maintenance-management .maintenance-registration-filter[aria-current="page"] { background: var(--color-primary-subtle); border-color: var(--color-primary); color: var(--color-primary); }
     .maintenance-management .maintenance-registration-note { color: var(--color-text-muted); flex-basis: 100%; font-size: var(--font-size-xs); margin: 0; }
 
     /* 담당자별 섹션 */
     .maintenance-management .inspector-block { min-width: 0; }
-    .maintenance-management .inspector-section { display: flex; gap: var(--space-16); align-items: flex-start; }
+    .maintenance-management .inspector-section { display: flex; flex-direction: column; gap: var(--space-16); align-items: stretch; }
     .maintenance-management .inspector-header { min-width: 180px; border-left: 3px solid var(--color-primary); padding-left: var(--space-12); color: var(--color-text); font-weight: 600; font-size: var(--font-size-md); display: flex; align-items: center; gap: var(--space-8); background: transparent; box-shadow: none; border-radius: 0; }
     .maintenance-management .inspector-header i { color: currentColor; font-size: var(--icon-size-sm); }
     .maintenance-management .inspector-title { font-size: var(--font-size-md); }
     /* customer-count 제거 */
 
     /* 카드 그리드 */
-    .maintenance-management .customer-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-12); padding: 0; background: transparent; border: none; }
+    .maintenance-management .customer-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--space-12); padding: 0; background: transparent; border: none; }
 
     /* 고객사 카드 */
     .maintenance-management .customer-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: none; color: inherit; display: block; min-width: 0; padding: var(--space-16); margin: 0; text-decoration: none; transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease); cursor: pointer; position: relative; overflow: hidden; }
@@ -127,12 +127,82 @@
 }
 
 .maintenance-management [data-global-section="maintenance-customers"] {
+    align-items: start;
     display: grid;
-    gap: var(--page-section-gap);
+    gap: var(--space-20);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .maintenance-management .personal-maintenance-customers-empty {
     flex: 1;
     min-width: 0;
     width: 100%;
+}
+
+.maintenance-management .maintenance-card-toolbar {
+    align-items: start;
+    column-gap: var(--space-24);
+}
+
+.maintenance-management .maintenance-month-form,
+.maintenance-management .maintenance-registration-group {
+    display: grid;
+    gap: var(--space-8);
+}
+
+.maintenance-management .maintenance-filter-heading {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.maintenance-management .maintenance-filter-heading span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.maintenance-management .maintenance-filter-label {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.maintenance-management .maintenance-registration-filters {
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+}
+
+.maintenance-management .personal-maintenance-customers-empty {
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--font-size-sm);
+    gap: var(--space-8);
+}
+
+.maintenance-management .personal-maintenance-customers-empty strong {
+    font-weight: 400;
+}
+
+.maintenance-management .personal-maintenance-customers:has(.personal-maintenance-customers-empty) {
+    padding-block: var(--space-16);
+}
+
+.maintenance-management .personal-maintenance-customers:has(.personal-maintenance-customers-empty) .inspector-section {
+    align-items: center;
+    flex-direction: row;
+}
+
+@media (max-width: 768px) {
+    .maintenance-management [data-global-section="maintenance-customers"] {
+        grid-template-columns: 1fr;
+    }
+
+    .maintenance-management .personal-maintenance-customers:has(.personal-maintenance-customers-empty) .inspector-section {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-8);
+    }
 }

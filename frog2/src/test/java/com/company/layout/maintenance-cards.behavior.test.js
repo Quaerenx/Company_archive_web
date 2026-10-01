@@ -9,11 +9,20 @@ const source = fs.readFileSync(
     'src/main/webapp/resources/js/pages/maintenance_cards.js', 'utf8'
 );
 
-function harness(cardCount = 2) {
+function harness(cardCount = 2, hasMonthForm = false) {
     const listeners = { document: {}, window: {} };
     function listen(target, name, listener) {
         (listeners[target][name] ||= []).push(listener);
     }
+    let submissions = 0;
+    const monthListeners = [];
+    const month = {
+        value: '2026-09', defaultValue: '2026-09', valid: true,
+        checkValidity() { return this.valid; },
+        addEventListener(name, listener) { assert.equal(name, 'change'); monthListeners.push(listener); },
+        change() { monthListeners.forEach(listener => listener.call(this)); }
+    };
+    const monthForm = {requestSubmit() { submissions++; }};
     const cards = Array.from({ length: cardCount }, (_, index) => {
         const classes = new Set(['customer-card', index === 0 ? 'synthetic-personal' : 'synthetic-global']);
         const events = {};
@@ -37,13 +46,16 @@ function harness(cardCount = 2) {
     vm.runInNewContext(source, {
         document: {
             addEventListener(name, listener) { listen('document', name, listener); },
+            querySelector(selector) { assert.equal(selector, '.maintenance-month-form'); return hasMonthForm ? monthForm : null; },
+            getElementById(id) { assert.equal(id, 'maintenanceMonth'); return hasMonthForm ? month : null; },
             querySelectorAll(selector) { assert.equal(selector, '.customer-card'); return cards; }
         },
         window: { addEventListener(name, listener) { listen('window', name, listener); } }
     });
     (listeners.document.DOMContentLoaded || []).forEach(listener => listener());
     return {
-        cards,
+        cards, month,
+        get submissions() { return submissions; },
         show(persisted) { (listeners.window.pageshow || []).forEach(listener => listener({ persisted })); }
     };
 }
@@ -107,4 +119,37 @@ test('empty cards pages initialize and restore without an error', () => {
     show(false);
     show(true);
     assert.equal(cards.length, 0);
+});
+
+
+test('a different valid month submits the native GET form', () => {
+    const h = harness(2, true);
+    h.month.value = '2026-10';
+    h.month.change();
+    assert.equal(h.submissions, 1);
+});
+
+test('unchanged and invalid month values do not start navigation', () => {
+    const h = harness(2, true);
+    h.month.change();
+    h.month.value = '';
+    h.month.valid = false;
+    h.month.change();
+    assert.equal(h.submissions, 0);
+});
+
+test('back-forward cache restores the month represented by the rendered cards', () => {
+    const h = harness(2, true);
+    h.month.value = '2026-10';
+    h.cards[0].click();
+    h.show(true);
+    assert.equal(h.month.value, '2026-09');
+    assert.equal(h.cards[0].classList.contains('is-loading'), false);
+});
+
+test('ordinary pageshow keeps a month edit that has not been submitted', () => {
+    const h = harness(2, true);
+    h.month.value = '2026-10';
+    h.show(false);
+    assert.equal(h.month.value, '2026-10');
 });

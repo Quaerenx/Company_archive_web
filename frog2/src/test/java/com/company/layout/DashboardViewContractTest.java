@@ -27,9 +27,9 @@ class DashboardViewContractTest {
         assertTrue(slot.contains("pointer-events: none;"));
         assertTrue(styles.contains("min-block-size: 44px;"));
         assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tabs")
-                .contains("grid-row: 2;"));
-        assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-selector-label {")
-                .contains("grid-column: 1;"));
+                .contains("grid-row: 1;"));
+        assertTrue(page.contains("aria-label=\"점검 월 선택\""));
+        assertTrue(page.contains("aria-describedby=\"dashboardMaintenanceMonthHelp\""));
         assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tab {")
                 .contains("font-size: var(--font-size-xs);"));
         assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tab.active")

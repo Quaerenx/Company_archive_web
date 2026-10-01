@@ -25,12 +25,12 @@ class MinimalPaletteContractTest {
             "(?i)\\b(?:rgb|hsl)a?\\s*\\(");
 
     @Test
-    void globalLightThemeUsesExactlyTheApprovedNineteenOpaqueColors() throws Exception {
+    void globalLightThemeUsesExactlyTheApprovedTwentyOpaqueColors() throws Exception {
         String tokens = read("resources/css/tokens.css");
         Map<String, String> palette = palette(tokens);
 
         assertEquals(expectedLight(), palette);
-        assertEquals(19, palette.size());
+        assertEquals(20, palette.size());
 
         Set<String> opaqueColors = new LinkedHashSet<>();
         Matcher matcher = OPAQUE_COLOR.matcher(tokens);
@@ -239,7 +239,7 @@ class MinimalPaletteContractTest {
         return expected(
                 "#EFF2F5", "#E8EDF2", "#FCFCFD", "#E4E9EE", "#D5DCE3", "#AFB8C1", "#87919B",
                 "#20252B", "#47535F", "#5B6672", "#DFE8F0", "#455F7A",
-                "#344A60", "#EEF6F1", "#347A58", "#FFF6E5", "#D4A900",
+                "#344A60", "#20374E", "#EEF6F1", "#347A58", "#FFF6E5", "#D4A900",
                 "#FFF1F1", "#B64B4B");
     }
 
@@ -247,7 +247,7 @@ class MinimalPaletteContractTest {
         String[] roles = {
                 "canvas", "ambient", "surface", "surface-muted", "border", "surface-edge", "border-strong",
                 "text-strong", "text", "text-muted", "brand-subtle", "brand",
-                "brand-hover", "success-subtle", "success", "warning-subtle",
+                "brand-hover", "logo", "success-subtle", "success", "warning-subtle",
                 "warning", "danger-subtle", "danger"
         };
         Map<String, String> result = new LinkedHashMap<>();
@@ -261,6 +261,8 @@ class MinimalPaletteContractTest {
         assertContrast(colors, "text", "surface", 4.5);
         assertContrast(colors, "text-muted", "canvas", 4.5);
         assertContrast(colors, "brand", "brand-subtle", 4.5);
+        assertContrast(colors, "ambient", "logo", 4.5);
+        assertContrast(colors, "logo", "brand-subtle", 4.5);
         assertContrast(colors, "success", "success-subtle", 4.5);
         assertContrast(colors, "text-strong", "warning-subtle", 4.5);
         assertContrast(colors, "danger", "danger-subtle", 4.5);

@@ -122,7 +122,11 @@
 }
 
 .page-mypage .work-inbox__count--warning {
-    color: var(--color-warning-accent);
+    color: var(--color-warning-text);
+}
+
+.page-mypage .work-inbox__count--warning::before {
+    background: var(--color-warning-accent);
 }
 
 .page-mypage .work-inbox__count strong {
@@ -204,7 +208,9 @@
 }
 
 .page-mypage .work-inbox__empty {
-    margin-block-start: var(--space-20);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin: 0;
 }
 
 .page-mypage .mypage-work__totals strong {
@@ -369,4 +375,64 @@
     .page-mypage .work-inbox__arrow {
         display: none;
     }
+}
+
+.page-mypage .profile-summary__missing-department {
+    align-items: center;
+    background: var(--color-warning-bg);
+    border-inline-start: 3px solid var(--color-warning-accent);
+    border-radius: var(--radius-sm);
+    color: var(--color-warning-text);
+    display: inline-flex;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-8);
+}
+
+.page-mypage .profile-summary__department-help {
+    display: block;
+    font-size: var(--font-size-xs);
+    margin-block-start: var(--space-4);
+}
+
+.page-mypage .profile-summary__password-link {
+    align-items: center;
+    display: inline-flex;
+    min-block-size: var(--control-height-md);
+    padding-inline: var(--space-8);
+}
+
+.page-mypage .host-summary {
+    padding-block: var(--space-16);
+}
+
+.page-mypage .work-inbox--empty {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8) var(--space-20);
+    padding-block: var(--space-16);
+}
+
+.page-mypage .work-inbox__empty strong {
+    font-weight: 400;
+}
+
+.page-mypage .work-inbox__empty span {
+    white-space: nowrap;
+}
+
+.page-mypage .mypage-recent-empty {
+    min-block-size: 0;
+    padding: var(--space-20) var(--space-12);
+}
+
+.page-mypage .recent-activity__empty--action {
+    background: var(--color-surface-subtle);
+    border-radius: var(--radius-md);
+    margin-block-start: var(--space-12);
+}
+
+.page-mypage .recent-activity__empty--action p {
+    font-size: var(--font-size-sm);
+    margin: 0;
 }

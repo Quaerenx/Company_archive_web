@@ -36,7 +36,7 @@ class AmbientBackgroundContractTest {
         assertTrue(tokens.contains("--palette-surface: #FCFCFD;"));
         assertTrue(tokens.contains("--palette-border: #D5DCE3;"));
         assertTrue(tokens.contains(
-                "--color-navigation-surface: rgba(252, 252, 253, 0.94);"));
+                "--color-navigation-surface: var(--palette-logo);"));
         assertTrue(tokens.contains(
                 "--color-ambient-glow-light: rgba(255, 255, 255, 0.45);"));
         assertTrue(tokens.contains(

@@ -21,13 +21,12 @@
       <span class="dashboard-greeting-user">
         안녕하세요, <c:out value="${sessionScope.user != null ? sessionScope.user.userName : ''}"/> 님.
       </span>
-      확인이 필요한 업무부터 살펴보세요.
     </jsp:attribute>
     <jsp:attribute name="extra">
       <div class="maintenance-month-selector">
-        <span class="maintenance-month-selector-label">점검 월</span>
+        <span id="maintenanceLoadingState" class="sr-only" role="status" aria-live="polite" hidden>점검 현황을 불러오는 중…</span>
         <nav class="maintenance-month-tabs" aria-label="점검 월 선택"
-             aria-describedby="dashboardMaintenanceMonthScope dashboardMaintenanceMonthHelp"
+             aria-describedby="dashboardMaintenanceMonthHelp"
              aria-busy="false">
           <div class="maintenance-month-track">
             <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
@@ -53,10 +52,6 @@
         </nav>
         <span id="dashboardMaintenanceMonthHelp" class="sr-only">
           좌우 방향키, Home, End로 월을 변경할 수 있습니다.
-        </span>
-        <span id="dashboardMaintenanceMonthScope" class="maintenance-month-scope">
-          <span id="maintenanceMonthScopeText">나의·전체 점검에 적용</span>
-          <span id="maintenanceLoadingState" role="status" aria-live="polite" hidden>점검 현황을 불러오는 중…</span>
         </span>
         <div id="maintenanceMonthError" class="maintenance-month-error" role="alert" hidden>
           <span>점검 현황을 불러오지 못했습니다. 다시 시도해 주세요.</span>
@@ -85,7 +80,7 @@
       </jsp:attribute>
     </t:sectionHeader>
     <div class="ui-section-body ui-section-body--flush">
-      <c:if test="${maintenanceDataLoaded and personalMaintenanceAssignedCount gt 0}">
+      <c:if test="${maintenanceDataLoaded and personalMaintenanceAssignedCount gt 0 and not empty personalMaintenanceCustomers}">
         <c:url var="personalMaintenanceManageUrl" value="/maintenance">
           <c:param name="view" value="cards" />
           <c:param name="maintenanceMonth" value="${maintenanceMonthParam}" />

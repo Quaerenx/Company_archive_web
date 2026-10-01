@@ -79,8 +79,6 @@ function harness(options = {}) {
     const label = { textContent: month };
     const toggle = element();
     const loading = element();
-    const scope = element();
-    scope.hidden = false;
     const error = element();
     const retry = element();
     const announcement = { textContent: '' };
@@ -157,7 +155,7 @@ function harness(options = {}) {
         importNode(node) { return { ...node }; },
         getElementById(id) { return {
             maintenanceMonthBoardBody: body, toggleMaintenanceBoardBtn: toggle,
-            maintenanceLoadingState: loading, maintenanceMonthScopeText: scope,
+            maintenanceLoadingState: loading,
             maintenanceMonthError: error, retryMaintenanceMonthBtn: retry,
             maintenanceMonthAnnouncement: announcement
         }[id] || null; },
@@ -202,7 +200,7 @@ function harness(options = {}) {
         };
     }
     return { links, viewport, track, animations, requests, navigations, body, personal, label,
-        loading, scope, error, retry, announcement, motion, toggle, storage, timers,
+        loading, error, retry, announcement, motion, toggle, storage, timers,
         window, entries, response,
         get expired() { return expired; }, get focused() { return focused; },
         latest() { return animations.at(-1); },
@@ -270,16 +268,14 @@ test('modified, non-primary and prevented clicks retain native navigation', () =
     }
 });
 
-test('slow responses show a small delayed indicator, not a replacement for the list', async () => {
+test('slow responses retain delayed loading announcements and existing list contents', async () => {
     const h = harness();
     h.links[0].dispatch('click');
     h.fireTimers(250);
     assert.equal(h.loading.hidden, false);
-    assert.equal(h.scope.hidden, true);
     assert.equal(h.body.childNodes.length, 1);
     await h.complete();
     assert.equal(h.loading.hidden, true);
-    assert.equal(h.scope.hidden, false);
 });
 
 test('returning to the rendered month cancels a request and ignores its late response', async () => {

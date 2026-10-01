@@ -10,7 +10,7 @@
             </p>
         </div>
         <a href="${pageContext.request.contextPath}/mypage?action=monthlyResponse"
-           class="mypage-text-link">
+           class="ui-button button--secondary button--sm mypage-monthly-response-link">
             월별 고객 응대 현황
             <span aria-hidden="true">→</span>
         </a>
@@ -94,8 +94,12 @@
                     </ul>
                 </c:when>
                 <c:otherwise>
-                    <div class="mypage-recent-empty ui-empty-state">
+                    <div class="mypage-recent-empty ui-empty-state recent-activity__empty--action">
+                        <i class="fas fa-tools" aria-hidden="true"></i>
                         <strong>최근 트러블슈팅 기록이 없습니다.</strong>
+                        <p>문제 해결 내용을 기록해 다음 대응에 활용하세요.</p>
+                        <a href="${pageContext.request.contextPath}/troubleshooting?view=add"
+                           class="ui-button button--secondary button--sm">트러블슈팅 기록하기</a>
                     </div>
                 </c:otherwise>
             </c:choose>

@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
+    const monthForm = document.querySelector('.maintenance-month-form');
+    const monthInput = document.getElementById('maintenanceMonth');
+    if (monthForm && monthInput) {
+        const initialMonth = monthInput.value;
+        monthInput.addEventListener('change', function() {
+            if (this.value !== initialMonth && this.checkValidity()) {
+                monthForm.requestSubmit();
+            }
+        });
+    }
+
     const cards = document.querySelectorAll('.customer-card');
 
     // Keep the native link contract so keyboard and modified-click navigation work.
@@ -12,7 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    window.addEventListener('pageshow', function() {
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted && monthInput) {
+            monthInput.value = monthInput.defaultValue;
+        }
         cards.forEach(card => card.classList.remove('is-loading'));
     });
 });
