@@ -80,6 +80,7 @@
                            name="userId"
                            placeholder=" "
                            required
+                           autofocus
                            autocomplete="username"
                            autocapitalize="off"
                            autocorrect="off"
