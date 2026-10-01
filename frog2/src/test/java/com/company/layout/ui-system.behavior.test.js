@@ -487,6 +487,55 @@ test('dialog traps Tab, closes on Escape, and restores opener focus', () => {
     assert.equal(harness.document.activeElement, opener);
 });
 
+test('Escape before initial focus closes associated UI and skips stale focus', () => {
+    const harness = createHarness();
+    const opener = new FakeElement(harness.document);
+    const first = new FakeElement(harness.document);
+    const dialog = new FakeElement(harness.document, {
+        focusables: [first], initialFocus: first
+    });
+    let focusCalls = 0;
+    let closed = 0;
+    first.focus = () => { focusCalls += 1; };
+    const controller = harness.ui.createDialogController(dialog, {
+        onClose() {
+            assert.equal(controller.isOpen(), false);
+            assert.equal(harness.ui.hasOpenDialog(), false);
+            closed += 1;
+        }
+    });
+    opener.focus();
+    controller.open(opener);
+    harness.document.dispatch('keydown', keyEvent('Escape'));
+    harness.flushFrames();
+
+    assert.equal(closed, 1);
+    assert.equal(focusCalls, 0);
+    assert.equal(harness.document.activeElement, opener);
+    assert.equal(dialog.getAttribute('aria-hidden'), 'true');
+    assert.equal(dialog.getAttribute('inert'), '');
+    controller.close();
+    assert.equal(closed, 1);
+});
+
+test('programmatic dialog close invokes associated cleanup once per opening', () => {
+    const harness = createHarness();
+    const dialog = new FakeElement(harness.document);
+    let closed = 0;
+    const controller = harness.ui.createDialogController(dialog, {
+        onClose() { closed += 1; }
+    });
+    for (let iteration = 0; iteration < 2; iteration += 1) {
+        controller.open();
+        controller.close();
+        controller.close();
+    }
+    harness.flushFrames();
+    assert.equal(closed, 2);
+    assert.equal(controller.isOpen(), false);
+    assert.equal(harness.ui.hasOpenDialog(), false);
+});
+
 test('shared dirty guard warns only after a form changes and pauses for submit', () => {
     const harness = createHarness();
     const field = new FakeElement(harness.document);

@@ -38,6 +38,7 @@
     var ambientActive = desktopQuery.matches;
     var reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     var reducedMotion = reducedMotionQuery.matches;
+    var resolutionQuery = null;
     var particleColor = window.getComputedStyle(canvas).color;
 
     function preferredParticleCount() {
@@ -112,6 +113,11 @@
     }
 
     function drawFrame(deltaSeconds) {
+        // Some device-scale changes do not dispatch resize or media-query events.
+        if (size.dpr !== Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO)) {
+            resize();
+            watchResolution();
+        }
         if (!ambientActive) {
             return;
         }
@@ -238,8 +244,26 @@
         if (document.hidden) {
             stop();
         } else {
-            start();
+            handleResolutionChange();
         }
+    }
+
+    function watchResolution() {
+        if (resolutionQuery
+                && typeof resolutionQuery.removeEventListener === 'function') {
+            resolutionQuery.removeEventListener('change', handleResolutionChange);
+        }
+        resolutionQuery = window.matchMedia(
+            '(resolution: ' + (window.devicePixelRatio || 1) + 'dppx)'
+        );
+        if (typeof resolutionQuery.addEventListener === 'function') {
+            resolutionQuery.addEventListener('change', handleResolutionChange);
+        }
+    }
+
+    function handleResolutionChange() {
+        watchResolution();
+        handleResize();
     }
 
     function handleReducedMotionChange(event) {
@@ -266,15 +290,15 @@
 
     syncCount();
     resize();
+    watchResolution();
 
     var resizeObserver = typeof window.ResizeObserver === 'function'
         ? new window.ResizeObserver(handleResize)
         : null;
     if (resizeObserver) {
         resizeObserver.observe(document.documentElement);
-    } else {
-        window.addEventListener('resize', handleResize);
     }
+    window.addEventListener('resize', handleResize);
 
     if (typeof reducedMotionQuery.addEventListener === 'function') {
         reducedMotionQuery.addEventListener('change', handleReducedMotionChange);
@@ -284,7 +308,7 @@
     }
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('pagehide', stop);
-    window.addEventListener('pageshow', start);
+    window.addEventListener('pageshow', handleResolutionChange);
 
     if (reducedMotion) {
         renderReducedMotionFrame();

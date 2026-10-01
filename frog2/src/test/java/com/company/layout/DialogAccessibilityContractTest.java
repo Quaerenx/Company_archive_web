@@ -62,7 +62,7 @@ class DialogAccessibilityContractTest {
 
         String headerNavigation = read("resources/js/header_nav.js");
         assertTrue(headerNavigation
-                .contains("Frog2UI.createDialogController(quickNavDialog)"));
+                .contains("Frog2UI.createDialogController(quickNavDialog, {"));
         assertTrue(headerNavigation
                 .contains("if (window.Frog2UI.hasOpenDialog())"));
         assertTrue(read("resources/js/pages/meeting_form.js")

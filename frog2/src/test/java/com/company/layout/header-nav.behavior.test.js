@@ -269,12 +269,17 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
     }
     let quickNavOpen = false;
     let quickNavOpenCalls = 0;
+    let quickNavController;
     if (quickNav) {
         window.Frog2UI = {
-            createDialogController() {
-                return {
+            createDialogController(dialog, options) {
+                quickNavController = {
                     close() {
+                        if (!quickNavOpen) return;
                         quickNavOpen = false;
+                        if (options && typeof options.onClose === 'function') {
+                            options.onClose();
+                        }
                     },
                     isOpen() {
                         return quickNavOpen;
@@ -284,6 +289,7 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
                         quickNavOpenCalls += 1;
                     }
                 };
+                return quickNavController;
             },
             hasOpenDialog() {
                 return otherDialogOpen || quickNavOpen;
@@ -304,6 +310,8 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
         mobileToggle,
         primaryNavigation,
         quickNavEmpty,
+        quickNavBackdrop,
+        quickNavController,
         quickNavInput,
         quickNavOpenButton,
         quickNavCloseButton,
@@ -339,6 +347,20 @@ function keyboardEvent(key) {
         stopPropagation() {}
     };
 }
+
+test('controller-level quick navigation close cleans the backdrop and search state', () => {
+    const harness = createHarness({ mobile: false, quickNav: true });
+    harness.quickNavOpenButton.dispatch('click');
+    assert.equal(harness.quickNavBackdrop.hidden, false);
+    harness.quickNavInput.setAttribute('aria-activedescendant', 'stale-result');
+    harness.quickNavController.close();
+
+    assert.equal(harness.quickNavBackdrop.hidden, true);
+    assert.equal(harness.quickNavBackdrop.getAttribute('aria-hidden'), 'true');
+    assert.equal(harness.quickNavOpenButton.getAttribute('aria-expanded'), 'false');
+    assert.equal(harness.quickNavInput.getAttribute('aria-expanded'), 'false');
+    assert.equal(harness.quickNavInput.getAttribute('aria-activedescendant'), null);
+});
 
 test('mobile menu keeps aria-expanded in sync and Escape restores focus', () => {
     const harness = createHarness({ mobile: true });

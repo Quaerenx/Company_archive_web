@@ -41,6 +41,7 @@ function createHarness(options = {}) {
     };
     const desktopQuery = mediaQuery(options.desktop !== false);
     const reducedMotionQuery = mediaQuery(options.reducedMotion === true);
+    const resolutionQueries = [];
     const document = {
         body: {
             classList: {
@@ -69,6 +70,13 @@ function createHarness(options = {}) {
         devicePixelRatio: options.devicePixelRatio || 2,
         getComputedStyle() { return { color: '#F1F3F5' }; },
         matchMedia(query) {
+            const resolution = query.match(/^\(resolution: ([\d.]+)dppx\)$/);
+            if (resolution) {
+                const ratio = Number(resolution[1]);
+                const media = mediaQuery(ratio === window.devicePixelRatio);
+                resolutionQueries.push({ media, ratio });
+                return media;
+            }
             return query.includes('prefers-reduced-motion')
                 ? reducedMotionQuery
                 : desktopQuery;
@@ -102,6 +110,18 @@ function createHarness(options = {}) {
         animationFrames,
         desktopQuery,
         reducedMotionQuery,
+        resolutionQueries,
+        changePixelRatio(ratio, notify = true) {
+            window.devicePixelRatio = ratio;
+            if (notify) {
+                for (const query of [...resolutionQueries]) {
+                    const matches = query.ratio === ratio;
+                    if (query.media.matches !== matches) {
+                        query.media.change(matches);
+                    }
+                }
+            }
+        },
         resize(width, height) {
             document.documentElement.clientWidth = width;
             document.documentElement.clientHeight = height;
@@ -123,9 +143,14 @@ function mediaQuery(matches) {
     return {
         matches,
         addEventListener(name, listener) { listeners.set(name, listener); },
+        removeEventListener(name, listener) {
+            if (listeners.get(name) === listener) listeners.delete(name);
+        },
+        get listenerCount() { return listeners.size; },
         change(nextMatches) {
             this.matches = nextMatches;
-            listeners.get('change')({ matches: nextMatches });
+            const listener = listeners.get('change');
+            if (listener) listener({ matches: nextMatches });
         }
     };
 }
@@ -293,4 +318,69 @@ test('visibility and page lifecycle events stop and resume work', () => {
 
     harness.windowListeners.get('pageshow')();
     assert.equal(harness.animationFrames.size, 1);
+});
+
+test('pixel ratio changes resize the canvas without a CSS viewport change', () => {
+    const harness = createHarness({ devicePixelRatio: 1 });
+    const previousClears = harness.context.clearRectCalls;
+
+    harness.changePixelRatio(2);
+
+    assert.equal(harness.canvas.width, 2160);
+    assert.equal(harness.canvas.height, 1350);
+    assert.equal(harness.document.documentElement.clientWidth, 1440);
+    assert.equal(harness.context.clearRectCalls, previousClears + 1);
+    assert.equal(harness.animationFrames.size, 1);
+});
+
+test('repeated pixel ratio changes rearm one listener and preserve the DPR cap', () => {
+    const harness = createHarness();
+    for (const ratio of [1, 1.25, 3, 2, 1]) {
+        harness.changePixelRatio(ratio);
+        assert.equal(harness.canvas.width, Math.floor(1440 * Math.min(ratio, 1.5)));
+        assert.equal(harness.canvas.height, Math.floor(900 * Math.min(ratio, 1.5)));
+        assert.equal(harness.animationFrames.size, 1);
+        assert.equal(harness.resolutionQueries.reduce((sum, query) =>
+            sum + query.media.listenerCount, 0), 1);
+    }
+});
+
+test('pixel ratio changes do not restart hidden, mobile or reduced-motion animation', () => {
+    for (const options of [{ desktop: false, width: 390 }, { reducedMotion: true }, {}]) {
+        const harness = createHarness(options);
+        if (Object.keys(options).length === 0) {
+            harness.document.hidden = true;
+            harness.documentListeners.get('visibilitychange')();
+        }
+        harness.changePixelRatio(1);
+
+        assert.equal(harness.canvas.width, harness.document.documentElement.clientWidth);
+        assert.equal(harness.animationFrames.size, 0);
+    }
+});
+
+test('page restoration refreshes pixel ratio when a change event was deferred', () => {
+    const harness = createHarness();
+    harness.windowListeners.get('pagehide')();
+    harness.changePixelRatio(1, false);
+    harness.windowListeners.get('pageshow')();
+
+    assert.equal(harness.canvas.width, 1440);
+    assert.equal(harness.canvas.height, 900);
+    assert.equal(harness.animationFrames.size, 1);
+    assert.equal(harness.resolutionQueries.reduce((sum, query) =>
+        sum + query.media.listenerCount, 0), 1);
+});
+
+test('active drawing refreshes DPR even when resize and media events are absent', () => {
+    const harness = createHarness({ devicePixelRatio: 1 });
+    harness.changePixelRatio(2, false);
+    harness.runAnimationFrame(1040);
+
+    assert.equal(harness.canvas.width, 2160);
+    assert.equal(harness.canvas.height, 1350);
+    assert.equal(harness.context.fillRectCalls, 36);
+    assert.equal(harness.animationFrames.size, 1);
+    assert.equal(harness.resolutionQueries.reduce((sum, query) =>
+        sum + query.media.listenerCount, 0), 1);
 });

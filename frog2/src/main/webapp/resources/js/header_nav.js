@@ -221,7 +221,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        var dialogController = window.Frog2UI.createDialogController(quickNavDialog);
+        var dialogController = window.Frog2UI.createDialogController(quickNavDialog, {
+            onClose: finishQuickNavigationClose
+        });
         var menuEntries = [];
         var remoteEntries = [];
         var seen = new Set();
@@ -727,10 +729,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function closeQuickNavigation() {
-            if (!dialogController.isOpen()) {
-                return;
-            }
             dialogController.close();
+        }
+
+        function finishQuickNavigationClose() {
             quickNavBackdrop.hidden = true;
             quickNavBackdrop.setAttribute('aria-hidden', 'true');
             quickNavOpenButton.setAttribute('aria-expanded', 'false');

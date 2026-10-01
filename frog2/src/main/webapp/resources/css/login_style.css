@@ -379,17 +379,14 @@ body.login-page::after {
     block-size: 100%;
     border: 1px solid var(--peek-border);
     border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
     opacity: 0;
     overflow: hidden;
     position: relative;
     transform: scale(var(--peek-rest-scale));
-    /* 그림자는 높이의 표현이므로 이동과 같은 창(--peek-duration)에서 따라간다.
-       스프링 커브를 그대로 쓰면 되튐 구간에서 그림자가 목표값을 넘겨 번지므로
-       감속 커브를 쓴다. transition-delay는 아래에서 일괄 적용된다. */
+    /* A static shadow avoids repainting the sheets during movement. */
     transition:
         transform var(--peek-duration) var(--peek-ease),
-        box-shadow var(--peek-duration) var(--motion-ease),
         opacity var(--peek-fade) var(--motion-ease);
     /* 접힐 때는 순차 지연 없이 한 번에 돌아온다. */
     transition-delay: 0ms;
@@ -493,7 +490,6 @@ body.login-page::after {
     .login-page .login-shell:hover .peek-sheet,
     .login-page .login-shell:focus-within .peek-sheet,
     .login-page .login-shell:has(.login-submit.is-loading) .peek-sheet {
-        box-shadow: var(--shadow-lg);
         opacity: 1;
         transform:
             translate(var(--peek-tx), var(--peek-ty))

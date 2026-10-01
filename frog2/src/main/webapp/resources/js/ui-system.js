@@ -397,7 +397,7 @@
         );
     }
 
-    function createDialogController(dialog) {
+    function createDialogController(dialog, options) {
         if (!dialog) {
             throw new TypeError('Dialog element is required.');
         }
@@ -406,6 +406,9 @@
         var opened = false;
 
         function focusInitialElement() {
+            if (!opened) {
+                return;
+            }
             var initial = dialog.querySelector('[data-dialog-initial-focus]');
             if (!initial || !isVisible(initial)) {
                 initial = focusableElements(dialog)[0] || dialog;
@@ -485,6 +488,9 @@
                 window.requestAnimationFrame(function () {
                     focusTarget.focus();
                 });
+            }
+            if (options && typeof options.onClose === 'function') {
+                options.onClose();
             }
         }
 
