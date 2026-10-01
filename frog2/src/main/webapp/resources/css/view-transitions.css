@@ -73,6 +73,9 @@
 }
 
 ::view-transition-group(archive-login-card) {
+    /* 카드 이미지가 투명해져도 그룹으로 복사된 블러는 남으므로 여기서는 끈다. */
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     z-index: 3;
 }
 

@@ -70,8 +70,10 @@ class ViewTransitionContractTest {
                         + "}"));
         assertTrue(styles.contains(
                 "::view-transition-group(archive-stage) {\n    z-index: 2;\n}"));
-        assertTrue(styles.contains(
-                "::view-transition-group(archive-login-card) {\n    z-index: 3;\n}"));
+        String cardGroup = block(styles, "::view-transition-group(archive-login-card) {");
+        assertTrue(cardGroup.contains("z-index: 3;"));
+        assertTrue(cardGroup.contains("backdrop-filter: none;"));
+        assertTrue(cardGroup.contains("-webkit-backdrop-filter: none;"));
         assertTrue(styles.contains(
                 "::view-transition-group(archive-logo) {\n    z-index: 4;\n}"));
     }
