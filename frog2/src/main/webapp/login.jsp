@@ -81,7 +81,7 @@
                            placeholder=" "
                            required
                            autofocus
-                           autocomplete="username"
+                           autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
                            spellcheck="false"
@@ -96,7 +96,7 @@
                            name="password"
                            placeholder=" "
                            required
-                           autocomplete="current-password"
+                           autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
                            spellcheck="false"

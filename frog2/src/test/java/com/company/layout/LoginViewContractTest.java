@@ -162,7 +162,7 @@ class LoginViewContractTest {
     }
 
     @Test
-    void loginPreservesItsPostContractAndExposesStandardCredentialAutocomplete()
+    void loginPreservesItsPostContractAndDisablesBrowserHistoryAutocomplete()
             throws Exception {
         String page = read("login.jsp");
         String form = loginForm(page);
@@ -176,10 +176,11 @@ class LoginViewContractTest {
         assertFalse(form.contains("autocomplete=\"on\""));
         assertTrue(page.contains("csrf_input.jspf"));
         assertTrue(userId.contains("name=\"userId\""));
-        assertTrue(userId.contains("autocomplete=\"username\""));
-        assertFalse(userId.contains("autocomplete=\"off\""));
+        assertTrue(userId.contains("autocomplete=\"off\""));
+        assertFalse(userId.contains("autocomplete=\"username\""));
         assertTrue(password.contains("name=\"password\""));
-        assertTrue(password.contains("autocomplete=\"current-password\""));
+        assertTrue(password.contains("autocomplete=\"off\""));
+        assertFalse(password.contains("autocomplete=\"current-password\""));
         assertTrue(userId.contains("placeholder=\" \""));
         assertTrue(password.contains("placeholder=\" \""));
         assertTrue(userId.contains(
