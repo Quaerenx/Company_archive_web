@@ -34,6 +34,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class DashboardServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final int MAINTENANCE_MONTH_COUNT = 12;
 
     private final MaintenanceRecordDAO maintenanceRecordDAO;
     private final CustomerAssignmentDAO customerAssignmentDAO;
@@ -76,7 +77,9 @@ public class DashboardServlet extends HttpServlet {
         }
         RequestPerformanceContext.markOperation(Operation.DASHBOARD_VIEW);
         long dataLoadStart = System.nanoTime();
-        YearMonth selectedMonth = parseMaintenanceMonth(request.getParameter("maintenanceMonth"));
+        YearMonth currentMonth = BusinessDate.currentMonth(clock);
+        YearMonth selectedMonth = parseMaintenanceMonth(
+                request.getParameter("maintenanceMonth"), currentMonth);
         LocalDate monthStart = selectedMonth.atDay(1);
         LocalDate nextMonthStart = selectedMonth.plusMonths(1).atDay(1);
         LocalDate today = BusinessDate.today(clock);
@@ -106,7 +109,7 @@ public class DashboardServlet extends HttpServlet {
 
         request.setAttribute("maintenanceMonthParam", selectedMonth.format(MONTH_PARAM_FORMATTER));
         request.setAttribute("maintenanceMonthLabel", selectedMonth.format(MONTH_LABEL_FORMATTER));
-        request.setAttribute("maintenanceMonthTabs", buildMaintenanceMonthTabs(selectedMonth));
+        request.setAttribute("maintenanceMonthTabs", buildMaintenanceMonthTabs(selectedMonth, currentMonth));
         request.setAttribute(
                 "monthlyMaintenanceAssigneeGroups",
                 monthlyMaintenanceAssigneeGroups);
@@ -128,9 +131,8 @@ public class DashboardServlet extends HttpServlet {
         }
     }
 
-    private YearMonth parseMaintenanceMonth(String rawMonth) {
-        YearMonth currentMonth = BusinessDate.currentMonth(clock);
-        YearMonth previousMonth = currentMonth.minusMonths(1);
+    private YearMonth parseMaintenanceMonth(String rawMonth, YearMonth currentMonth) {
+        YearMonth oldestMonth = currentMonth.minusMonths(MAINTENANCE_MONTH_COUNT - 1);
 
         if (rawMonth == null || rawMonth.trim().isEmpty()) {
             return currentMonth;
@@ -138,7 +140,7 @@ public class DashboardServlet extends HttpServlet {
 
         try {
             YearMonth requestedMonth = YearMonth.parse(rawMonth.trim(), MONTH_PARAM_FORMATTER);
-            if (requestedMonth.equals(currentMonth) || requestedMonth.equals(previousMonth)) {
+            if (!requestedMonth.isBefore(oldestMonth) && !requestedMonth.isAfter(currentMonth)) {
                 return requestedMonth;
             }
         } catch (DateTimeParseException e) {
@@ -147,19 +149,15 @@ public class DashboardServlet extends HttpServlet {
         return currentMonth;
     }
 
-    private List<MonthTab> buildMaintenanceMonthTabs(YearMonth selectedMonth) {
-        List<MonthTab> tabs = new ArrayList<>();
-        YearMonth currentMonth = BusinessDate.currentMonth(clock);
-        YearMonth previousMonth = currentMonth.minusMonths(1);
-
-        tabs.add(new MonthTab(
-                previousMonth.format(MONTH_LABEL_FORMATTER),
-                previousMonth.format(MONTH_PARAM_FORMATTER),
-                previousMonth.equals(selectedMonth)));
-        tabs.add(new MonthTab(
-                currentMonth.format(MONTH_LABEL_FORMATTER),
-                currentMonth.format(MONTH_PARAM_FORMATTER),
-                currentMonth.equals(selectedMonth)));
+    private List<MonthTab> buildMaintenanceMonthTabs(YearMonth selectedMonth, YearMonth currentMonth) {
+        List<MonthTab> tabs = new ArrayList<>(MAINTENANCE_MONTH_COUNT);
+        for (int offset = MAINTENANCE_MONTH_COUNT - 1; offset >= 0; offset--) {
+            YearMonth month = currentMonth.minusMonths(offset);
+            tabs.add(new MonthTab(
+                    month.format(MONTH_LABEL_FORMATTER),
+                    month.format(MONTH_PARAM_FORMATTER),
+                    month.equals(selectedMonth)));
+        }
         return tabs;
     }
 

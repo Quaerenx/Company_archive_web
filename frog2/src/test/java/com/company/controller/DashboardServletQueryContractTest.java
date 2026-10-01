@@ -36,10 +36,15 @@ class DashboardServletQueryContractTest {
             ZoneId.of("Asia/Seoul"));
 
     @Test
-    void availableMonthsAndQueryBoundsFollowTheServerSelectionAcrossYearEnd() throws Exception {
+    void twelveMonthWindowAndQueryBoundsFollowTheServerSelectionAcrossYearEnd() throws Exception {
         Clock januaryClock = Clock.fixed(
                 Instant.parse("2026-01-15T03:00:00Z"), ZoneId.of("Asia/Seoul"));
-        for (String rawMonth : new String[] {null, "2026-01", "2025-12", "2025-11", "invalid"}) {
+        List<String> available = List.of("2025-02", "2025-03", "2025-04", "2025-05",
+                "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11",
+                "2025-12", "2026-01");
+        List<String> requests = new ArrayList<>(available);
+        requests.addAll(java.util.Arrays.asList(null, "", "2025-01", "2026-02", "2026-13", "invalid"));
+        for (String rawMonth : requests) {
             StubMaintenanceRecordDAO maintenanceDAO = new StubMaintenanceRecordDAO();
             DashboardServlet servlet = new DashboardServlet(
                     maintenanceDAO, new StubCustomerAssignmentDAO(), januaryClock);
@@ -48,20 +53,58 @@ class DashboardServletQueryContractTest {
 
             servlet.doGet(request.proxy(), new ResponseFixture().proxy());
 
-            String expected = "2025-12".equals(rawMonth) ? "2025-12" : "2026-01";
+            String expected = rawMonth != null && available.contains(rawMonth) ? rawMonth : "2026-01";
             YearMonth selected = YearMonth.parse(expected);
             assertEquals(expected, request.attributes.get("maintenanceMonthParam"));
             assertEquals(expected, request.attributes.get("maintenanceMonthLabel"));
             assertEquals(Date.valueOf(selected.atDay(1)), maintenanceDAO.lastStartDate);
             assertEquals(Date.valueOf(selected.plusMonths(1).atDay(1)), maintenanceDAO.lastEndDate);
+            assertEquals(1, maintenanceDAO.monthCalls);
             @SuppressWarnings("unchecked")
             List<DashboardServlet.MonthTab> tabs =
                     (List<DashboardServlet.MonthTab>) request.attributes.get("maintenanceMonthTabs");
-            assertEquals(List.of("2025-12", "2026-01"),
-                    tabs.stream().map(DashboardServlet.MonthTab::getValue).toList());
+            assertEquals(available, tabs.stream().map(DashboardServlet.MonthTab::getValue).toList());
+            assertEquals(available, tabs.stream().map(DashboardServlet.MonthTab::getLabel).toList());
             assertEquals(List.of(expected), tabs.stream().filter(DashboardServlet.MonthTab::isActive)
                     .map(DashboardServlet.MonthTab::getValue).toList());
         }
+    }
+
+    @Test
+    void oldestMonthAppliesItsScheduleAndRecordStateToPersonalAndGlobalBoards() throws Exception {
+        YearMonth oldest = YearMonth.of(2025, 9);
+        StubMaintenanceRecordDAO records = new StubMaintenanceRecordDAO();
+        records.records = List.of(maintenanceRecord("historical-done", oldest.atDay(15), "40"));
+        StubCustomerAssignmentDAO assignments = new StubCustomerAssignmentDAO();
+        assignments.personalAssignments = List.of(
+                new MaintenanceCustomerAssignment("historical-done", "Tester"),
+                new MaintenanceCustomerAssignment("historical-quarterly-due", "Tester",
+                        new MaintenanceSchedule(3, oldest, LocalDate.of(2025, 1, 1), null, true)));
+        assignments.assignments = assignments.personalAssignments;
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("maintenanceMonth", "2025-09");
+
+        new DashboardServlet(records, assignments, FIXED_CLOCK)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        assertEquals("2025-09", request.attributes.get("maintenanceMonthParam"));
+        assertEquals(Date.valueOf("2025-09-01"), records.lastStartDate);
+        assertEquals(Date.valueOf("2025-10-01"), records.lastEndDate);
+        assertEquals(2, request.attributes.get("personalMaintenanceTargetCount"));
+        assertEquals(1, request.attributes.get("personalMaintenanceRegisteredCount"));
+        assertEquals(1, request.attributes.get("personalMaintenanceUnregisteredCount"));
+        assertEquals(2, personalCustomers(request).size());
+        assertEquals(true, personalCustomers(request).getFirst().isDone());
+        assertEquals(false, personalCustomers(request).getLast().isDone());
+        assertEquals(true, personalCustomers(request).getLast().isQuarterly());
+        @SuppressWarnings("unchecked")
+        List<DashboardServlet.MaintenanceAssigneeGroup> global =
+                (List<DashboardServlet.MaintenanceAssigneeGroup>) request.attributes.get(
+                        "monthlyMaintenanceAssigneeGroups");
+        assertEquals(2, global.getFirst().getCustomers().size());
+        assertEquals(true, global.getFirst().getCustomers().getFirst().isDone());
+        assertEquals(false, global.getFirst().getCustomers().getLast().isDone());
+        assertEquals(true, global.getFirst().getCustomers().getLast().isQuarterly());
     }
 
     @Test

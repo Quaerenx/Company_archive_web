@@ -26,6 +26,14 @@ class DashboardViewContractTest {
         assertTrue(slot.contains("background: var(--color-surface-selected);"));
         assertTrue(slot.contains("pointer-events: none;"));
         assertTrue(styles.contains("min-block-size: 44px;"));
+        assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tabs")
+                .contains("grid-row: 2;"));
+        assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-selector-label {")
+                .contains("grid-column: 1;"));
+        assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tab {")
+                .contains("font-size: var(--font-size-xs);"));
+        assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tab.active")
+                .contains("font-size: var(--font-size-sm);"));
     }
 
     @Test

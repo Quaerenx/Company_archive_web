@@ -43,7 +43,8 @@ function harness(options = {}) {
     const current = options.current ?? 1;
     const links = Array.from({ length: options.count ?? 2 }, (_, index) => {
         const link = element(index === current ? ['active'] : []);
-        link.href = 'http://127.0.0.1/frog2/dashboard?maintenanceMonth=2026-0' + (index + 1);
+        link.href = 'http://127.0.0.1/frog2/dashboard?maintenanceMonth=2026-'
+            + String(index + 1).padStart(2, '0');
         link.offsetLeft = index * 112;
         link.offsetWidth = 104;
         if (index === current) link.setAttribute('aria-current', 'page');
@@ -101,6 +102,7 @@ function harness(options = {}) {
     vm.runInNewContext(source, {
         window, URL,
         document: {
+            get activeElement() { return focused; },
             getElementById(id) {
                 return { maintenanceMonthBoardBody: body,
                     toggleMaintenanceBoardBtn: toggle, maintenanceLoadingState: loading }[id] || null;
@@ -122,13 +124,13 @@ function harness(options = {}) {
 }
 
 test('both endpoints center in the fixed slot without extra month links', () => {
-    for (const current of [0, 1]) {
-        const h = harness({ current });
+    for (const current of [0, 5, 11]) {
+        const h = harness({ count: 12, current });
         const link = h.links[current];
         const offset = Number(h.latest().frames[1].transform.match(/\(([-\d.]+)px\)/)[1]);
         assert.equal(link.offsetLeft + link.offsetWidth / 2 + offset, h.viewport.clientWidth / 2);
         assert.equal(h.latest().timing.duration, 0);
-        assert.equal(h.links.length, 2);
+        assert.equal(h.links.length, 12);
         assert.deepEqual(h.navigations, []);
         assert.equal(h.viewport.classList.contains('is-carousel'), true);
     }
@@ -312,4 +314,31 @@ test('keyboard focus persistence stores only the month even when links use URL s
     h.latest().finish();
     assert.equal(h.sessionStorage.get('frog2.dashboard.month.focus'), '2026-01');
     assert.equal([...h.sessionStorage.values()].some(value => value.includes('jsessionid')), false);
+});
+
+
+test('only the centered month is a Tab stop in a twelve-month rail', () => {
+    const h = harness({ count: 12, current: 11 });
+    assert.deepEqual(h.links.filter(link => link.getAttribute('tabindex') === '0'), [h.links[11]]);
+    assert.equal(h.links.filter(link => link.getAttribute('tabindex') === '-1').length, 11);
+    h.links[11].dispatch('keydown', { key: 'Home' });
+    assert.equal(h.focused, h.links[0]);
+    assert.deepEqual(h.links.filter(link => link.getAttribute('tabindex') === '0'), [h.links[0]]);
+    h.latest().finish();
+    assert.deepEqual(h.navigations, [h.links[0].href]);
+});
+
+test('back navigation restores focus to the current month instead of a hidden stale selection', () => {
+    for (const storageDenied of [false, true]) {
+        const h = harness({ count: 12, current: 11, storageDenied });
+        h.links[11].dispatch('keydown', { key: 'Home' });
+        assert.equal(h.focused, h.links[0]);
+        h.dispatch('pagehide');
+        h.dispatch('pageshow');
+        assert.equal(h.focused, h.links[11]);
+        assert.equal(h.links[11].getAttribute('tabindex'), '0');
+        assert.equal(h.links[0].getAttribute('tabindex'), '-1');
+        h.latest().finish();
+        assert.deepEqual(h.navigations, []);
+    }
 });

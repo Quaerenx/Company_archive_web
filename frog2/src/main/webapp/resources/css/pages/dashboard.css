@@ -66,8 +66,8 @@
 .dashboard-page .maintenance-month-selector {
   align-items: center;
   display: grid;
-  gap: var(--space-8) var(--space-12);
-  grid-template-columns: max-content minmax(0, 21rem) max-content;
+  gap: var(--space-4) var(--space-12);
+  grid-template-columns: minmax(0, 21rem) max-content;
   justify-content: start;
 }
 
@@ -77,11 +77,23 @@
   font-size: var(--font-size-xs);
 }
 
+.dashboard-page .maintenance-month-selector-label {
+  grid-column: 1;
+}
+
+.dashboard-page .maintenance-month-scope {
+  grid-column: 2;
+  grid-row: 2;
+}
+
 .dashboard-page .maintenance-month-tabs {
   --month-slot-width: 6.5rem;
   border-radius: var(--radius-lg);
+  grid-column: 1;
+  grid-row: 2;
   inline-size: 100%;
   min-inline-size: 0;
+  overflow-x: auto;
   padding-block: var(--space-8);
 }
 
@@ -99,13 +111,15 @@
   color: var(--color-text-muted);
   display: inline-flex;
   flex: 0 0 var(--month-slot-width);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   font-weight: 400;
   justify-content: center;
   min-block-size: 44px;
   text-decoration: none;
-  transition: color var(--motion-fast) var(--motion-ease);
+  transition:
+    color var(--motion-fast) var(--motion-ease),
+    font-size var(--motion-fast) var(--motion-ease);
   white-space: nowrap;
 }
 
@@ -123,6 +137,7 @@
 .dashboard-page .maintenance-month-tab.active {
   background: var(--color-surface-selected);
   color: var(--color-text-strong);
+  font-size: var(--font-size-sm);
   font-weight: 600;
 }
 
@@ -131,6 +146,7 @@
 }
 
 .dashboard-page .maintenance-month-tabs.is-carousel {
+  clip-path: inset(0 var(--space-8));
   overflow: hidden;
   position: relative;
 }
@@ -382,11 +398,12 @@
   }
 
   .dashboard-page .maintenance-month-selector {
-    grid-template-columns: max-content minmax(0, 21rem);
+    grid-template-columns: minmax(0, 21rem);
   }
 
   .dashboard-page .maintenance-month-scope {
-    grid-column: 2;
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .dashboard-page .maintenance-assignee-grid {
@@ -413,10 +430,6 @@
 
   .dashboard-page .maintenance-month-tabs {
     --month-slot-width: 4.75rem;
-  }
-
-  .dashboard-page .maintenance-month-scope {
-    grid-column: auto;
   }
 
   .dashboard-page .dashboard-workspace {

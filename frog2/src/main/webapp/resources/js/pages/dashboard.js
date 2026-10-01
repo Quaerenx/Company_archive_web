@@ -122,6 +122,7 @@
     keyboardSelection = fromKeyboard;
     monthLinks.forEach(function (monthLink) {
       monthLink.classList.toggle('active', monthLink === link);
+      monthLink.setAttribute('tabindex', monthLink === link ? '0' : '-1');
     });
     monthViewport.setAttribute('aria-busy', String(Boolean(pendingMonthLink)));
     setMaintenanceLoading(Boolean(pendingMonthLink));
@@ -135,8 +136,10 @@
     pendingMonthLink = null;
     keyboardSelection = false;
     navigationStarted = false;
+    let restoreFocus = monthLinks.includes(document.activeElement);
     monthLinks.forEach(function (link) {
       link.classList.toggle('active', link === currentMonthLink);
+      link.setAttribute('tabindex', link === currentMonthLink ? '0' : '-1');
       link.removeAttribute('aria-disabled');
     });
     monthViewport.setAttribute('aria-busy', 'false');
@@ -145,10 +148,13 @@
       const focusMonth = window.sessionStorage.getItem(monthFocusStorageKey);
       window.sessionStorage.removeItem(monthFocusStorageKey);
       if (focusMonth === new URL(currentMonthLink.href).searchParams.get('maintenanceMonth')) {
-        currentMonthLink.focus({ preventScroll: true });
+        restoreFocus = true;
       }
     } catch (ignore) {
       // Focus restoration is optional when browser storage is unavailable.
+    }
+    if (restoreFocus) {
+      currentMonthLink.focus({ preventScroll: true });
     }
   }
 
