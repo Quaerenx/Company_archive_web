@@ -31,9 +31,9 @@ class DashboardViewContractTest {
         assertTrue(page.contains("aria-label=\"점검 월 선택\""));
         assertTrue(page.contains("aria-describedby=\"dashboardMaintenanceMonthHelp\""));
         assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tab {")
-                .contains("font-size: var(--font-size-xs);"));
-        assertTrue(cssRule(styles, ".dashboard-page .maintenance-month-tab.active")
                 .contains("font-size: var(--font-size-sm);"));
+        assertFalse(cssRule(styles, ".dashboard-page .maintenance-month-tab.active")
+                .contains("font-size:"));
     }
 
     @Test

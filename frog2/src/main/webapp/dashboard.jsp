@@ -25,31 +25,45 @@
     <jsp:attribute name="extra">
       <div class="maintenance-month-selector">
         <span id="maintenanceLoadingState" class="sr-only" role="status" aria-live="polite" hidden>점검 현황을 불러오는 중…</span>
-        <nav class="maintenance-month-tabs" aria-label="점검 월 선택"
-             aria-describedby="dashboardMaintenanceMonthHelp"
-             aria-busy="false">
-          <div class="maintenance-month-track">
-            <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
-              <c:url value="/dashboard" var="monthTabUrl">
-                <c:param name="maintenanceMonth" value="${monthTab.value}" />
-              </c:url>
-              <c:choose>
-                <c:when test="${monthTab.active}">
-                  <a class="maintenance-month-tab active"
-                     href="${monthTabUrl}"
-                     aria-current="page">
-                    <span><c:out value="${monthTab.label}" /></span>
-                  </a>
-                </c:when>
-                <c:otherwise>
-                  <a class="maintenance-month-tab" href="${monthTabUrl}">
-                    <span><c:out value="${monthTab.label}" /></span>
-                  </a>
-                </c:otherwise>
-              </c:choose>
-            </c:forEach>
-          </div>
-        </nav>
+        <div class="maintenance-month-control">
+          <button type="button" id="previousMaintenanceMonthBtn"
+                  class="ui-button button--ghost maintenance-month-step maintenance-month-step--previous"
+                  aria-label="이전 점검 월" hidden>
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <nav class="maintenance-month-tabs" aria-label="점검 월 선택"
+               aria-describedby="dashboardMaintenanceMonthHelp"
+               aria-busy="false">
+            <div class="maintenance-month-track">
+              <span class="maintenance-month-boundary maintenance-month-boundary--start">시작 월</span>
+              <c:forEach var="monthTab" items="${maintenanceMonthTabs}">
+                <c:url value="/dashboard" var="monthTabUrl">
+                  <c:param name="maintenanceMonth" value="${monthTab.value}" />
+                </c:url>
+                <c:choose>
+                  <c:when test="${monthTab.active}">
+                    <a class="maintenance-month-tab active"
+                       href="${monthTabUrl}"
+                       aria-current="page">
+                      <span><c:out value="${monthTab.label}" /></span>
+                    </a>
+                  </c:when>
+                  <c:otherwise>
+                    <a class="maintenance-month-tab" href="${monthTabUrl}">
+                      <span><c:out value="${monthTab.label}" /></span>
+                    </a>
+                  </c:otherwise>
+                </c:choose>
+              </c:forEach>
+              <span class="maintenance-month-boundary maintenance-month-boundary--end">최신 월</span>
+            </div>
+          </nav>
+          <button type="button" id="nextMaintenanceMonthBtn"
+                  class="ui-button button--ghost maintenance-month-step maintenance-month-step--next"
+                  aria-label="다음 점검 월" hidden>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
         <span id="dashboardMaintenanceMonthHelp" class="sr-only">
           좌우 방향키, Home, End로 월을 변경할 수 있습니다.
         </span>

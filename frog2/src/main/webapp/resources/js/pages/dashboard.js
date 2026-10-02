@@ -12,6 +12,10 @@
   const errorState = document.getElementById('maintenanceMonthError');
   const retryButton = document.getElementById('retryMaintenanceMonthBtn');
   const announcement = document.getElementById('maintenanceMonthAnnouncement');
+  const monthControl = document.querySelector('.maintenance-month-control');
+  const previousMonthButton = document.getElementById('previousMaintenanceMonthBtn');
+  const nextMonthButton = document.getElementById('nextMaintenanceMonthBtn');
+  const monthStepButtons = [previousMonthButton, nextMonthButton].filter(Boolean);
   const monthViewport = document.querySelector('.maintenance-month-tabs');
   const monthTrack = document.querySelector('.maintenance-month-track');
   const monthLinks = Array.from(document.querySelectorAll('.maintenance-month-tab'));
@@ -87,7 +91,20 @@
     previous.controller.abort();
   }
 
-  function setActiveMonth(link) {
+  function syncMonthSteps(link) {
+    const index = monthLinks.indexOf(link);
+    const focusedStep = document.activeElement;
+    if (previousMonthButton) previousMonthButton.disabled = index <= 0;
+    if (nextMonthButton) nextMonthButton.disabled = index >= monthLinks.length - 1;
+    if (monthStepButtons.includes(focusedStep)
+        && (focusedStep.disabled || focusedStep.offsetWidth === 0)) {
+      link.focus({ preventScroll: true });
+    }
+  }
+
+  function setActiveMonth(link, fromKeyboard = false) {
+    monthViewport.classList.toggle('is-instant', fromKeyboard);
+    syncMonthSteps(link);
     monthLinks.forEach(function (monthLink) {
       monthLink.classList.toggle('active', monthLink === link);
       monthLink.setAttribute('tabindex', monthLink === link ? '0' : '-1');
@@ -101,7 +118,12 @@
 
   function centerMonth(link, animate) {
     const startTransform = window.getComputedStyle(monthTrack).transform;
-    const offset = monthViewport.clientWidth / 2 - link.offsetLeft - link.offsetWidth / 2;
+    // Responsive slots can have fractional widths that offset measurements round.
+    const viewportRect = monthViewport.getBoundingClientRect();
+    const trackRect = monthTrack.getBoundingClientRect();
+    const linkRect = link.getBoundingClientRect();
+    const offset = viewportRect.width / 2
+        - (linkRect.left - trackRect.left) - linkRect.width / 2;
     if (positionAnimation) positionAnimation.cancel();
     positionAnimation = monthTrack.animate([
       { transform: startTransform },
@@ -173,14 +195,14 @@
       maintenanceMonthLabel.textContent = contents.label;
       currentMonthLink = request.link;
       clearRequest();
-      setActiveMonth(currentMonthLink);
+      setActiveMonth(currentMonthLink, request.fromKeyboard);
       setMaintenanceLoading(false);
       window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
       if (announcement) announcement.textContent = contents.label + ' 점검 현황을 업데이트했습니다.';
     } catch (error) {
       if (pendingRequest !== request) return;
       clearRequest();
-      setActiveMonth(currentMonthLink);
+      setActiveMonth(currentMonthLink, request.fromKeyboard);
       setMaintenanceLoading(false);
       centerMonth(currentMonthLink, !request.fromKeyboard);
       if (monthLinks.includes(document.activeElement)) currentMonthLink.focus({ preventScroll: true });
@@ -198,8 +220,11 @@
     if (errorState) errorState.hidden = true;
     if (announcement) announcement.textContent = '';
     showLoadingIndicator(false);
-    setActiveMonth(link);
-    if (fromKeyboard || monthLinks.includes(document.activeElement)) link.focus({ preventScroll: true });
+    const monthStepFocused = monthStepButtons.includes(document.activeElement);
+    setActiveMonth(link, fromKeyboard);
+    if ((fromKeyboard && !monthStepFocused) || monthLinks.includes(document.activeElement)) {
+      link.focus({ preventScroll: true });
+    }
     centerMonth(link, !fromKeyboard);
     if (link === currentMonthLink) {
       setMaintenanceLoading(false);
@@ -251,6 +276,21 @@
     });
   });
 
+  for (const [button, direction] of [[previousMonthButton, -1], [nextMonthButton, 1]]) {
+    if (!button || !carouselAvailable) continue;
+    button.addEventListener('blur', function (event) {
+      if (button.offsetWidth !== 0 || event.relatedTarget) return;
+      const selected = pendingRequest ? pendingRequest.link : currentMonthLink;
+      selected.focus({ preventScroll: true });
+    });
+    button.addEventListener('click', function (event) {
+      if (event.defaultPrevented || button.disabled) return;
+      const selected = pendingRequest ? pendingRequest.link : currentMonthLink;
+      const next = monthLinks[monthLinks.indexOf(selected) + direction];
+      if (next) selectMonth(next, event.detail === 0);
+    });
+  }
+
   if (retryButton) {
     retryButton.addEventListener('click', function () {
       if (!failedRequest) return;
@@ -261,11 +301,15 @@
 
   if (carouselAvailable) {
     monthViewport.classList.add('is-carousel');
-    setActiveMonth(currentMonthLink);
+    if (monthControl) monthControl.classList.add('is-carousel');
+    monthStepButtons.forEach(function (button) { button.hidden = false; });
+    setActiveMonth(currentMonthLink, true);
     centerMonth(currentMonthLink, false);
     window.history.scrollRestoration = 'manual';
     const recenter = function () {
-      centerMonth(pendingRequest ? pendingRequest.link : currentMonthLink, false);
+      const selected = pendingRequest ? pendingRequest.link : currentMonthLink;
+      syncMonthSteps(selected);
+      centerMonth(selected, false);
     };
     if (typeof window.ResizeObserver === 'function') {
       const observer = new window.ResizeObserver(recenter);

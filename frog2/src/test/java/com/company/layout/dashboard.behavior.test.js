@@ -26,6 +26,7 @@ function harness(options = {}) {
         const events = {};
         return {
             attributes, events, childNodes: [], hidden: true, inert: false,
+            disabled: false, offsetWidth: 44,
             classList: {
                 add(name) { names.add(name); },
                 remove(name) { names.delete(name); },
@@ -37,6 +38,8 @@ function harness(options = {}) {
             removeAttribute(name) { attributes.delete(name); },
             addEventListener(name, listener) { (events[name] ||= []).push(listener); },
             focus() { focused = this; },
+            blur() { focused = null; this.dispatch('blur'); },
+            getBoundingClientRect() { return { left: this.offsetLeft || 0, width: this.offsetWidth }; },
             replaceChildren(...nodes) { this.childNodes = nodes; },
             querySelector() { return null; },
             dispatch(name, overrides = {}) {
@@ -58,8 +61,12 @@ function harness(options = {}) {
         return link;
     });
     const month = links[current] ? new URL(links[current].href).searchParams.get('maintenanceMonth') : '2026-02';
+    const control = element();
+    const previousStep = element();
+    const nextStep = element();
     const viewport = element();
     viewport.clientWidth = 336;
+    viewport.getBoundingClientRect = () => ({ width: viewport.clientWidth });
     const track = element();
     track.transform = 'none';
     if (!options.noAnimations) {
@@ -157,12 +164,14 @@ function harness(options = {}) {
             maintenanceMonthBoardBody: body, toggleMaintenanceBoardBtn: toggle,
             maintenanceLoadingState: loading,
             maintenanceMonthError: error, retryMaintenanceMonthBtn: retry,
-            maintenanceMonthAnnouncement: announcement
+            maintenanceMonthAnnouncement: announcement,
+            previousMaintenanceMonthBtn: previousStep, nextMaintenanceMonthBtn: nextStep
         }[id] || null; },
         querySelector(selector) { return {
             '[data-personal-section="dashboard-maintenance"]': personal,
             '#maintenanceMonthTitle .maintenance-month-label': label,
-            '.maintenance-month-tabs': viewport, '.maintenance-month-track': track
+            '.maintenance-month-tabs': viewport, '.maintenance-month-track': track,
+            '.maintenance-month-control': control
         }[selector] || null; },
         querySelectorAll(selector) { assert.equal(selector, '.maintenance-month-tab'); return links; }
     };
@@ -199,7 +208,8 @@ function harness(options = {}) {
             text() { return overrides.text ?? Promise.resolve(html); }
         };
     }
-    return { links, viewport, track, animations, requests, navigations, body, personal, label,
+    return { links, viewport, track, control, previousStep, nextStep,
+        animations, requests, navigations, body, personal, label,
         loading, error, retry, announcement, motion, toggle, storage, timers,
         window, entries, response,
         get expired() { return expired; }, get focused() { return focused; },
@@ -232,6 +242,81 @@ test('the first, middle and last of twelve months center in the fixed slot', () 
         assert.equal(h.viewport.classList.contains('is-carousel'), true);
         assert.equal(h.requests.length, 0);
     }
+});
+
+test('responsive slot centering retains subpixel precision on a translated track', () => {
+    const h = harness({ count: 12, current: 5 });
+    h.viewport.getBoundingClientRect = () => ({ width: 235.5 });
+    h.track.getBoundingClientRect = () => ({ left: -200.25 });
+    h.links[5].getBoundingClientRect = () => ({ left: 180.25, width: 75.5 });
+    h.resize();
+    const offset = Number(h.latest().frames[1].transform.match(/\(([-\d.]+)px\)/)[1]);
+    assert.equal(380.5 + 75.5 / 2 + offset, 117.75);
+    assert.equal(h.requests.length, 0);
+});
+
+test('a hidden step blur restores the pending month after the browser clears focus', async () => {
+    const h = harness({ count: 4, current: 1 });
+    h.nextStep.focus();
+    h.nextStep.dispatch('click', { detail: 0 });
+    h.nextStep.offsetWidth = 0;
+    h.nextStep.blur();
+    assert.equal(h.focused, h.links[2]);
+    await h.complete();
+    assertMonth(h, '2026-03');
+    assert.equal(h.focused, h.links[2]);
+});
+
+test('previous and next controls stay within the twelve-month range', async () => {
+    const h = harness({ count: 12, current: 0 });
+    assert.equal(h.previousStep.hidden, false);
+    assert.equal(h.previousStep.disabled, true);
+    h.previousStep.dispatch('click');
+    assert.equal(h.requests.length, 0);
+    h.nextStep.dispatch('click');
+    await h.complete();
+    assertMonth(h, '2026-02');
+    assert.equal(h.previousStep.disabled, false);
+    h.links[1].dispatch('keydown', { key: 'End' });
+    await h.complete();
+    assertMonth(h, '2026-12');
+    assert.equal(h.nextStep.disabled, true);
+    h.nextStep.dispatch('click');
+    assert.equal(h.requests.length, 2);
+});
+
+test('repeated step clicks advance from the pending selection and restore bounds on failure', async () => {
+    const h = harness({ count: 4, current: 0, ignoreAbort: true });
+    h.nextStep.dispatch('click');
+    h.nextStep.dispatch('click');
+    assert.equal(h.requests[0].settings.signal.aborted, true);
+    assert.equal(h.requests[1].href, h.links[2].href);
+    await h.complete(1);
+    await h.complete(0);
+    assertMonth(h, '2026-03');
+    h.nextStep.dispatch('click');
+    assert.equal(h.nextStep.disabled, true);
+    h.requests[2].reject(new Error('Offline'));
+    await flush();
+    assertMonth(h, '2026-03');
+    assert.equal(h.nextStep.disabled, false);
+    assert.equal(h.error.hidden, false);
+});
+
+test('keyboard steps are instant and keep focus until the control is disabled or hidden', async () => {
+    const h = harness({ count: 4, current: 1 });
+    h.nextStep.focus();
+    h.nextStep.dispatch('click', { detail: 0 });
+    assert.equal(h.focused, h.nextStep);
+    assert.equal(h.latest().timing.duration, 0);
+    await h.complete();
+    h.nextStep.dispatch('click', { detail: 0 });
+    assert.equal(h.focused, h.links[3]);
+    await h.complete();
+    h.previousStep.focus();
+    h.previousStep.offsetWidth = 0;
+    h.resize();
+    assert.equal(h.focused, h.links[3]);
 });
 
 test('a click starts fetching during the animation and keeps the old contents until success', async () => {
