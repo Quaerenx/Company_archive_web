@@ -39,7 +39,7 @@ class FocusedVisualHierarchyContractTest {
 
         assertFalse(dashboard.contains("maintenance-kpi"));
         assertTrue(dashboard.contains(".dashboard-page .maintenance-month-title h2 {"));
-        assertTrue(dashboard.contains("font-size: var(--font-size-2xl);"));
+        assertTrue(dashboard.contains("font-size: var(--font-size-lg);"));
         assertTrue(dashboard.contains(".dashboard-page .maintenance-month-label {"));
         assertTrue(dashboard.contains(".dashboard-page .maintenance-assignee-grid {"));
         assertTrue(dashboard.contains(".dashboard-page .maintenance-assignee-name {"));

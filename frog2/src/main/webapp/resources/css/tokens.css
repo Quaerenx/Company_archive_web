@@ -119,7 +119,7 @@
     --color-login-card-border: rgba(255, 255, 255, 0.88);
     --color-login-field: rgba(255, 255, 255, 0.72);
     --color-login-field-focus: var(--palette-surface);
-    --color-login-field-border: var(--palette-border);
+    --color-login-field-border: var(--palette-border-strong);
     --color-login-halo: rgba(255, 255, 255, 0.28);
     --color-login-action: var(--palette-brand-hover);
     --color-login-action-hover: var(--palette-text-strong);

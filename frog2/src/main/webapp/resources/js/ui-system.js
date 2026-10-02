@@ -18,6 +18,7 @@
         'select:not([disabled])',
         'textarea:not([disabled])',
         'iframe',
+        'summary',
         '[contenteditable="true"]',
         '[tabindex]:not([tabindex="-1"])'
     ].join(',');
@@ -393,7 +394,10 @@
     function focusableElements(dialog) {
         return Array.prototype.filter.call(
             dialog.querySelectorAll(FOCUSABLE_SELECTOR),
-            isVisible
+            function (element) {
+                return element.tabIndex >= 0 && !element.matches(':disabled')
+                    && !element.closest('[inert]') && isVisible(element);
+            }
         );
     }
 
@@ -439,12 +443,13 @@
 
             var first = focusable[0];
             var last = focusable[focusable.length - 1];
+            var outsideTabOrder = focusable.indexOf(document.activeElement) === -1;
             if (event.shiftKey && (document.activeElement === first
-                    || !dialog.contains(document.activeElement))) {
+                    || outsideTabOrder)) {
                 event.preventDefault();
                 last.focus();
             } else if (!event.shiftKey && (document.activeElement === last
-                    || !dialog.contains(document.activeElement))) {
+                    || outsideTabOrder)) {
                 event.preventDefault();
                 first.focus();
             }

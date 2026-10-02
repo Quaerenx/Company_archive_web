@@ -41,7 +41,7 @@
 }
 
 .page-mypage .profile-summary__identity h2 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-lg);
     line-height: var(--line-height-tight);
 }
 
@@ -357,10 +357,38 @@
         padding: var(--space-20) var(--space-16);
     }
 
-    .page-mypage .profile-summary__actions,
-    .page-mypage .profile-summary__actions .ui-button,
-    .page-mypage .host-summary .ui-button {
+    .page-mypage .profile-summary {
+        gap: var(--space-12);
+    }
+
+    .page-mypage .profile-summary__actions {
         width: 100%;
+    }
+
+    .page-mypage .host-summary {
+        display: grid;
+        gap: var(--space-8) var(--space-12);
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .page-mypage .host-summary > div {
+        display: contents;
+    }
+
+    .page-mypage .host-summary__heading {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .page-mypage .host-summary > .ui-button {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .page-mypage .host-summary p {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin: 0;
     }
 
     .page-mypage .work-inbox__link {

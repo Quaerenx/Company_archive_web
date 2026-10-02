@@ -30,29 +30,8 @@
 <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 <%@ include file="/WEB-INF/includes/header_nav.jspf" %>
 <main id="main-content" class="app-main" tabindex="-1">
-<c:if test="${(navDashboardCurrent and pageTitle eq '대시보드') or navCustomerSectionCurrent or navResourceSectionCurrent or navMyPageCurrent}">
-    <nav class="app-breadcrumb content-shell" aria-label="현재 위치">
-        <ol>
-            <c:choose>
-                <c:when test="${navDashboardCurrent and pageTitle eq '대시보드'}">
-                    <li><span aria-current="page"><c:out value="${pageTitle}" /></span></li>
-                </c:when>
-                <c:otherwise>
-                    <li><a href="${pageContext.request.contextPath}/dashboard">대시보드</a></li>
-                    <c:choose>
-                        <c:when test="${navCustomerSectionCurrent}">
-                            <li><span class="app-breadcrumb__separator" aria-hidden="true">›</span><span>고객관리</span></li>
-                        </c:when>
-                        <c:when test="${navResourceSectionCurrent}">
-                            <li><span class="app-breadcrumb__separator" aria-hidden="true">›</span><span>자료관리</span></li>
-                        </c:when>
-                        <c:when test="${pageTitle ne '마이페이지'}">
-                            <li><span class="app-breadcrumb__separator" aria-hidden="true">›</span><a href="${pageContext.request.contextPath}/mypage">마이페이지</a></li>
-                        </c:when>
-                    </c:choose>
-                    <li><span class="app-breadcrumb__separator" aria-hidden="true">›</span><span aria-current="page"><c:out value="${pageTitle}" /></span></li>
-                </c:otherwise>
-            </c:choose>
-        </ol>
-    </nav>
-</c:if>
+<c:set var="pageBreadcrumbSection" scope="request"
+       value="${navCustomerSectionCurrent ? 'customers'
+               : navResourceSectionCurrent ? 'resources'
+               : navMyPageCurrent ? 'mypage'
+               : navDashboardCurrent ? 'dashboard' : ''}" />

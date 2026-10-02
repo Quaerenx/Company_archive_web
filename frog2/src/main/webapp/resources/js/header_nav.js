@@ -441,19 +441,19 @@ document.addEventListener('DOMContentLoaded', function() {
             activeSearchRequest = null;
         }
 
-        function setActive(index) {
+        function setActive(index, moveFocus) {
             if (!visibleEntries.length) {
                 activeIndex = -1;
-                quickNavInput.removeAttribute('aria-activedescendant');
                 return;
             }
             activeIndex = (index + visibleEntries.length) % visibleEntries.length;
-            quickNavResults.querySelectorAll('[role="option"]').forEach(function(option, optionIndex) {
+            quickNavResults.querySelectorAll('.quick-nav-result').forEach(function(option, optionIndex) {
                 var active = optionIndex === activeIndex;
                 option.classList.toggle('is-active', active);
-                option.setAttribute('aria-selected', active ? 'true' : 'false');
                 if (active) {
-                    quickNavInput.setAttribute('aria-activedescendant', option.id);
+                    if (moveFocus) {
+                        option.querySelector('.quick-nav-result-link').focus({ preventScroll: true });
+                    }
                     option.scrollIntoView({ block: 'nearest' });
                 }
             });
@@ -465,6 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return !query || entry.normalizedLabel.indexOf(query) >= 0;
             });
             visibleEntries = matchingMenus.concat(remoteEntries);
+            var resultsHadFocus = quickNavResults.contains(document.activeElement);
             quickNavResults.textContent = '';
             var previousGroup = null;
 
@@ -473,7 +474,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (group !== previousGroup) {
                     var groupItem = document.createElement('li');
                     groupItem.className = 'quick-nav-result-group';
-                    groupItem.setAttribute('role', 'presentation');
                     var groupLabel = document.createElement('strong');
                     groupLabel.textContent = groupLabels[group]
                             || entry.category;
@@ -488,15 +488,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     previousGroup = group;
                 }
                 var option = document.createElement('li');
-                option.id = 'quick-nav-option-' + index;
+                option.id = 'quick-nav-result-' + index;
                 option.className = 'quick-nav-result';
-                option.setAttribute('role', 'option');
-                option.setAttribute('aria-selected', 'false');
 
                 var link = document.createElement('a');
                 link.className = 'quick-nav-result-link';
                 link.href = entry.url;
-                link.tabIndex = -1;
 
                 var category = document.createElement('span');
                 category.className = 'quick-nav-result-type';
@@ -521,6 +518,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 link.addEventListener('focus', function() {
                     setActive(index);
+                });
+                link.addEventListener('keydown', function(event) {
+                    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp'
+                            || event.key === 'Home' || event.key === 'End') {
+                        event.preventDefault();
+                        var nextIndex = event.key === 'Home' ? 0
+                                : event.key === 'End' ? visibleEntries.length - 1
+                                : index + (event.key === 'ArrowDown' ? 1 : -1);
+                        setActive(nextIndex, true);
+                    }
                 });
                 link.addEventListener('click', function() {
                     rememberQuery(quickNavInput.value);
@@ -553,6 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             renderRecent();
             setActive(visibleEntries.length ? 0 : -1);
+            if (resultsHadFocus) quickNavInput.focus();
         }
 
         function normalizeRemoteEntries(payload) {
@@ -719,7 +728,6 @@ document.addEventListener('DOMContentLoaded', function() {
             quickNavBackdrop.setAttribute('aria-hidden', 'false');
             quickNavOpenButton.setAttribute('aria-expanded', 'true');
             quickNavInput.value = '';
-            quickNavInput.setAttribute('aria-expanded', 'true');
             recent = readRecent();
             cancelPendingSearch();
             remoteEntries = [];
@@ -736,8 +744,6 @@ document.addEventListener('DOMContentLoaded', function() {
             quickNavBackdrop.hidden = true;
             quickNavBackdrop.setAttribute('aria-hidden', 'true');
             quickNavOpenButton.setAttribute('aria-expanded', 'false');
-            quickNavInput.setAttribute('aria-expanded', 'false');
-            quickNavInput.removeAttribute('aria-activedescendant');
             cancelPendingSearch();
             remoteEntries = [];
             setStatus('');
@@ -762,23 +768,14 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('pagehide', cancelPendingSearch);
         quickNavInput.addEventListener('input', searchInputChanged);
         quickNavInput.addEventListener('keydown', function(event) {
-            if (event.key === 'ArrowDown') {
+            if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
                 event.preventDefault();
-                setActive(activeIndex + 1);
-            } else if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                setActive(activeIndex - 1);
-            } else if (event.key === 'Home') {
-                event.preventDefault();
-                setActive(0);
-            } else if (event.key === 'End') {
-                event.preventDefault();
-                setActive(visibleEntries.length - 1);
+                setActive(event.key === 'ArrowDown' ? 0 : visibleEntries.length - 1, true);
             } else if (event.key === 'Enter' && activeIndex >= 0) {
                 event.preventDefault();
-                rememberQuery(quickNavInput.value);
-                rememberCustomer(visibleEntries[activeIndex]);
-                window.location.assign(visibleEntries[activeIndex].url);
+                var result = quickNavResults.querySelectorAll('.quick-nav-result')[activeIndex];
+                result.querySelector('.quick-nav-result-link').click();
             }
         });
         document.addEventListener('keydown', function(event) {

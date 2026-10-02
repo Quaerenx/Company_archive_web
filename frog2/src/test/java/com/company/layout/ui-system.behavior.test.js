@@ -88,6 +88,9 @@ class FakeElement extends Element {
         this.document = document;
         this.focusables = options.focusables || [];
         this.initialFocus = options.initialFocus || null;
+        this.tabIndex = options.tabIndex ?? 0;
+        this.disabled = options.disabled === true;
+        this.inertAncestor = options.inertAncestor || null;
         this.isConnected = options.isConnected !== false;
         this.parentRow = options.parentRow || null;
         this.parentDisclosureRow = options.parentDisclosureRow || null;
@@ -123,6 +126,9 @@ class FakeElement extends Element {
     }
 
     closest(selector) {
+        if (selector === '[inert]') {
+            return this.inertAncestor || (this.getAttribute('inert') !== null ? this : null);
+        }
         if (selector === '.ui-data-row[data-detail-url]') {
             return this.parentRow || (this.dataset.detailUrl ? this : null);
         }
@@ -153,7 +159,11 @@ class FakeElement extends Element {
     }
 
     getClientRects() {
-        return [{}];
+        return this.hidden ? [] : [{}];
+    }
+
+    matches(selector) {
+        return selector === ':disabled' && this.disabled;
     }
 
     getBoundingClientRect() {
@@ -939,4 +949,66 @@ test('pages without table regions skip header measurements and ResizeObserver se
     harness.flushFrames();
     assert.equal(harness.document.documentElement.style.getPropertyValue('--table-sticky-offset'), '');
     assert.equal(harness.resizeObserverCallbacks.length, 0);
+});
+
+
+test('dialog Tab boundaries exclude programmatic links and unavailable controls', () => {
+    const h = createHarness();
+    const first = new FakeElement(h.document);
+    const last = new FakeElement(h.document);
+    const programmatic = new FakeElement(h.document, { tabIndex: -1 });
+    const disabled = new FakeElement(h.document, { disabled: true });
+    const hidden = new FakeElement(h.document, { hidden: true });
+    const inert = new FakeElement(h.document, { inertAncestor: new FakeElement(h.document) });
+    const dialog = new FakeElement(h.document, {
+        focusables: [programmatic, first, last, programmatic, disabled, hidden, inert]
+    });
+    h.ui.createDialogController(dialog).open();
+    h.flushFrames();
+    assert.equal(h.document.activeElement, first);
+    last.focus();
+    const forward = keyEvent('Tab');
+    h.document.dispatch('keydown', forward);
+    assert.equal(forward.defaultPrevented, true);
+    assert.equal(h.document.activeElement, first);
+    const backward = keyEvent('Tab', true);
+    h.document.dispatch('keydown', backward);
+    assert.equal(backward.defaultPrevented, true);
+    assert.equal(h.document.activeElement, last);
+});
+
+test('dialog initial programmatic focus enters the Tab order in either direction', () => {
+    for (const reverse of [false, true]) {
+        const h = createHarness();
+        const heading = new FakeElement(h.document, { tabIndex: -1 });
+        const first = new FakeElement(h.document);
+        const last = new FakeElement(h.document);
+        const dialog = new FakeElement(h.document, {
+            focusables: [first, last, heading], initialFocus: heading
+        });
+        h.ui.createDialogController(dialog).open();
+        h.flushFrames();
+        assert.equal(h.document.activeElement, heading);
+        const event = keyEvent('Tab', reverse);
+        h.document.dispatch('keydown', event);
+        assert.equal(event.defaultPrevented, true);
+        assert.equal(h.document.activeElement, reverse ? last : first);
+    }
+});
+
+test('dialog recomputes its Tab boundary after controls become disabled', () => {
+    const h = createHarness();
+    const first = new FakeElement(h.document);
+    const last = new FakeElement(h.document);
+    const dialog = new FakeElement(h.document, { focusables: [first, last] });
+    h.ui.createDialogController(dialog).open();
+    h.flushFrames();
+    last.disabled = true;
+    const event = keyEvent('Tab');
+    h.document.dispatch('keydown', event);
+    assert.equal(event.defaultPrevented, true);
+    assert.equal(h.document.activeElement, first);
+    first.disabled = true;
+    h.document.dispatch('keydown', keyEvent('Tab'));
+    assert.equal(h.document.activeElement, dialog);
 });

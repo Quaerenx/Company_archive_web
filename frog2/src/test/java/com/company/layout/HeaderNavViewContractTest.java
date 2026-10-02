@@ -99,6 +99,20 @@ class HeaderNavViewContractTest {
         assertFalse(styles.contains("margin-inline-start: var(--space-16);"));
     }
 
+    @Test
+    void integratedSearchUsesAPlainSearchFieldAndNativeResultList() throws Exception {
+        String header = read("WEB-INF/includes/header_nav.jspf");
+        String behavior = read("resources/js/header_nav.js");
+        assertTrue(header.contains("aria-controls=\"quickNavResults\""));
+        assertTrue(header.contains("aria-describedby=\"quickNavKeyboardHelp\""));
+        assertFalse(header.contains("role=\"combobox\""));
+        assertFalse(header.contains("role=\"listbox\""));
+        assertFalse(behavior.contains("setAttribute('role', 'option')"));
+        assertFalse(behavior.contains("aria-activedescendant"));
+        assertFalse(behavior.contains("aria-selected"));
+        assertFalse(behavior.contains("link.tabIndex = -1"));
+    }
+
     private static String read(String path) throws Exception {
         return Files.readString(WEBAPP.resolve(path));
     }

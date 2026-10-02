@@ -107,7 +107,7 @@
       { transform: startTransform },
       { transform: 'translateX(' + offset + 'px)' }
     ], {
-      duration: animate && !reducedMotion.matches ? 320 : 0,
+      duration: animate && !reducedMotion.matches ? 240 : 0,
       easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
       fill: 'forwards'
     });
@@ -182,7 +182,7 @@
       clearRequest();
       setActiveMonth(currentMonthLink);
       setMaintenanceLoading(false);
-      centerMonth(currentMonthLink, true);
+      centerMonth(currentMonthLink, !request.fromKeyboard);
       if (monthLinks.includes(document.activeElement)) currentMonthLink.focus({ preventScroll: true });
       if (request.historyMode === 'none') syncHistory(currentMonthLink, 'replace');
       if (window.Frog2Session.isSessionExpired(error)) return;
@@ -200,12 +200,12 @@
     showLoadingIndicator(false);
     setActiveMonth(link);
     if (fromKeyboard || monthLinks.includes(document.activeElement)) link.focus({ preventScroll: true });
-    centerMonth(link, true);
+    centerMonth(link, !fromKeyboard);
     if (link === currentMonthLink) {
       setMaintenanceLoading(false);
       return;
     }
-    const request = { link: link, historyMode: historyMode, controller: new window.AbortController() };
+    const request = { link: link, fromKeyboard: fromKeyboard, historyMode: historyMode, controller: new window.AbortController() };
     pendingRequest = request;
     setMaintenanceLoading(true);
     request.loadingTimer = window.setTimeout(function () {

@@ -237,7 +237,7 @@ test('the first, middle and last of twelve months center in the fixed slot', () 
 test('a click starts fetching during the animation and keeps the old contents until success', async () => {
     const h = harness();
     assert.equal(h.links[0].dispatch('click').defaultPrevented, true);
-    assert.equal(h.latest().timing.duration, 320);
+    assert.equal(h.latest().timing.duration, 240);
     assert.equal(h.requests.length, 1);
     assert.equal(h.requests[0].href, h.links[0].href);
     assert.equal(h.personal.getAttribute('aria-busy'), 'true');
@@ -335,11 +335,13 @@ test('a stale failure does not clear another request loading state or show an er
 test('network failure restores the rendered selection and retry applies the failed month', async () => {
     const h = harness();
     h.links[0].dispatch('click', { detail: 0 });
+    assert.equal(h.latest().timing.duration, 0);
     h.requests[0].reject(new Error('Network unavailable'));
     await flush();
     assertMonth(h, '2026-02');
     assert.equal(h.error.hidden, false);
     assert.equal(h.focused, h.links[1]);
+    assert.equal(h.latest().timing.duration, 0);
     assert.equal(h.body.inert, false);
     assert.equal(h.entries.length, 1);
     h.retry.dispatch('click');
@@ -414,6 +416,7 @@ test('arrows, Home, End and Space select months and retain focus in the same doc
         const start = key === ' ' ? 0 : current;
         assert.equal(h.links[start].dispatch('keydown', { key }).defaultPrevented, true);
         assert.equal(h.focused, h.links[target]);
+        assert.equal(h.latest().timing.duration, 0);
         await h.complete();
         assert.equal(h.focused, h.links[target]);
         assert.equal(h.links[target].getAttribute('aria-current'), 'page');

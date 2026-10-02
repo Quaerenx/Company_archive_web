@@ -46,6 +46,8 @@ function createElement(document, options = {}) {
     const element = {
         classList: new ClassList(),
         children,
+        tagName: (options.tagName || 'button').toUpperCase(),
+        tabIndex: 0,
         hidden: false,
         addEventListener(name, listener) {
             if (!listeners.has(name)) {
@@ -58,7 +60,7 @@ function createElement(document, options = {}) {
             return child;
         },
         contains(candidate) {
-            return candidate === element || children.includes(candidate);
+            return candidate === element || children.some(child => child.contains(candidate));
         },
         closest(selector) {
             return options.closest ? options.closest(selector) : null;
@@ -69,6 +71,11 @@ function createElement(document, options = {}) {
         focus() {
             document.activeElement = element;
         },
+        click() {
+            const event = keyboardEvent('');
+            element.dispatch('click', event);
+            if (!event.defaultPrevented && element.href) document.activateLink(element.href);
+        },
         getAttribute(name) {
             return attributes.has(name) ? attributes.get(name) : null;
         },
@@ -76,15 +83,18 @@ function createElement(document, options = {}) {
             return false;
         },
         querySelector(selector) {
-            return options.querySelector ? options.querySelector(selector) : null;
+            if (options.querySelector) return options.querySelector(selector);
+            if (selector === '.quick-nav-result-link') {
+                return children.find(child => child.className === 'quick-nav-result-link') || null;
+            }
+            return null;
         },
         querySelectorAll(selector) {
             if (options.querySelectorAll) {
                 return options.querySelectorAll(selector);
             }
-            if (selector === '[role="option"]') {
-                return children.filter((child) =>
-                    child.getAttribute('role') === 'option');
+            if (selector === '.quick-nav-result') {
+                return children.filter(child => child.className === 'quick-nav-result');
             }
             return [];
         },
@@ -121,8 +131,11 @@ function createHarness({ mobile, dropdown = false, quickNav = false,
             }
             documentListeners.get(name).push(listener);
         },
-        createElement() {
-            return createElement(document);
+        createElement(tagName) {
+            return createElement(document, { tagName });
+        },
+        activateLink(href) {
+            assignedLocation = href;
         },
         dispatch(name, event) {
             (documentListeners.get(name) || []).forEach((listener) => listener(event));
@@ -352,13 +365,13 @@ test('controller-level quick navigation close cleans the backdrop and search sta
     const harness = createHarness({ mobile: false, quickNav: true });
     harness.quickNavOpenButton.dispatch('click');
     assert.equal(harness.quickNavBackdrop.hidden, false);
-    harness.quickNavInput.setAttribute('aria-activedescendant', 'stale-result');
+    assert.equal(harness.quickNavInput.getAttribute('aria-expanded'), null);
     harness.quickNavController.close();
 
     assert.equal(harness.quickNavBackdrop.hidden, true);
     assert.equal(harness.quickNavBackdrop.getAttribute('aria-hidden'), 'true');
     assert.equal(harness.quickNavOpenButton.getAttribute('aria-expanded'), 'false');
-    assert.equal(harness.quickNavInput.getAttribute('aria-expanded'), 'false');
+    assert.equal(harness.quickNavInput.getAttribute('aria-expanded'), null);
     assert.equal(harness.quickNavInput.getAttribute('aria-activedescendant'), null);
 });
 
@@ -594,4 +607,76 @@ test('integrated search preserves the stale-response guard without AbortControll
     }]});
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(harness.quickNavStatus.textContent, currentStatus);
+});
+
+
+async function resultLinksHarness(options = {}) {
+    const h = createHarness({
+        mobile: false, quickNav: true, ...options,
+        searchPayload: { results: [
+            { category: 'Customer', group: 'customers', label: 'Alpha',
+                url: '/frog2/customers?customerName=Alpha',
+                moreUrl: '/frog2/customers',
+                actions: [{ label: 'History', url: '/frog2/maintenance?customerName=Alpha' }] },
+            { category: 'Customer', group: 'customers', label: 'Beta',
+                url: '/frog2/customers?customerName=Beta' }
+        ] }
+    });
+    h.quickNavOpenButton.dispatch('click');
+    h.quickNavInput.value = 'test';
+    h.quickNavInput.dispatch('input');
+    await new Promise(resolve => setImmediate(resolve));
+    return h;
+}
+
+test('search results expose native links including group and customer actions', async () => {
+    const h = await resultLinksHarness();
+    const [group, alpha, beta] = h.quickNavResults.children;
+    assert.equal(group.getAttribute('role'), null);
+    assert.equal(alpha.getAttribute('role'), null);
+    assert.equal(alpha.getAttribute('aria-selected'), null);
+    for (const link of [group.children[1], alpha.children[0], alpha.children[1].children[0], beta.children[0]]) {
+        assert.equal(link.tagName, 'A');
+        assert.equal(link.tabIndex, 0);
+        assert.ok(link.href.startsWith('/frog2/'));
+    }
+    alpha.children[1].children[0].click();
+    assert.equal(h.assignedLocation, '/frog2/maintenance?customerName=Alpha');
+});
+
+test('search arrows move real link focus while Home and End still edit the query', async () => {
+    const h = await resultLinksHarness();
+    const alpha = h.quickNavResults.children[1].children[0];
+    const beta = h.quickNavResults.children[2].children[0];
+    for (const key of ['Home', 'End']) {
+        const event = keyboardEvent(key);
+        h.quickNavInput.dispatch('keydown', event);
+        assert.equal(event.defaultPrevented, undefined);
+    }
+    h.quickNavInput.dispatch('keydown', keyboardEvent('ArrowDown'));
+    assert.equal(h.document.activeElement, alpha);
+    alpha.dispatch('keydown', keyboardEvent('ArrowDown'));
+    assert.equal(h.document.activeElement, beta);
+    beta.dispatch('keydown', keyboardEvent('Home'));
+    assert.equal(h.document.activeElement, alpha);
+    alpha.dispatch('keydown', keyboardEvent('End'));
+    assert.equal(h.document.activeElement, beta);
+    beta.dispatch('keydown', keyboardEvent('ArrowUp'));
+    assert.equal(h.document.activeElement, alpha);
+    const modified = Object.assign(keyboardEvent('ArrowDown'), { ctrlKey: true });
+    alpha.dispatch('keydown', modified);
+    assert.equal(modified.defaultPrevented, undefined);
+    assert.equal(h.document.activeElement, alpha);
+    assert.equal(h.quickNavInput.getAttribute('aria-activedescendant'), null);
+});
+
+test('replacing search results returns removed link focus to the query', async () => {
+    const h = await resultLinksHarness();
+    const link = h.quickNavResults.children[1].children[0];
+    link.focus();
+    h.quickNavInput.value = 'another';
+    h.quickNavInput.dispatch('input');
+    assert.equal(h.document.activeElement, h.quickNavInput);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.document.activeElement, h.quickNavInput);
 });

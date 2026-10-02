@@ -122,8 +122,10 @@ class DesignPrinciplesFullCoverageTest {
         assertTrue(shellHeader.contains("<main id=\"main-content\""));
         assertTrue(shellFooter.contains("</main>"));
         assertTrue(navigation.contains("aria-keyshortcuts=\"Control+K Meta+K\""));
-        assertTrue(navigation.contains("role=\"combobox\""));
-        assertTrue(navigation.contains("role=\"listbox\""));
+        assertTrue(navigation.contains("type=\"search\""));
+        assertTrue(navigation.contains("aria-controls=\"quickNavResults\""));
+        assertFalse(navigation.contains("role=\"combobox\""));
+        assertFalse(navigation.contains("role=\"listbox\""));
         for (String key : List.of("ArrowDown", "ArrowUp", "Home", "End", "Enter", "Escape")) {
             assertTrue(navigationScript.contains("'" + key + "'"), key);
         }

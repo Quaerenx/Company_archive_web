@@ -248,10 +248,8 @@
                    type="search"
                    autocomplete="off"
                    spellcheck="false"
-                   role="combobox"
-                   aria-autocomplete="list"
                    aria-controls="quickNavResults"
-                   aria-expanded="false"
+                   aria-describedby="quickNavKeyboardHelp"
                    data-dialog-initial-focus
                    maxlength="100"
                    placeholder="메뉴, 고객사, 이력, 회의록, 자료 검색…">
@@ -277,14 +275,14 @@
         </div>
         <ul id="quickNavResults"
             class="quick-nav-results"
-            role="listbox"
             aria-label="통합 검색 결과"></ul>
         <p id="quickNavEmpty" class="quick-nav-empty" hidden>
             일치하는 결과가 없습니다.
         </p>
-        <p class="quick-nav-help">
+        <p id="quickNavKeyboardHelp" class="quick-nav-help">
             <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> 선택</span>
-            <span><kbd>Enter</kbd> 이동</span>
+            <span><kbd>Tab</kbd> 링크 이동</span>
+            <span><kbd>Enter</kbd> 열기</span>
             <span><kbd>Esc</kbd> 닫기</span>
         </p>
     </section>

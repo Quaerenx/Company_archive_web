@@ -17,8 +17,8 @@
         <c:if test="${customer.quarterly}">
           <span class="maintenance-assignee-frequency" aria-label="분기 점검">분기</span>
         </c:if>
-        <span class="sr-only">
-          , <c:out value="${customer.statusLabel}" />
+        <span class="maintenance-assignee-status">
+          <c:out value="${customer.statusLabel}" />
         </span>
       </a>
     </li>

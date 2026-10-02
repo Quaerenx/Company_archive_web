@@ -16,7 +16,7 @@
         </a>
     </div>
 
-    <div class="recent-activity-grid" aria-label="최근 업무">
+    <div class="recent-activity-grid" role="group" aria-label="최근 업무">
         <section class="recent-activity" aria-labelledby="recentMaintenanceTitle">
             <div class="recent-activity__header">
                 <h3 id="recentMaintenanceTitle">최근 정기점검</h3>

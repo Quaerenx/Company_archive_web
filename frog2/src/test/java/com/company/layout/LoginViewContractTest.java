@@ -148,7 +148,7 @@ class LoginViewContractTest {
         assertTrue(tokens.contains(
                 "--color-login-action: var(--palette-brand-hover);"));
         assertTrue(tokens.contains(
-                "--color-login-field-border: var(--palette-border);"));
+                "--color-login-field-border: var(--palette-border-strong);"));
         assertTrue(tokens.contains("--shadow-login-action-hover:"));
         assertTrue(styles.contains(
                 ".login-page #loginForm .form-group > input::placeholder"));

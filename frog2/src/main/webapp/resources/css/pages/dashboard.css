@@ -13,7 +13,7 @@
   align-items: baseline;
   color: var(--color-text-strong);
   display: flex;
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-lg);
   font-weight: 600;
   gap: var(--space-12);
   letter-spacing: -0.02em;
@@ -391,7 +391,7 @@
 
 @media (max-width: 768px) {
   .dashboard-page .maintenance-month-title h2 {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     letter-spacing: -0.015em;
   }
 
@@ -648,4 +648,21 @@
 
 .dashboard-page .personal-maintenance-board:has(.personal-maintenance-empty) .ui-section-body {
   padding-block-start: 0;
+}
+
+.dashboard-page .maintenance-assignee-customer-name {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.dashboard-page .maintenance-assignee-status {
+  color: var(--color-text-muted);
+  flex: none;
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.dashboard-page .maintenance-assignee-customer--done .maintenance-assignee-status {
+  color: var(--color-success-text);
 }
