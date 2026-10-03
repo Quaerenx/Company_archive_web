@@ -94,18 +94,16 @@ public final class LoginAttemptLimiter {
 
     private Decision recordFailure(String key, int limit, long now) {
         AttemptState state = attempts.compute(key, (ignored, current) -> {
-            if (current == null || isExpired(current, now)) {
-                return new AttemptState(now, 1, 0);
-            }
-            if (current.blockedUntilMillis() > now) {
+            if (current != null && current.blockedUntilMillis() > now) {
                 return current;
             }
-            int failures = current.failures() + 1;
+            boolean newWindow = current == null || isExpired(current, now);
+            int failures = newWindow ? 1 : current.failures() + 1;
             long blockedUntil = failures >= limit
                     ? saturatedAdd(now, blockMillis)
                     : 0;
             return new AttemptState(
-                    current.windowStartedMillis(),
+                    newWindow ? now : current.windowStartedMillis(),
                     failures,
                     blockedUntil);
         });

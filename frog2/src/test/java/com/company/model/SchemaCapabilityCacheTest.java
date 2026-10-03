@@ -181,9 +181,26 @@ class SchemaCapabilityCacheTest {
         assertFalse(cache.columnExists(jdbc.open(), "sample_table", "present_column"));
         assertFalse(cache.columnExists(jdbc.open(), "sample_table", "other_column"));
         assertEquals(2, jdbc.queries.size());
-        SchemaCapabilityCache legacyLookup = new SchemaCapabilityCache();
-        assertTrue(legacyLookup.columnExists(jdbc.open(), "sample_table", "present_column"));
-        assertTrue(legacyLookup.columnExists(jdbc.open(), "sample_table", "other_column"));
+        SchemaCapabilityCache singleLookup = new SchemaCapabilityCache();
+        assertFalse(singleLookup.columnExists(jdbc.open(), "sample_table", "present_column"));
+        assertFalse(singleLookup.columnExists(jdbc.open(), "sample_table", "other_column"));
+        assertFalse(singleLookup.columnExists(jdbc.open(), "SAMPLE_TABLE", "OTHER_COLUMN"));
+        assertEquals(6, jdbc.queries.size());
+        assertEquals(6, jdbc.resultCloses);
+    }
+
+    @Test
+    void singleColumnLookupFindsTheExactRowAfterWildcardLookalikes() {
+        SchemaMetadataJdbcFixture jdbc = new SchemaMetadataJdbcFixture();
+        jdbc.add("application", "sampleXtable", "present_column");
+        jdbc.add("application", "sample_table", "presentXcolumn");
+        jdbc.add("application", "sample_table", "present_column");
+        SchemaCapabilityCache cache = new SchemaCapabilityCache();
+
+        assertTrue(cache.columnExists(jdbc.open(), "sample_table", "present_column"));
+        assertTrue(cache.columnExists(jdbc.open(), "SAMPLE_TABLE", "PRESENT_COLUMN"));
+        assertEquals(1, jdbc.queries.size());
+        assertEquals(1, jdbc.resultCloses);
     }
 
     @Test
@@ -236,7 +253,7 @@ class SchemaCapabilityCacheTest {
                 (ignored, call, args) -> {
                     if ("getColumns".equals(call.getName())) {
                         queries.incrementAndGet();
-                        return resultSet(Boolean.TRUE.equals(rows.poll()));
+                        return resultSet(Boolean.TRUE.equals(rows.poll()), (String) args[2], (String) args[3]);
                     }
                     return defaultValue(call.getReturnType());
                 });
@@ -248,7 +265,7 @@ class SchemaCapabilityCacheTest {
                         : defaultValue(call.getReturnType()));
     }
 
-    private static ResultSet resultSet(boolean hasRow) {
+    private static ResultSet resultSet(boolean hasRow, String tableName, String columnName) {
         boolean[] first = {hasRow};
         return (ResultSet) Proxy.newProxyInstance(
                 ResultSet.class.getClassLoader(),
@@ -259,6 +276,11 @@ class SchemaCapabilityCacheTest {
                         first[0] = false;
                         yield result;
                     }
+                    case "getString" -> switch ((String) args[0]) {
+                        case "TABLE_NAME" -> tableName;
+                        case "COLUMN_NAME" -> columnName;
+                        default -> null;
+                    };
                     default -> defaultValue(call.getReturnType());
                 });
     }

@@ -12,6 +12,9 @@
     var userId = root.getAttribute('data-user-id') || 'anonymous';
     var storageKey = 'frog2.workInbox.deferrals.v1:' + userId;
     var deferrals = readDeferrals();
+    var businessDateFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+    });
 
     function readDeferrals() {
         try {
@@ -33,42 +36,37 @@
     }
 
     function isoToday() {
-        var now = new Date();
-        return [
-            now.getFullYear(),
-            String(now.getMonth() + 1).padStart(2, '0'),
-            String(now.getDate()).padStart(2, '0')
-        ].join('-');
+        var parts = {};
+        businessDateFormatter.formatToParts(new Date()).forEach(function (part) {
+            parts[part.type] = part.value;
+        });
+        return [parts.year, parts.month, parts.day].join('-');
     }
 
-    function defaultUntil() {
-        var date = new Date();
-        date.setDate(date.getDate() + 7);
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, '0'),
-            String(date.getDate()).padStart(2, '0')
-        ].join('-');
+    function defaultUntil(today) {
+        var date = new Date(today + 'T00:00:00Z');
+        date.setUTCDate(date.getUTCDate() + 7);
+        return date.toISOString().slice(0, 10);
     }
 
     function validIsoDate(value) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) {
+        if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
             return false;
         }
         var parts = value.split('-').map(Number);
-        var date = new Date(parts[0], parts[1] - 1, parts[2]);
-        return date.getFullYear() === parts[0]
-            && date.getMonth() === parts[1] - 1
-            && date.getDate() === parts[2];
+        var date = new Date(value + 'T00:00:00Z');
+        return date.getUTCFullYear() === parts[0]
+            && date.getUTCMonth() === parts[1] - 1
+            && date.getUTCDate() === parts[2];
     }
 
-    function isDeferred(item) {
+    function isDeferred(item, today) {
         var value = deferrals[item.getAttribute('data-item-key')];
         return Boolean(value && validIsoDate(value.until)
-            && value.until >= isoToday());
+            && value.until >= today);
     }
 
-    function pruneDeferrals() {
+    function pruneDeferrals(today) {
         var keys = new Set(items.map(function (item) {
             return item.getAttribute('data-item-key');
         }));
@@ -76,7 +74,7 @@
         Object.keys(deferrals).forEach(function (key) {
             if (!keys.has(key) || !deferrals[key]
                     || !validIsoDate(deferrals[key].until)
-                    || deferrals[key].until < isoToday()) {
+                    || deferrals[key].until < today) {
                 delete deferrals[key];
                 changed = true;
             }
@@ -84,10 +82,10 @@
         if (changed) writeDeferrals();
     }
 
-    function updateItemState(item) {
+    function updateItemState(item, today) {
         var key = item.getAttribute('data-item-key');
         var value = deferrals[key];
-        var deferred = isDeferred(item);
+        var deferred = isDeferred(item, today);
         var copy = item.querySelector('[data-deferred-copy]');
         var panel = item.querySelector('[data-defer-panel]');
         var resume = item.querySelector('[data-resume]');
@@ -101,9 +99,10 @@
         if (panel) {
             panel.hidden = deferred;
             var until = panel.querySelector('[name="until"]');
-            if (until && !until.value) until.value = defaultUntil();
+            if (until && !until.value) until.value = defaultUntil(today);
         }
         if (resume) resume.hidden = !deferred;
+        return deferred;
     }
 
     function applyFilters() {
@@ -113,8 +112,9 @@
         var status = data.get('status') || 'active';
         var customer = String(data.get('customer') || '').trim().toLowerCase();
         var visible = 0;
+        var today = isoToday();
         items.forEach(function (item) {
-            var deferred = isDeferred(item);
+            var deferred = updateItemState(item, today);
             var matches = (severity === 'all' || item.dataset.severity === severity)
                 && (type === 'all' || item.dataset.type === type)
                 && (status === 'all'
@@ -127,9 +127,8 @@
         if (empty) empty.hidden = visible !== 0;
     }
 
-    pruneDeferrals();
+    pruneDeferrals(isoToday());
     items.forEach(function (item) {
-        updateItemState(item);
         var deferForm = item.querySelector('[data-defer-form]');
         var resume = item.querySelector('[data-resume]');
         if (deferForm) {
@@ -146,7 +145,6 @@
                     createdAt: new Date().toISOString()
                 };
                 writeDeferrals();
-                updateItemState(item);
                 applyFilters();
             });
         }
@@ -154,7 +152,6 @@
             resume.addEventListener('click', function () {
                 delete deferrals[item.getAttribute('data-item-key')];
                 writeDeferrals();
-                updateItemState(item);
                 applyFilters();
             });
         }

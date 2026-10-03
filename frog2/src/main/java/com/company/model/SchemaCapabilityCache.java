@@ -97,7 +97,14 @@ final class SchemaCapabilityCache {
             throws SQLException {
         long start = System.nanoTime();
         try (ResultSet columns = metadata.getColumns(null, null, tableName, columnName)) {
-            return columns.next();
+            while (columns.next()) {
+                // JDBC identifier patterns can include rows from similarly named tables or columns.
+                if (tableName.equalsIgnoreCase(columns.getString("TABLE_NAME"))
+                        && columnName.equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
+                    return true;
+                }
+            }
+            return false;
         } finally {
             RequestPerformanceContext.recordMetadata(System.nanoTime() - start);
         }

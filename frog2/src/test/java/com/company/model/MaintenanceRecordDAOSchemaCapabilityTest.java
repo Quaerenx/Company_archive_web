@@ -384,7 +384,7 @@ class MaintenanceRecordDAOSchemaCapabilityTest {
                 (ignored, call, args) -> {
                     if ("getColumns".equals(call.getName())) {
                         metadataQueries.incrementAndGet();
-                        return resultSet(true);
+                        return resultSet(true, (String) args[2], (String) args[3]);
                     }
                     return defaultValue(call.getReturnType());
                 });
@@ -396,13 +396,18 @@ class MaintenanceRecordDAOSchemaCapabilityTest {
                         : defaultValue(call.getReturnType()));
     }
 
-    private static ResultSet resultSet(boolean hasRow) {
+    private static ResultSet resultSet(boolean hasRow, String tableName, String columnName) {
         AtomicBoolean first = new AtomicBoolean(hasRow);
         return (ResultSet) Proxy.newProxyInstance(
                 ResultSet.class.getClassLoader(),
                 new Class<?>[] {ResultSet.class},
                 (ignored, call, args) -> switch (call.getName()) {
                     case "next" -> first.getAndSet(false);
+                    case "getString" -> switch ((String) args[0]) {
+                        case "TABLE_NAME" -> tableName;
+                        case "COLUMN_NAME" -> columnName;
+                        default -> null;
+                    };
                     default -> defaultValue(call.getReturnType());
                 });
     }

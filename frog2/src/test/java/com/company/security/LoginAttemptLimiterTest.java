@@ -1,5 +1,6 @@
 package com.company.security;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +70,39 @@ class LoginAttemptLimiterTest {
 
         assertTrue(limiter.recordFailure(
                 "127.0.0.2", "tester").allowed());
+    }
+
+    @Test
+    void singleFailureAccountLimitBlocksNewAndExpiredWindowsImmediately() {
+        MutableClock clock = new MutableClock();
+        LoginAttemptLimiter limiter = new LoginAttemptLimiter(
+                clock, 1, 100, Duration.ofMinutes(5), Duration.ofMinutes(1), 100);
+
+        LoginAttemptLimiter.Decision first = limiter.recordFailure("127.0.0.1", "tester");
+        assertFalse(first.allowed());
+        assertEquals(60, first.retryAfterSeconds());
+        assertFalse(limiter.check("127.0.0.2", "tester").allowed());
+
+        clock.advance(Duration.ofMinutes(6));
+        assertFalse(limiter.recordFailure("127.0.0.1", "tester").allowed());
+        limiter.recordSuccess("tester");
+        assertTrue(limiter.check("127.0.0.2", "tester").allowed());
+    }
+
+    @Test
+    void singleFailureClientLimitBlocksOtherAccountsWithoutExtendingAnActiveBlock() {
+        MutableClock clock = new MutableClock();
+        LoginAttemptLimiter limiter = new LoginAttemptLimiter(
+                clock, 100, 1, Duration.ofMinutes(5), Duration.ofMinutes(1), 100);
+
+        assertFalse(limiter.recordFailure("127.0.0.1", "first").allowed());
+        assertFalse(limiter.check("127.0.0.1", "unseen-account").allowed());
+        assertTrue(limiter.check("127.0.0.2", "unseen-account").allowed());
+
+        clock.advance(Duration.ofSeconds(30));
+        LoginAttemptLimiter.Decision repeated = limiter.recordFailure("127.0.0.1", "second");
+        assertFalse(repeated.allowed());
+        assertEquals(30, repeated.retryAfterSeconds());
     }
 
     private static final class MutableClock extends Clock {

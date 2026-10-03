@@ -149,7 +149,7 @@ class TroubleshootingDAOOwnershipTest {
                     new Class<?>[] {DatabaseMetaData.class},
                     (ignored, call, args) -> switch (call.getName()) {
                         case "getColumns" ->
-                                columnResultSet(columnAvailable);
+                                columnResultSet(columnAvailable, (String) args[2], (String) args[3]);
                         default -> defaultValue(call.getReturnType());
                     });
         }
@@ -180,7 +180,7 @@ class TroubleshootingDAOOwnershipTest {
         }
     }
 
-    private static ResultSet columnResultSet(boolean available) {
+    private static ResultSet columnResultSet(boolean available, String tableName, String columnName) {
         boolean[] first = {available};
         return (ResultSet) Proxy.newProxyInstance(
                 ResultSet.class.getClassLoader(),
@@ -191,6 +191,11 @@ class TroubleshootingDAOOwnershipTest {
                         first[0] = false;
                         yield result;
                     }
+                    case "getString" -> switch ((String) args[0]) {
+                        case "TABLE_NAME" -> tableName;
+                        case "COLUMN_NAME" -> columnName;
+                        default -> null;
+                    };
                     case "close" -> null;
                     default -> defaultValue(call.getReturnType());
                 });
