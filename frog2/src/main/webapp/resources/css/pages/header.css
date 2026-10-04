@@ -338,6 +338,15 @@ body.ui-system.authenticated-shell .app-main > .content-shell:first-child {
     overflow: hidden;
 }
 
+.quick-nav-header,
+.quick-nav-search,
+.quick-nav-status,
+.quick-nav-recent,
+.quick-nav-empty,
+.quick-nav-help {
+    flex: 0 0 auto;
+}
+
 .quick-nav-header {
     align-items: flex-start;
     border-block-end: 1px solid var(--color-border);
@@ -420,9 +429,12 @@ body.ui-system.authenticated-shell .app-main > .content-shell:first-child {
 .quick-nav-results {
     --quick-nav-type-width: 104px;
 
+    flex: 1 1 auto;
     list-style: none;
     margin: 0;
+    min-block-size: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: var(--space-8);
 }
 
@@ -444,6 +456,10 @@ body.ui-system.authenticated-shell .app-main > .content-shell:first-child {
     display: grid;
     gap: var(--space-12);
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-block-size: min(20vh, 192px);
+    max-block-size: min(20dvh, 192px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: var(--space-12) var(--space-20);
 }
 
@@ -478,6 +494,7 @@ body.ui-system.authenticated-shell .app-main > .content-shell:first-child {
     background: var(--color-surface-muted);
     border-radius: var(--radius-pill);
     display: inline-flex;
+    max-inline-size: 100%;
     min-inline-size: 0;
 }
 
@@ -493,9 +510,21 @@ body.ui-system.authenticated-shell .app-main > .content-shell:first-child {
     text-decoration: none;
 }
 
+.quick-nav-recent a,
+.quick-nav-recent-query {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+}
+
 .quick-nav-recent-remove {
+    align-items: center;
     color: var(--color-text-muted);
-    padding-inline-start: 0;
+    display: inline-flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    min-block-size: var(--control-height-md);
+    min-inline-size: var(--control-height-md);
+    padding: var(--space-8);
 }
 
 .quick-nav-result-group {
@@ -801,6 +830,41 @@ body.ui-system.authenticated-shell .app-main > .content-shell:first-child {
 
     .quick-nav-results {
         --quick-nav-type-width: 88px;
+    }
+}
+
+@media (max-height: 600px) {
+    .quick-nav-backdrop {
+        align-items: stretch;
+        padding: var(--space-8);
+    }
+
+    .quick-nav-dialog {
+        max-block-size: calc(100vh - var(--space-16));
+        max-block-size: calc(100dvh - var(--space-16));
+    }
+
+    .quick-nav-header,
+    .quick-nav-search {
+        padding: var(--space-8) var(--space-16);
+    }
+
+    .quick-nav-header p,
+    .quick-nav-help {
+        display: none;
+    }
+
+    .quick-nav-recent {
+        gap: var(--space-8);
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        max-block-size: 96px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: var(--space-8) var(--space-16);
+    }
+
+    .quick-nav-recent h3 {
+        margin-block-end: var(--space-4);
     }
 }
 
