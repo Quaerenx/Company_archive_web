@@ -58,6 +58,30 @@ class CustomerAssignmentDAOQueryTest {
     }
 
     @Test
+    void legacyDisplayNameNeverGrantsCustomerMutationPermission() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
+
+        assertTrue(dao.getCustomerNamesByAssignee("attacker-id", "Manager").isEmpty());
+        assertTrue(jdbc.statements.isEmpty());
+    }
+
+    @Test
+    void customerMutationPermissionUsesStableUserId() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = ASSIGNMENT_COLUMNS;
+        jdbc.enqueue(PaginationJdbcFixture.row("customer_name", "Assigned"));
+        CustomerAssignmentDAO dao = new CustomerAssignmentDAO(jdbc::open);
+
+        assertEquals(Set.of("Assigned"),
+                dao.getCustomerNamesByAssignee("stable-id", "Other Name"));
+        var statement = jdbc.statements.getFirst();
+        assertTrue(statement.sql.contains("d.main_manager_user_id = ?"));
+        assertFalse(statement.sql.contains("LOWER(TRIM(d.main_manager))"));
+        assertEquals("stable-id", statement.parameters.get(1));
+    }
+
+    @Test
     void combinedMaintenanceQueryMapsCustomerAndQuarterlyScheduleInOneQuery() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
         jdbc.availableColumns = Set.of(

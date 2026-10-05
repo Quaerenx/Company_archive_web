@@ -600,6 +600,15 @@ public class MaintenanceServlet extends HttpServlet {
                     currentUser);
             return;
         }
+        if (!canManageCustomer(currentUser, record.getCustomerName())) {
+            FlashMessage.redirect(
+                    request,
+                    response,
+                    cardsReturnLocation(request),
+                    "담당 고객사만 이력을 추가할 수 있습니다.",
+                    "error");
+            return;
+        }
 
         boolean success = maintenanceDAO.addMaintenanceRecord(record);
         FlashMessage.redirect(

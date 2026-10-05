@@ -193,6 +193,9 @@ public class CustomerAssignmentDAO {
             CustomerAssignmentSupport.Capability capability =
                     CustomerAssignmentSupport.capability(
                             connection, schemaCapabilities);
+            if (capability == CustomerAssignmentSupport.Capability.NONE) {
+                return Set.of();
+            }
             String assignee = CustomerAssignmentSupport.assigneeValue(
                     capability, userId, displayName);
             if (assignee == null) {

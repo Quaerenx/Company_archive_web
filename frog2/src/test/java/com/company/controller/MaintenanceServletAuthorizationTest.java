@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.CustomerDAO;
+import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDTO;
 import com.company.model.MaintenanceHistoryFilter;
 import com.company.model.MaintenanceFormHistoryContext;
@@ -115,6 +116,39 @@ class MaintenanceServletAuthorizationTest {
             assertTrue(response.redirect.contains("&returnCardsStatus=registered"), action);
             assertFalse(response.redirect.contains("example.invalid"), action);
         }
+    }
+
+    @Test
+    void addRequiresStableAssignmentEvenWhenCustomerIsShownInForm()
+            throws Exception {
+        StubMaintenanceRecordDAO dao = new StubMaintenanceRecordDAO();
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        CustomerAssignmentDAO legacyDisplayOnly = new CustomerAssignmentDAO() {
+            @Override
+            public List<CustomerDTO> getMaintenanceCustomersByAssignee(
+                    String userId, String displayName) {
+                return List.of(customerDAO.customer);
+            }
+
+            @Override
+            public java.util.Set<String> getCustomerNamesByAssignee(
+                    String userId, String displayName) {
+                return java.util.Set.of();
+            }
+        };
+        MaintenanceServlet servlet = new MaintenanceServlet(
+                dao, customerDAO, legacyDisplayOnly, BusinessDate.systemClock());
+        RequestFixture request = new RequestFixture(user("impersonator"));
+        request.parameters.put("action", "add");
+        request.parameters.put("customer_name", "Acme");
+        request.parameters.put("inspector_name", "Alice");
+        request.parameters.put("inspection_date", "2026-08-03");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet.doPost(request.proxy(), response.proxy());
+
+        assertFalse(dao.addCalled);
+        assertTrue(response.redirect.startsWith("maintenance?view=cards"));
     }
 
     @Test

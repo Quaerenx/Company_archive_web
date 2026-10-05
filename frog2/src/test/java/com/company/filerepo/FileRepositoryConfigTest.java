@@ -13,12 +13,16 @@ class FileRepositoryConfigTest {
     private String originalEnvironment;
     private String originalRoot;
     private String originalCatalinaBase;
+    private String originalMaxBytes;
+    private String originalMaxFiles;
 
     @BeforeEach
     void rememberProperties() {
         originalEnvironment = System.getProperty(ApplicationEnvironment.ENV_PROPERTY);
         originalRoot = System.getProperty(FileRepositoryConfig.ROOT_PROPERTY);
         originalCatalinaBase = System.getProperty("catalina.base");
+        originalMaxBytes = System.getProperty(FileRepositoryConfig.MAX_BYTES_PROPERTY);
+        originalMaxFiles = System.getProperty(FileRepositoryConfig.MAX_FILES_PROPERTY);
     }
 
     @AfterEach
@@ -26,6 +30,8 @@ class FileRepositoryConfigTest {
         restore(ApplicationEnvironment.ENV_PROPERTY, originalEnvironment);
         restore(FileRepositoryConfig.ROOT_PROPERTY, originalRoot);
         restore("catalina.base", originalCatalinaBase);
+        restore(FileRepositoryConfig.MAX_BYTES_PROPERTY, originalMaxBytes);
+        restore(FileRepositoryConfig.MAX_FILES_PROPERTY, originalMaxFiles);
     }
 
     @Test
@@ -49,6 +55,17 @@ class FileRepositoryConfigTest {
         System.setProperty("catalina.base", "/tmp/frog2-tomcat");
 
         assertThrows(IllegalStateException.class, FileRepositoryConfig::repositoryRoot);
+    }
+
+    @Test
+    void uploadQuotaUsesPositiveConfiguredLimits() {
+        System.setProperty(FileRepositoryConfig.MAX_BYTES_PROPERTY, "12345");
+        System.setProperty(FileRepositoryConfig.MAX_FILES_PROPERTY, "4");
+        assertEquals(12345, FileRepositoryConfig.maxBytes());
+        assertEquals(4, FileRepositoryConfig.maxFiles());
+
+        System.setProperty(FileRepositoryConfig.MAX_BYTES_PROPERTY, "0");
+        assertThrows(IllegalStateException.class, FileRepositoryConfig::maxBytes);
     }
 
     private static void restore(String key, String value) {

@@ -51,6 +51,13 @@ the server storage identifier is a random opaque value.
   files without copying them again and additionally permits RPM packages, but
   keeps the filename, active-content prefix, metadata, and attachment-only
   download controls. RPM remains unavailable through browser upload.
+- Browser uploads also enforce a repository-wide budget before each file is
+  stored: 10 GiB and 20,000 files by default. JVM properties
+  `frog2.fileRepoMaxBytes` and `frog2.fileRepoMaxFiles` set positive limits.
+  Accounting includes managed, unmanaged, temporary, and quarantined files;
+  a shared lock serializes browser uploads across service instances and JVMs
+  using the same repository. Existing files are preserved when a limit is
+  reached, and the upload receives HTTP 507.
 - Files modified within the previous 30 seconds are deferred rather than moved,
   reducing the risk of indexing a `cp`/`rsync` destination that is still open.
 
@@ -84,6 +91,9 @@ background sweep.
   administrator starts indexing. The stability window and before/after file
   identity checks reduce races but cannot make an uncooperative privileged
   local writer safe.
+- The application budget does not constrain files copied directly into the
+  repository or other writers on the same filesystem. A dedicated filesystem
+  quota or volume is still needed to bound total disk use.
 - Every imported directory must be traversable, readable, and writable by the
   Tomcat service account. Prefer a dedicated shared group and setgid repository
   directories over broad world-readable or world-writable permissions.

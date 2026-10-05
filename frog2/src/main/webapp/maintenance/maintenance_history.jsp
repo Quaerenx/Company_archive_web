@@ -55,7 +55,6 @@
         </jsp:attribute>
         <jsp:attribute name="subtitle">
             <c:if test="${not empty customer}">
-                <!-- <span class="detail-item"><i class="fas fa-calendar"></i> 도입년도: ${customer.firstIntroductionYear}</span>  -->
                 <span class="detail-item"><i class="fas fa-database"></i> DB: <c:out value="${customer.dbName}" /></span>
                 <span class="detail-item"><i class="fas fa-code-branch"></i> 버전: <c:out value="${customer.verticaVersion}" /></span>
                 <span class="detail-item"><i class="fas fa-user"></i> 담당자: <c:out value="${customer.managerName}" /></span>

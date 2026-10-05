@@ -63,6 +63,7 @@ public final class FileRepositoryService {
     private static final Pattern POTENTIAL_MANAGED_FILE = Pattern.compile(
             "^\\.frog2-.+\\.(?:data|meta)$");
     private final FileRepositoryPathPolicy paths;
+    private final FileRepositoryQuota quota;
     private final FileRepositoryFilePolicy files = new FileRepositoryFilePolicy();
     private static final Object SNAPSHOT_CACHE_LOCK = new Object();
     private static final LinkedHashMap<Path, CachedDirectorySnapshot>
@@ -81,7 +82,18 @@ public final class FileRepositoryService {
     FileRepositoryService(
             Path repositoryRoot,
             SnapshotScanObserver snapshotScanObserver) throws IOException {
+        this(repositoryRoot, snapshotScanObserver,
+                FileRepositoryConfig.maxBytes(),
+                FileRepositoryConfig.maxFiles());
+    }
+
+    FileRepositoryService(
+            Path repositoryRoot,
+            SnapshotScanObserver snapshotScanObserver,
+            long maxBytes,
+            long maxFiles) throws IOException {
         paths = new FileRepositoryPathPolicy(repositoryRoot);
+        quota = new FileRepositoryQuota(repositoryRoot.toRealPath(), maxBytes, maxFiles);
         this.snapshotScanObserver = Objects.requireNonNull(
                 snapshotScanObserver, "snapshotScanObserver");
     }
@@ -548,6 +560,14 @@ public final class FileRepositoryService {
     public StoredFile store(String rawPath, ValidatedFile validated, long declaredSize, InputStream input)
             throws FileRepositoryException {
         ResolvedDirectory directory = paths.resolveExistingDirectory(rawPath);
+        return quota.store(declaredSize,
+                () -> storeWithinQuota(directory, validated, declaredSize, input));
+    }
+
+    private StoredFile storeWithinQuota(
+            ResolvedDirectory directory, ValidatedFile validated,
+            long declaredSize, InputStream input)
+            throws FileRepositoryException {
         quarantineStaleInterruptedUploads(directory);
         String storageId = UUID.randomUUID().toString().replace("-", "");
         Path dataPath = paths.managedPathForWrite(directory, storageId, DATA_SUFFIX);

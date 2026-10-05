@@ -113,7 +113,12 @@ class IsolatedAuthenticatedWriteFlowTest {
         assertEquals(Set.of("first.txt", "second.txt"), repository.list("").getEntries()
                 .stream().map(entry -> entry.getName()).collect(java.util.stream.Collectors.toSet()));
         try (var files = Files.list(root)) {
-            assertEquals(4, files.count());
+            var storedNames = files.map(path -> path.getFileName().toString())
+                    .filter(name -> !".frog2-upload-quota.lock".equals(name))
+                    .toList();
+            assertEquals(4, storedNames.size());
+            assertTrue(storedNames.stream().allMatch(name ->
+                    name.matches("\\.frog2-[0-9a-f]{32}\\.(data|meta)")));
         }
     }
 

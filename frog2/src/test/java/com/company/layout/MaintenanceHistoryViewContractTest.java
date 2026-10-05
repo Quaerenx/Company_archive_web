@@ -17,6 +17,8 @@ class MaintenanceHistoryViewContractTest {
             throws Exception {
         String page = Files.readString(HISTORY);
 
+        assertFalse(page.contains("${customer.firstIntroductionYear}"));
+
         assertTrue(page.contains("${totalCount}"));
         assertFalse(page.contains("${records.size()}"));
         assertTrue(page.contains("maintenanceHistoryPreviousUrl"));

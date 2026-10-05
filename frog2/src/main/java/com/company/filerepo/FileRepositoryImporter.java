@@ -208,6 +208,7 @@ final class FileRepositoryImporter {
                 for (Path child : children) {
                     String name = child.getFileName().toString();
                     if (isExpectedManagedEntry(name)
+                            || FileRepositoryQuota.LOCK_FILE_NAME.equals(name)
                             || QUARANTINE_DIRECTORY.equals(name)) {
                         continue;
                     }

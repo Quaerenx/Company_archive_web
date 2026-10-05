@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,7 +59,10 @@ class FileRepositoryServiceTest {
         assertEquals("고객 보고서.txt", download.originalName());
         assertArrayEquals(content, Files.readAllBytes(download.path()));
         try (var files = Files.list(root)) {
-            List<String> serverNames = files.map(path -> path.getFileName().toString()).toList();
+            List<String> serverNames = files
+                    .map(path -> path.getFileName().toString())
+                    .filter(name -> !FileRepositoryQuota.LOCK_FILE_NAME.equals(name))
+                    .toList();
             assertEquals(2, serverNames.size());
             assertTrue(serverNames.stream().allMatch(name -> name.matches("\\.frog2-[0-9a-f]{32}\\.(data|meta)")));
             assertFalse(serverNames.contains("고객 보고서.txt"));
@@ -188,8 +192,95 @@ class FileRepositoryServiceTest {
 
         assertEquals(415, error.getHttpStatus());
         try (var files = Files.list(root)) {
-            assertEquals(0, files.count());
+            assertEquals(0, files.filter(path -> !path.getFileName().toString()
+                    .equals(FileRepositoryQuota.LOCK_FILE_NAME)).count());
         }
+    }
+
+    @Test
+    void repositoryQuotaAppliesAcrossServiceInstances() throws Exception {
+        FileRepositoryService first = new FileRepositoryService(
+                root, path -> { }, 1024 * 1024, 2);
+        FileRepositoryService second = new FileRepositoryService(
+                root, path -> { }, 1024 * 1024, 2);
+        byte[] content = "safe".getBytes(StandardCharsets.UTF_8);
+        var validated = first.validateUpload("safe.txt", "text/plain", content.length);
+
+        first.store("", validated, content.length, new ByteArrayInputStream(content));
+        FileRepositoryException error = assertThrows(FileRepositoryException.class,
+                () -> second.store("", validated, content.length,
+                        new ByteArrayInputStream(content)));
+
+        assertEquals(507, error.getHttpStatus());
+        assertEquals("repository_quota_exceeded", error.getCode());
+        assertEquals(1, second.list("").getFileCount());
+    }
+
+    @Test
+    void concurrentServiceInstancesCannotBothConsumeTheLastUploadSlot()
+            throws Exception {
+        FileRepositoryService first = new FileRepositoryService(
+                root, path -> { }, 1024 * 1024, 2);
+        FileRepositoryService second = new FileRepositoryService(
+                root, path -> { }, 1024 * 1024, 2);
+        byte[] content = "safe".getBytes(StandardCharsets.UTF_8);
+        var validated = first.validateUpload("safe.txt", "text/plain", content.length);
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<String>> results = List.of(first, second).stream()
+                    .map(instance -> executor.submit(() -> {
+                        start.await();
+                        try {
+                            instance.store("", validated, content.length,
+                                    new ByteArrayInputStream(content));
+                            return "stored";
+                        } catch (FileRepositoryException exception) {
+                            return exception.getCode();
+                        }
+                    }))
+                    .toList();
+            start.countDown();
+
+            assertEquals(Set.of("stored", "repository_quota_exceeded"),
+                    Set.of(results.get(0).get(), results.get(1).get()));
+            assertEquals(1, first.list("").getFileCount());
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void repositoryQuotaCountsUnmanagedAndQuarantinedBytes() throws Exception {
+        Files.writeString(root.resolve("unmanaged.txt"), "1234567890");
+        Path quarantine = Files.createDirectory(root.resolve(".frog2-quarantine"));
+        Files.writeString(quarantine.resolve("orphan.quarantine"), "1234567890");
+        FileRepositoryService limited = new FileRepositoryService(
+                root, path -> { }, 8 * 1024 + 15, 20);
+        byte[] content = "safe".getBytes(StandardCharsets.UTF_8);
+        var validated = limited.validateUpload("safe.txt", "text/plain", content.length);
+
+        FileRepositoryException error = assertThrows(FileRepositoryException.class,
+                () -> limited.store("", validated, content.length,
+                        new ByteArrayInputStream(content)));
+
+        assertEquals("repository_quota_exceeded", error.getCode());
+    }
+
+    @Test
+    void repositoryQuotaRejectsSymbolicLinkLockFile() throws Exception {
+        Path outside = temporaryDirectory.resolve("outside.txt");
+        Files.writeString(outside, "unchanged");
+        Files.createSymbolicLink(root.resolve(FileRepositoryQuota.LOCK_FILE_NAME), outside);
+        byte[] content = "safe".getBytes(StandardCharsets.UTF_8);
+        var validated = service.validateUpload("safe.txt", "text/plain", content.length);
+
+        FileRepositoryException error = assertThrows(FileRepositoryException.class,
+                () -> service.store("", validated, content.length,
+                        new ByteArrayInputStream(content)));
+
+        assertEquals("repository_quota_unavailable", error.getCode());
+        assertEquals("unchanged", Files.readString(outside));
     }
 
     @Test
