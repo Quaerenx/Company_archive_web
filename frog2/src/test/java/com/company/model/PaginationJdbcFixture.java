@@ -85,7 +85,7 @@ final class PaginationJdbcFixture {
                 PreparedStatement.class.getClassLoader(),
                 new Class<?>[] {PreparedStatement.class},
                 (ignored, call, args) -> switch (call.getName()) {
-                    case "setString", "setInt", "setLong",
+                    case "setString", "setInt", "setLong", "setBigDecimal",
                             "setDate", "setTimestamp" -> {
                         record.parameters.put(
                                 (Integer) args[0], args[1]);
@@ -102,6 +102,7 @@ final class PaginationJdbcFixture {
                         }
                         yield resultSet(queryResults.removeFirst());
                     }
+                    case "execute" -> false;
                     case "executeUpdate" -> {
                         if (updateResults.isEmpty()) {
                             throw new SQLException(
@@ -151,6 +152,10 @@ final class PaginationJdbcFixture {
                             value(rows, cursor[0], args[0])).intValue();
                     case "getLong" -> number(
                             value(rows, cursor[0], args[0])).longValue();
+                    case "getBigDecimal" -> {
+                        Object value = value(rows, cursor[0], args[0]);
+                        yield value == null ? null : new java.math.BigDecimal(value.toString());
+                    }
                     case "getDate", "getTimestamp" ->
                             value(rows, cursor[0], args[0]);
                     case "close" -> null;

@@ -303,7 +303,9 @@ public class CustomerDAO {
                     customerIdentityCapability(connection);
             String sql = "SELECT " + CUSTOMER_COLUMNS
                     + " FROM vertica_customer_detail d "
-                    + "WHERE d.customer_name = ? AND d.is_deleted = "
+                    + "WHERE " + (CustomerReferenceSupport.enabled(connection, schemaCapabilities, "vertica_customer_detail")
+                            ? "d.customer_id = (SELECT customer_id FROM customer_identity WHERE customer_name = ?)"
+                            : "d.customer_name = ?") + " AND d.is_deleted = "
                     + ACTIVE_FLAG;
             CustomerDTO customer;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -318,7 +320,7 @@ public class CustomerDAO {
             if (identityCapability
                     == CustomerIdentitySupport.Capability.COMPLETE) {
                 customer.setCustomerId(CustomerIdentitySupport.findId(
-                        connection, customer.getCustomerName()));
+                        connection, customerName));
             }
             return customer;
         } catch (SQLException  e) {
@@ -337,7 +339,9 @@ public class CustomerDAO {
             String sql = "SELECT " + CUSTOMER_COLUMNS
                     + " FROM vertica_customer_detail d "
                     + "JOIN customer_identity identity "
-                    + "ON identity.customer_name = d.customer_name "
+                    + (CustomerReferenceSupport.enabled(connection, schemaCapabilities, "vertica_customer_detail")
+                            ? "ON identity.customer_id = d.customer_id "
+                            : "ON identity.customer_name = d.customer_name ")
                     + "WHERE CAST(identity.customer_id AS VARCHAR(36)) = ? "
                     + "AND d.is_deleted = " + ACTIVE_FLAG;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -385,7 +389,8 @@ public class CustomerDAO {
                     + (auditAvailable
                             ? ", updated_at = CURRENT_TIMESTAMP, updated_by = ? "
                             : "")
-                    + "WHERE customer_name = ? AND is_deleted = "
+                    + "WHERE " + CustomerReferenceSupport.predicate(CustomerReferenceSupport.enabled(
+                            connection, schemaCapabilities, "vertica_customer_detail")) + " AND is_deleted = "
                     + ACTIVE_FLAG;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int nextParameter = CustomerFieldContract.bindMutableFields(
@@ -464,6 +469,12 @@ public class CustomerDAO {
         String columns = CustomerFieldContract.insertColumns() + ", is_deleted";
         String values = CustomerFieldContract.insertPlaceholders()
                 + ", " + ACTIVE_FLAG;
+        boolean referenceAvailable = CustomerReferenceSupport.enabled(
+                connection, schemaCapabilities, "vertica_customer_detail");
+        if (referenceAvailable) {
+            columns += ", customer_id";
+            values += ", CAST(? AS UUID)";
+        }
         if (assignmentUserIds != null) {
             columns += ", main_manager_user_id, sub_manager_user_id";
             values += ", ?, ?";
@@ -477,6 +488,7 @@ public class CustomerDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int nextParameter = CustomerFieldContract.bindInsertFields(
                     statement, 1, customer);
+            if (referenceAvailable) statement.setString(nextParameter++, customer.getCustomerId());
             if (assignmentUserIds != null) {
                 nextParameter = CustomerAssignmentSupport.bindUserIds(
                         statement, nextParameter, assignmentUserIds);
@@ -535,7 +547,8 @@ public class CustomerDAO {
                     + (auditAvailable
                             ? ", deleted_at = CURRENT_TIMESTAMP, deleted_by = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ? "
                             : " ")
-                    + "WHERE customer_name = ? "
+                    + "WHERE " + CustomerReferenceSupport.predicate(CustomerReferenceSupport.enabled(
+                            connection, schemaCapabilities, "vertica_customer_detail")) + " "
                     + "AND is_deleted = " + ACTIVE_FLAG;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int nextParameter = 1;

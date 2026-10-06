@@ -21,14 +21,20 @@ public class MeetingRecordDAO {
                     + "FROM meeting_records "
                     + "ORDER BY meeting_datetime DESC, meeting_id DESC LIMIT ? OFFSET ?";
     private final JdbcConnectionProvider connectionProvider;
+    private final SchemaCapabilityCache schemaCapabilities;
 
     public MeetingRecordDAO() {
-        this(DBConnection::getConnection);
+        this(DBConnection::getConnection, SchemaCapabilityCache.application());
     }
 
     MeetingRecordDAO(JdbcConnectionProvider connectionProvider) {
+        this(connectionProvider, new SchemaCapabilityCache());
+    }
+
+    MeetingRecordDAO(JdbcConnectionProvider connectionProvider, SchemaCapabilityCache schemaCapabilities) {
         this.connectionProvider = Objects.requireNonNull(
                 connectionProvider, "connectionProvider");
+        this.schemaCapabilities = Objects.requireNonNull(schemaCapabilities, "schemaCapabilities");
     }
 
     public List<MeetingRecordDTO> getMeetingRecords(int page) {
@@ -48,7 +54,7 @@ public class MeetingRecordDAO {
         Objects.requireNonNull(filter, "filter");
         int page = Math.max(1, requestedPage);
         try (Connection connection = connectionProvider.getConnection()) {
-            FilterSql filterSql = buildFilterSql(filter);
+            FilterSql filterSql = buildFilterSql(connection, filter);
             MeetingRows rows;
             try {
                 rows = loadMeetingRows(connection, filterSql, page);
@@ -111,32 +117,34 @@ public class MeetingRecordDAO {
         if (normalizedQuery == null) {
             return List.of();
         }
-        String sql = "SELECT meeting_id, title, meeting_type, "
-                + "author_name, meeting_datetime FROM meeting_records "
-                + "WHERE title ILIKE ? ESCAPE '!' "
-                + "OR meeting_type ILIKE ? ESCAPE '!' "
-                + "OR author_name ILIKE ? ESCAPE '!' "
-                + "OR REGEXP_ILIKE(content, ?) "
-                + "ORDER BY meeting_datetime DESC, meeting_id DESC LIMIT ?";
-        try (Connection connection = connectionProvider.getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            String likePattern =
-                    SearchQueryPolicy.literalContainsLikePattern(
-                            normalizedQuery);
-            for (int parameter = 1; parameter <= 3; parameter++) {
-                statement.setString(parameter, likePattern);
-            }
-            statement.setString(
-                    4,
-                    SearchQueryPolicy.literalContainsRegex(
-                            normalizedQuery));
-            statement.setInt(5, limit);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<MeetingRecordDTO> records = new ArrayList<>();
-                while (resultSet.next()) {
-                    records.add(mapListRow(resultSet));
+        try (Connection connection = connectionProvider.getConnection()) {
+            String sql = "SELECT meeting_id, title, meeting_type, "
+                    + "author_name, meeting_datetime FROM meeting_records "
+                    + "WHERE " + MeetingLifecycleSupport.active(connection, schemaCapabilities)
+                    + " AND (title ILIKE ? ESCAPE '!' "
+                    + "OR meeting_type ILIKE ? ESCAPE '!' "
+                    + "OR author_name ILIKE ? ESCAPE '!' "
+                    + "OR REGEXP_ILIKE(content, ?)) "
+                    + "ORDER BY meeting_datetime DESC, meeting_id DESC LIMIT ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                String likePattern =
+                        SearchQueryPolicy.literalContainsLikePattern(
+                                normalizedQuery);
+                for (int parameter = 1; parameter <= 3; parameter++) {
+                    statement.setString(parameter, likePattern);
                 }
-                return List.copyOf(records);
+                statement.setString(
+                        4,
+                        SearchQueryPolicy.literalContainsRegex(
+                                normalizedQuery));
+                statement.setInt(5, limit);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<MeetingRecordDTO> records = new ArrayList<>();
+                    while (resultSet.next()) {
+                        records.add(mapListRow(resultSet));
+                    }
+                    return List.copyOf(records);
+                }
             }
         } catch (SQLException exception) {
             throw DataAccessException.from(
@@ -145,28 +153,30 @@ public class MeetingRecordDAO {
     }
 
     public MeetingRecordDTO getMeetingRecord(Long meetingId) {
-        String selectSql = "SELECT meeting_id, title, meeting_datetime, meeting_type, "
-                + "content, author_id, author_name, view_count, created_at, updated_at "
-                + "FROM meeting_records WHERE meeting_id = ?";
-        try (Connection conn = connectionProvider.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
-            pstmt.setLong(1, meetingId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
+        try (Connection conn = connectionProvider.getConnection()) {
+            String selectSql = "SELECT meeting_id, title, meeting_datetime, meeting_type, "
+                    + "content, author_id, author_name, view_count, created_at, updated_at "
+                    + "FROM meeting_records WHERE meeting_id = ? AND "
+                    + MeetingLifecycleSupport.active(conn, schemaCapabilities);
+            try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+                pstmt.setLong(1, meetingId);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (!rs.next()) {
+                        return null;
+                    }
+                    MeetingRecordDTO record = new MeetingRecordDTO();
+                    record.setMeetingId(rs.getLong("meeting_id"));
+                    record.setTitle(rs.getString("title"));
+                    record.setMeetingDatetime(rs.getTimestamp("meeting_datetime"));
+                    record.setMeetingType(rs.getString("meeting_type"));
+                    record.setContent(rs.getString("content"));
+                    record.setAuthorId(rs.getString("author_id"));
+                    record.setAuthorName(rs.getString("author_name"));
+                    record.setViewCount(rs.getInt("view_count"));
+                    record.setCreatedAt(rs.getTimestamp("created_at"));
+                    record.setUpdatedAt(rs.getTimestamp("updated_at"));
+                    return record;
                 }
-                MeetingRecordDTO record = new MeetingRecordDTO();
-                record.setMeetingId(rs.getLong("meeting_id"));
-                record.setTitle(rs.getString("title"));
-                record.setMeetingDatetime(rs.getTimestamp("meeting_datetime"));
-                record.setMeetingType(rs.getString("meeting_type"));
-                record.setContent(rs.getString("content"));
-                record.setAuthorId(rs.getString("author_id"));
-                record.setAuthorName(rs.getString("author_name"));
-                record.setViewCount(rs.getInt("view_count"));
-                record.setCreatedAt(rs.getTimestamp("created_at"));
-                record.setUpdatedAt(rs.getTimestamp("updated_at"));
-                return record;
             }
         } catch (SQLException e) {
             throw DataAccessException.from(e);
@@ -200,7 +210,8 @@ public class MeetingRecordDAO {
         try (Connection conn = connectionProvider.getConnection()) {
             String sql = "UPDATE meeting_records SET title = ?, meeting_datetime = ?, meeting_type = ?, " +
                         "content = ?, updated_at = statement_timestamp() "
-                        + "WHERE meeting_id = ? AND author_id = ?";
+                        + "WHERE meeting_id = ? AND author_id = ? AND "
+                        + MeetingLifecycleSupport.active(conn, schemaCapabilities);
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, record.getTitle());
@@ -218,17 +229,21 @@ public class MeetingRecordDAO {
 
     public boolean deleteMeetingRecordForAuthor(
             Long meetingId, String authorUserId) {
-        if (meetingId == null
+        if (meetingId == null || meetingId <= 0
                 || authorUserId == null
                 || authorUserId.isBlank()) {
             return false;
         }
         try (Connection conn = connectionProvider.getConnection()) {
-            String sql = "DELETE FROM meeting_records "
-                    + "WHERE meeting_id = ? AND author_id = ?";
+            if (!MeetingLifecycleSupport.enabled(conn, schemaCapabilities)) {
+                throw new SQLException("Meeting deletion requires V20261006_17 to preserve comments");
+            }
+            String sql = "UPDATE meeting_records SET deleted_at = CURRENT_TIMESTAMP, deleted_by = ? "
+                    + "WHERE meeting_id = ? AND author_id = ? AND deleted_at IS NULL";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setLong(1, meetingId);
-                pstmt.setString(2, authorUserId.trim());
+                pstmt.setString(1, authorUserId.trim());
+                pstmt.setLong(2, meetingId);
+                pstmt.setString(3, authorUserId.trim());
                 return pstmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -244,10 +259,10 @@ public class MeetingRecordDAO {
         return Pagination.offset(page, PAGE_SIZE);
     }
 
-    private static MeetingRows loadMeetingRows(
+    private MeetingRows loadMeetingRows(
             Connection connection, int page) throws SQLException {
         return loadMeetingRows(
-                connection, buildFilterSql(MeetingListFilter.empty()), page);
+                connection, buildFilterSql(connection, MeetingListFilter.empty()), page);
     }
 
     private static MeetingRows loadMeetingRows(
@@ -278,10 +293,10 @@ public class MeetingRecordDAO {
         return new MeetingRows(records, totalCount);
     }
 
-    private static int countMeetingRecords(Connection connection)
+    private int countMeetingRecords(Connection connection)
             throws SQLException {
         return countMeetingRecords(
-                connection, buildFilterSql(MeetingListFilter.empty()));
+                connection, buildFilterSql(connection, MeetingListFilter.empty()));
     }
 
     private static int countMeetingRecords(
@@ -297,8 +312,11 @@ public class MeetingRecordDAO {
         }
     }
 
-    private static FilterSql buildFilterSql(MeetingListFilter filter) {
+    private FilterSql buildFilterSql(Connection connection, MeetingListFilter filter) throws SQLException {
         List<String> predicates = new ArrayList<>();
+        if (MeetingLifecycleSupport.enabled(connection, schemaCapabilities)) {
+            predicates.add("deleted_at IS NULL");
+        }
         List<ParameterBinder> binders = new ArrayList<>();
         if (filter.query() != null) {
             predicates.add("(title ILIKE ? ESCAPE '!' OR REGEXP_ILIKE(content, ?))");

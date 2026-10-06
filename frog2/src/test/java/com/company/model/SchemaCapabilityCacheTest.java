@@ -166,7 +166,7 @@ class SchemaCapabilityCacheTest {
         assertEquals(1, jdbc.queries.size());
         assertEquals("mixed_table", jdbc.queries.getFirst().table());
         assertNull(jdbc.queries.getFirst().catalog());
-        assertNull(jdbc.queries.getFirst().schema());
+        assertEquals("application", jdbc.queries.getFirst().schema());
         assertTrue(new SchemaCapabilityCache().columnExists(jdbc.open(), "mixed_table", "first_column"));
     }
 
@@ -204,7 +204,7 @@ class SchemaCapabilityCacheTest {
     }
 
     @Test
-    void matchingTablesAcrossSchemasRetainTheUnrestrictedMetadataScope() {
+    void matchingTablesInOtherSchemasCannotEnableApplicationCapabilities() {
         SchemaMetadataJdbcFixture jdbc = new SchemaMetadataJdbcFixture();
         jdbc.add("application", "sample_table", "first_column");
         jdbc.add("archive", "sample_table", "second_column");
@@ -212,12 +212,12 @@ class SchemaCapabilityCacheTest {
         cache.inspectColumns(jdbc.open(), Map.of("sample_table", List.of("first_column", "second_column")));
 
         assertTrue(cache.columnExists(jdbc.open(), "sample_table", "first_column"));
-        assertTrue(cache.columnExists(jdbc.open(), "sample_table", "second_column"));
+        assertFalse(cache.columnExists(jdbc.open(), "sample_table", "second_column"));
         assertNull(jdbc.queries.getFirst().catalog());
-        assertNull(jdbc.queries.getFirst().schema());
-        assertEquals(0, jdbc.schemaReads);
+        assertEquals("application", jdbc.queries.getFirst().schema());
+        assertEquals(1, jdbc.schemaReads);
         assertEquals(0, jdbc.catalogReads);
-        assertEquals(1, jdbc.queries.size());
+        assertEquals(2, jdbc.queries.size());
     }
 
     @Test

@@ -14,14 +14,20 @@ import com.company.util.DBConnection;
 public class MeetingCommentDAO {
     public static final int PAGE_SIZE = 50;
     private final JdbcConnectionProvider connectionProvider;
+    private final SchemaCapabilityCache schemaCapabilities;
 
     public MeetingCommentDAO() {
-        this(DBConnection::getConnection);
+        this(DBConnection::getConnection, SchemaCapabilityCache.application());
     }
 
     MeetingCommentDAO(JdbcConnectionProvider connectionProvider) {
+        this(connectionProvider, new SchemaCapabilityCache());
+    }
+
+    MeetingCommentDAO(JdbcConnectionProvider connectionProvider, SchemaCapabilityCache schemaCapabilities) {
         this.connectionProvider = Objects.requireNonNull(
                 connectionProvider, "connectionProvider");
+        this.schemaCapabilities = Objects.requireNonNull(schemaCapabilities, "schemaCapabilities");
     }
     public List<MeetingCommentDTO> getCommentsByMeetingId(Long meetingId) {
         return getCommentPage(meetingId, null, PAGE_SIZE).getComments();
@@ -43,7 +49,8 @@ public class MeetingCommentDAO {
         try (Connection conn = connectionProvider.getConnection()) {
             String sql = "SELECT comment_id, meeting_id, content, author_id, author_name, "
                     + "created_at, updated_at FROM meeting_comments "
-                    + "WHERE meeting_id = ? "
+                    + "WHERE meeting_id = ? AND "
+                    + MeetingLifecycleSupport.activeParent(conn, schemaCapabilities) + " "
                     + (beforeCommentId == null ? "" : "AND comment_id < ? ")
                     + "ORDER BY comment_id DESC LIMIT ?";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -90,17 +97,31 @@ public class MeetingCommentDAO {
     }
 
     public boolean addComment(MeetingCommentDTO comment) {
-        String sql = "INSERT INTO meeting_comments "
-                + "(meeting_id, content, author_id, author_name) "
-                + "VALUES (?, ?, ?, ?)";
-        try (Connection conn = connectionProvider.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, comment.getMeetingId());
-            pstmt.setString(2, comment.getContent());
-            pstmt.setString(3, comment.getAuthorId());
-            pstmt.setString(4, comment.getAuthorName());
-
-            return pstmt.executeUpdate() > 0;
+        if (comment == null || comment.getMeetingId() == null
+                || comment.getMeetingId() <= 0 || comment.getAuthorId() == null
+                || comment.getAuthorId().isBlank()) {
+            return false;
+        }
+        try (Connection conn = connectionProvider.getConnection()) {
+            String sql = "INSERT INTO meeting_comments "
+                    + "(meeting_id, content, author_id, author_name) "
+                    + "SELECT meeting_id, ?, ?, ? FROM meeting_records WHERE meeting_id = ? AND "
+                    + MeetingLifecycleSupport.active(conn, schemaCapabilities);
+            return JdbcTransaction.execute(conn, () -> {
+                // Hold a shared parent-table lock until the insert commits; parent deletion takes X.
+                try (PreparedStatement lock = conn.prepareStatement(
+                        "LOCK TABLE meeting_records IN SHARE MODE")) {
+                    lock.setQueryTimeout(30);
+                    lock.execute();
+                }
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, comment.getContent());
+                    pstmt.setString(2, comment.getAuthorId());
+                    pstmt.setString(3, comment.getAuthorName());
+                    pstmt.setLong(4, comment.getMeetingId());
+                    return pstmt.executeUpdate() > 0;
+                }
+            });
         } catch (SQLException e) {
             throw DataAccessException.from(e);
         }
@@ -115,7 +136,8 @@ public class MeetingCommentDAO {
         }
         try (Connection conn = connectionProvider.getConnection()) {
             String sql = "UPDATE meeting_comments SET content = ?, updated_at = statement_timestamp() " +
-                        "WHERE comment_id = ? AND author_id = ?";
+                        "WHERE comment_id = ? AND author_id = ? AND "
+                        + MeetingLifecycleSupport.activeParent(conn, schemaCapabilities);
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, comment.getContent());
@@ -137,7 +159,8 @@ public class MeetingCommentDAO {
         }
         try (Connection conn = connectionProvider.getConnection()) {
             String sql = "DELETE FROM meeting_comments "
-                    + "WHERE comment_id = ? AND author_id = ?";
+                    + "WHERE comment_id = ? AND author_id = ? AND "
+                    + MeetingLifecycleSupport.activeParent(conn, schemaCapabilities);
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setLong(1, commentId);
                 pstmt.setString(2, authorUserId.trim());

@@ -290,8 +290,9 @@ class DaoInjectedConnectionBehaviorTest {
 
         assertEquals(1, jdbc.openCount);
         assertEquals(1, jdbc.closeCount);
-        assertEquals(17L, jdbc.statements.getFirst().parameters.get(1));
-        assertEquals("Follow-up", jdbc.statements.getFirst().parameters.get(2));
+        assertEquals("Follow-up", jdbc.statements.get(1).parameters.get(1));
+        assertEquals(17L, jdbc.statements.get(1).parameters.get(4));
+        assertEquals(1, jdbc.commitCount);
     }
 
     @Test

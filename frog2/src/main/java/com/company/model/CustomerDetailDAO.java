@@ -80,13 +80,16 @@ public class CustomerDetailDAO {
             String sql = "SELECT 'prod' AS detail_environment, " + COLUMNS
                     + auditProjection(auditAvailable)
                     + " FROM vertica_customer_detail "
-                    + "WHERE customer_name = ? AND is_deleted = 1 "
+                    + "WHERE " + customerPredicate(connection, CustomerDetailEnvironment.PROD)
+                    + " AND is_deleted = 1 "
                     + "UNION ALL SELECT 'stg' AS detail_environment, " + COLUMNS
                     + emptyAuditProjection()
-                    + " FROM vertica_customer_detail_stg WHERE customer_name = ? "
+                    + " FROM vertica_customer_detail_stg WHERE "
+                    + customerPredicate(connection, CustomerDetailEnvironment.STAGING) + " "
                     + "UNION ALL SELECT 'dev' AS detail_environment, " + COLUMNS
                     + emptyAuditProjection()
-                    + " FROM vertica_customer_detail_dev WHERE customer_name = ?";
+                    + " FROM vertica_customer_detail_dev WHERE "
+                    + customerPredicate(connection, CustomerDetailEnvironment.DEVELOPMENT);
             CustomerDetailDTO production = null;
             CustomerDetailDTO staging = null;
             CustomerDetailDTO development = null;
@@ -147,6 +150,11 @@ public class CustomerDetailDAO {
         }
     }
 
+    private String customerPredicate(Connection connection, CustomerDetailEnvironment environment) throws SQLException {
+        return CustomerReferenceSupport.predicate(CustomerReferenceSupport.enabled(
+                connection, schemaCapabilities, environment.tableName()));
+    }
+
     private CustomerDetailDTO find(
             Connection connection,
             CustomerDetailEnvironment environment,
@@ -155,7 +163,7 @@ public class CustomerDetailDAO {
         String sql = "SELECT " + COLUMNS
                 + auditProjection(auditAvailable)
                 + " FROM " + environment.tableName()
-                + " WHERE customer_name = ?";
+                + " WHERE " + customerPredicate(connection, environment);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, customerName);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -226,6 +234,9 @@ public class CustomerDetailDAO {
                 if (originalAutoCommit) {
                     connection.setAutoCommit(false);
                 }
+                String customerId = CustomerReferenceSupport.enabled(
+                        connection, schemaCapabilities, environment.tableName())
+                        ? CustomerIdentitySupport.ensureId(connection, detail.getCustomerName()) : null;
                 CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
                         resolveAssignmentUserIds(
                                 connection, environment, detail);
@@ -236,7 +247,8 @@ public class CustomerDetailDAO {
                         detail,
                         actorUserId,
                         auditAvailable,
-                        assignmentUserIds);
+                        assignmentUserIds,
+                        customerId);
                 if (!changed && insertWhenMissing) {
                     changed = insert(
                             connection,
@@ -244,9 +256,11 @@ public class CustomerDetailDAO {
                             detail,
                             actorUserId,
                             auditAvailable,
-                            assignmentUserIds);
+                            assignmentUserIds,
+                            customerId);
                 }
-                connection.commit();
+                if (changed) connection.commit();
+                else connection.rollback();
                 return changed;
             } catch (SQLException | RuntimeException exception) {
                 primaryFailure = exception;
@@ -277,10 +291,15 @@ public class CustomerDetailDAO {
             CustomerDetailDTO detail,
             String actorUserId,
             boolean auditAvailable,
-            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds)
+            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds,
+            String customerId)
             throws SQLException {
         String columns = COLUMNS;
         String values = INSERT_PLACEHOLDERS;
+        if (customerId != null) {
+            columns += ", customer_id";
+            values += ", CAST(? AS UUID)";
+        }
         if (assignmentUserIds != null) {
             columns += ", main_manager_user_id, sub_manager_user_id";
             values += ", ?, ?";
@@ -294,6 +313,7 @@ public class CustomerDetailDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, detail.getCustomerName());
             int nextIndex = bindMutableFields(statement, detail, 2);
+            if (customerId != null) statement.setString(nextIndex++, customerId);
             if (assignmentUserIds != null) {
                 nextIndex = CustomerAssignmentSupport.bindUserIds(
                         statement, nextIndex, assignmentUserIds);
@@ -303,7 +323,7 @@ public class CustomerDetailDAO {
             }
             requireNextIndex(
                     nextIndex,
-                    51 + (assignmentUserIds == null ? 0 : 2)
+                    51 + (customerId == null ? 0 : 1) + (assignmentUserIds == null ? 0 : 2)
                             + (auditAvailable ? 1 : 0));
             return statement.executeUpdate() > 0;
         }
@@ -315,9 +335,11 @@ public class CustomerDetailDAO {
             CustomerDetailDTO detail,
             String actorUserId,
             boolean auditAvailable,
-            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds)
+            CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds,
+            String customerId)
             throws SQLException {
         String assignments = UPDATE_ASSIGNMENTS;
+        if (customerId != null) assignments += ", customer_id = CAST(? AS UUID)";
         if (assignmentUserIds != null) {
             assignments += ", main_manager_user_id = ?, "
                     + "sub_manager_user_id = ?";
@@ -326,9 +348,10 @@ public class CustomerDetailDAO {
             assignments += ", updated_at = CURRENT_TIMESTAMP, updated_by = ?";
         }
         String sql = "UPDATE " + environment.tableName() + " SET " + assignments
-                + " WHERE customer_name = ?";
+                + " WHERE " + customerPredicate(connection, environment);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int nextIndex = bindMutableFields(statement, detail, 1);
+            if (customerId != null) statement.setString(nextIndex++, customerId);
             if (assignmentUserIds != null) {
                 nextIndex = CustomerAssignmentSupport.bindUserIds(
                         statement, nextIndex, assignmentUserIds);
@@ -339,7 +362,7 @@ public class CustomerDetailDAO {
             statement.setString(nextIndex++, detail.getCustomerName());
             requireNextIndex(
                     nextIndex,
-                    51 + (assignmentUserIds == null ? 0 : 2)
+                    51 + (customerId == null ? 0 : 1) + (assignmentUserIds == null ? 0 : 2)
                             + (auditAvailable ? 1 : 0));
             return statement.executeUpdate() > 0;
         }

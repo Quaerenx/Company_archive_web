@@ -37,12 +37,13 @@ final class SchemaCapabilityCache {
         Map<ColumnKey, Boolean> inspected = new LinkedHashMap<>();
         try {
             DatabaseMetaData metadata = connection.getMetaData();
+            String schema = schemaName(connection);
             for (var table : columnsByTable.entrySet()) {
-                Set<String> originalColumns = tableColumns(metadata, table.getKey());
+                Set<String> originalColumns = tableColumns(metadata, schema, table.getKey());
                 boolean needsUppercase = table.getValue().stream()
                         .anyMatch(column -> !originalColumns.contains(normalize(column)));
                 Set<String> uppercaseColumns = needsUppercase
-                        ? tableColumns(metadata, table.getKey().toUpperCase(Locale.ROOT))
+                        ? tableColumns(metadata, schema, table.getKey().toUpperCase(Locale.ROOT))
                         : Set.of();
                 for (String column : table.getValue()) {
                     inspected.put(new ColumnKey(normalize(table.getKey()), normalize(column)),
@@ -56,14 +57,15 @@ final class SchemaCapabilityCache {
         columns.putAll(inspected);
     }
 
-    private static Set<String> tableColumns(DatabaseMetaData metadata, String tableName)
+    private static Set<String> tableColumns(DatabaseMetaData metadata, String schema, String tableName)
             throws SQLException {
         Set<String> found = new HashSet<>();
         long start = System.nanoTime();
-        try (ResultSet result = metadata.getColumns(null, null, tableName, "%")) {
+        try (ResultSet result = metadata.getColumns(null, schema, tableName, "%")) {
             while (result.next()) {
                 // JDBC table patterns treat underscores as wildcards; exclude similarly named tables.
-                if (tableName.equalsIgnoreCase(result.getString("TABLE_NAME"))) {
+                if (tableName.equalsIgnoreCase(result.getString("TABLE_NAME"))
+                        && matchesSchema(result, schema)) {
                     String columnName = result.getString("COLUMN_NAME");
                     if (columnName != null) {
                         found.add(normalize(columnName));
@@ -80,11 +82,13 @@ final class SchemaCapabilityCache {
             Connection connection, String tableName, String columnName) {
         try {
             DatabaseMetaData metadata = connection.getMetaData();
-            if (hasColumn(metadata, tableName, columnName)) {
+            String schema = schemaName(connection);
+            if (hasColumn(metadata, schema, tableName, columnName)) {
                 return true;
             }
             return hasColumn(
                     metadata,
+                    schema,
                     tableName.toUpperCase(Locale.ROOT),
                     columnName.toUpperCase(Locale.ROOT));
         } catch (SQLException exception) {
@@ -93,13 +97,14 @@ final class SchemaCapabilityCache {
     }
 
     private static boolean hasColumn(
-            DatabaseMetaData metadata, String tableName, String columnName)
+            DatabaseMetaData metadata, String schema, String tableName, String columnName)
             throws SQLException {
         long start = System.nanoTime();
-        try (ResultSet columns = metadata.getColumns(null, null, tableName, columnName)) {
+        try (ResultSet columns = metadata.getColumns(null, schema, tableName, columnName)) {
             while (columns.next()) {
                 // JDBC identifier patterns can include rows from similarly named tables or columns.
                 if (tableName.equalsIgnoreCase(columns.getString("TABLE_NAME"))
+                        && matchesSchema(columns, schema)
                         && columnName.equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
                     return true;
                 }
@@ -112,6 +117,17 @@ final class SchemaCapabilityCache {
 
     private static String normalize(String value) {
         return value.toLowerCase(Locale.ROOT);
+    }
+
+    private static String schemaName(Connection connection) throws SQLException {
+        String schema = connection.getSchema();
+        // The bundled Vertica driver reports no schema; Frog2's application tables live in public.
+        return schema == null || schema.isBlank() ? "public" : schema;
+    }
+
+    private static boolean matchesSchema(ResultSet columns, String schema) throws SQLException {
+        String actual = columns.getString("TABLE_SCHEM");
+        return actual == null || schema.equalsIgnoreCase(actual);
     }
 
     private record ColumnKey(String tableName, String columnName) {

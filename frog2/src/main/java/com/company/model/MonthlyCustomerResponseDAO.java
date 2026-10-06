@@ -88,21 +88,30 @@ public class MonthlyCustomerResponseDAO {
             if (!hasCreatorUserId(connection)) {
                 return false;
             }
-            String sql = "INSERT INTO " + TABLE_NAME + " "
-                    + "(" + CREATOR_USER_ID_COLUMN
-                    + ", created_by, response_date, customer_name, reason, "
-                    + "action_content, note, created_at) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, dto.getUserId().trim());
-                statement.setString(2, dto.getUserName());
-                statement.setDate(3, new java.sql.Date(dto.getResponseDate().getTime()));
-                statement.setString(4, dto.getCustomerName());
-                statement.setString(5, dto.getReason());
-                statement.setString(6, dto.getActionContent());
-                statement.setString(7, dto.getNote());
-                return statement.executeUpdate() > 0;
-            }
+            boolean referenceAvailable = CustomerReferenceSupport.enabled(
+                    connection, schemaCapabilities, TABLE_NAME);
+            return JdbcTransaction.execute(connection, () -> {
+                String customerId = referenceAvailable
+                        ? CustomerIdentitySupport.ensureId(connection, dto.getCustomerName()) : null;
+                String sql = "INSERT INTO " + TABLE_NAME + " "
+                        + "(" + CREATOR_USER_ID_COLUMN
+                        + ", created_by, response_date, customer_name, reason, "
+                        + "action_content, note, created_at"
+                        + (referenceAvailable ? ", customer_id" : "") + ") "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE()"
+                        + (referenceAvailable ? ", CAST(? AS UUID)" : "") + ")";
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setString(1, dto.getUserId().trim());
+                    statement.setString(2, dto.getUserName());
+                    statement.setDate(3, new java.sql.Date(dto.getResponseDate().getTime()));
+                    statement.setString(4, dto.getCustomerName());
+                    statement.setString(5, dto.getReason());
+                    statement.setString(6, dto.getActionContent());
+                    statement.setString(7, dto.getNote());
+                    if (referenceAvailable) statement.setString(8, customerId);
+                    return statement.executeUpdate() > 0;
+                }
+            });
         } catch (SQLException exception) {
             throw DataAccessException.from("add monthly customer response", exception);
         }
@@ -116,20 +125,29 @@ public class MonthlyCustomerResponseDAO {
             if (!hasCreatorUserId(connection)) {
                 return false;
             }
-            String sql = "UPDATE " + TABLE_NAME + " SET "
-                    + "response_date = ?, customer_name = ?, reason = ?, "
-                    + "action_content = ?, note = ?, updated_at = GETDATE() "
-                    + "WHERE id = ? AND " + CREATOR_USER_ID_COLUMN + " = ?";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setDate(1, new java.sql.Date(dto.getResponseDate().getTime()));
-                statement.setString(2, dto.getCustomerName());
-                statement.setString(3, dto.getReason());
-                statement.setString(4, dto.getActionContent());
-                statement.setString(5, dto.getNote());
-                statement.setInt(6, dto.getId());
-                statement.setString(7, dto.getUserId().trim());
-                return statement.executeUpdate() > 0;
-            }
+            boolean referenceAvailable = CustomerReferenceSupport.enabled(
+                    connection, schemaCapabilities, TABLE_NAME);
+            return JdbcTransaction.execute(connection, () -> {
+                String customerId = referenceAvailable
+                        ? CustomerIdentitySupport.ensureId(connection, dto.getCustomerName()) : null;
+                String sql = "UPDATE " + TABLE_NAME + " SET "
+                        + "response_date = ?, customer_name = ?, reason = ?, "
+                        + "action_content = ?, note = ?, updated_at = GETDATE() "
+                        + (referenceAvailable ? ", customer_id = CAST(? AS UUID) " : "")
+                        + "WHERE id = ? AND " + CREATOR_USER_ID_COLUMN + " = ?";
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setDate(1, new java.sql.Date(dto.getResponseDate().getTime()));
+                    statement.setString(2, dto.getCustomerName());
+                    statement.setString(3, dto.getReason());
+                    statement.setString(4, dto.getActionContent());
+                    statement.setString(5, dto.getNote());
+                    int index = 6;
+                    if (referenceAvailable) statement.setString(index++, customerId);
+                    statement.setInt(index++, dto.getId());
+                    statement.setString(index, dto.getUserId().trim());
+                    return statement.executeUpdate() > 0;
+                }
+            });
         } catch (SQLException exception) {
             throw DataAccessException.from("update monthly customer response", exception);
         }

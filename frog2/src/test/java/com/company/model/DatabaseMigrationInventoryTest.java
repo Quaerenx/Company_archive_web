@@ -32,7 +32,11 @@ class DatabaseMigrationInventoryTest {
                         "V20260901_10__add_customer_swap_memory.sql",
                         "V20260903_11__add_customer_assignee_user_ids.sql",
                         "V20260904_12__create_schema_migration_ledger.sql",
-                        "V20260904_13__create_customer_identity.sql"),
+                        "V20260904_13__create_customer_identity.sql",
+                        "V20261006_14__add_customer_references.sql",
+                        "V20261006_15__enforce_environment_customer_keys.sql",
+                        "V20261006_16__add_numeric_maintenance_license.sql",
+                        "V20261006_17__preserve_deleted_meetings.sql"),
                 sqlFileNames(DATABASE_ROOT.resolve("migration")));
     }
 

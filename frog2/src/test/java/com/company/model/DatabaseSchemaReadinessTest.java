@@ -20,6 +20,19 @@ class DatabaseSchemaReadinessTest {
             "vertica_customer_detail.sub_manager_user_id",
             "customer_identity.customer_id",
             "customer_identity.customer_name",
+            "maintenance_records.customer_id",
+            "monthly_customer_response.customer_id",
+            "troubleshooting.customer_id",
+            "customer_maintenance_schedule.customer_id",
+            "vertica_customer_detail.customer_id",
+            "vertica_customer_detail_stg.customer_id",
+            "vertica_customer_detail_dev.customer_id",
+            "maintenance_records.license_capacity_tb",
+            "maintenance_records.license_used_tb",
+            "maintenance_records.license_usage_pct_value",
+            "meeting_records.deleted_at",
+            "meeting_records.deleted_by",
+            "meeting_comments.archived_at",
             "company_users.department");
     private static final Set<String> BASE_REQUIRED_COLUMNS = Set.of(
             "user_vm_hosts.ip",
@@ -136,13 +149,13 @@ class DatabaseSchemaReadinessTest {
             timing = com.company.performance.RequestPerformanceContext.finish();
         }
 
-        assertEquals(184, jdbc.columns.size());
-        assertEquals(10, jdbc.queries.size());
-        assertEquals(10, timing.metadataCount());
+        assertEquals(197, jdbc.columns.size());
+        assertEquals(12, jdbc.queries.size());
+        assertEquals(12, timing.metadataCount());
         assertEquals(0, timing.sqlCount());
         assertTrue(jdbc.queries.stream().allMatch(query -> query.catalog() == null
-                && query.schema() == null && "%".equals(query.column())));
-        assertEquals(10, jdbc.resultCloses);
+                && "application".equals(query.schema()) && "%".equals(query.column())));
+        assertEquals(12, jdbc.resultCloses);
         assertEquals(1, jdbc.connectionCloses);
     }
 
@@ -155,8 +168,8 @@ class DatabaseSchemaReadinessTest {
         assertFalse(report.ready());
         assertEquals(ALL_REQUIRED_COLUMNS.size(), report.missingRequirements().size());
         assertEquals(OPTIONAL_COLUMNS.size(), report.missingOptionalRequirements().size());
-        assertEquals(20, jdbc.queries.size());
-        assertEquals(20, jdbc.resultCloses);
+        assertEquals(24, jdbc.queries.size());
+        assertEquals(24, jdbc.resultCloses);
     }
 
     @Test
@@ -173,8 +186,8 @@ class DatabaseSchemaReadinessTest {
 
         assertTrue(report.ready());
         assertTrue(report.missingOptionalRequirements().isEmpty());
-        assertEquals(20, jdbc.queries.size());
-        assertEquals(20, jdbc.resultCloses);
+        assertEquals(24, jdbc.queries.size());
+        assertEquals(24, jdbc.resultCloses);
     }
 
     @Test
@@ -222,6 +235,28 @@ class DatabaseSchemaReadinessTest {
             jdbc.add("application", column.substring(0, dot), column.substring(dot + 1));
         }
         return jdbc;
+    }
+
+    @Test
+    void partialIntegrityMigrationsBlockReadinessAndFullMigrationsRemainReady() {
+        for (String column : Set.of("maintenance_records.customer_id", "maintenance_records.license_used_tb",
+                "meeting_records.deleted_at", "meeting_comments.archived_at")) {
+            PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+            Set<String> available = new HashSet<>(ALL_REQUIRED_COLUMNS);
+            available.add(column);
+            jdbc.availableColumns = available;
+            assertFalse(DatabaseSchemaReadiness.inspect(jdbc::open).ready(), column);
+        }
+        assertTrue(DatabaseSchemaReadiness.inspect(completeMetadata()::open).ready());
+    }
+
+    @Test
+    void referencesWithoutIdentityMetadataBlockReadinessEvenWithEveryReferenceColumnPresent() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        Set<String> available = new HashSet<>(ALL_REQUIRED_COLUMNS);
+        CustomerReferenceSupport.TABLES.forEach(table -> available.add(table + ".customer_id"));
+        jdbc.availableColumns = available;
+        assertFalse(DatabaseSchemaReadiness.inspect(jdbc::open).ready());
     }
 
     @Test

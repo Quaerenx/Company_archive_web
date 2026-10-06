@@ -83,6 +83,7 @@ class OwnershipMutationDAOTest {
     @Test
     void meetingDeleteReturnsFalseWhenAtomicOwnerPredicateMatchesNothing() {
         PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = java.util.Set.of("meeting_records.deleted_at", "meeting_records.deleted_by");
         jdbc.enqueueUpdate(0);
         MeetingRecordDAO dao = new MeetingRecordDAO(jdbc::open);
 

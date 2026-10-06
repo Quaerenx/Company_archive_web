@@ -23,7 +23,8 @@ class MeetingCommentDAOPaginationTest {
         assertTrue(page.isHasOlder());
         assertEquals(8L, page.getNextBeforeCommentId());
         PaginationJdbcFixture.StatementRecord query = jdbc.statements.getFirst();
-        assertTrue(query.sql.contains("WHERE meeting_id = ? AND comment_id < ?"));
+        assertTrue(query.sql.contains("WHERE meeting_id = ? AND EXISTS"));
+        assertTrue(query.sql.contains("AND comment_id < ?"));
         assertTrue(query.sql.contains("ORDER BY comment_id DESC LIMIT ?"));
         assertEquals(3L, query.parameters.get(1));
         assertEquals(10L, query.parameters.get(2));

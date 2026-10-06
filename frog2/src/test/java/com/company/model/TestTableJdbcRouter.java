@@ -166,7 +166,7 @@ public final class TestTableJdbcRouter {
                     case "getMetaData" -> metadata(delegate.getMetaData());
                     case "createStatement", "prepareCall", "unwrap" -> throw new SQLException("Unrouted JDBC access is forbidden");
                     case "isWrapperFor" -> false;
-                    case "close", "isClosed", "getAutoCommit", "setAutoCommit", "commit", "rollback",
+                    case "close", "isClosed", "getSchema", "getAutoCommit", "setAutoCommit", "commit", "rollback",
                             "setReadOnly", "isReadOnly", "getTransactionIsolation", "setTransactionIsolation" ->
                             invoke(delegate, call, args);
                     default -> throw new SQLException("Unsupported connection operation in test-table routing");

@@ -13,7 +13,7 @@ public class MaintenanceRecordDTO {
     private String note;
     private Timestamp createdAt;
     private Timestamp updatedAt;
-    // 신규 필드: 라이선스 크기(GB), 라이선스 사용량(GB), 라이선스 사용률(%) - 모두 선택 입력 (varchar)
+    // Legacy names remain compatible; capacity and usage values are expressed in TB.
     private String licenseSizeGb; // 예: "100"
     private String licenseUsageSize; // 예: "75"
     private String licenseUsagePct; // 예: "75.0"

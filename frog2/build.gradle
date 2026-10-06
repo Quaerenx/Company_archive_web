@@ -79,7 +79,7 @@ tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'e2e', 'e2e-write', 'e2e-table-write', 'e2e-schema', 'e2e-https',
                 'e2e-customer-audit-migration',
-                'e2e-customer-swap-migration'
+                'e2e-customer-swap-migration', 'e2e-db-integrity'
     }
 }
 
@@ -165,6 +165,20 @@ tasks.register('schemaAudit', Test) {
     useJUnitPlatform {
         includeTags 'e2e-schema'
     }
+}
+
+tasks.register('databaseIntegrityE2E', Test) {
+    description = 'Verifies database integrity migrations and DAOs in a disposable synthetic schema.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    doFirst {
+        if (providers.environmentVariable('FROG2_INTEGRITY_E2E_ENABLED').getOrElse('') != 'true') {
+            throw new GradleException('Integrity E2E requires explicit synthetic-schema enablement')
+        }
+    }
+    useJUnitPlatform { includeTags 'e2e-db-integrity' }
 }
 
 tasks.register('httpsCookieAudit', Test) {

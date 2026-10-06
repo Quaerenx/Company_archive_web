@@ -57,50 +57,57 @@ public class MaintenanceRecordDAO {
             }
             MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(conn)
                     .withCreatorUserId();
+            return JdbcTransaction.execute(conn, () -> {
+                String customerId = schema.hasCustomerId()
+                        ? CustomerIdentitySupport.ensureId(conn, record.getCustomerName()) : null;
+                List<String> cols = new ArrayList<>();
+                cols.add("customer_name");
+                cols.add("inspector_name");
+                cols.add(CREATOR_USER_ID_COLUMN);
+                cols.add("inspection_date");
+                cols.add("vertica_version");
+                cols.add("note");
 
-            List<String> cols = new ArrayList<>();
-            cols.add("customer_name");
-            cols.add("inspector_name");
-            cols.add(CREATOR_USER_ID_COLUMN);
-            cols.add("inspection_date");
-            cols.add("vertica_version");
-            cols.add("note");
-
-            if (schema.hasLicenseSize()) cols.add(LICENSE_SIZE_COLUMN);
-            if (schema.hasLicenseUsageSize()) cols.add(LICENSE_USAGE_SIZE_COLUMN);
-            if (schema.hasLicenseUsagePct()) {
-                cols.add(LICENSE_USAGE_PCT_COLUMN);
-            }
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("INSERT INTO maintenance_records (");
-            sb.append(String.join(", ", cols));
-            sb.append(") VALUES (");
-            for (int i = 0; i < cols.size(); i++) {
-                if (i > 0) sb.append(", ");
-                sb.append("?");
-            }
-            sb.append(")");
-
-            try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
-                int idx = 1;
-                pstmt.setString(idx++, record.getCustomerName());
-                pstmt.setString(idx++, record.getInspectorName());
-                pstmt.setString(idx++, record.getCreatorUserId().trim());
-                pstmt.setDate(idx++, record.getInspectionDate());
-                setStringOrNull(pstmt, idx++, record.getVerticaVersion());
-                setStringOrNull(pstmt, idx++, record.getNote());
-                if (schema.hasLicenseSize()) {
-                    setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
-                }
-                if (schema.hasLicenseUsageSize()) {
-                    setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
-                }
+                if (schema.hasLicenseSize()) cols.add(LICENSE_SIZE_COLUMN);
+                if (schema.hasLicenseUsageSize()) cols.add(LICENSE_USAGE_SIZE_COLUMN);
                 if (schema.hasLicenseUsagePct()) {
-                    setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                    cols.add(LICENSE_USAGE_PCT_COLUMN);
                 }
-                return pstmt.executeUpdate() > 0;
-            }
+                if (schema.hasCustomerId()) cols.add("customer_id");
+                if (schema.hasNumericLicense()) cols.addAll(MaintenanceLicenseValues.COLUMNS);
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("INSERT INTO maintenance_records (");
+                sb.append(String.join(", ", cols));
+                sb.append(") VALUES (");
+                for (int i = 0; i < cols.size(); i++) {
+                    if (i > 0) sb.append(", ");
+                    sb.append("customer_id".equals(cols.get(i)) ? "CAST(? AS UUID)" : "?");
+                }
+                sb.append(")");
+
+                try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+                    int idx = 1;
+                    pstmt.setString(idx++, record.getCustomerName());
+                    pstmt.setString(idx++, record.getInspectorName());
+                    pstmt.setString(idx++, record.getCreatorUserId().trim());
+                    pstmt.setDate(idx++, record.getInspectionDate());
+                    setStringOrNull(pstmt, idx++, record.getVerticaVersion());
+                    setStringOrNull(pstmt, idx++, record.getNote());
+                    if (schema.hasLicenseSize()) {
+                        setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
+                    }
+                    if (schema.hasLicenseUsageSize()) {
+                        setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
+                    }
+                    if (schema.hasLicenseUsagePct()) {
+                        setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                    }
+                    if (schema.hasCustomerId()) pstmt.setString(idx++, customerId);
+                    if (schema.hasNumericLicense()) bindNumericLicense(pstmt, idx, record);
+                    return pstmt.executeUpdate() > 0;
+                }
+            });
         } catch (SQLException e) {
             throw DataAccessException.from(e);
         }
@@ -133,38 +140,50 @@ public class MaintenanceRecordDAO {
             }
             MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(conn)
                     .withCreatorUserId();
+            return JdbcTransaction.execute(conn, () -> {
+                String customerId = schema.hasCustomerId()
+                        ? CustomerIdentitySupport.ensureId(conn, record.getCustomerName()) : null;
+                StringBuilder sb = new StringBuilder();
+                sb.append("UPDATE maintenance_records SET ");
+                sb.append("customer_name = ?, inspector_name = ?, inspection_date = ?, vertica_version = ?, note = ?");
+                if (schema.hasLicenseSize()) sb.append(", license_size_gb = ?");
+                if (schema.hasLicenseUsageSize()) sb.append(", license_usage_size = ?");
+                if (schema.hasLicenseUsagePct()) sb.append(", license_usage_pct = ?");
+                if (schema.hasCustomerId()) sb.append(", customer_id = CAST(? AS UUID)");
+                if (schema.hasNumericLicense()) {
+                    for (String column : MaintenanceLicenseValues.COLUMNS) {
+                        sb.append(", ").append(column).append(" = ?");
+                    }
+                }
+                sb.append(", updated_at = statement_timestamp() ");
+                sb.append("WHERE maintenance_id = ? AND ")
+                        .append("customer_name".equals(predicateColumn)
+                                ? CustomerReferenceSupport.predicate(schema.hasCustomerId())
+                                : predicateColumn + " = ?");
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("UPDATE maintenance_records SET ");
-            sb.append("customer_name = ?, inspector_name = ?, inspection_date = ?, vertica_version = ?, note = ?");
-            if (schema.hasLicenseSize()) sb.append(", license_size_gb = ?");
-            if (schema.hasLicenseUsageSize()) sb.append(", license_usage_size = ?");
-            if (schema.hasLicenseUsagePct()) sb.append(", license_usage_pct = ?");
-            sb.append(", updated_at = statement_timestamp() ");
-            sb.append("WHERE maintenance_id = ? AND ")
-                    .append(predicateColumn)
-                    .append(" = ?");
-
-            try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
-                int idx = 1;
-                pstmt.setString(idx++, record.getCustomerName());
-                pstmt.setString(idx++, record.getInspectorName());
-                pstmt.setDate(idx++, record.getInspectionDate());
-                setStringOrNull(pstmt, idx++, record.getVerticaVersion());
-                setStringOrNull(pstmt, idx++, record.getNote());
-                if (schema.hasLicenseSize()) {
-                    setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
+                try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+                    int idx = 1;
+                    pstmt.setString(idx++, record.getCustomerName());
+                    pstmt.setString(idx++, record.getInspectorName());
+                    pstmt.setDate(idx++, record.getInspectionDate());
+                    setStringOrNull(pstmt, idx++, record.getVerticaVersion());
+                    setStringOrNull(pstmt, idx++, record.getNote());
+                    if (schema.hasLicenseSize()) {
+                        setStringOrNull(pstmt, idx++, record.getLicenseSizeGb());
+                    }
+                    if (schema.hasLicenseUsageSize()) {
+                        setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
+                    }
+                    if (schema.hasLicenseUsagePct()) {
+                        setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
+                    }
+                    if (schema.hasCustomerId()) pstmt.setString(idx++, customerId);
+                    if (schema.hasNumericLicense()) idx = bindNumericLicense(pstmt, idx, record);
+                    pstmt.setLong(idx++, record.getMaintenanceId());
+                    pstmt.setString(idx, predicateValue.trim());
+                    return pstmt.executeUpdate() > 0;
                 }
-                if (schema.hasLicenseUsageSize()) {
-                    setStringOrNull(pstmt, idx++, record.getLicenseUsageSize());
-                }
-                if (schema.hasLicenseUsagePct()) {
-                    setStringOrNull(pstmt, idx++, record.getLicenseUsagePct());
-                }
-                pstmt.setLong(idx++, record.getMaintenanceId());
-                pstmt.setString(idx, predicateValue.trim());
-                return pstmt.executeUpdate() > 0;
-            }
+            });
         } catch (SQLException e) {
             throw DataAccessException.from(e);
         }
@@ -195,7 +214,10 @@ public class MaintenanceRecordDAO {
             }
             String sql = "DELETE FROM maintenance_records "
                     + "WHERE maintenance_id = ? AND "
-                    + predicateColumn + " = ?";
+                    + ("customer_name".equals(predicateColumn)
+                            ? CustomerReferenceSupport.predicate(CustomerReferenceSupport.enabled(
+                                    conn, schemaCapabilities, TABLE_NAME))
+                            : predicateColumn + " = ?");
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setLong(1, maintenanceId);
                 pstmt.setString(2, predicateValue.trim());
@@ -328,7 +350,8 @@ public class MaintenanceRecordDAO {
             MaintenanceSchemaProfile schema) throws SQLException {
         StringBuilder sql = new StringBuilder("SELECT ")
                 .append(selectColumns(schema))
-                .append(" FROM maintenance_records WHERE customer_name = ?");
+                .append(" FROM maintenance_records WHERE ")
+                .append(CustomerReferenceSupport.predicate(schema.hasCustomerId()));
         if (rangeStart != null && rangeEnd == null) {
             sql.append(" AND inspection_date < ?");
         } else if (rangeStart != null) {
@@ -420,7 +443,7 @@ public class MaintenanceRecordDAO {
             }
 
             int totalCount = countCustomerHistory(
-                    connection, customerName, filter);
+                    connection, customerName, filter, schema);
             int correctedPage = Pagination.clampPage(
                     page, Pagination.totalPages(totalCount, pageSize));
             if (totalCount == 0) {
@@ -437,7 +460,7 @@ public class MaintenanceRecordDAO {
                     schema);
             if (correctedRows.items().isEmpty()) {
                 int refreshedCount = countCustomerHistory(
-                        connection, customerName, filter);
+                        connection, customerName, filter, schema);
                 if (refreshedCount == 0) {
                     return customerHistoryPage(
                             new CustomerHistoryRows(List.of(), 0), 1, pageSize);
@@ -493,7 +516,7 @@ public class MaintenanceRecordDAO {
                 + selectColumns(schema)
                 + ", COUNT(*) OVER () AS total_count "
                 + "FROM maintenance_records WHERE "
-                + customerHistoryPredicate(filter) + " "
+                + customerHistoryPredicate(filter, schema.hasCustomerId()) + " "
                 + "ORDER BY CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
                 + "inspection_date DESC, maintenance_id DESC LIMIT ? OFFSET ?";
         List<MaintenanceRecordDTO> records = new ArrayList<>();
@@ -526,9 +549,10 @@ public class MaintenanceRecordDAO {
     private static int countCustomerHistory(
             Connection connection,
             String customerName,
-            MaintenanceHistoryFilter filter) throws SQLException {
+            MaintenanceHistoryFilter filter,
+            MaintenanceSchemaProfile schema) throws SQLException {
         String sql = "SELECT COUNT(*) FROM maintenance_records "
-                + "WHERE " + customerHistoryPredicate(filter);
+                + "WHERE " + customerHistoryPredicate(filter, schema.hasCustomerId());
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             bindCustomerHistoryPredicate(statement, customerName, filter);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -538,8 +562,9 @@ public class MaintenanceRecordDAO {
     }
 
     private static String customerHistoryPredicate(
-            MaintenanceHistoryFilter filter) {
-        StringBuilder predicate = new StringBuilder("customer_name = ?");
+            MaintenanceHistoryFilter filter, boolean customerIdAvailable) {
+        StringBuilder predicate = new StringBuilder(
+                CustomerReferenceSupport.predicate(customerIdAvailable));
         if (filter.year() != null) {
             predicate.append(
                     " AND inspection_date >= ? AND inspection_date < ?");
@@ -624,7 +649,8 @@ public class MaintenanceRecordDAO {
             String sql = "SELECT " + selectColumns(schema)
                     + " FROM maintenance_records "
                     + "WHERE inspection_date >= ? AND inspection_date < ? "
-                    + "AND customer_name IN (" + placeholders + ") "
+                    + "AND " + CustomerReferenceSupport.namesPredicate(
+                            schema.hasCustomerId(), placeholders) + " "
                     + "ORDER BY inspection_date ASC, customer_name ASC";
             try (PreparedStatement statement =
                             connection.prepareStatement(sql)) {
@@ -664,11 +690,11 @@ public class MaintenanceRecordDAO {
             String placeholders = placeholders(normalizedNames.size());
             String sql = "SELECT " + columns + " FROM (SELECT "
                     + columns + ", ROW_NUMBER() OVER ("
-                    + "PARTITION BY customer_name ORDER BY "
+                    + "PARTITION BY " + (schema.hasCustomerId() ? "customer_id" : "customer_name") + " ORDER BY "
                     + "CASE WHEN inspection_date IS NULL THEN 1 ELSE 0 END, "
                     + "inspection_date DESC, maintenance_id DESC"
                     + ") AS record_rank FROM maintenance_records "
-                    + "WHERE customer_name IN (" + placeholders + ")"
+                    + "WHERE " + CustomerReferenceSupport.namesPredicate(schema.hasCustomerId(), placeholders)
                     + ") ranked WHERE record_rank = 1 "
                     + "ORDER BY customer_name ASC";
             try (PreparedStatement statement =
@@ -719,6 +745,17 @@ public class MaintenanceRecordDAO {
         }
     }
 
+    private static int bindNumericLicense(
+            PreparedStatement statement, int index, MaintenanceRecordDTO record) throws SQLException {
+        MaintenanceLicenseValues values = MaintenanceLicenseValues.fromLegacy(record);
+        for (java.math.BigDecimal value : new java.math.BigDecimal[] {
+                values.capacityTb(), values.usedTb(), values.percentage()}) {
+            if (value == null) statement.setNull(index++, Types.NUMERIC);
+            else statement.setBigDecimal(index++, value);
+        }
+        return index;
+    }
+
     private MaintenanceRecordDTO mapRowToDto(
             ResultSet rs,
             MaintenanceSchemaProfile schema) throws SQLException {
@@ -744,6 +781,14 @@ public class MaintenanceRecordDAO {
         if (schema.hasLicenseUsagePct()) {
             record.setLicenseUsagePct(rs.getString(LICENSE_USAGE_PCT_COLUMN));
         }
+        if (schema.hasNumericLicense()) {
+            java.math.BigDecimal capacity = rs.getBigDecimal("license_capacity_tb");
+            java.math.BigDecimal used = rs.getBigDecimal("license_used_tb");
+            java.math.BigDecimal percentage = rs.getBigDecimal("license_usage_pct_value");
+            if (capacity != null) record.setLicenseSizeGb(capacity.stripTrailingZeros().toPlainString());
+            if (used != null) record.setLicenseUsageSize(used.stripTrailingZeros().toPlainString());
+            if (percentage != null) record.setLicenseUsagePct(percentage.stripTrailingZeros().toPlainString());
+        }
 
         return record;
     }
@@ -758,18 +803,25 @@ public class MaintenanceRecordDAO {
     }
 
     private MaintenanceSchemaProfile loadLicenseSchemaProfile(
-            Connection connection) {
+            Connection connection) throws SQLException {
+        long numericColumns = MaintenanceLicenseValues.COLUMNS.stream()
+                .filter(column -> columnExists(connection, TABLE_NAME, column)).count();
+        if (numericColumns != 0 && numericColumns != MaintenanceLicenseValues.COLUMNS.size()) {
+            throw new SQLException("Numeric maintenance license schema is partially applied");
+        }
         return new MaintenanceSchemaProfile(
                 false,
                 columnExists(connection, TABLE_NAME, LICENSE_SIZE_COLUMN),
                 columnExists(
                         connection, TABLE_NAME, LICENSE_USAGE_PCT_COLUMN),
                 columnExists(
-                        connection, TABLE_NAME, LICENSE_USAGE_SIZE_COLUMN));
+                        connection, TABLE_NAME, LICENSE_USAGE_SIZE_COLUMN),
+                CustomerReferenceSupport.enabled(connection, schemaCapabilities, TABLE_NAME),
+                numericColumns == MaintenanceLicenseValues.COLUMNS.size());
     }
 
     private MaintenanceSchemaProfile loadSchemaProfile(
-            Connection connection) {
+            Connection connection) throws SQLException {
         MaintenanceSchemaProfile licenseProfile =
                 loadLicenseSchemaProfile(connection);
         return hasOwnershipColumn(connection)
@@ -790,6 +842,10 @@ public class MaintenanceRecordDAO {
         }
         if (schema.hasLicenseUsagePct()) {
             columns.append(", ").append(LICENSE_USAGE_PCT_COLUMN);
+        }
+        if (schema.hasCustomerId()) columns.append(", customer_id");
+        if (schema.hasNumericLicense()) {
+            columns.append(", ").append(String.join(", ", MaintenanceLicenseValues.COLUMNS));
         }
         return columns.toString();
     }
@@ -869,7 +925,9 @@ public class MaintenanceRecordDAO {
             boolean hasCreatorUserId,
             boolean hasLicenseSize,
             boolean hasLicenseUsagePct,
-            boolean hasLicenseUsageSize) {
+            boolean hasLicenseUsageSize,
+            boolean hasCustomerId,
+            boolean hasNumericLicense) {
         MaintenanceSchemaProfile withCreatorUserId() {
             return hasCreatorUserId
                     ? this
@@ -877,7 +935,9 @@ public class MaintenanceRecordDAO {
                             true,
                             hasLicenseSize,
                             hasLicenseUsagePct,
-                            hasLicenseUsageSize);
+                            hasLicenseUsageSize,
+                            hasCustomerId,
+                            hasNumericLicense);
         }
     }
 

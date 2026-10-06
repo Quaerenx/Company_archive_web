@@ -27,8 +27,9 @@ class TroubleshootingOwnershipContractTest {
         assertTrue(dao.contains("updateTroubleshootingForOwner"));
         assertTrue(dao.contains("updateTroubleshootingForCustomer"));
         assertTrue(dao.contains("deleteTroubleshootingForCustomer"));
-        assertTrue(dao.contains(
-                "WHERE id = ? AND \" + predicateColumn + \" = ?"));
+        assertTrue(dao.contains("WHERE id = ? AND "));
+        assertTrue(dao.contains("CustomerReferenceSupport.predicate(referenceAvailable)"));
+        assertTrue(dao.contains("predicateColumn + \" = ?\""));
         assertFalse(dao.contains(
                 "\"DELETE FROM troubleshooting WHERE id = ?\""));
         assertTrue(servlet.contains("user.getUserId()"));

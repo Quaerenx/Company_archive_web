@@ -1,7 +1,7 @@
 # Immutable customer identity migration
 
 Date: 2026-09-04
-Status: phase 1 implemented; database execution and URL migration remain separate approvals
+Status: phase 1 and phase 2 database relationships applied and verified
 
 ## Phase 1 contract
 
@@ -49,17 +49,23 @@ After applying the migration, verify that the number of distinct trimmed names
 equals the identity row count, every ID is non-null, and both enabled
 constraints pass `ANALYZE_CONSTRAINTS`.
 
-## Deferred phase 2
+## Phase 2 database relationships
 
-Do not replace name-based routes in the same release. A later migration should:
+The 2026-10-06 release implements nullable child/environment UUID columns,
+exact-name backfill, transactional dual-write and UUID-based customer history
+lookups. Historical names absent from the master receive identity-only records;
+they are preserved and never promoted to active customers. See
+[integrity-improvements.md](integrity-improvements.md) for the four migrations,
+verification, retention policy and rollout/rollback procedure.
 
-1. add nullable `customer_id` columns to maintenance, troubleshooting, monthly
-   response, schedule and environment-detail records;
-2. backfill only exact mappings and stop on unmatched names;
-3. dual-write IDs while retaining names as snapshots for display;
-4. change internal links and lookups to UUIDs;
-5. enforce foreign keys/non-null constraints only after reconciliation;
-6. migrate filesystem customer-history records with a separately backed-up,
+## Separate route and filesystem migration
+
+Do not replace name-based public routes in the database release. Remaining work:
+
+1. replace public name-based links with UUIDs while retaining compatible routes;
+2. require non-null UUIDs after legacy importers are reconciled (Vertica does not
+   enforce foreign keys; keep application checks and integrity audits);
+3. migrate filesystem customer-history records with a separately backed-up,
    deterministic reconciliation tool.
 
 This sequencing keeps the current application rollback-compatible and avoids a

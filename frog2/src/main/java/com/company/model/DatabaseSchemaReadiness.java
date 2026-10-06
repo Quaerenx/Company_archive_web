@@ -165,6 +165,15 @@ public final class DatabaseSchemaReadiness {
                 CUSTOMER_DETAIL_BASELINE,
                 CustomerDetailEnvironment.PROD.tableName(),
                 "is_deleted"));
+        for (String table : CustomerReferenceSupport.TABLES) {
+            requirements.add(optional(CustomerReferenceSupport.MIGRATION, table, "customer_id"));
+        }
+        for (String column : MaintenanceLicenseValues.COLUMNS) {
+            requirements.add(optional(MaintenanceLicenseValues.MIGRATION, "maintenance_records", column));
+        }
+        requirements.add(optional(MeetingLifecycleSupport.MIGRATION, "meeting_records", "deleted_at"));
+        requirements.add(optional(MeetingLifecycleSupport.MIGRATION, "meeting_records", "deleted_by"));
+        requirements.add(optional(MeetingLifecycleSupport.MIGRATION, "meeting_comments", "archived_at"));
         return List.copyOf(requirements);
     }
 
@@ -202,6 +211,22 @@ public final class DatabaseSchemaReadiness {
             CustomerIdentitySupport.Capability customerIdentityCapability =
                     CustomerIdentitySupport.capability(
                             connection, capabilities);
+            boolean partialReferences = CustomerReferenceSupport.partiallyApplied(connection, capabilities);
+            long numericColumns = MaintenanceLicenseValues.COLUMNS.stream().filter(column ->
+                    capabilities.columnExists(connection, "maintenance_records", column)).count();
+            long meetingColumns = REQUIREMENTS.stream().filter(requirement ->
+                    MeetingLifecycleSupport.MIGRATION.equals(requirement.migrationVersion())
+                            && capabilities.columnExists(connection, requirement.tableName(), requirement.columnName())).count();
+            java.util.function.Predicate<Requirement> incomplete = requirement ->
+                    isIncompleteCustomerAuditRequirement(requirement, customerAuditCapability)
+                            || isIncompleteCustomerAssignmentRequirement(requirement, customerAssignmentCapability)
+                            || isIncompleteCustomerIdentityRequirement(requirement, customerIdentityCapability)
+                            || (partialReferences && (CustomerReferenceSupport.MIGRATION.equals(requirement.migrationVersion())
+                                    || "V20260904_13".equals(requirement.migrationVersion())))
+                            || (numericColumns > 0 && numericColumns < 3
+                                    && MaintenanceLicenseValues.MIGRATION.equals(requirement.migrationVersion()))
+                            || (meetingColumns > 0 && meetingColumns < 3
+                                    && MeetingLifecycleSupport.MIGRATION.equals(requirement.migrationVersion()));
             List<Requirement> missing = REQUIREMENTS.stream()
                     .filter(requirement -> !capabilities.columnExists(
                             connection,
@@ -209,23 +234,8 @@ public final class DatabaseSchemaReadiness {
                             requirement.columnName()))
                     .toList();
             List<Requirement> missingRequired = missing.stream()
-                    .filter(requirement -> requirement.required()
-                            || isIncompleteCustomerAuditRequirement(
-                                    requirement, customerAuditCapability)
-                            || isIncompleteCustomerAssignmentRequirement(
-                                    requirement,
-                                    customerAssignmentCapability)
-                            || isIncompleteCustomerIdentityRequirement(
-                                    requirement,
-                                    customerIdentityCapability))
-                    .map(requirement -> isIncompleteCustomerAuditRequirement(
-                                    requirement, customerAuditCapability)
-                            || isIncompleteCustomerAssignmentRequirement(
-                                    requirement,
-                                    customerAssignmentCapability)
-                            || isIncompleteCustomerIdentityRequirement(
-                                    requirement,
-                                    customerIdentityCapability)
+                    .filter(requirement -> requirement.required() || incomplete.test(requirement))
+                    .map(requirement -> incomplete.test(requirement)
                             ? new Requirement(
                                     requirement.migrationVersion(),
                                     requirement.tableName(),
@@ -234,15 +244,7 @@ public final class DatabaseSchemaReadiness {
                             : requirement)
                     .toList();
             List<Requirement> missingOptional = missing.stream()
-                    .filter(requirement -> !requirement.required()
-                            && !isIncompleteCustomerAuditRequirement(
-                                    requirement, customerAuditCapability)
-                            && !isIncompleteCustomerAssignmentRequirement(
-                                    requirement,
-                                    customerAssignmentCapability)
-                            && !isIncompleteCustomerIdentityRequirement(
-                                    requirement,
-                                    customerIdentityCapability))
+                    .filter(requirement -> !requirement.required() && !incomplete.test(requirement))
                     .toList();
             report = new Report(missingRequired, missingOptional);
         } catch (SQLException exception) {

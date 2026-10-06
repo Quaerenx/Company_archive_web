@@ -149,7 +149,9 @@ class TroubleshootingDAOOwnershipTest {
                     new Class<?>[] {DatabaseMetaData.class},
                     (ignored, call, args) -> switch (call.getName()) {
                         case "getColumns" ->
-                                columnResultSet(columnAvailable, (String) args[2], (String) args[3]);
+                                columnResultSet(columnAvailable
+                                        && "creator_user_id".equalsIgnoreCase((String) args[3]),
+                                        (String) args[2], (String) args[3]);
                         default -> defaultValue(call.getReturnType());
                     });
         }

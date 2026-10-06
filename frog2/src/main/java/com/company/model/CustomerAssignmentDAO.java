@@ -149,7 +149,7 @@ public class CustomerAssignmentDAO {
                     : " ";
             String scheduleJoin = scheduleAvailable
                     ? "LEFT JOIN customer_maintenance_schedule s "
-                            + "ON s.customer_name = d.customer_name "
+                            + scheduleJoinPredicate(connection)
                     : "";
             String sql = "SELECT " + CUSTOMER_COLUMNS + scheduleColumns
                     + "FROM vertica_customer_detail d " + scheduleJoin
@@ -301,7 +301,7 @@ public class CustomerAssignmentDAO {
                 : "";
         String scheduleJoin = scheduleAvailable
                 ? "LEFT JOIN customer_maintenance_schedule s "
-                        + "ON s.customer_name = d.customer_name "
+                        + scheduleJoinPredicate(connection)
                 : "";
         String assigneeClause = assignee == null
                 ? ""
@@ -337,6 +337,18 @@ public class CustomerAssignmentDAO {
             }
         }
         return List.copyOf(assignments);
+    }
+
+    private String scheduleJoinPredicate(Connection connection) throws SQLException {
+        boolean scheduleIds = CustomerReferenceSupport.enabled(
+                connection, schemaCapabilities, MAINTENANCE_SCHEDULE_TABLE);
+        boolean detailIds = CustomerReferenceSupport.enabled(
+                connection, schemaCapabilities, "vertica_customer_detail");
+        if (scheduleIds != detailIds) {
+            throw new SQLException("Customer schedule reference schema is partially applied");
+        }
+        return scheduleIds ? "ON s.customer_id = d.customer_id "
+                : "ON s.customer_name = d.customer_name ";
     }
 
     private static MaintenanceSchedule readMaintenanceSchedule(

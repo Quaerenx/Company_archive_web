@@ -247,6 +247,7 @@ class CustomerDetailDAOJdbcContractTest {
                 (ignored, call, args) -> switch (call.getName()) {
                     case "getAutoCommit" -> true;
                     case "setAutoCommit", "commit", "rollback" -> null;
+                    case "getMetaData" -> new PaginationJdbcFixture().open().getMetaData();
                     case "prepareStatement" -> serializedStatement();
                     case "close" -> {
                         activeConnections.decrementAndGet();
