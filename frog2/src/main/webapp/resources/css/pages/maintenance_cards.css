@@ -12,14 +12,14 @@
 
     /* 담당자별 섹션 */
     .maintenance-management .inspector-block { min-width: 0; }
-    .maintenance-management .inspector-section { display: flex; flex-direction: column; gap: var(--space-16); align-items: stretch; }
+    .maintenance-management .inspector-section { display: flex; gap: var(--space-16); align-items: flex-start; }
     .maintenance-management .inspector-header { min-width: 180px; border-left: 3px solid var(--color-primary); padding-left: var(--space-12); color: var(--color-text); font-weight: 600; font-size: var(--font-size-md); display: flex; align-items: center; gap: var(--space-8); background: transparent; box-shadow: none; border-radius: 0; }
     .maintenance-management .inspector-header i { color: currentColor; font-size: var(--icon-size-sm); }
     .maintenance-management .inspector-title { font-size: var(--font-size-md); }
     /* customer-count 제거 */
 
     /* 카드 그리드 */
-    .maintenance-management .customer-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-12); padding: 0; background: transparent; border: none; }
+    .maintenance-management .customer-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--space-12); padding: 0; background: transparent; border: none; }
 
     /* 고객사 카드 */
     .maintenance-management .customer-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: none; color: inherit; display: block; min-width: 0; padding: var(--space-16); margin: 0; text-decoration: none; transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease); cursor: pointer; position: relative; overflow: hidden; }
@@ -28,12 +28,12 @@
     .maintenance-management .customer-card:hover { background: var(--color-surface-hover); border-color: var(--color-border-strong); }
     .maintenance-management .customer-card:focus-visible { border-color: var(--color-focus); box-shadow: 0 0 0 3px var(--color-focus-ring); outline: 2px solid var(--color-focus); outline-offset: 2px; }
 
-    .maintenance-management .customer-name { font-size: var(--font-size-md); font-weight: 600; color: var(--color-text-strong); margin-bottom: var(--space-12); min-block-size: 3em; display: flex; align-items: center; gap: var(--space-8); }
+    .maintenance-management .customer-name { font-size: var(--font-size-md); font-weight: 600; color: var(--color-text-strong); margin-bottom: var(--space-8); min-block-size: 0; display: flex; align-items: center; gap: var(--space-8); }
     .maintenance-management .customer-name i { color: currentColor; font-size: var(--icon-size-sm); }
     .maintenance-management .customer-name-text { display: -webkit-box; flex: 1; min-width: 0; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
     .maintenance-management .customer-name .customer-card-arrow { color: var(--color-text-muted); flex: none; font-size: var(--icon-size-sm); }
     .maintenance-management .maintenance-frequency { color: var(--color-text-muted); flex: none; font-size: var(--font-size-xs); font-weight: 400; }
-    .maintenance-management .maintenance-registration-status { align-items: center; background: var(--color-surface-subtle); border-radius: var(--radius-sm); color: var(--color-text-muted); display: inline-flex; font-size: var(--font-size-xs); font-weight: 500; gap: var(--space-4); margin-block-end: var(--space-16); max-inline-size: 100%; padding: var(--space-4) var(--space-8); white-space: normal; }
+    .maintenance-management .maintenance-registration-status { align-items: center; background: var(--color-surface-subtle); border-radius: var(--radius-sm); color: var(--color-text-muted); display: inline-flex; font-size: var(--font-size-xs); font-weight: 500; gap: var(--space-4); margin-block-end: var(--space-8); max-inline-size: 100%; padding: var(--space-4) var(--space-8); white-space: normal; }
     .maintenance-management .maintenance-registration-status--registered { background: var(--color-success-bg); color: var(--color-success-text); }
     .maintenance-management .maintenance-registration-status i { flex: none; }
 
@@ -126,7 +126,7 @@
     align-items: start;
     display: grid;
     gap: var(--space-20);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
 }
 
 .maintenance-management .personal-maintenance-customers-empty {
