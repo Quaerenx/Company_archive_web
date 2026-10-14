@@ -11,8 +11,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.company.util.DBConnection;
+import com.company.util.LicenseSummaryFormatter;
 import com.company.util.SearchQueryPolicy;
 
 public class MaintenanceRecordDAO {
@@ -607,6 +609,76 @@ public class MaintenanceRecordDAO {
         return parameter;
     }
 
+    public List<MaintenanceMonthState> getMaintenanceMonthStates(
+            Date startDate, Date endDate) {
+        try (Connection connection = connectionProvider.getConnection()) {
+            MaintenanceSchemaProfile schema = loadLicenseSchemaProfile(connection);
+            String sql = "SELECT customer_name, inspector_name, inspection_date"
+                    + licenseSelectColumns(schema)
+                    + " FROM maintenance_records "
+                    + "WHERE inspection_date >= ? AND inspection_date < ? "
+                    + "ORDER BY inspection_date ASC, customer_name ASC";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setDate(1, startDate);
+                statement.setDate(2, endDate);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<MaintenanceMonthState> states = new ArrayList<>();
+                    while (resultSet.next()) {
+                        MaintenanceRecordDTO license = new MaintenanceRecordDTO();
+                        readLicenseValues(resultSet, schema, license);
+                        Date inspectionDate = resultSet.getDate("inspection_date");
+                        states.add(new MaintenanceMonthState(
+                                resultSet.getString("customer_name"),
+                                resultSet.getString("inspector_name"),
+                                inspectionDate == null ? null : inspectionDate.toLocalDate(),
+                                LicenseSummaryFormatter.resolveUsageRiskLevel(license)));
+                    }
+                    return List.copyOf(states);
+                }
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from("load monthly maintenance states", exception);
+        }
+    }
+
+    public Set<String> getRegisteredCustomerNamesByMonth(
+            Date startDate,
+            Date endDate,
+            List<String> customerNames) {
+        LinkedHashSet<String> normalizedNames = normalizedCustomerNames(customerNames);
+        if (normalizedNames.isEmpty()) {
+            return Set.of();
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            boolean hasCustomerId = CustomerReferenceSupport.enabled(
+                    connection, schemaCapabilities, TABLE_NAME);
+            String sql = "SELECT DISTINCT customer_name FROM maintenance_records "
+                    + "WHERE inspection_date >= ? AND inspection_date < ? AND "
+                    + CustomerReferenceSupport.namesPredicate(
+                            hasCustomerId, placeholders(normalizedNames.size()));
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setDate(1, startDate);
+                statement.setDate(2, endDate);
+                int parameter = 3;
+                for (String customerName : normalizedNames) {
+                    statement.setString(parameter++, customerName);
+                }
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    Set<String> registeredNames = new LinkedHashSet<>();
+                    while (resultSet.next()) {
+                        String customerName = resultSet.getString("customer_name");
+                        if (!isBlank(customerName)) {
+                            registeredNames.add(customerName);
+                        }
+                    }
+                    return Set.copyOf(registeredNames);
+                }
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from("load monthly registered customer names", exception);
+        }
+    }
+
     public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
         List<MaintenanceRecordDTO> records = new ArrayList<>();
         try (Connection conn = connectionProvider.getConnection()) {
@@ -772,6 +844,14 @@ public class MaintenanceRecordDAO {
         record.setCreatedAt(rs.getTimestamp("created_at"));
         record.setUpdatedAt(rs.getTimestamp("updated_at"));
 
+        readLicenseValues(rs, schema, record);
+        return record;
+    }
+
+    private static void readLicenseValues(
+            ResultSet rs,
+            MaintenanceSchemaProfile schema,
+            MaintenanceRecordDTO record) throws SQLException {
         if (schema.hasLicenseSize()) {
             record.setLicenseSizeGb(rs.getString(LICENSE_SIZE_COLUMN));
         }
@@ -789,8 +869,6 @@ public class MaintenanceRecordDAO {
             if (used != null) record.setLicenseUsageSize(used.stripTrailingZeros().toPlainString());
             if (percentage != null) record.setLicenseUsagePct(percentage.stripTrailingZeros().toPlainString());
         }
-
-        return record;
     }
 
     boolean columnExists(Connection conn, String tableName, String columnName) {
@@ -834,6 +912,13 @@ public class MaintenanceRecordDAO {
         if (schema.hasCreatorUserId()) {
             columns.append(", ").append(CREATOR_USER_ID_COLUMN);
         }
+        columns.append(licenseSelectColumns(schema));
+        if (schema.hasCustomerId()) columns.append(", customer_id");
+        return columns.toString();
+    }
+
+    private static String licenseSelectColumns(MaintenanceSchemaProfile schema) {
+        StringBuilder columns = new StringBuilder();
         if (schema.hasLicenseSize()) {
             columns.append(", ").append(LICENSE_SIZE_COLUMN);
         }
@@ -843,7 +928,6 @@ public class MaintenanceRecordDAO {
         if (schema.hasLicenseUsagePct()) {
             columns.append(", ").append(LICENSE_USAGE_PCT_COLUMN);
         }
-        if (schema.hasCustomerId()) columns.append(", customer_id");
         if (schema.hasNumericLicense()) {
             columns.append(", ").append(String.join(", ", MaintenanceLicenseValues.COLUMNS));
         }

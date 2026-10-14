@@ -372,13 +372,22 @@ public class CustomerDAO {
                     connection, schemaCapabilities, actorUserId);
             CustomerAssignmentSupport.Capability assignmentCapability =
                     customerAssignmentCapability(connection);
+            boolean references = CustomerReferenceSupport.enabled(
+                    connection, schemaCapabilities, "vertica_customer_detail");
+            CustomerAssignmentSupport.AssignmentState originalAssignment = assignmentCapability
+                    == CustomerAssignmentSupport.Capability.COMPLETE
+                    ? CustomerAssignmentSupport.loadAssignment(
+                            connection, customer.getCustomerName(), references) : null;
+            if (assignmentCapability == CustomerAssignmentSupport.Capability.COMPLETE
+                    && originalAssignment == null) return false;
             CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
                     assignmentCapability
                             == CustomerAssignmentSupport.Capability.COMPLETE
                     ? CustomerAssignmentSupport.resolveUserIds(
                             connection,
                             customer.getManagerName(),
-                            customer.getSubManagerName())
+                            customer.getSubManagerName(),
+                            originalAssignment)
                     : null;
             String sql = "UPDATE vertica_customer_detail SET "
                     + CustomerFieldContract.mutableAssignments() + " "
@@ -389,9 +398,9 @@ public class CustomerDAO {
                     + (auditAvailable
                             ? ", updated_at = CURRENT_TIMESTAMP, updated_by = ? "
                             : "")
-                    + "WHERE " + CustomerReferenceSupport.predicate(CustomerReferenceSupport.enabled(
-                            connection, schemaCapabilities, "vertica_customer_detail")) + " AND is_deleted = "
-                    + ACTIVE_FLAG;
+                    + "WHERE " + CustomerReferenceSupport.predicate(references) + " AND is_deleted = "
+                    + ACTIVE_FLAG
+                    + (originalAssignment == null ? "" : " AND " + originalAssignment.predicate());
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int nextParameter = CustomerFieldContract.bindMutableFields(
                         statement, 1, customer);
@@ -402,7 +411,8 @@ public class CustomerDAO {
                 if (auditAvailable) {
                     statement.setString(nextParameter++, actorUserId.trim());
                 }
-                statement.setString(nextParameter, customer.getCustomerName());
+                statement.setString(nextParameter++, customer.getCustomerName());
+                if (originalAssignment != null) originalAssignment.bind(statement, nextParameter);
                 return statement.executeUpdate() > 0;
             }
         } catch (SQLException  e) {
@@ -423,29 +433,12 @@ public class CustomerDAO {
                 return insertCustomer(connection, customer, actorUserId);
             }
 
-            boolean originalAutoCommit = connection.getAutoCommit();
-            try {
-                if (originalAutoCommit) {
-                    connection.setAutoCommit(false);
-                }
+            return JdbcTransaction.execute(connection, () -> {
                 customer.setCustomerId(CustomerIdentitySupport.ensureId(
                         connection, customer.getCustomerName()));
-                boolean inserted = insertCustomer(
+                return insertCustomer(
                         connection, customer, actorUserId);
-                if (!inserted) {
-                    connection.rollback();
-                    return false;
-                }
-                connection.commit();
-                return true;
-            } catch (SQLException | RuntimeException exception) {
-                connection.rollback();
-                throw exception;
-            } finally {
-                if (originalAutoCommit) {
-                    connection.setAutoCommit(true);
-                }
-            }
+            });
         } catch (SQLException  e) {
             throw DataAccessException.from(e);
         }
@@ -464,7 +457,8 @@ public class CustomerDAO {
                 ? CustomerAssignmentSupport.resolveUserIds(
                         connection,
                         customer.getManagerName(),
-                        customer.getSubManagerName())
+                        customer.getSubManagerName(),
+                        null)
                 : null;
         String columns = CustomerFieldContract.insertColumns() + ", is_deleted";
         String values = CustomerFieldContract.insertPlaceholders()

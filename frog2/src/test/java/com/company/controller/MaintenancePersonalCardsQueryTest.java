@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class MaintenancePersonalCardsQueryTest {
@@ -383,13 +385,14 @@ class MaintenancePersonalCardsQueryTest {
         private List<String> customerNames;
 
         @Override
-        public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonthForCustomers(
+        public Set<String> getRegisteredCustomerNamesByMonth(
                 Date monthStart, Date monthEnd, List<String> customerNames) {
             monthReads++;
             this.monthStart = monthStart;
             this.monthEnd = monthEnd;
             this.customerNames = List.copyOf(customerNames);
-            return records;
+            return records.stream().map(MaintenanceRecordDTO::getCustomerName)
+                    .filter(name -> name != null && !name.isBlank()).collect(Collectors.toSet());
         }
     }
 

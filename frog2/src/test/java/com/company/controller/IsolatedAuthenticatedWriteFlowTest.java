@@ -250,7 +250,7 @@ class IsolatedAuthenticatedWriteFlowTest {
 
     static Response filtered(Request request, Handler handler) throws Exception {
         Response response = new Response();
-        new AuthFilter().doFilter(request.proxy(), response.proxy(), (authenticated, authenticatedResponse) ->
+        new AuthFilter(principal -> true).doFilter(request.proxy(), response.proxy(), (authenticated, authenticatedResponse) ->
                 new CsrfFilter().doFilter(authenticated, authenticatedResponse, (validated, validatedResponse) ->
                         handler.handle((HttpServletRequest) validated, (HttpServletResponse) validatedResponse)));
         return response;

@@ -3,6 +3,8 @@ package com.company.controller;
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerAssignmentDAO;
 import com.company.model.CustomerDetailDTO;
+import com.company.model.CustomerEditConflictException;
+import com.company.model.CustomerAssignmentException;
 import com.company.model.UserDTO;
 import com.company.security.SessionPrincipal;
 import com.company.util.StrictDateParser;
@@ -78,13 +80,18 @@ final class CustomerCommandController {
                     request, response, "고객사 정보 수정");
             return;
         }
-        redirectWithResult(
-                request,
-                response,
-                "customers?view=list",
-                service.updateCustomer(customer, principal.getUserId()),
-                "고객사 정보가 성공적으로 업데이트되었습니다.",
-                "고객사 정보 업데이트 중 오류가 발생했습니다.");
+        try {
+            redirectWithResult(
+                    request,
+                    response,
+                    "customers?view=list",
+                    service.updateCustomer(customer, principal.getUserId()),
+                    "고객사 정보가 성공적으로 업데이트되었습니다.",
+                    "고객사 정보 업데이트 중 오류가 발생했습니다.");
+        } catch (CustomerAssignmentException exception) {
+            FlashMessage.redirect(request, response, "customers?view=list",
+                    "변경할 담당자를 확인해 주세요. 등록된 사용자를 한 명으로 식별할 수 없습니다.", "error");
+        }
     }
 
     private void addCustomer(
@@ -96,13 +103,18 @@ final class CustomerCommandController {
             return;
         }
         CustomerDTO customer = mapper.mapCustomer(request);
-        redirectWithResult(
-                request,
-                response,
-                "customers?view=list",
-                service.addCustomer(customer, principal.getUserId()),
-                "새 고객사가 성공적으로 추가되었습니다.",
-                "고객사 추가 중 오류가 발생했습니다.");
+        try {
+            redirectWithResult(
+                    request,
+                    response,
+                    "customers?view=list",
+                    service.addCustomer(customer, principal.getUserId()),
+                    "새 고객사가 성공적으로 추가되었습니다.",
+                    "고객사 추가 중 오류가 발생했습니다.");
+        } catch (CustomerAssignmentException exception) {
+            FlashMessage.redirect(request, response, "customers?view=add",
+                    "담당자를 확인해 주세요. 등록된 사용자를 한 명으로 식별할 수 없습니다.", "error");
+        }
     }
 
     private void deleteCustomer(
@@ -166,6 +178,7 @@ final class CustomerCommandController {
                         "담당 고객사의 상세정보만 수정할 수 있습니다.");
                 return;
             }
+            if (detail.getEditRevision() == null) throw new CustomerEditConflictException();
             boolean success = service.saveCustomerDetail(
                     environment, detail, principal.getUserId());
 
@@ -179,6 +192,12 @@ final class CustomerCommandController {
                     success,
                     "상세정보가 성공적으로 저장되었습니다.",
                     "상세정보 저장 중 오류가 발생했습니다.");
+        } catch (CustomerEditConflictException exception) {
+            rejectDetailSave(request, response, environment, HttpServletResponse.SC_CONFLICT,
+                    "customer_edit_conflict", "다른 작업에서 고객사 정보가 변경되었습니다. 수정 화면을 다시 열어 최신 정보를 확인한 뒤 저장해 주세요.");
+        } catch (CustomerAssignmentException exception) {
+            rejectDetailSave(request, response, environment, HttpServletResponse.SC_BAD_REQUEST,
+                    "invalid_customer_assignee", "변경할 담당자를 확인해 주세요. 등록된 사용자의 이름을 입력하고 동명이인은 담당자 설정을 먼저 확인해 주세요.");
         } catch (ParseException exception) {
             rejectDetailSave(
                     request,

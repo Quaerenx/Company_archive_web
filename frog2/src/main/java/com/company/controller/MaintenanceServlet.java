@@ -546,10 +546,9 @@ public class MaintenanceServlet extends HttpServlet {
         Date startDate = Date.valueOf(selectedMonth.atDay(1));
         Date endDate = Date.valueOf(selectedMonth.plusMonths(1).atDay(1));
         Map<String, Boolean> registeredCustomers = new LinkedHashMap<>();
-        for (MaintenanceRecordDTO record
-                : maintenanceDAO.getMaintenanceRecordsByMonthForCustomers(
+        for (String customerName
+                : maintenanceDAO.getRegisteredCustomerNamesByMonth(
                         startDate, endDate, customerNames)) {
-            String customerName = record.getCustomerName();
             if (customerName != null && !customerName.isBlank()) {
                 registeredCustomers.put(customerName, Boolean.TRUE);
             }

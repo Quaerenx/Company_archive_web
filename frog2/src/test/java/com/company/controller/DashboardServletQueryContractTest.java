@@ -10,8 +10,10 @@ import com.company.model.MaintenanceAssigneeData;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.MaintenanceRecordDAO;
 import com.company.model.MaintenanceRecordDTO;
+import com.company.model.MaintenanceMonthState;
 import com.company.model.MaintenanceSchedule;
 import com.company.model.UserDTO;
+import com.company.util.LicenseSummaryFormatter;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -231,6 +233,34 @@ class DashboardServletQueryContractTest {
         assertEquals("mixed-state", customer.getCustomerName());
         assertEquals(true, customer.isDone());
         assertEquals(true, customer.isLicenseRisk());
+    }
+
+    @Test
+    void monthlyProjectionKeepsEarlierRiskAndLatestNonBlankInspector() throws Exception {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        MaintenanceRecordDTO earlier = maintenanceRecord("record-only", today.minusDays(2), "110");
+        earlier.setInspectorName("Earlier Inspector");
+        MaintenanceRecordDTO latest = maintenanceRecord("record-only", today.minusDays(1), "40");
+        latest.setInspectorName("Latest Inspector");
+        MaintenanceRecordDTO scheduled = maintenanceRecord("record-only", today.plusDays(1), "20");
+        scheduled.setInspectorName(" ");
+        StubMaintenanceRecordDAO records = new StubMaintenanceRecordDAO();
+        records.records = List.of(earlier, latest, scheduled);
+        RequestFixture request = new RequestFixture();
+
+        new DashboardServlet(records, new StubCustomerAssignmentDAO(), FIXED_CLOCK)
+                .doGet(request.proxy(), new ResponseFixture().proxy());
+
+        @SuppressWarnings("unchecked")
+        List<DashboardServlet.MaintenanceAssigneeGroup> groups =
+                (List<DashboardServlet.MaintenanceAssigneeGroup>)
+                        request.attributes.get("monthlyMaintenanceAssigneeGroups");
+        assertEquals(1, groups.size());
+        assertEquals("Latest Inspector", groups.getFirst().getManagerName());
+        DashboardServlet.MonthlyMaintenanceCustomer customer = groups.getFirst().getCustomers().getFirst();
+        assertEquals(true, customer.isDone());
+        assertEquals(true, customer.isLicenseRisk());
+        assertEquals(1, records.monthCalls);
     }
 
     @Test
@@ -456,11 +486,14 @@ class DashboardServletQueryContractTest {
         private Date lastEndDate;
 
         @Override
-        public List<MaintenanceRecordDTO> getMaintenanceRecordsByMonth(Date startDate, Date endDate) {
+        public List<MaintenanceMonthState> getMaintenanceMonthStates(Date startDate, Date endDate) {
             monthCalls++;
             lastStartDate = startDate;
             lastEndDate = endDate;
-            return records;
+            return records.stream().map(record -> new MaintenanceMonthState(
+                    record.getCustomerName(), record.getInspectorName(),
+                    record.getInspectionDate() == null ? null : record.getInspectionDate().toLocalDate(),
+                    LicenseSummaryFormatter.resolveUsageRiskLevel(record))).toList();
         }
     }
 

@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class CustomerDetailViewStructureTest {
@@ -26,7 +28,8 @@ class CustomerDetailViewStructureTest {
         assertEquals(47, occurrences(fragment, "<t:detailField "));
         assertEquals(5, occurrences(
                 fragment,
-                "class=\"detail-section detail-section--collapsible\" data-detail-section open"));
+                "class=\"detail-section detail-section--collapsible\" data-detail-section>"));
+        assertEquals(5, occurrences(fragment, "<details class=\"detail-section-disclosure\" open>"));
         assertTrue(fragment.contains("핵심 정보"));
         assertTrue(fragment.contains("기본·담당자 정보"));
         assertTrue(fragment.contains("인프라·네트워크"));
@@ -88,7 +91,7 @@ class CustomerDetailViewStructureTest {
         String section = cssRule(styles,
                 ".ui-system .customer-detail--view .environment-detail .detail-section");
         String collapsible = cssRule(styles,
-                ".ui-system .customer-detail--view .environment-detail > details.detail-section");
+                ".ui-system .customer-detail--view .environment-detail > .detail-section--collapsible");
         String item = cssRule(styles,
                 ".ui-system .customer-detail--view .detail-item");
         String value = cssRule(styles,
@@ -101,6 +104,24 @@ class CustomerDetailViewStructureTest {
         assertTrue(item.contains("border-bottom: 0;"));
         assertTrue(value.contains("color: var(--color-text-strong);"));
         assertTrue(note.contains("border: 0;"));
+    }
+
+    @Test
+    void disclosuresAndMissingFieldActionsRemainSeparateInteractiveControls() throws Exception {
+        String fields = Files.readString(Path.of("src/main/webapp/customers/_detail_sections.jspf"));
+        Matcher summaries = Pattern.compile("<summary\\b[^>]*>(.*?)</summary>", Pattern.DOTALL)
+                .matcher(fields);
+        int summaryCount = 0;
+        while (summaries.find()) {
+            summaryCount++;
+            assertFalse(Pattern.compile("<(button|a|input|select|textarea)\\b").matcher(summaries.group(1)).find());
+        }
+        assertEquals(5, summaryCount);
+        assertEquals(5, occurrences(fields,
+                "</details>\n        <button type=\"button\" class=\"detail-section-count\""));
+        String styles = Files.readString(Path.of("src/main/webapp/resources/css/pages/customer_detail.css"));
+        assertTrue(cssRule(styles, ".ui-system .customer-detail--view .detail-value--empty")
+                .contains("color: var(--color-text-muted);"));
     }
 
     @Test

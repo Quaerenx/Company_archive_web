@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Locale;
+import java.util.List;
 
 /**
  * Shared database contract for stable customer-to-user assignments.
@@ -63,6 +64,44 @@ final class CustomerAssignmentSupport {
                 ? mainUserId
                 : resolveUniqueUserId(connection, subManagerName);
         return new AssignmentUserIds(mainUserId, subUserId);
+    }
+
+    static AssignmentUserIds resolveUserIds(
+            Connection connection, String mainName, String subName, AssignmentState original)
+            throws SQLException {
+        return new AssignmentUserIds(
+                resolveChangedUserId(connection, mainName,
+                        original == null ? null : original.mainName(),
+                        original == null ? null : original.mainUserId(), original != null),
+                resolveChangedUserId(connection, subName,
+                        original == null ? null : original.subName(),
+                        original == null ? null : original.subUserId(), original != null));
+    }
+
+    static AssignmentState loadAssignment(
+            Connection connection, String customerName, boolean references) throws SQLException {
+        String sql = "SELECT main_manager, sub_manager, main_manager_user_id, sub_manager_user_id "
+                + "FROM " + TABLE + " WHERE " + CustomerReferenceSupport.predicate(references)
+                + " AND is_deleted = 1";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, customerName);
+            try (ResultSet row = statement.executeQuery()) {
+                return row.next() ? new AssignmentState(row.getString("main_manager"),
+                        row.getString("sub_manager"), row.getString(MAIN_USER_ID_COLUMN),
+                        row.getString(SUB_USER_ID_COLUMN)) : null;
+            }
+        }
+    }
+
+    private static String resolveChangedUserId(
+            Connection connection, String name, String oldName, String oldId, boolean existing)
+            throws SQLException {
+        if (existing && (java.util.Objects.equals(normalize(name), normalize(oldName))
+                || normalizedEquals(name, oldName))) return oldId;
+        if (normalize(name) == null) return null;
+        String id = resolveUniqueUserId(connection, name);
+        if (id == null) throw new CustomerAssignmentException();
+        return id;
     }
 
     static int bindUserIds(
@@ -166,5 +205,29 @@ final class CustomerAssignmentSupport {
     }
 
     record AssignmentUserIds(String mainUserId, String subUserId) {
+    }
+
+    record AssignmentState(String mainName, String subName, String mainUserId, String subUserId) {
+        private static final List<String> COLUMNS = List.of(
+                "main_manager", "sub_manager", MAIN_USER_ID_COLUMN, SUB_USER_ID_COLUMN);
+
+        private java.util.List<String> values() {
+            return java.util.Arrays.asList(mainName, subName, mainUserId, subUserId);
+        }
+
+        String predicate() {
+            java.util.List<String> values = values();
+            java.util.List<String> clauses = new java.util.ArrayList<>();
+            for (int index = 0; index < COLUMNS.size(); index++) {
+                clauses.add(COLUMNS.get(index) + (values.get(index) == null ? " IS NULL" : " = ?"));
+            }
+            return String.join(" AND ", clauses);
+        }
+
+        void bind(PreparedStatement statement, int index) throws SQLException {
+            for (String value : values()) {
+                if (value != null) statement.setString(index++, value);
+            }
+        }
     }
 }

@@ -283,10 +283,12 @@ public class MyPageServlet extends HttpServlet {
                         requestMapper.passwordChange(request));
         if (result.status()
                 == MyPageCommandService.PasswordChangeStatus.SUCCESS) {
-            redirectToMyPage(
+            SessionPrincipal.invalidate(request);
+            FlashMessage.redirect(
                     request,
                     response,
-                    "비밀번호가 성공적으로 변경되었습니다.",
+                    request.getContextPath() + "/login",
+                    "비밀번호가 변경되었습니다. 다시 로그인해 주세요.",
                     "success");
         } else {
             redirectToPasswordForm(

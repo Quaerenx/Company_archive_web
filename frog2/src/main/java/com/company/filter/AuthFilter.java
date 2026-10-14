@@ -1,6 +1,8 @@
 package com.company.filter;
 
 import com.company.security.SessionPrincipal;
+import com.company.model.UserDAO;
+import com.company.model.UserDTO;
 import com.company.web.ApplicationError;
 import com.company.web.JsonResponse;
 import com.company.web.RequestPaths;
@@ -13,8 +15,21 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 public class AuthFilter implements Filter {
+    private final Predicate<UserDTO> authenticationCurrent;
+
+    public AuthFilter() {
+        this(new UserDAO()::isAuthenticationCurrent);
+    }
+
+    public AuthFilter(Predicate<UserDTO> authenticationCurrent) {
+        this.authenticationCurrent = Objects.requireNonNull(
+                authenticationCurrent, "authenticationCurrent");
+    }
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         // no-op
@@ -26,11 +41,23 @@ public class AuthFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
         String path = RequestPaths.relativePath(request);
-        boolean authenticated = SessionPrincipal.expose(request) != null;
+        UserDTO user = SessionPrincipal.expose(request);
+        boolean logoutPost = "/logout".equals(path)
+                && "POST".equals(request.getMethod());
         boolean open = RequestPaths.isLoginPath(path)
                 || RequestPaths.isHealthPath(path)
                 || RequestPaths.isPublicStaticRequest(request)
-                || RequestPaths.isErrorPage(path);
+                || RequestPaths.isErrorPage(path)
+                || logoutPost;
+        boolean verify = !open
+                || (RequestPaths.isLoginPath(path)
+                    && "GET".equals(request.getMethod()));
+        if (user != null && verify
+                && !authenticationCurrent.test(user)) {
+            SessionPrincipal.invalidate(request);
+            user = null;
+        }
+        boolean authenticated = user != null;
         if (open || authenticated) {
             chain.doFilter(req, res);
             return;

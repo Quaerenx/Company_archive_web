@@ -155,13 +155,14 @@ class MyPageServletAccountPrgTest {
 
         assertEquals("old-password", userDAO.authenticatedPassword);
         assertEquals("new-password", userDAO.updatedPassword);
-        assertTrue(response.redirect.startsWith("/frog2/mypage?_flash="));
+        assertTrue(response.redirect.startsWith("/frog2/login?_flash="));
+        assertFalse(request.sessionAttributes.containsKey(SessionPrincipal.SESSION_ATTRIBUTE));
         assertFalse(response.redirect.contains("old-password"));
         assertFalse(response.redirect.contains("new-password"));
         assertFlash(
                 request,
                 response,
-                "비밀번호가 성공적으로 변경되었습니다.",
+                "비밀번호가 변경되었습니다. 다시 로그인해 주세요.",
                 "success");
     }
 
@@ -260,6 +261,10 @@ class MyPageServletAccountPrgTest {
                     HttpSession.class.getClassLoader(),
                     new Class<?>[] {HttpSession.class},
                     (ignored, call, args) -> switch (call.getName()) {
+                        case "invalidate" -> {
+                            sessionAttributes.clear();
+                            yield null;
+                        }
                         case "getAttribute" ->
                                 sessionAttributes.get((String) args[0]);
                         case "setAttribute" -> {

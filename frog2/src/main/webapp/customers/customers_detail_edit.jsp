@@ -105,12 +105,14 @@
                       data-environment="<c:out value='${environment.value}' />"
                       data-environment-label="<c:out value='${environment.label}' />"
                       data-ui-draft="auto"
+                      data-ui-draft-revision="editRevision"
                       data-ui-draft-id="customer:<c:out value='${currentCustomerName}' />:<c:out value='${environment.value}' />"
                       data-ui-draft-success-views="detail"
                       data-ui-submit-lock="auto">
                     <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
                     <input type="hidden" name="action" value="saveDetail">
                     <input type="hidden" name="env" value="<c:out value='${environment.value}' />">
+                    <input type="hidden" name="editRevision" value="<c:out value='${environment.editRevision}' />">
 
                     <div class="ui-alert ui-alert--danger customer-detail-error-summary"
                          data-customer-detail-error-summary

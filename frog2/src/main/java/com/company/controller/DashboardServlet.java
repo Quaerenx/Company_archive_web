@@ -1,7 +1,6 @@
 package com.company.controller;
 
 import com.company.util.LicenseRiskPolicy;
-import com.company.util.LicenseSummaryFormatter;
 import com.company.util.BusinessDate;
 import java.io.IOException;
 import java.sql.Date;
@@ -20,7 +19,7 @@ import java.util.Set;
 import com.company.model.CustomerAssignmentDAO;
 import com.company.model.MaintenanceAssigneeData;
 import com.company.model.MaintenanceRecordDAO;
-import com.company.model.MaintenanceRecordDTO;
+import com.company.model.MaintenanceMonthState;
 import com.company.model.MaintenanceCustomerAssignment;
 import com.company.model.UserDTO;
 import com.company.performance.RequestPerformanceContext;
@@ -85,7 +84,7 @@ public class DashboardServlet extends HttpServlet {
         LocalDate today = BusinessDate.today(clock);
         Map<String, CustomerMonthState> stateByCustomer =
                 buildCustomerMonthStates(
-                        maintenanceRecordDAO.getMaintenanceRecordsByMonth(
+                        maintenanceRecordDAO.getMaintenanceMonthStates(
                                 Date.valueOf(monthStart),
                                 Date.valueOf(nextMonthStart)),
                         today);
@@ -162,23 +161,20 @@ public class DashboardServlet extends HttpServlet {
     }
 
     private Map<String, CustomerMonthState> buildCustomerMonthStates(
-            List<MaintenanceRecordDTO> records, LocalDate today) {
+            List<MaintenanceMonthState> records, LocalDate today) {
         Map<String, CustomerMonthState> stateByCustomer =
                 new LinkedHashMap<>();
         if (records == null) {
             return stateByCustomer;
         }
 
-        for (MaintenanceRecordDTO record : records) {
-            String customerName = normalizedName(record.getCustomerName());
+        for (MaintenanceMonthState record : records) {
+            String customerName = normalizedName(record.customerName());
             if (customerName.isEmpty()) {
                 continue;
             }
-            LocalDate inspectionDate = record.getInspectionDate() == null
-                    ? null
-                    : record.getInspectionDate().toLocalDate();
-            LicenseRiskPolicy.Level licenseRiskLevel =
-                    LicenseSummaryFormatter.resolveUsageRiskLevel(record);
+            LocalDate inspectionDate = record.inspectionDate();
+            LicenseRiskPolicy.Level licenseRiskLevel = record.licenseRiskLevel();
             boolean licenseRisk = licenseRiskLevel
                     == LicenseRiskPolicy.Level.WARNING
                     || licenseRiskLevel == LicenseRiskPolicy.Level.RISK;
@@ -189,8 +185,8 @@ public class DashboardServlet extends HttpServlet {
                     ignored -> new CustomerMonthState());
             state.done = state.done || completed;
             state.licenseRisk = state.licenseRisk || licenseRisk;
-            if (!isMissingValue(record.getInspectorName())) {
-                state.inspectorName = record.getInspectorName().trim();
+            if (!isMissingValue(record.inspectorName())) {
+                state.inspectorName = record.inspectorName().trim();
             }
         }
         return stateByCustomer;

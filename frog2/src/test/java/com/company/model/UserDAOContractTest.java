@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.util.PasswordUtils;
+import com.company.security.CredentialFingerprint;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -82,6 +84,111 @@ class UserDAOContractTest {
 
         assertNotNull(user);
         assertTrue(connectionClosed.get());
+    }
+
+    @Test
+    void authenticationFingerprintUsesExactlyTheVerifiedCredentialSnapshot() {
+        Map<String, String> row = new HashMap<>(Map.of(
+                "userId", "tester", "password", "original-hash", "userName", "Test User"));
+        UserDAO dao = new UserDAO(
+                () -> connection(resultSet(row, true), new AtomicReference<>()),
+                new SchemaCapabilityCache(),
+                (plainText, passwordHash) -> {
+                    assertEquals("original-hash", passwordHash);
+                    row.put("password", "changed-during-verification");
+                    return true;
+                });
+
+        UserDTO user = dao.authenticateUser("tester", "synthetic-password");
+
+        assertEquals(CredentialFingerprint.from("tester", "original-hash"),
+                user.getAuthenticationFingerprint());
+        assertEquals("", user.getPassword());
+        assertTrue(!dao.isAuthenticationCurrent(user));
+    }
+
+    @Test
+    void validatesCurrentCredentialAndRejectsChangedMissingAndReboundAccounts() {
+        Map<String, String> row = new HashMap<>(Map.of("password", "current-hash"));
+        AtomicReference<String> binding = new AtomicReference<>();
+        AtomicBoolean exists = new AtomicBoolean(true);
+        UserDAO dao = new UserDAO(() -> connection(resultSet(row, exists.get()), binding));
+        UserDTO user = new UserDTO("tester", "", "Tester", "QA");
+        user.setAuthenticationFingerprint(CredentialFingerprint.from("tester", "current-hash"));
+
+        assertTrue(dao.isAuthenticationCurrent(user));
+        assertEquals("tester", binding.get());
+        row.put("password", "new-hash");
+        assertTrue(!dao.isAuthenticationCurrent(user));
+        row.put("password", "current-hash");
+        exists.set(false);
+        assertTrue(!dao.isAuthenticationCurrent(user));
+        exists.set(true);
+        user.setUserId("other-user");
+        assertTrue(!dao.isAuthenticationCurrent(user));
+    }
+
+    @Test
+    void legacyAndMalformedFingerprintsAreRejectedWithoutDatabaseAccess() {
+        UserDAO dao = new UserDAO(() -> {
+            throw new AssertionError("Invalid authentication state acquired a connection");
+        });
+        UserDTO user = new UserDTO("tester", "", "Tester", "QA");
+        assertTrue(!dao.isAuthenticationCurrent(user));
+        user.setAuthenticationFingerprint("malformed");
+        assertTrue(!dao.isAuthenticationCurrent(user));
+        assertTrue(!dao.isAuthenticationCurrent(null));
+    }
+
+    @Test
+    void currentCredentialDatabaseFailureIsExplicit() {
+        UserDAO dao = new UserDAO(() -> {
+            throw new SQLException("synthetic unavailable", "08006");
+        });
+        UserDTO user = new UserDTO("tester", "", "Tester", "QA");
+        user.setAuthenticationFingerprint(CredentialFingerprint.from("tester", "hash"));
+        assertThrows(DataAccessException.class, () -> dao.isAuthenticationCurrent(user));
+    }
+
+    @Test
+    void profileRollbackFailurePreservesWriteCauseAndDoesNotRestoreAutoCommit() {
+        PaginationJdbcFixture jdbc = new PaginationJdbcFixture();
+        jdbc.availableColumns = java.util.Set.of(
+                "vertica_customer_detail.main_manager_user_id",
+                "vertica_customer_detail.sub_manager_user_id");
+        UserDAO dao = new UserDAO(() -> {
+            Connection original = jdbc.open();
+            return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(),
+                    new Class<?>[] {Connection.class}, (proxy, method, args) -> {
+                        if (method.getName().equals("rollback")) {
+                            throw new SQLException("synthetic rollback failure", "08006");
+                        }
+                        try {
+                            Object result = method.invoke(original, args);
+                            if (method.getName().equals("prepareStatement")) {
+                                PreparedStatement statement = (PreparedStatement) result;
+                                return Proxy.newProxyInstance(PreparedStatement.class.getClassLoader(),
+                                        new Class<?>[] {PreparedStatement.class}, (p, operation, values) -> {
+                                            if (operation.getName().equals("executeUpdate")) {
+                                                throw new SQLException("synthetic write failure", "25006");
+                                            }
+                                            try { return operation.invoke(statement, values); }
+                                            catch (InvocationTargetException exception) { throw exception.getCause(); }
+                                        });
+                            }
+                            return result;
+                        } catch (InvocationTargetException exception) {
+                            throw exception.getCause();
+                        }
+                    });
+        });
+
+        DataAccessException failure = assertThrows(DataAccessException.class,
+                () -> dao.updateUserName("tester", "New Name"));
+
+        assertEquals("25006", ((SQLException) failure.getCause()).getSQLState());
+        assertEquals("08006", ((SQLException) failure.getCause().getSuppressed()[0]).getSQLState());
+        assertEquals(java.util.List.of(false), jdbc.autoCommitValues);
     }
 
     @Test

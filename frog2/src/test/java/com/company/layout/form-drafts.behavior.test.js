@@ -62,13 +62,15 @@ function createField({name, value = '', type = 'text', excluded = false}) {
 }
 
 function createHarness({storedDraft = null, sensitive = false,
-        hidden = false, immediateTimers = true} = {}) {
+        hidden = false, immediateTimers = true, revisionValue = null} = {}) {
     const key = 'frog2.formDraft.v1:user-1:%2Ffrog2%2Fmeeting:meeting%3Anew';
     const storage = createStorage(storedDraft ? {
         [key]: JSON.stringify(storedDraft)
     } : {});
     const title = createField({name: 'title'});
     const csrf = createField({name: 'csrfToken', value: 'secret', type: 'hidden'});
+    const revision = revisionValue === null ? null
+        : createField({name: 'editRevision', value: revisionValue, type: 'hidden'});
     const excluded = createField({
         name: 'credentialHint', value: 'do-not-save', excluded: true
     });
@@ -77,7 +79,7 @@ function createHarness({storedDraft = null, sensitive = false,
         : null;
     const inserted = [];
     const form = eventTarget({
-        elements: [title, csrf, excluded, password].filter(Boolean),
+        elements: [title, csrf, excluded, password, revision].filter(Boolean),
         parentNode: {
             insertBefore(element) {
                 inserted.push(element);
@@ -89,6 +91,7 @@ function createHarness({storedDraft = null, sensitive = false,
         getAttribute(name) {
             if (name === 'data-ui-draft-id') return 'meeting:new';
             if (name === 'data-ui-draft-success-views') return 'list,view';
+            if (name === 'data-ui-draft-revision' && revision) return 'editRevision';
             return null;
         },
         querySelector(selector) {
@@ -156,7 +159,7 @@ function createHarness({storedDraft = null, sensitive = false,
         Event: BrowserEvent,
         URLSearchParams
     });
-    return {document, excluded, form, inserted, intervals, key, password,
+    return {document, excluded, form, inserted, intervals, key, password, revision,
         storage, timeouts, title, window};
 }
 
@@ -174,6 +177,32 @@ test('drafts are scoped and omit hidden or explicitly excluded values', async ()
         'frog2.formDraft.pending.v1'));
     assert.equal(pending[0].key, harness.key);
     assert.deepEqual(pending[0].successViews, ['list', 'view']);
+});
+
+test('detail drafts retain their original revision when restored into a newer form', () => {
+    const original = createHarness({revisionValue: 'original-revision'});
+    original.title.value = 'Earlier full form';
+    original.form.dispatch('input');
+    const draft = JSON.parse(original.storage.getItem(original.key));
+    assert.equal(draft.revision, 'original-revision');
+    assert.equal(Object.hasOwn(draft.values, 'editRevision'), false);
+    assert.equal(Object.hasOwn(draft.values, 'csrfToken'), false);
+
+    const reopened = createHarness({revisionValue: 'latest-revision', storedDraft: draft});
+    const banner = reopened.inserted[0];
+    assert.match(banner.children[0].textContent, /최신 정보와 비교/);
+    banner.children[1].children[0].dispatch('click');
+    assert.equal(reopened.title.value, 'Earlier full form');
+    assert.equal(reopened.revision.value, 'original-revision');
+});
+
+test('legacy detail drafts without a revision cannot silently use the latest revision', () => {
+    const reopened = createHarness({revisionValue: 'latest-revision', storedDraft: {
+        savedAt: Date.now(), values: {title: 'Legacy full form'}
+    }});
+    reopened.inserted[0].children[1].children[0].dispatch('click');
+    assert.equal(reopened.revision.value, '');
+    assert.equal(reopened.title.value, 'Legacy full form');
 });
 
 test('an unexpired draft can be restored and credential forms are ignored', () => {

@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CustomerDetailDTO {
+    public static final String MISSING_EDIT_REVISION = "missing";
     private static final Pattern CAPACITY_WITH_UNIT = Pattern.compile(
             "^([+-]?\\d+(?:\\.\\d+)?)\\s*(TB|GB)$",
             Pattern.CASE_INSENSITIVE);
@@ -71,6 +72,15 @@ public class CustomerDetailDTO {
     private String note;
     private Date updatedAt;
     private String updatedBy;
+    private String editRevision;
+
+    public String getEditRevision() {
+        return editRevision;
+    }
+
+    public void setEditRevision(String editRevision) {
+        this.editRevision = editRevision;
+    }
 
     // 기본 생성자
     public CustomerDetailDTO() {}

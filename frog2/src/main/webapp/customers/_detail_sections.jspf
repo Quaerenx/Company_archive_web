@@ -26,11 +26,11 @@
         </div>
     </section>
 
-    <details class="detail-section detail-section--collapsible" data-detail-section open>
+    <section class="detail-section detail-section--collapsible" data-detail-section>
+        <details class="detail-section-disclosure" open>
         <summary class="detail-section-title">
             <i class="fas fa-address-card" aria-hidden="true"></i>
             기본·담당자 정보
-            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="고객사" value="${detail.customerName}" hideWhenEmpty="${true}" />
@@ -43,13 +43,15 @@
             <t:detailField label="작성일" value="${detailCreateDate}" hideWhenEmpty="${true}" />
             <t:detailField label="작성자" value="${detail.creator}" hideWhenEmpty="${true}" />
         </div>
-    </details>
+        </details>
+        <button type="button" class="detail-section-count" data-detail-section-count></button>
+    </section>
 
-    <details class="detail-section detail-section--collapsible" data-detail-section open>
+    <section class="detail-section detail-section--collapsible" data-detail-section>
+        <details class="detail-section-disclosure" open>
         <summary class="detail-section-title">
             <i class="fas fa-database" aria-hidden="true"></i>
             Vertica 운영 설정
-            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="Vertica 관리자" value="${detail.verticaAdmin}" hideWhenEmpty="${true}" />
@@ -62,13 +64,15 @@
             <t:detailField label="MC 관리자" value="${detail.mcAdmin}" hideWhenEmpty="${true}" />
             <t:detailField label="백업 비고" value="${detail.backupNoteDisplay}" fullWidth="${true}" multiline="${true}" hideWhenEmpty="${true}" />
         </div>
-    </details>
+        </details>
+        <button type="button" class="detail-section-count" data-detail-section-count></button>
+    </section>
 
-    <details class="detail-section detail-section--collapsible" data-detail-section open>
+    <section class="detail-section detail-section--collapsible" data-detail-section>
+        <details class="detail-section-disclosure" open>
         <summary class="detail-section-title">
             <i class="fas fa-server" aria-hidden="true"></i>
             인프라·네트워크
-            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="메모리" value="${detail.memoryInfo}" hideWhenEmpty="${true}" />
@@ -88,13 +92,15 @@
             <t:detailField label="스토리지 네트워크" value="${detail.storageNetwork}"
                     columnStart="${true}" hideWhenEmpty="${true}" />
         </div>
-    </details>
+        </details>
+        <button type="button" class="detail-section-count" data-detail-section-count></button>
+    </section>
 
-    <details class="detail-section detail-section--collapsible" data-detail-section open>
+    <section class="detail-section detail-section--collapsible" data-detail-section>
+        <details class="detail-section-disclosure" open>
         <summary class="detail-section-title">
             <i class="fas fa-puzzle-piece" aria-hidden="true"></i>
             연계 솔루션
-            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="ETL" value="${detail.etlTool}" hideWhenEmpty="${true}" />
@@ -102,18 +108,22 @@
             <t:detailField label="DB 암호화" value="${detail.dbEncryption}" hideWhenEmpty="${true}" />
             <t:detailField label="CDC" value="${detail.cdcTool}" hideWhenEmpty="${true}" />
         </div>
-    </details>
+        </details>
+        <button type="button" class="detail-section-count" data-detail-section-count></button>
+    </section>
 
-    <details class="detail-section detail-section--collapsible" data-detail-section open>
+    <section class="detail-section detail-section--collapsible" data-detail-section>
+        <details class="detail-section-disclosure" open>
         <summary class="detail-section-title">
             <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
             기타 정보
-            <button type="button" class="detail-section-count" data-detail-section-count></button>
         </summary>
         <div class="detail-grid">
             <t:detailField label="EOS 일자" value="${detailEosDate}" hideWhenEmpty="${true}" />
             <t:detailField label="고객 유형" value="${detail.customerType}" hideWhenEmpty="${true}" />
             <t:detailField label="비고" value="${detail.note}" fullWidth="${true}" multiline="${true}" hideWhenEmpty="${true}" />
         </div>
-    </details>
+        </details>
+        <button type="button" class="detail-section-count" data-detail-section-count></button>
+    </section>
 </div>

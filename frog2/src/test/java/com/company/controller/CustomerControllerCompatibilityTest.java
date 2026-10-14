@@ -11,6 +11,8 @@ import com.company.model.CustomerCounts;
 import com.company.model.CustomerDTO;
 import com.company.model.CustomerDetailDAO;
 import com.company.model.CustomerDetailDTO;
+import com.company.model.CustomerEditConflictException;
+import com.company.model.CustomerAssignmentException;
 import com.company.model.CustomerDetailSet;
 import com.company.model.CustomerPage;
 import com.company.model.PageResult;
@@ -486,6 +488,72 @@ class CustomerControllerCompatibilityTest {
         assertEquals(0, eosDAO.reads);
     }
 
+    @Test
+    void staleDetailSaveReturnsAConflictAndKeepsTheEditEnvironment() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customer = customer("Acme");
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        detailDAO.writeFailure = new CustomerEditConflictException();
+        CustomersServlet servlet = servlet(customerDAO, detailDAO);
+
+        RequestFixture json = new RequestFixture();
+        json.parameters.put("action", "saveDetail");
+        json.parameters.put("customerName", "Acme");
+        json.parameters.put("env", "dev");
+        json.headers.put("Accept", "application/json");
+        ResponseFixture jsonResponse = new ResponseFixture();
+        servlet.doPost(json.proxy(), jsonResponse.proxy());
+        assertEquals(HttpServletResponse.SC_CONFLICT, jsonResponse.status);
+        assertTrue(jsonResponse.body.toString().contains("customer_edit_conflict"));
+        assertTrue(jsonResponse.body.toString().contains("최신 정보를 확인"));
+
+        RequestFixture html = new RequestFixture();
+        html.parameters.putAll(json.parameters);
+        ResponseFixture htmlResponse = new ResponseFixture();
+        servlet.doPost(html.proxy(), htmlResponse.proxy());
+        assertTrue(htmlResponse.redirect.startsWith(
+                "customers?view=editDetail&customerName=Acme&env=dev&_flash="));
+        assertTrue(detailDAO.writes.isEmpty());
+    }
+
+    @Test
+    void oldFormsWithoutARevisionCannotSave() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customer = customer("Acme");
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        RequestFixture request = new RequestFixture();
+        request.parameters.remove("editRevision");
+        request.parameters.put("action", "saveDetail");
+        request.parameters.put("customerName", "Acme");
+        request.headers.put("Accept", "application/json");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet(customerDAO, detailDAO).doPost(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_CONFLICT, response.status);
+        assertTrue(detailDAO.writes.isEmpty());
+    }
+
+    @Test
+    void anAmbiguousChangedAssigneeProducesAnActionableValidationError() throws Exception {
+        StubCustomerDAO customerDAO = new StubCustomerDAO();
+        customerDAO.customer = customer("Acme");
+        StubDetailDAO detailDAO = new StubDetailDAO();
+        detailDAO.writeFailure = new CustomerAssignmentException();
+        RequestFixture request = new RequestFixture();
+        request.parameters.put("action", "saveDetail");
+        request.parameters.put("customerName", "Acme");
+        request.headers.put("Accept", "application/json");
+        ResponseFixture response = new ResponseFixture();
+
+        servlet(customerDAO, detailDAO).doPost(request.proxy(), response.proxy());
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.status);
+        assertTrue(response.body.toString().contains("invalid_customer_assignee"));
+        assertTrue(response.body.toString().contains("담당자를 확인"));
+        assertTrue(detailDAO.writes.isEmpty());
+    }
+
     private static CustomerDTO customer(String name) {
         CustomerDTO customer = new CustomerDTO();
         customer.setCustomerName(name);
@@ -637,6 +705,7 @@ class CustomerControllerCompatibilityTest {
         private final List<String> reads = new ArrayList<>();
         private final List<String> writes = new ArrayList<>();
         private String lastActorUserId;
+        private RuntimeException writeFailure;
 
         @Override
         public CustomerDetailDTO getCustomerDetail(String customerName) {
@@ -666,6 +735,7 @@ class CustomerControllerCompatibilityTest {
 
         @Override
         public boolean saveOrUpdateCustomerDetail(CustomerDetailDTO detail) {
+            if (writeFailure != null) throw writeFailure;
             writes.add("prod:" + detail.getCustomerName());
             return true;
         }
@@ -673,6 +743,7 @@ class CustomerControllerCompatibilityTest {
         @Override
         public boolean saveOrUpdateCustomerDetail(
                 CustomerDetailDTO detail, String actorUserId) {
+            if (writeFailure != null) throw writeFailure;
             lastActorUserId = actorUserId;
             writes.add("prod:" + detail.getCustomerName());
             return true;
@@ -680,12 +751,14 @@ class CustomerControllerCompatibilityTest {
 
         @Override
         public boolean saveOrUpdateCustomerDetailStg(CustomerDetailDTO detail) {
+            if (writeFailure != null) throw writeFailure;
             writes.add("stg:" + detail.getCustomerName());
             return true;
         }
 
         @Override
         public boolean saveOrUpdateCustomerDetailDev(CustomerDetailDTO detail) {
+            if (writeFailure != null) throw writeFailure;
             writes.add("dev:" + detail.getCustomerName());
             return true;
         }
@@ -711,6 +784,7 @@ class CustomerControllerCompatibilityTest {
         private String forwardedPath;
 
         private RequestFixture() {
+            parameters.put("editRevision", CustomerDetailDTO.MISSING_EDIT_REVISION);
             sessionAttributes.put("user", new UserDTO("tester", "", "Tester", "QA"));
             session = (HttpSession) Proxy.newProxyInstance(
                     HttpSession.class.getClassLoader(),

@@ -90,7 +90,10 @@ class GlobalSearchServiceTest {
                 new StubMaintenanceDAO(maintenance),
                 files);
 
-        GlobalSearchOutcome outcome = service.search("조폐공사");
+        GlobalSearchOutcome outcome;
+        try (service) {
+            outcome = service.search("조폐공사");
+        }
         List<GlobalSearchResult> results = outcome.results();
 
         assertTrue(outcome.unavailableCategories().isEmpty());
@@ -129,7 +132,10 @@ class GlobalSearchServiceTest {
                 new EmptyMaintenanceDAO(),
                 new FileRepositoryService(fileRoot));
 
-        GlobalSearchOutcome outcome = service.search("TLS");
+        GlobalSearchOutcome outcome;
+        try (service) {
+            outcome = service.search("TLS");
+        }
 
         assertEquals(List.of("고객사"), outcome.unavailableCategories());
         assertTrue(outcome.partial());

@@ -1,5 +1,7 @@
 package com.company.performance;
 
+import java.util.Objects;
+
 public final class RequestPerformanceContext {
     private static final ThreadLocal<State> CURRENT = new ThreadLocal<>();
 
@@ -7,7 +9,11 @@ public final class RequestPerformanceContext {
     }
 
     public static void begin() {
-        CURRENT.set(new State());
+        CURRENT.set(new State(null));
+    }
+
+    public static void begin(Capture capture) {
+        CURRENT.set(new State(Objects.requireNonNull(capture, "capture")));
     }
 
     public static void recordSql(long elapsedNanos) {
@@ -19,6 +25,7 @@ public final class RequestPerformanceContext {
         state.sqlCount++;
         state.sqlDurationNanos += safeElapsed;
         state.maxSqlNanos = Math.max(state.maxSqlNanos, safeElapsed);
+        publish(state);
     }
 
     public static void recordMetadata(long elapsedNanos) {
@@ -27,6 +34,7 @@ public final class RequestPerformanceContext {
             state.metadataCount++;
             state.metadataDurationNanos += Math.max(0, elapsedNanos);
             state.maxMetadataNanos = Math.max(state.maxMetadataNanos, Math.max(0, elapsedNanos));
+            publish(state);
         }
     }
 
@@ -40,12 +48,14 @@ public final class RequestPerformanceContext {
         state.dbAcquisitionDurationNanos += safeElapsed;
         state.maxDbAcquisitionNanos = Math.max(
                 state.maxDbAcquisitionNanos, safeElapsed);
+        publish(state);
     }
 
     public static void markOperation(Operation operation) {
         State state = CURRENT.get();
         if (state != null && operation != null) {
             state.operation = operation;
+            publish(state);
         }
     }
 
@@ -54,6 +64,7 @@ public final class RequestPerformanceContext {
         if (state != null) {
             state.dataLoadCount++;
             state.dataLoadDurationNanos += Math.max(0, elapsedNanos);
+            publish(state);
         }
     }
 
@@ -62,6 +73,7 @@ public final class RequestPerformanceContext {
         if (state != null) {
             state.viewRenderCount++;
             state.viewRenderDurationNanos += Math.max(0, elapsedNanos);
+            publish(state);
         }
     }
 
@@ -69,6 +81,7 @@ public final class RequestPerformanceContext {
         State state = CURRENT.get();
         if (state != null) {
             state.fileSnapshotCacheHits++;
+            publish(state);
         }
     }
 
@@ -76,6 +89,7 @@ public final class RequestPerformanceContext {
         State state = CURRENT.get();
         if (state != null) {
             state.fileSnapshotCacheMisses++;
+            publish(state);
         }
     }
 
@@ -89,6 +103,7 @@ public final class RequestPerformanceContext {
         state.fileSnapshotScanDurationNanos += safeElapsed;
         state.maxFileSnapshotScanNanos = Math.max(
                 state.maxFileSnapshotScanNanos, safeElapsed);
+        publish(state);
     }
 
     public static void recordCustomerHistoryScan(
@@ -103,12 +118,14 @@ public final class RequestPerformanceContext {
         state.customerHistoryScanDurationNanos += safeElapsed;
         state.maxCustomerHistoryScanNanos = Math.max(
                 state.maxCustomerHistoryScanNanos, safeElapsed);
+        publish(state);
     }
 
     public static void recordCustomerHistoryCacheHit() {
         State state = CURRENT.get();
         if (state != null) {
             state.customerHistoryCacheHits++;
+            publish(state);
         }
     }
 
@@ -116,6 +133,7 @@ public final class RequestPerformanceContext {
         State state = CURRENT.get();
         if (state != null) {
             state.customerHistoryCacheMisses++;
+            publish(state);
         }
     }
 
@@ -133,6 +151,55 @@ public final class RequestPerformanceContext {
                     0, 0, 0, 0,
                     0, 0, 0);
         }
+        Snapshot snapshot = snapshot(state);
+        if (state.capture != null) {
+            state.capture.snapshot = snapshot;
+        }
+        return snapshot;
+    }
+
+    public static void merge(Snapshot snapshot) {
+        State state = CURRENT.get();
+        if (state == null || snapshot == null) {
+            return;
+        }
+        state.sqlCount += snapshot.sqlCount();
+        state.sqlDurationNanos += snapshot.sqlDurationNanos();
+        state.maxSqlNanos = Math.max(state.maxSqlNanos, snapshot.maxSqlNanos());
+        state.dbAcquisitionCount += snapshot.dbAcquisitionCount();
+        state.dbAcquisitionDurationNanos += snapshot.dbAcquisitionDurationNanos();
+        state.maxDbAcquisitionNanos = Math.max(
+                state.maxDbAcquisitionNanos, snapshot.maxDbAcquisitionNanos());
+        state.fileSnapshotCacheHits += snapshot.fileSnapshotCacheHits();
+        state.fileSnapshotCacheMisses += snapshot.fileSnapshotCacheMisses();
+        state.fileSnapshotScanCount += snapshot.fileSnapshotScanCount();
+        state.fileSnapshotScanDurationNanos += snapshot.fileSnapshotScanDurationNanos();
+        state.maxFileSnapshotScanNanos = Math.max(
+                state.maxFileSnapshotScanNanos, snapshot.maxFileSnapshotScanNanos());
+        state.customerHistoryCacheHits += snapshot.customerHistoryCacheHits();
+        state.customerHistoryCacheMisses += snapshot.customerHistoryCacheMisses();
+        state.customerHistoryScanCount += snapshot.customerHistoryScanCount();
+        state.customerHistoryRecordFileCount += snapshot.customerHistoryRecordFileCount();
+        state.customerHistoryScanDurationNanos += snapshot.customerHistoryScanDurationNanos();
+        state.maxCustomerHistoryScanNanos = Math.max(
+                state.maxCustomerHistoryScanNanos, snapshot.maxCustomerHistoryScanNanos());
+        state.dataLoadCount += snapshot.dataLoadCount();
+        state.dataLoadDurationNanos += snapshot.dataLoadDurationNanos();
+        state.viewRenderCount += snapshot.viewRenderCount();
+        state.viewRenderDurationNanos += snapshot.viewRenderDurationNanos();
+        state.metadataCount += snapshot.metadataCount();
+        state.metadataDurationNanos += snapshot.metadataDurationNanos();
+        state.maxMetadataNanos = Math.max(state.maxMetadataNanos, snapshot.maxMetadataNanos());
+        publish(state);
+    }
+
+    private static void publish(State state) {
+        if (state.capture != null) {
+            state.capture.snapshot = snapshot(state);
+        }
+    }
+
+    private static Snapshot snapshot(State state) {
         return new Snapshot(
                 state.operation,
                 state.sqlCount,
@@ -159,6 +226,14 @@ public final class RequestPerformanceContext {
                 state.metadataCount,
                 state.metadataDurationNanos,
                 state.maxMetadataNanos);
+    }
+
+    public static final class Capture {
+        private volatile Snapshot snapshot;
+
+        public Snapshot snapshot() {
+            return snapshot;
+        }
     }
 
     public enum Operation {
@@ -211,6 +286,7 @@ public final class RequestPerformanceContext {
     }
 
     private static final class State {
+        private final Capture capture;
         private Operation operation = Operation.NONE;
         private int sqlCount;
         private long sqlDurationNanos;
@@ -236,5 +312,9 @@ public final class RequestPerformanceContext {
         private int metadataCount;
         private long metadataDurationNanos;
         private long maxMetadataNanos;
+
+        private State(Capture capture) {
+            this.capture = capture;
+        }
     }
 }

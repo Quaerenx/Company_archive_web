@@ -78,6 +78,14 @@
         return JSON.stringify(first) === JSON.stringify(second);
     }
 
+    function revisionField(form) {
+        var name = form.getAttribute('data-ui-draft-revision');
+        if (!name) return null;
+        return Array.prototype.find.call(form.elements, function (field) {
+            return field.name === name;
+        }) || null;
+    }
+
     function applyValues(form, values) {
         Array.prototype.forEach.call(form.elements, function (field) {
             if (!eligibleField(field)
@@ -130,7 +138,11 @@
         banner.className = 'ui-draft-banner ui-alert ui-alert--neutral';
         banner.setAttribute('role', 'status');
         var copy = document.createElement('span');
-        copy.textContent = '이 브라우저에 저장된 작성 중 초안이 있습니다.';
+        var revision = revisionField(form);
+        var stale = revision && draft.revision !== revision.value;
+        copy.textContent = stale
+                ? '이전 정보로 작성된 초안이 있습니다. 최신 정보와 비교한 뒤 수정해 주세요.'
+                : '이 브라우저에 저장된 작성 중 초안이 있습니다.';
         var actions = document.createElement('span');
         actions.className = 'ui-draft-banner__actions';
         var restore = document.createElement('button');
@@ -148,6 +160,8 @@
         form.parentNode.insertBefore(banner, form);
 
         restore.addEventListener('click', function () {
+            // Keep the original revision so restoring an older draft cannot bypass conflict checks.
+            if (revision) revision.value = typeof draft.revision === 'string' ? draft.revision : '';
             applyValues(form, draft.values);
             banner.remove();
             var first = form.querySelector('input:not([type="hidden"]), select, textarea');
@@ -181,7 +195,9 @@
                 lastSavedValues = serializedValues;
                 return;
             }
-            var payload = JSON.stringify({savedAt: Date.now(), values: values});
+            var revision = revisionField(form);
+            var payload = JSON.stringify({savedAt: Date.now(), values: values,
+                revision: revision ? revision.value : undefined});
             if (payload.length <= MAX_SERIALIZED_LENGTH) {
                 window.sessionStorage.setItem(key, payload);
                 lastSavedValues = serializedValues;

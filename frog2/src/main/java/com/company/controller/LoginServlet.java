@@ -48,6 +48,7 @@ public class LoginServlet extends HttpServlet {
         if (SessionPrincipal.from(request) != null) {
             response.sendRedirect(request.getContextPath() + "/dashboard");
         } else {
+            FlashMessage.expose(request);
             request.getRequestDispatcher("login.jsp").forward(request, response);
         }
     }

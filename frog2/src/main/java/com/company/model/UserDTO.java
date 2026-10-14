@@ -5,6 +5,7 @@ public class UserDTO {
     private String password;
     private String userName;
     private String department;
+    private String authenticationFingerprint;
 
     // 기본 생성자
     public UserDTO() {}
@@ -48,5 +49,13 @@ public class UserDTO {
 
     public void setDepartment(String department) {
         this.department = department;
+    }
+
+    public String getAuthenticationFingerprint() {
+        return authenticationFingerprint;
+    }
+
+    public void setAuthenticationFingerprint(String authenticationFingerprint) {
+        this.authenticationFingerprint = authenticationFingerprint;
     }
 }

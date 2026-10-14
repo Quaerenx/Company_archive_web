@@ -225,6 +225,7 @@ class DaoInjectedConnectionBehaviorTest {
         jdbc.availableColumns = Set.of(
                 "vertica_customer_detail.main_manager_user_id",
                 "vertica_customer_detail.sub_manager_user_id");
+        jdbc.enqueue(PaginationJdbcFixture.row("main_manager", null, "sub_manager", null));
         jdbc.enqueue(PaginationJdbcFixture.row(
                 "user_id", "alice-id", "user_count", 1));
         jdbc.enqueue(PaginationJdbcFixture.row(
@@ -234,12 +235,12 @@ class DaoInjectedConnectionBehaviorTest {
 
         assertTrue(dao.updateCustomer(customer("Acme")));
 
-        assertEquals(3, jdbc.statements.size());
-        assertTrue(jdbc.statements.get(0).sql.contains(
+        assertEquals(4, jdbc.statements.size());
+        assertTrue(jdbc.statements.get(1).sql.contains(
                 "LOWER(TRIM(userName)) = LOWER(?)"));
-        assertEquals("Alice", jdbc.statements.get(0).parameters.get(1));
-        assertEquals("Bob", jdbc.statements.get(1).parameters.get(1));
-        PaginationJdbcFixture.StatementRecord update = jdbc.statements.get(2);
+        assertEquals("Alice", jdbc.statements.get(1).parameters.get(1));
+        assertEquals("Bob", jdbc.statements.get(2).parameters.get(1));
+        PaginationJdbcFixture.StatementRecord update = jdbc.statements.get(3);
         assertTrue(update.sql.contains("main_manager_user_id = ?"));
         assertTrue(update.sql.contains("sub_manager_user_id = ?"));
         assertEquals("alice-id", update.parameters.get(20));

@@ -1,6 +1,7 @@
 package com.company.migration;
 
 import java.io.InputStream;
+import com.company.model.JdbcTransaction;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -90,9 +91,7 @@ public final class MigrationLedgerCli {
 
         MigrationLedgerRepository repository = new MigrationLedgerRepository();
         requireCompleteSchema(repository.schemaState(connection));
-        boolean originalAutoCommit = connection.getAutoCommit();
-        connection.setAutoCommit(false);
-        try {
+        JdbcTransaction.execute(connection, () -> {
             repository.insert(
                     connection,
                     databaseIdentity,
@@ -102,13 +101,8 @@ public final class MigrationLedgerCli {
                     requiredEnvironment("FROG2_MIGRATION_EXECUTED_BY"),
                     requiredEnvironment("FROG2_MIGRATION_CHANGE_REFERENCE"),
                     requiredEnvironment("FROG2_MIGRATION_BACKUP_REFERENCE"));
-            connection.commit();
-        } catch (Exception exception) {
-            connection.rollback();
-            throw exception;
-        } finally {
-            connection.setAutoCommit(originalAutoCommit);
-        }
+            return true;
+        });
         LOGGER.log(
                 System.Logger.Level.INFO,
                 "Migration ledger recorded: version={0} decision={1}",

@@ -26,4 +26,8 @@ public final class CustomerDetailEditEnvironmentView {
     public CustomerDetailDTO getDetail() {
         return detail;
     }
+
+    public String getEditRevision() {
+        return detail == null ? CustomerDetailDTO.MISSING_EDIT_REVISION : detail.getEditRevision();
+    }
 }

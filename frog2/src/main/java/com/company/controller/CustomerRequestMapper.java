@@ -22,6 +22,7 @@ final class CustomerRequestMapper {
     CustomerDetailDTO mapCustomerDetail(HttpServletRequest request) throws ParseException {
         CustomerDetailDTO detail = new CustomerDetailDTO();
         detail.setCustomerName(trimmed(request, "customerName"));
+        detail.setEditRevision(trimmed(request, "editRevision"));
         detail.setSystemName(request.getParameter("systemName"));
         detail.setCustomerManager(trimmed(request, "customerManager"));
         detail.setSiCompany(trimmed(request, "siCompany"));

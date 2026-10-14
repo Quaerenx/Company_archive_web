@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.model.UserDTO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -98,6 +99,8 @@ class SessionPrincipalTest {
         UserDTO current = new UserDTO("tester", "legacy-secret", "Old Name", "Old Department");
         current.setUserName("New Name");
         current.setDepartment("New Department");
+        String originalFingerprint = CredentialFingerprint.from("tester", "original-hash");
+        current.setAuthenticationFingerprint(originalFingerprint);
 
         SessionPrincipal.store(session.proxy(), current);
 
@@ -106,6 +109,20 @@ class SessionPrincipalTest {
         assertEquals("", stored.getPassword());
         assertEquals("New Name", stored.getUserName());
         assertEquals("New Department", stored.getDepartment());
+        assertEquals(originalFingerprint, stored.getAuthenticationFingerprint());
+    }
+
+    @Test
+    void credentialFingerprintIsBoundToAccountAndRequiresExactSnapshot() {
+        String original = CredentialFingerprint.from("tester", "original-hash");
+        assertTrue(CredentialFingerprint.matches(
+                original, CredentialFingerprint.from("tester", "original-hash")));
+        assertFalse(CredentialFingerprint.matches(
+                original, CredentialFingerprint.from("another-user", "original-hash")));
+        assertFalse(CredentialFingerprint.matches(
+                original, CredentialFingerprint.from("tester", "changed-hash")));
+        assertFalse(CredentialFingerprint.matches(null, original));
+        assertFalse(CredentialFingerprint.matches("malformed", original));
     }
 
     private static final class RequestFixture {

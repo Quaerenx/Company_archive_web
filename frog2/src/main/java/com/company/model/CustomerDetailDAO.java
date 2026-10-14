@@ -77,17 +77,26 @@ public class CustomerDetailDAO {
         try (Connection connection = connectionProvider.getConnection()) {
             boolean auditAvailable = CustomerAuditSupport.isAvailable(
                     connection, schemaCapabilities);
+            boolean assigneeIds = hasAssigneeIds(connection, CustomerDetailEnvironment.PROD);
+            boolean references = CustomerReferenceSupport.enabled(
+                    connection, schemaCapabilities, CustomerDetailEnvironment.PROD.tableName());
             String sql = "SELECT 'prod' AS detail_environment, " + COLUMNS
                     + auditProjection(auditAvailable)
+                    + assignmentProjection(assigneeIds)
+                    + referenceProjection(references)
                     + " FROM vertica_customer_detail "
                     + "WHERE " + customerPredicate(connection, CustomerDetailEnvironment.PROD)
                     + " AND is_deleted = 1 "
                     + "UNION ALL SELECT 'stg' AS detail_environment, " + COLUMNS
                     + emptyAuditProjection()
+                    + emptyAssignmentProjection(assigneeIds)
+                    + referenceProjection(references)
                     + " FROM vertica_customer_detail_stg WHERE "
                     + customerPredicate(connection, CustomerDetailEnvironment.STAGING) + " "
                     + "UNION ALL SELECT 'dev' AS detail_environment, " + COLUMNS
                     + emptyAuditProjection()
+                    + emptyAssignmentProjection(assigneeIds)
+                    + referenceProjection(references)
                     + " FROM vertica_customer_detail_dev WHERE "
                     + customerPredicate(connection, CustomerDetailEnvironment.DEVELOPMENT);
             CustomerDetailDTO production = null;
@@ -99,7 +108,8 @@ public class CustomerDetailDAO {
                 statement.setString(3, customerName);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
-                        CustomerDetailDTO detail = mapRowToDetail(resultSet);
+                        CustomerDetailDTO detail = mapRowToDetail(resultSet,
+                                assigneeIds && "prod".equals(resultSet.getString("detail_environment")), references);
                         switch (resultSet.getString("detail_environment")) {
                             case "prod" -> production = detail;
                             case "stg" -> staging = detail;
@@ -160,14 +170,18 @@ public class CustomerDetailDAO {
             CustomerDetailEnvironment environment,
             String customerName,
             boolean auditAvailable) throws SQLException {
+        boolean references = CustomerReferenceSupport.enabled(connection, schemaCapabilities, environment.tableName());
         String sql = "SELECT " + COLUMNS
                 + auditProjection(auditAvailable)
+                + assignmentProjection(hasAssigneeIds(connection, environment))
+                + referenceProjection(references)
                 + " FROM " + environment.tableName()
                 + " WHERE " + customerPredicate(connection, environment);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, customerName);
             try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() ? mapRowToDetail(resultSet) : null;
+                return resultSet.next() ? mapRowToDetail(resultSet,
+                        hasAssigneeIds(connection, environment), references) : null;
             }
         }
     }
@@ -190,6 +204,7 @@ public class CustomerDetailDAO {
                     throw DataAccessException.from(
                             "save customer detail", exception);
                 }
+                if (detail.getEditRevision() != null) throw new CustomerEditConflictException();
                 try {
                     return saveInTransaction(
                             environment, detail, actorUserId, false);
@@ -228,27 +243,32 @@ public class CustomerDetailDAO {
             boolean auditAvailable = environment == CustomerDetailEnvironment.PROD
                     && CustomerAuditSupport.shouldAuditWrite(
                             connection, schemaCapabilities, actorUserId);
-            boolean originalAutoCommit = connection.getAutoCommit();
-            Throwable primaryFailure = null;
-            try {
-                if (originalAutoCommit) {
-                    connection.setAutoCommit(false);
+            return JdbcTransaction.execute(connection, () -> {
+                boolean assigneeIds = hasAssigneeIds(connection, environment);
+                boolean checked = detail.getEditRevision() != null;
+                CustomerDetailSnapshot original = checked || assigneeIds
+                        ? snapshot(connection, environment, detail.getCustomerName(), assigneeIds) : null;
+                if (checked && !detail.getEditRevision().equals(original == null
+                        ? CustomerDetailDTO.MISSING_EDIT_REVISION : original.revision())) {
+                    throw new CustomerEditConflictException();
                 }
                 String customerId = CustomerReferenceSupport.enabled(
                         connection, schemaCapabilities, environment.tableName())
                         ? CustomerIdentitySupport.ensureId(connection, detail.getCustomerName()) : null;
                 CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds =
                         resolveAssignmentUserIds(
-                                connection, environment, detail);
+                                connection, environment, detail, original);
 
-                boolean changed = update(
+                boolean changed = (!checked || original != null) && update(
                         connection,
                         environment,
                         detail,
                         actorUserId,
                         auditAvailable,
                         assignmentUserIds,
-                        customerId);
+                        customerId,
+                        original);
+                if (!changed && original != null) throw new CustomerEditConflictException();
                 if (!changed && insertWhenMissing) {
                     changed = insert(
                             connection,
@@ -259,18 +279,8 @@ public class CustomerDetailDAO {
                             assignmentUserIds,
                             customerId);
                 }
-                if (changed) connection.commit();
-                else connection.rollback();
                 return changed;
-            } catch (SQLException | RuntimeException exception) {
-                primaryFailure = exception;
-                rollback(connection, exception);
-                throw exception;
-            } finally {
-                if (originalAutoCommit) {
-                    restoreAutoCommit(connection, primaryFailure);
-                }
-            }
+            });
         }
     }
 
@@ -336,7 +346,8 @@ public class CustomerDetailDAO {
             String actorUserId,
             boolean auditAvailable,
             CustomerAssignmentSupport.AssignmentUserIds assignmentUserIds,
-            String customerId)
+            String customerId,
+            CustomerDetailSnapshot original)
             throws SQLException {
         String assignments = UPDATE_ASSIGNMENTS;
         if (customerId != null) assignments += ", customer_id = CAST(? AS UUID)";
@@ -348,7 +359,9 @@ public class CustomerDetailDAO {
             assignments += ", updated_at = CURRENT_TIMESTAMP, updated_by = ?";
         }
         String sql = "UPDATE " + environment.tableName() + " SET " + assignments
-                + " WHERE " + customerPredicate(connection, environment);
+                + " WHERE " + customerPredicate(connection, environment)
+                + (environment == CustomerDetailEnvironment.PROD ? " AND is_deleted = 1" : "")
+                + (original == null ? "" : " AND " + original.predicate());
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int nextIndex = bindMutableFields(statement, detail, 1);
             if (customerId != null) statement.setString(nextIndex++, customerId);
@@ -364,6 +377,7 @@ public class CustomerDetailDAO {
                     nextIndex,
                     51 + (customerId == null ? 0 : 1) + (assignmentUserIds == null ? 0 : 2)
                             + (auditAvailable ? 1 : 0));
+            if (original != null) original.bind(statement, nextIndex);
             return statement.executeUpdate() > 0;
         }
     }
@@ -428,7 +442,8 @@ public class CustomerDetailDAO {
             resolveAssignmentUserIds(
                     Connection connection,
                     CustomerDetailEnvironment environment,
-                    CustomerDetailDTO detail) throws SQLException {
+                    CustomerDetailDTO detail,
+                    CustomerDetailSnapshot original) throws SQLException {
         if (environment != CustomerDetailEnvironment.PROD) {
             return null;
         }
@@ -443,8 +458,47 @@ public class CustomerDetailDAO {
                 ? CustomerAssignmentSupport.resolveUserIds(
                         connection,
                         detail.getMainManager(),
-                        detail.getSubManager())
+                        detail.getSubManager(),
+                        original == null ? null : original.assignmentState())
                 : null;
+    }
+
+    private boolean hasAssigneeIds(Connection connection, CustomerDetailEnvironment environment)
+            throws SQLException {
+        if (environment != CustomerDetailEnvironment.PROD) return false;
+        CustomerAssignmentSupport.Capability capability = CustomerAssignmentSupport.capability(
+                connection, schemaCapabilities);
+        if (capability == CustomerAssignmentSupport.Capability.PARTIAL) {
+            throw new SQLException("Customer assignment user-ID columns are partially applied");
+        }
+        return capability == CustomerAssignmentSupport.Capability.COMPLETE;
+    }
+
+    private CustomerDetailSnapshot snapshot(Connection connection, CustomerDetailEnvironment environment,
+            String customerName, boolean assigneeIds) throws SQLException {
+        boolean references = CustomerReferenceSupport.enabled(connection, schemaCapabilities, environment.tableName());
+        String sql = "SELECT " + COLUMNS + assignmentProjection(assigneeIds) + referenceProjection(references)
+                + " FROM " + environment.tableName() + " WHERE " + customerPredicate(connection, environment)
+                + (environment == CustomerDetailEnvironment.PROD ? " AND is_deleted = 1" : "");
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, customerName);
+            try (ResultSet row = statement.executeQuery()) {
+                return row.next() ? CustomerDetailSnapshot.read(row, assigneeIds, references) : null;
+            }
+        }
+    }
+
+    private static String assignmentProjection(boolean available) {
+        return available ? ", main_manager_user_id, sub_manager_user_id" : "";
+    }
+
+    private static String referenceProjection(boolean available) {
+        return available ? ", customer_id" : "";
+    }
+
+    private static String emptyAssignmentProjection(boolean available) {
+        return available ? ", CAST(NULL AS VARCHAR(100)) AS main_manager_user_id, "
+                + "CAST(NULL AS VARCHAR(100)) AS sub_manager_user_id" : "";
     }
 
     private static void setTimestamp(
@@ -459,28 +513,8 @@ public class CustomerDetailDAO {
         }
     }
 
-    private static void rollback(Connection connection, Throwable primaryFailure) {
-        try {
-            connection.rollback();
-        } catch (SQLException rollbackFailure) {
-            primaryFailure.addSuppressed(rollbackFailure);
-        }
-    }
-
-    private static void restoreAutoCommit(Connection connection, Throwable primaryFailure)
+    private static CustomerDetailDTO mapRowToDetail(ResultSet resultSet, boolean assigneeIds, boolean references)
             throws SQLException {
-        try {
-            connection.setAutoCommit(true);
-        } catch (SQLException restoreFailure) {
-            if (primaryFailure != null) {
-                primaryFailure.addSuppressed(restoreFailure);
-            } else {
-                throw restoreFailure;
-            }
-        }
-    }
-
-    private static CustomerDetailDTO mapRowToDetail(ResultSet resultSet) throws SQLException {
         CustomerDetailDTO detail = new CustomerDetailDTO();
         detail.setCustomerName(resultSet.getString("customer_name"));
         detail.setSystemName(resultSet.getString("system_name"));
@@ -534,6 +568,7 @@ public class CustomerDetailDAO {
         detail.setNote(resultSet.getString("note"));
         detail.setUpdatedAt(toDate(resultSet.getTimestamp("audit_updated_at")));
         detail.setUpdatedBy(resultSet.getString("audit_updated_by"));
+        detail.setEditRevision(CustomerDetailSnapshot.read(resultSet, assigneeIds, references).revision());
         return detail;
     }
 

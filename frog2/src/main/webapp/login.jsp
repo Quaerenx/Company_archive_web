@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags" %>
 <c:set var="productName" value="Archive" />
 <!DOCTYPE html>
 <html lang="ko">
@@ -62,6 +63,7 @@
                   autocomplete="off"
                   data-ui-submit-lock="auto">
                 <%@ include file="/WEB-INF/includes/csrf_input.jspf" %>
+                <t:flashMessages />
 
                 <c:if test="${not empty errorMessage}">
                     <div id="login-error"

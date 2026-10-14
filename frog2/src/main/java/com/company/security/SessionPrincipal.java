@@ -65,11 +65,25 @@ public final class SessionPrincipal {
         }
     }
 
+    public static void invalidate(HttpServletRequest request) {
+        request.removeAttribute(REQUEST_ATTRIBUTE);
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            try {
+                session.invalidate();
+            } catch (IllegalStateException ignored) {
+                // Another request may have already invalidated the session.
+            }
+        }
+    }
+
     private static UserDTO sanitizedCopy(UserDTO user) {
-        return new UserDTO(
+        UserDTO copy = new UserDTO(
                 user.getUserId(),
                 "",
                 user.getUserName(),
                 user.getDepartment());
+        copy.setAuthenticationFingerprint(user.getAuthenticationFingerprint());
+        return copy;
     }
 }

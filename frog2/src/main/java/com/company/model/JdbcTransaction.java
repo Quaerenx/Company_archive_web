@@ -3,11 +3,11 @@ package com.company.model;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-final class JdbcTransaction {
+public final class JdbcTransaction {
     private JdbcTransaction() {
     }
 
-    static boolean execute(Connection connection, Work work) throws SQLException {
+    public static boolean execute(Connection connection, Work work) throws SQLException {
         boolean autoCommit = connection.getAutoCommit();
         boolean safeToRestore = true;
         Throwable failure = null;
@@ -43,7 +43,7 @@ final class JdbcTransaction {
     }
 
     @FunctionalInterface
-    interface Work {
+    public interface Work {
         boolean execute() throws SQLException;
     }
 }

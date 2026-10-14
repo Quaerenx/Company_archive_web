@@ -32,6 +32,14 @@ public final class GlobalSearchServlet extends HttpServlet {
     }
 
     @Override
+    public void destroy() {
+        if (searchService != null) {
+            searchService.close();
+        }
+        super.destroy();
+    }
+
+    @Override
     protected void doGet(
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {

@@ -2,6 +2,7 @@ package com.company.model;
 
 import com.company.util.DBConnection;
 import com.company.util.PasswordUtils;
+import com.company.security.CredentialFingerprint;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -103,7 +104,29 @@ public class UserDAO {
         user.setUserId(credentials.userId());
         user.setPassword("");
         user.setUserName(credentials.userName());
+        user.setAuthenticationFingerprint(CredentialFingerprint.from(
+                credentials.userId(), credentials.passwordHash()));
         return user;
+    }
+
+    public boolean isAuthenticationCurrent(UserDTO user) {
+        if (user == null || user.getUserId() == null
+                || !CredentialFingerprint.isValid(user.getAuthenticationFingerprint())) {
+            return false;
+        }
+        String sql = "SELECT password FROM company_users WHERE userId = ?";
+        try (Connection connection = connectionProvider.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.getUserId());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() && CredentialFingerprint.matches(
+                        user.getAuthenticationFingerprint(),
+                        CredentialFingerprint.from(
+                                user.getUserId(), resultSet.getString("password")));
+            }
+        } catch (SQLException exception) {
+            throw DataAccessException.from("validate authentication state", exception);
+        }
     }
 
     public boolean updatePassword(String userId, String newPassword) {
@@ -168,40 +191,14 @@ public class UserDAO {
             Connection connection,
             String userId,
             String userName) throws SQLException {
-        boolean originalAutoCommit = connection.getAutoCommit();
-        Throwable primaryFailure = null;
-        try {
-            if (originalAutoCommit) {
-                connection.setAutoCommit(false);
-            }
+        return JdbcTransaction.execute(connection, () -> {
             boolean updated = updateUserName(connection, userId, userName);
             if (updated) {
                 CustomerAssignmentSupport.synchronizeDisplayName(
                         connection, userId, userName);
             }
-            connection.commit();
             return updated;
-        } catch (SQLException | RuntimeException exception) {
-            primaryFailure = exception;
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackFailure) {
-                exception.addSuppressed(rollbackFailure);
-            }
-            throw exception;
-        } finally {
-            if (originalAutoCommit) {
-                try {
-                    connection.setAutoCommit(true);
-                } catch (SQLException restoreFailure) {
-                    if (primaryFailure != null) {
-                        primaryFailure.addSuppressed(restoreFailure);
-                    } else {
-                        throw restoreFailure;
-                    }
-                }
-            }
-        }
+        });
     }
 
     private static boolean updateUserName(

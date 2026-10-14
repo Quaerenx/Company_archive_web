@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class MaintenanceServletAuthorizationTest {
@@ -687,15 +689,16 @@ class MaintenanceServletAuthorizationTest {
         private List<String> lastMonthCustomers;
 
         @Override
-        public List<MaintenanceRecordDTO>
-                getMaintenanceRecordsByMonthForCustomers(
+        public Set<String>
+                getRegisteredCustomerNamesByMonth(
                         Date startDate,
                         Date endDate,
                         List<String> customerNames) {
             lastMonthStart = startDate;
             lastMonthEnd = endDate;
             lastMonthCustomers = List.copyOf(customerNames);
-            return monthlyRecords;
+            return monthlyRecords.stream().map(MaintenanceRecordDTO::getCustomerName)
+                    .filter(name -> name != null && !name.isBlank()).collect(Collectors.toSet());
         }
 
         @Override
